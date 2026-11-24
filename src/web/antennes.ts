@@ -189,8 +189,8 @@ function map(): string {
     return `<circle class="e h" cx="${x}" cy="${y}" r="9" data-k="${RADIOS.filter((r) => e[r.id]).map((r) => r.id).join(" ")}"/>`;
   }).join("");
   const formes = `<span class="formes"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="5" class="in"/></svg><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="4" class="ring"/></svg>${esc(MOTS.formes)}</span>`;
-  const legende = `<span class="lgc lgc-o">${OPS.map((x) => swatch(x.k, x.o)).join("")}${swatch("m", MOTS.plusieurs)}</span>` +
-    `<span class="lgc lgc-t" hidden>${["5", "4", "2", "r"].map((k) => swatch(k, MOTS.types[k])).join("")}<span class="tn">${esc(MOTS.typeNote)}</span></span>`;
+  const legende = `<span class="lgc lgc-o">${OPS.map((x) => swatch(x.k, x.o)).join(" ")} ${swatch("m", MOTS.plusieurs)}</span>` +
+    ` <span class="lgc lgc-t" hidden>${["5", "4", "2", "r"].map((k) => swatch(k, MOTS.types[k])).join(" ")} <span class="tn">${esc(MOTS.typeNote)}</span></span>`;
   // Without the script, every mobile support: the script counts again what each choice shows.
   const all = parsed.map((d) => look(d, [], [], "o")!);
   const compte = `<span class="lg">${esc(phrase(all.filter((l) => !l[0]).length, all.filter((l) => l[0]).length, 0, []))}</span>`;

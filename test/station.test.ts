@@ -76,8 +76,8 @@ describe("a station's page", () => {
     expect(html).toContain("<h2>La dernière mesure, le 25/10 à 12:18</h2>");
     for (const k of ["Vent moyen", "Humidité", "Point de rosée", "Pluie", "Pression (niveau de la mer)", "Soleil"]) expect(html).toContain(`<li><span>${k}</span>`);
     // Rain and sunshine of the last round hour of the package.
-    expect(html).toContain("<li><span>Pluie</span><b>0 mm en 6 min, 0 mm de 11:00 à 12:00</b></li>");
-    expect(html).toContain("<li><span>Soleil</span><b>20 min de 11:00 à 12:00</b></li>");
+    expect(html).toContain("<li><span>Pluie</span> <b>0 mm en 6 min, 0 mm de 11:00 à 12:00</b></li>");
+    expect(html).toContain("<li><span>Soleil</span> <b>20 min de 11:00 à 12:00</b></li>");
     expect(html).toContain(`Mesures de Météo-France, toutes les 6 minutes. <a href="/meteo#stations">Les autres stations →</a>`);
   });
 
@@ -98,12 +98,12 @@ describe("a station's page", () => {
     expect(html).not.toContain("≈");
     expect(html).toContain("<h2 id=\"h-an\">Mois par mois en 2026</h2>");
     expect(html).toContain("Depuis janvier : 713 mm de pluie, 55 % de la normale.");
-    expect(html).toContain("<tr><td>Janvier</td><td><b>140 mm</b><small>normale 270</small></td>");
+    expect(html).toContain("<tr><td>Janvier</td><td><b>140 mm</b> <small>normale 270</small></td>");
     expect(html).toContain(`<p class="note">Octobre jusqu'au 23/10.</p>`);
     // Its four columns are wider than a phone of 320 px: the table scrolls alone, never the whole page.
     expect(html).toContain(`<div class="table-wrap defile"><table class="sta-m">`);
     expect(html).toContain(`<h2 id="h-rec">Les records de la station</h2>`);
-    for (const k of ["Température la plus haute", "Température la plus basse", "Pluie en un jour", "Rafale la plus forte"]) expect(html).toMatch(new RegExp(`<span>${k}</span><b>[^<]+</b><small>le \\d\\d/\\d\\d/\\d{4}</small>`));
+    for (const k of ["Température la plus haute", "Température la plus basse", "Pluie en un jour", "Rafale la plus forte"]) expect(html).toMatch(new RegExp(`<span>${k}</span> <b>[^<]+</b> <small>le \\d\\d/\\d\\d/\\d{4}</small>`));
   });
 
   it("is described by what it measures, its commune and altitude when it fits", async () => {
@@ -130,13 +130,13 @@ describe("a station's page", () => {
     const night = { ...d, derniere: { ...d.derniere!, time: "2026-10-24T19:30:00Z" }, heures: [{ ...d.heures[0], fin: "2026-10-24T19:00:00Z", ins: 0 }] };
     expect(page(night)).not.toContain("<li><span>Soleil</span>");
     const evening = { ...night, derniere: { ...d.derniere!, time: "2026-10-24T15:30:00Z" }, heures: [{ ...d.heures[0], fin: "2026-10-24T15:00:00Z", ins: 0 }] };
-    expect(page(evening)).toContain("<li><span>Soleil</span><b>0\u202fmin de 18:00 à 19:00</b></li>");
+    expect(page(evening)).toContain("<li><span>Soleil</span> <b>0\u202fmin de 18:00 à 19:00</b></li>");
   });
 
   it("gives the last round hour's rain and sunshine only when it ends before the last measure", async () => {
     // The 6-minute measure of the 22nd, the hours of the 25th: no hour in the box.
     const html = page(await data({ historique: undefined }));
-    expect(html).toContain("<li><span>Pluie</span><b>0\u202fmm en 6\u202fmin</b></li>");
+    expect(html).toContain("<li><span>Pluie</span> <b>0\u202fmm en 6\u202fmin</b></li>");
     expect(html).not.toContain("<li><span>Soleil</span>");
   });
 

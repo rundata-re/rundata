@@ -251,7 +251,7 @@ describe("qualité de l'eau", () => {
     const html = reseauxCommune(c.commune, c);
     const at = a(c.commune);
     expect(html).toContain(`<p>${esc(at.charAt(0).toUpperCase() + at.slice(1))}, l'eau du robinet passe par ${c.reseaux} réseau`);
-    expect(html).toContain(`Réseau ${esc(r.reseau)}<small>${esc(r.quartiers.join("\u00a0; "))}</small>`);
+    expect(html).toContain(`Réseau ${esc(r.reseau)} <small>${esc(r.quartiers.join("\u00a0; "))}</small>`);
     expect(html).toContain(`Dernier prélèvement le ${r.derniere_analyse!.split("-").reverse().join("/")}. Conclusion de l'ARS\u00a0: «\u00a0${esc(r.conclusion!.trim())}\u00a0»`);
     // A name with its article: « au Tampon », never « Le Tampon est desservie »; « géré » agrees with one network.
     const one = { ...c, reseaux_detail: c.reseaux_detail!.slice(0, 1) };
@@ -265,8 +265,8 @@ describe("qualité de l'eau", () => {
     const p = PAGES.find((x) => x.commune && x.nom === c.commune)!;
     const eau = { value: { ...ile, a_savoir: COMMON, sources: [] }, fetchedAt: NOW, stale: false };
     const page = coupuresCommunePage("https://rundata.re", p, { coupures: null, eau }, NOW);
-    expect(page.indexOf(`Réseau ${esc(r.reseau)}<small>`)).toBeGreaterThan(0);
-    expect(page.indexOf(`Réseau ${esc(r.reseau)}<small>`)).toBeLessThan(page.indexOf('id="h-qui"'));
+    expect(page.indexOf(`Réseau ${esc(r.reseau)} <small>`)).toBeGreaterThan(0);
+    expect(page.indexOf(`Réseau ${esc(r.reseau)} <small>`)).toBeLessThan(page.indexOf('id="h-qui"'));
     const old = { ...eau, value: { ...eau.value, communes: eau.value.communes.map(({ reseaux_detail: _, ...x }) => x) } };
     expect(coupuresCommunePage("https://rundata.re", p, { coupures: null, eau: old }, NOW)).not.toMatch(/l'eau du robinet passe par \d+ réseau/);
   });
@@ -339,7 +339,7 @@ describe("qualité de l'eau", () => {
     expect(first.classement).toBeUndefined();
     const render = (baignades: typeof ile.baignades) => {
       const page = eauPage("https://rundata.re", { value: { ...ile, baignades, a_savoir: COMMON, sources: [] }, fetchedAt: NOW, stale: false }, NOW);
-      const at = page.indexOf(`>${esc(first.site)}<small>`);
+      const at = page.indexOf(`>${esc(first.site)} <small>`);
       return page.slice(at, page.indexOf("</li>", at));
     };
     expect(render([{ ...first, classement: "Excellent (saison 2026)" }])).toContain(" · classée Excellent par l'ARS (saison 2026)");

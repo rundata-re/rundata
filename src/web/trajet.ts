@@ -95,7 +95,7 @@ export function tripPage(origin: string, path: string, t: TripRun, chosen: numbe
         return `<li id="arret-${s.id - transit.NETWORKS[t.reseau].first_stop}"${here ? ` class="ici" aria-current="location"` : ""}>` +
           `<span class="note">${t.supprime ? `<s>${at}</s>` : at}</span>` +
           // What the feed says goes under the name: beside it, it leaves the name a few letters a line on a phone.
-          `<span>${page ? `<a href="${STOP_PATH}/${esc(page.slug)}">${esc(s.nom)}</a>` : esc(s.nom)}<small>${esc(s.commune)}${here ? " · arrêt choisi" : ""}</small>${t.supprime ? "" : liveAt(s, now)}</span></li>`;
+          `<span>${page ? `<a href="${STOP_PATH}/${esc(page.slug)}">${esc(s.nom)}</a>` : esc(s.nom)} <small>${esc(s.commune)}${here ? " · arrêt choisi" : ""}</small>${t.supprime ? "" : liveAt(s, now)}</span></li>`;
       }).join("")}</ol>`
     : `<p class="card">Liste des arrêts indisponible pour le moment.</p>`;
   const sources = [credit(transit.SOURCE), ...(t.direct && t.direct.etat !== "muet" ? [credit(rt.SOURCE)] : [])];

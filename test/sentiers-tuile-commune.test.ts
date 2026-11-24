@@ -14,7 +14,7 @@ const fixture = (f: string) => readFileSync(new URL(`./fixtures/onf/${f}`, impor
 const O = "https://rundata.re";
 const NOW = new Date("2026-10-24T04:00:00Z");
 const cache = () => new Cache(new MemoryStore(), () => NOW.getTime());
-const rows = (html: string) => [...html.matchAll(/<li><span><a href="\/sentiers\/([^"]+)">([^<]*)<\/a><small>([^<]*)<\/small><\/span><span class="(q-[a-z]+)">([^<]*)<\/span><\/li>/g)];
+const rows = (html: string) => [...html.matchAll(/<li><span><a href="\/sentiers\/([^"]+)">([^<]*)<\/a> <small>([^<]*)<\/small><\/span> <span class="(q-[a-z]+)">([^<]*)<\/span><\/li>/g)];
 
 describe("the commune's hiking tile", () => {
   beforeEach(() => {

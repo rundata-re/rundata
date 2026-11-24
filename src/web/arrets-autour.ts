@@ -51,7 +51,7 @@ const km=(a,b,c,d)=>{const r=Math.PI/180,x=Math.sin((c-a)*r/2)**2+Math.cos(a*r)*
 const far=(k)=>k<1?Math.max(10,Math.round(k*100)*10)+"\\u00a0m":(Math.round(k*10)/10).toFixed(1).replace(".",",")+"\\u00a0km";
 let list=null;
 const show=(la,lo)=>{const near=list.a.map((s)=>({s,k:km(la,lo,s[3],s[4])})).sort((x,y)=>x.k-y.k).slice(0,N);
-ul.innerHTML=near.map(({s,k})=>"<li><a href=\\""+e(STOP+s[0])+"\\"><span>"+e(s[1])+"</span><small>"+e(far(k)+" · "+list.communes[s[2]])+"</small></a></li>").join("");res.hidden=false};
+ul.innerHTML=near.map(({s,k})=>"<li><a href=\\""+e(STOP+s[0])+"\\"><span>"+e(s[1])+"</span> <small>"+e(far(k)+" · "+list.communes[s[2]])+"</small></a></li>").join("");res.hidden=false};
 btn.addEventListener("click",()=>{say("");if(!navigator.geolocation){say(T.nogeo);return}btn.disabled=true;
 navigator.geolocation.getCurrentPosition((p)=>(list?Promise.resolve(list):fetch(LIST).then((r)=>{if(!r.ok)throw new Error(String(r.status));return r.json()})).then((l)=>{list=l;show(p.coords.latitude,p.coords.longitude)}).catch(()=>say(T.liste)).finally(()=>{btn.disabled=false}),
 (err)=>{say(err.code===1?T.refus:T.perdue);btn.disabled=false},{enableHighAccuracy:true,timeout:15000,maximumAge:60000})})}}`;

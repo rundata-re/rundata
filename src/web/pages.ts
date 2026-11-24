@@ -439,11 +439,12 @@ wbr.adr{display:none}
    hyphen: « 2026_PORT_|05 », never « DGFIP4_Tréso-rerie ». */
 .ident{hyphens:manual;-webkit-hyphens:manual}
 /* « Aller au contenu », the first stop of Tab on every page: seen only while it has the focus, over the bar; its target,
-   the main landmark, from the vigilance's band and the title's on. */
+   the main landmark, from the vigilance's band and the title's on. The focus goes to the first thing read in it (EVITE_SCRIPT),
+   not to the landmark: a landmark that takes the focus is read by TalkBack as one block, the whole page at once. */
 .evite{position:absolute;left:max(16px,env(safe-area-inset-left,0px));top:.6rem;z-index:30;padding:.6rem 1rem;border-radius:12px;
 background:#fff;color:#0b1f36;font-weight:800;text-decoration:none;box-shadow:0 10px 30px -8px rgb(0 0 0/.5)}
 .evite:not(:focus){width:1px;height:1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-#contenu:focus{outline:none}
+[data-cible]:focus{outline:none}
 [hidden]{display:none!important}
 
 /* A section's colour is never one of the alert scale (yellow, orange, red, purple) nor a red: those say a real state
@@ -1557,7 +1558,18 @@ try{navigator.clipboard.writeText(a.dataset.copie||new URL(a.href).searchParams.
  */
 export const UNFOLD_SCRIPT = `(()=>{const unfold=()=>{const t=location.hash&&document.getElementById(location.hash.slice(1));const d=t&&(t.closest("details")||t.querySelector(":scope>details"));if(d)d.open=true};unfold();addEventListener("hashchange",unfold)})();`;
 
-const SCRIPT = `const menu=document.querySelector("details.menu");if(menu){document.addEventListener("click",(e)=>{if(menu.open&&!menu.contains(e.target))menu.open=false});
+/**
+ * « Aller au contenu »: the focus to the first thing read in the main landmark, the vigilance's or the volcano's band as
+ * shown (its short line on a phone, its text on a computer), else the title. Never to <main> itself (no tabindex): TalkBack
+ * reads a landmark that takes the focus as one block, then again element by element (24/11/2026, TalkBack 14.2). Without
+ * the script, the link still moves the reading point to the landmark.
+ */
+export const EVITE_SCRIPT = `const evite=document.querySelector(".evite");if(evite)evite.addEventListener("click",(e)=>{
+const t=[...document.querySelectorAll("#contenu .alerte .ligne,#contenu .alerte .wrap>span,#contenu h1")].find((x)=>x.getClientRects().length);if(!t)return;
+e.preventDefault();if(!t.matches("a[href]")){t.setAttribute("tabindex","-1");t.setAttribute("data-cible","")}t.focus()});`;
+
+const SCRIPT = `${EVITE_SCRIPT}
+const menu=document.querySelector("details.menu");if(menu){document.addEventListener("click",(e)=>{if(menu.open&&!menu.contains(e.target))menu.open=false});
 document.addEventListener("keydown",(e)=>{if(e.key==="Escape"&&menu.open){menu.open=false;menu.querySelector("summary").focus()}})}
 ${UNFOLD_SCRIPT}
 document.querySelectorAll("[data-copy]").forEach((b)=>b.addEventListener("click",async()=>{const t=document.getElementById(b.dataset.copy);
@@ -1719,7 +1731,7 @@ function header(path: string, origin: string, u: Urgent): string {
   const quick = [...urgentKeys(u), ...FIRST, "communes"].map((k) => menu.find((m) => m.key === k)!)
     .map((m) => `<a class="k-${m.key}" href="${m.path}"${current(m.path)}>${icon(m.icon)}${esc(m.nom)}</a>`).join("");
   // The menu in five groups, « Communes » above them (menu.ts); the cyclone's three pages under « Sécurité ».
-  const link = (m: Entree, cls = `k-${m.key}`) => `<a class="${cls}" href="${m.path}"${current(m.path)}><span class="kb">${icon(m.icon)}</span><span class="gn">${esc(m.nom)}</span></a>`;
+  const link = (m: Entree, cls = `k-${m.key}`) => `<a class="${cls}" href="${m.path}"${current(m.path)}><span class="kb">${icon(m.icon)}</span> <span class="gn">${esc(m.nom)}</span></a>`;
   const groups = GROUPES.map((g) => {
     const list = g.entrees.filter((m) => m.key !== "associations" || enLigne());
     const cyc = g.nom === "Sécurité" ? `\n      <p class="cyc">Cyclone\u00a0: ${CYCLONE.map((c) => `<a href="${c.path}"${current(c.path)}>${esc(c.nom)}</a>`).join(" · ")}</p>` : "";
@@ -1952,7 +1964,7 @@ ${head.jsonld.length ? `<script type="application/ld+json">${JSON.stringify(head
 <body>
 <a class="evite" href="#contenu">${head.en ? "Skip to content" : "Aller au contenu"}</a>
 ${head.en ? header(head.path, origin, urgent(head)).replace("<header ", '<header lang="fr" ') : header(head.path, origin, urgent(head))}
-<main id="contenu" tabindex="-1">
+<main id="contenu">
 ${head.shell ? "" : `${head.en ? '<div lang="fr" style="display:contents">' : ""}${banner(head.alerte, head.path)}
 ${head.volcan ? "" : bannerHtml(volcanBanner(), head.path)}${head.en ? "</div>" : ""}`}
 <div class="band${decor && (head.motif || MOTIF_PAGES.has(head.path)) ? " motif" : ""}">${head.shell || head.noindex ? "" : fond(head.path, head.alerte, !!urgent(head).volcan, head.vert)}${top}</div>
@@ -2245,7 +2257,7 @@ function stationsList(every: StationNow[], now: Date): string {
   const rows = [...all].sort((a, b) => a.altitude_m - b.altitude_m).map(row).join("");
   const communes = [...new Set(all.map((s) => communeOf(s, all)).filter(Boolean) as string[])].sort((a, b) => a.localeCompare(b, "fr"));
   const tools = `<div class="sttools" data-js hidden><label>Commune <select id="stc"><option value="">Toutes</option>${communes.map((c) => `<option>${esc(c)}</option>`).join("")}</select></label>` +
-    `<div class="sttri"><span id="sttri">Trier par</span><span class="tabs" role="group" aria-labelledby="sttri"><button type="button" data-s="z" aria-pressed="true">Altitude</button><button type="button" data-s="t" aria-pressed="false">Température</button><button type="button" data-s="n" aria-pressed="false">Nom</button></span></div></div>`;
+    `<div class="sttri"><span id="sttri">Trier par</span> <span class="tabs" role="group" aria-labelledby="sttri"><button type="button" data-s="z" aria-pressed="true">Altitude</button><button type="button" data-s="t" aria-pressed="false">Température</button><button type="button" data-s="n" aria-pressed="false">Nom</button></span></div></div>`;
   const more = all.length > 12 ? `<p data-js hidden><button type="button" class="stmore" id="stm" aria-controls="stl" aria-expanded="false">Voir les ${all.length} stations</button></p>` : "";
   const net = [...new Set(am.map((s) => reseauAmateur(s.source)))].join(", ");
   const amateurs = am.length
@@ -2396,7 +2408,7 @@ export function lue(l: Live, data: Cached<unknown>, now: Date): Live {
 export function recordsSection(h: HistoriqueAnswer | undefined): string {
   // A box per record: its words, its figure big, its date small (the cards of a station's page, station.ts).
   const box = (cls: string, label: string, x: { valeur: number; date: string } | undefined, v: (n: number) => string) =>
-    x ? `<li class="${cls}"><span>${label}</span><b>${thin(v(x.valeur))}</b><small>le ${esc(x.date)}</small></li>` : "";
+    x ? `<li class="${cls}"><span>${label}</span> <b>${thin(v(x.valeur))}</b> <small>le ${esc(x.date)}</small></li>` : "";
   const items = (h?.records_reference ?? []).flatMap((r) => {
     const boxes =
       box("chaud", "Le plus chaud", r.temperature_max, deg) +
@@ -2475,7 +2487,7 @@ export function meteoPage(origin: string, data: Cached<HomeData> | null, now = n
   // large », its h2 says it, and the light of the night band was white on the white card.
   const sea = (titled: boolean) => data?.value.mer.length
     ? `<figure class="card mapcard">${titled ? `<h3 style="color:var(--on-night)">La mer au large</h3>` : ""}<ul class="bars">` +
-      data.value.mer.map((m) => `<li><span>${esc(seaName(m.nom))}</span><b>${thin(deg(m.valeur))}</b></li>`).join("") +
+      data.value.mer.map((m) => `<li><span>${esc(seaName(m.nom))}</span> <b>${thin(deg(m.valeur))}</b></li>`).join("") +
       `</ul><p class="note">Par satellite, ${esc(lesJours(data.value.mer.map((m) => m.jour)))}. <a href="/mer">Toutes les plages →</a></p></figure>`
     : "";
 
@@ -2624,9 +2636,9 @@ function amateurCard(s: StationAnswer): string {
 }
 
 /** The max and min since midnight at a Météo-France station, under the measures of now. */
-function sinceMidnightCard(j: DepuisMinuit): string {
+export function sinceMidnightCard(j: DepuisMinuit): string {
   const row = (label: string, x: DepuisMinuit["maximum"]) =>
-    `<li><span>${label}</span><span class="v"><span class="t" style="background:${chip(x.valeur)}">${esc(thin(`${fr(x.valeur)} ${x.unite}`))}</span> <span class="q">${esc(thin(x.quand))}</span></span></li>`;
+    `<li><span>${label}</span> <span class="v"><span class="t" style="background:${chip(x.valeur)}">${esc(thin(`${fr(x.valeur)} ${x.unite}`))}</span> <span class="q">${esc(thin(x.quand))}</span></span></li>`;
   return `<div class="card stcard minuit"><h3>Depuis minuit ${esc(a(j.station))}</h3>` +
     `<p class="note">${esc(thin(`à ${fr(j.distance_km)} km · ${j.periode}`))}</p>` +
     `<ul>${row("Au plus", j.maximum)}${row("Au moins", j.minimum)}</ul>` +
@@ -2744,7 +2756,7 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
       : "";
   const sea = coastal(p) && d?.mer
     ? `<section aria-labelledby="h-mer"><h2 id="h-mer">Température de la mer ${esc(a(p.nom))}</h2>` +
-      `<div class="card">${d.mer.mesure ? `<ul class="seas"><li><span>Au large, le ${esc(dayMonth(d.mer.mesure.jour_mesure))}</span><b>${esc(thin(d.mer.mesure.temperature_eau))}</b></li></ul>` : ""}` +
+      `<div class="card">${d.mer.mesure ? `<ul class="seas"><li><span>Au large, le ${esc(dayMonth(d.mer.mesure.jour_mesure))}</span> <b>${esc(thin(d.mer.mesure.temperature_eau))}</b></li></ul>` : ""}` +
       // The swimming rule of the tool's résumé said once, in the « Baignade et requins » block below.
       `<p>${esc(thin(d.mer.resume.replace(` ${REGLE_COURTE}`, "")))}</p>${tideLine}<p class="note">Température : mesure satellite au large, du jour indiqué (une mesure paraît au plus tôt le lendemain), ` +
       `pas celle du lagon ni du bord.${d.mer.houle_mesuree ? ` Houle mesurée : la bouée ${esc(d.mer.houle_mesuree.bouee)} du Cerema, au large, à l'heure dite.` : ""}${d.mer.etat_de_la_mer ? " Vagues : prévision d'un modèle, au large, pas une mesure." : ""}${tides ? ` Marée : calculée d'après les mesures des marégraphes, hauteurs à environ 5 cm près, <a href="/mer">détail sur la page mer</a>.` : ""}</p></div></section>`
@@ -2946,7 +2958,7 @@ export function vigilancePage(origin: string, data: Cached<mf.Vigilance> | null,
     const top = r.length ? Math.max(...r.map((x) => x.max)) : green ? 1 : 0;
     const state = `<p class="big vh${alert ? " vh2" : ""}${top ? ` vab vg${top}` : ""}">${top ? `Vigilance ${esc(feminine(mf.colour(top)))}` : esc(NONE_ISSUED_SAID)}</p>`;
     const rest = r.length
-      ? `<p class="vstate">Vigilances au-dessus du vert : ${r.map((x) => `<span class="vi">${badge(x.max)} ${esc(x.phenomene.toLowerCase())} (${esc(x.zone.split(" :")[0])})</span>`).join("")}</p>`
+      ? `<p class="vstate">Vigilances au-dessus du vert : ${r.map((x) => `<span class="vi">${badge(x.max)} ${esc(x.phenomene.toLowerCase())} (${esc(x.zone.split(" :")[0])})</span>`).join(" ")}</p>`
       : green
         ? `<p class="vstate">Aucune vigilance particulière à La Réunion dans les 24 heures du bulletin.</p>`
         : "";
@@ -3057,11 +3069,11 @@ const CROWDED = new Set(["Plage de la Saline les Bains", "Plage de Saint-Paul"])
 export function reefSection(c: Cached<coraux.Coraux> | null): string {
   const head = `<div class="sec-h"><p class="eyebrow">Indice satellite, selon NOAA</p><h2 id="h-coraux">${esc(coraux.TITRE)}</h2>`;
   if (!c) return `<section aria-labelledby="h-coraux">${head}<p>La grille de NOAA Coral Reef Watch n'a pas pu être lue pour le moment.</p></div></section>`;
-  const points = c.value.points.map((p) => `<li><span class="lieu">${esc(p.nom.charAt(0).toUpperCase() + p.nom.slice(1))}</span>` +
+  const points = c.value.points.map((p) => `<li><span class="lieu">${esc(p.nom.charAt(0).toUpperCase() + p.nom.slice(1))}</span> ` +
     (p.niveau != null
-      ? `<b>${esc(coraux.NIVEAUX[p.niveau])}</b><span>selon NOAA</span>` +
+      ? `<b>${esc(coraux.NIVEAUX[p.niveau])}</b> <span>selon NOAA</span> ` +
         `<span class="echelle" role="img" aria-label="niveau ${p.niveau} sur une échelle de 0 à 7">${coraux.NIVEAUX.map((_, i) => i).map((i) => `<i${i === p.niveau ? ' class="on"' : ""}></i>`).join("")}</span>`
-      : "<b>—</b><span>pas de niveau sur ces jours</span>") +
+      : "<b>—</b> <span>pas de niveau sur ces jours</span>") +
     (p.dhw != null ? `<span>Chaleur accumulée sur 12 semaines\u00a0: ${esc(coraux.chaleur(p.dhw))}</span>` : "") +
     (p.sst != null ? `<span>Mer à ${esc(thin(deg(p.sst)))}, par satellite</span>` : "") +
     `</li>`).join("");
@@ -3128,8 +3140,8 @@ export function seaPage(origin: string, data: Cached<SeaData> | null, now = new 
   const list = d
     ? `<ul class="seas">${d.plages.map((b) => `<li class="tgt" id="${anchorId("p", b.nom)}"><span>${esc(seaName(b.nom))}</span>` +
         (b.valeur != null
-          ? `<b>${esc(thin(deg(b.valeur)))}</b><span>le ${esc(dayMonth(b.jour!))}${b.heure ? ` à ${esc(localTime(new Date(b.heure)).split(" ")[1])}` : ""}, à ${esc(fr(b.distance_km!))} km</span>`
-          : `<b>—</b><span>pas de mesure (nuages)</span>`) +
+          ? `<b>${esc(thin(deg(b.valeur)))}</b> <span>le ${esc(dayMonth(b.jour!))}${b.heure ? ` à ${esc(localTime(new Date(b.heure)).split(" ")[1])}` : ""}, à ${esc(fr(b.distance_km!))} km</span>`
+          : `<b>—</b> <span>pas de mesure (nuages)</span>`) +
         // « Y aller » to a beach, not to the centre of a town listed for its coast (Saint-Denis, Le Port…).
         `<a href="/meteo/${slugify(b.commune)}">Météo ${esc(b.commune)} →</a>${resolvePlace(b.nom)?.lieu.type === "commune" ? "" : g.aller({ nom: seaName(b.nom), lat: b.lat, lon: b.lon }, "baignade")}</li>`).join("")}</ul>` +
       `<p class="note">Mis à jour ${leAt(data!.fetchedAt)}.</p><p class="sources">Sources : ${credits(d.sources)}.</p>`
@@ -3145,8 +3157,8 @@ export function seaPage(origin: string, data: Cached<SeaData> | null, now = new 
   <div class="card"><ul class="seas">${buoys.map((b) => {
       const [jour, h] = b.mesuree_a.split(" ");
       const what = [b.venant, b.periode && `période ${b.periode}`, b.vague_max && `vagues jusqu'à ${b.vague_max}`].filter(Boolean).join(", ");
-      return `<li><span>${esc(b.bouee)}</span><b>${b.hauteur_significative ? esc(thin(b.hauteur_significative)) : "—"}</b><span>${esc(thin(what))}</span>` +
-        `<span>mesurée le ${esc(jour)} à ${esc(h)}${b.temperature_eau ? `, mer à ${esc(thin(b.temperature_eau))}` : ""}</span></li>`;
+      return `<li><span>${esc(b.bouee)}</span> <b>${b.hauteur_significative ? esc(thin(b.hauteur_significative)) : "—"}</b> <span>${esc(thin(what))}</span>` +
+        ` <span>mesurée le ${esc(jour)} à ${esc(h)}${b.temperature_eau ? `, mer à ${esc(thin(b.temperature_eau))}` : ""}</span></li>`;
     }).join("")}</ul>
   <p class="note">Source\u00a0: ${esc(candhis.SOURCE.attribution)} (${esc(candhis.SOURCE.licence)}).</p></div>
 </section>`
@@ -3159,8 +3171,8 @@ export function seaPage(origin: string, data: Cached<SeaData> | null, now = new 
   <div class="sec-h"><p class="eyebrow">Prévision, pas une mesure</p><h2 id="h-houle">La houle prévue près de chaque plage</h2>
   <p>Hauteur, direction et période des vagues au large, pour les 3 heures en cours, puis la plus haute des 4 jours, d'après deux modèles de vagues : celui de Météo-France (MFWAM, maille d'environ 9 km), qui distingue la houle principale du reste de la mer, à l'ouest et au sud\u00a0; celui du Centre européen (ECMWF, maille de 9 km) au nord et à l'est, où le premier n'a pas de point près de la côte. Dans le lagon et derrière le récif, les vagues sont bien plus petites. Pour la sécurité : <a href="/vigilance">la vigilance vagues-submersion</a>, les drapeaux et les maîtres-nageurs.</p></div>
   <div class="card"><ul class="seas">${waves.map((b) => `<li><span>${esc(seaName(b.nom))}</span>` +
-      `<b>${esc(thin(`${fr(b.houle!.hauteur_m)} m`))}</b><span>${esc(b.houle!.maintenant.replace(/^\S+ m /, ""))}, vers ${esc(b.houle!.heure)}</span>` +
-      `<span>jusqu'à ${esc(thin(b.houle!.max))} ${esc(b.houle!.max_jour)}</span></li>`).join("")}</ul></div>
+      ` <b>${esc(thin(`${fr(b.houle!.hauteur_m)} m`))}</b> <span>${esc(b.houle!.maintenant.replace(/^\S+ m /, ""))}, vers ${esc(b.houle!.heure)}</span>` +
+      ` <span>jusqu'à ${esc(thin(b.houle!.max))} ${esc(b.houle!.max_jour)}</span></li>`).join("")}</ul></div>
 </section>`
     : "";
 
@@ -3168,8 +3180,8 @@ export function seaPage(origin: string, data: Cached<SeaData> | null, now = new 
   const computed = GAUGES.map((g) => tidesAt(g, now, d?.maree ?? [], data?.fetchedAt)).filter((x) => !!x);
   const coming = computed.length
     ? `<h3>Les prochaines marées : un calcul, pas la prédiction du SHOM</h3>
-  <ul class="seas">${computed.map((x) => `<li><span>${esc(x.nom)}</span>` +
-      x.next.liste.map((e, i) => (i === 0 ? `<b>${esc(e.type)} ${esc(e.heure)}</b><span>${esc(thin(`${fr(e.hauteur_m)} m`))}${"note" in e ? ", marée faible : heure plus incertaine" : ""}</span>` : `<span>${esc(e.type)} ${esc(e.heure)} (${esc(thin(`${fr(e.hauteur_m)} m`))}${"note" in e ? ", marée faible : heure plus incertaine" : ""})</span>`)).join("") +
+  <ul class="seas">${computed.map((x) => `<li><span>${esc(x.nom)}</span> ` +
+      x.next.liste.map((e, i) => (i === 0 ? `<b>${esc(e.type)} ${esc(e.heure)}</b> <span>${esc(thin(`${fr(e.hauteur_m)} m`))}${"note" in e ? ", marée faible : heure plus incertaine" : ""}</span>` : ` <span>${esc(e.type)} ${esc(e.heure)} (${esc(thin(`${fr(e.hauteur_m)} m`))}${"note" in e ? ", marée faible : heure plus incertaine" : ""})</span>`)).join("") +
       `</li>`).join("")}</ul>
   <p class="note">${esc(TIDE_LABEL.replace(/^c/, "C"))} : analyse harmonique de plusieurs années de mesures de ces deux marégraphes ; heures à environ ${computed.map((x) => `${x.minutes} min près ${a(x.gauge.commune)}`).join(", ")}, hauteurs à environ 5 cm près ; pas de coefficient. La marée est faible à La Réunion (20 à 80 cm) : utile pour le lagon, la pêche à pied ou la mise à l'eau, pas pour la navigation. ${adressesCoupables(TIDE_CITATION)}</p>
   <p class="note">Ces heures valent près des deux marégraphes, à ${NEAR_KM} km au plus. Plus loin sur la côte, la marée arrive à une autre heure : horaires officiels du SHOM pour ${["Saint-Leu", "Saint-Pierre"].map((c) => `<a href="${esc(shomPort(c)!)}">${c}</a>`).join(" et ")}.</p>`
@@ -3178,12 +3190,12 @@ export function seaPage(origin: string, data: Cached<SeaData> | null, now = new 
     ? `<section aria-labelledby="h-maree">
   <div class="sec-h"><p class="eyebrow">Mesurée chaque minute, puis calculée</p><h2 id="h-maree">La marée en ce moment</h2>
   <p>Hauteur d'eau au-dessus du zéro des cartes marines, aux deux marégraphes du SHOM. Les dernières pleine et basse mer sont mesurées ; les prochaines, plus bas, sont calculées par rundata.</p></div>
-  <ul class="seas">${(d?.maree ?? []).map((g) => `<li><span>${esc(g.maregraphe)}</span>` +
+  <ul class="seas">${(d?.maree ?? []).map((g) => `<li><span>${esc(g.maregraphe)}</span> ` +
       ("hauteur_m" in g && g.hauteur_m != null
-        ? `<b>${esc(thin(`${fr(g.hauteur_m)} m`))}</b><span>${g.tendance === "étale" ? "mer étale" : `marée ${esc(g.tendance!)}`}, mesurée ${esc(leJour(g.heure_mesure!))}</span>` +
-          g.derniers_extremes!.slice().reverse().map((e) => `<span>${esc(e.type)} vers ${esc(e.heure)} (${esc(fr(e.hauteur_m))} m)</span>`).join("") +
-          ("avertissement" in g && g.avertissement ? `<span>pas de mesure depuis ${esc(g.age_texte!.replace(/^il y a /, ""))}</span>` : "")
-        : `<b>—</b><span>marégraphe muet pour le moment</span>`) +
+        ? `<b>${esc(thin(`${fr(g.hauteur_m)} m`))}</b> <span>${g.tendance === "étale" ? "mer étale" : `marée ${esc(g.tendance!)}`}, mesurée ${esc(leJour(g.heure_mesure!))}</span>` +
+          g.derniers_extremes!.slice().reverse().map((e) => ` <span>${esc(e.type)} vers ${esc(e.heure)} (${esc(fr(e.hauteur_m))} m)</span>`).join("") +
+          ("avertissement" in g && g.avertissement ? ` <span>pas de mesure depuis ${esc(g.age_texte!.replace(/^il y a /, ""))}</span>` : "")
+        : `<b>—</b> <span>marégraphe muet pour le moment</span>`) +
       `</li>`).join("")}</ul>
   ${coming}
 </section>`

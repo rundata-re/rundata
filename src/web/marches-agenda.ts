@@ -20,7 +20,7 @@ export function marchesSection(days: string[], heading: (day: string) => string,
   if (!held.length) return "";
   const cards = held.map(({ day, ms }) =>
     `<li class="card"><h3>${heading(day)} <span class="note">${ms.length} marché${ms.length > 1 ? "s" : ""}</span></h3><ul class="rows eau">${ms.map((m) =>
-      `<li><span><a href="${esc(m.lien)}" rel="noopener">${esc(m.nom)}</a><small>${[m.commune, m.adresse, `d'après ${m.d_apres}`].filter(Boolean).map((x) => esc(x!)).join(" · ")}</small></span><span class="q-none">${esc(m.horaires)}</span></li>`).join("")}</ul></li>`).join("");
+      `<li><span><a href="${esc(m.lien)}" rel="noopener">${esc(m.nom)}</a> <small>${[m.commune, m.adresse, `d'après ${m.d_apres}`].filter(Boolean).map((x) => esc(x!)).join(" · ")}</small></span> <span class="q-none">${esc(m.horaires)}</span></li>`).join("")}</ul></li>`).join("");
   return `<section aria-labelledby="${id}">
   <div class="sec-h"><h2 id="${id}">Marchés forains</h2><p>${esc(MARCHES_NOTE)}</p></div>
   <ul class="zones">${cards}</ul>

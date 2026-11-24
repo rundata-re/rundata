@@ -163,8 +163,8 @@ describe("the map of every station on /meteo", () => {
     // The rain layer asks the radar's grid when first shown, with a place in its legend for what the radar sees.
     expect(html).toMatch(new RegExp(`<canvas class="voile" data-pluie="/meteo/pluie-radar.json" data-pz="[^"]+" data-alt="${ALT_PATH}" `));
     // The radar's legend first, then the rose zones': the radar's scale never read as theirs.
-    expect(html).toContain(`Point blanc : pas de pluie mesurée. <span data-radar hidden></span><span class="pz-now" hidden> En rose`);
-    expect(html).toContain(`</a></span></span><span class="rj-lg">`);
+    expect(html).toContain(`Point blanc : pas de pluie mesurée. <span data-radar hidden></span> <span class="pz-now" hidden> En rose`);
+    expect(html).toContain(`</a></span></span> <span class="rj-lg">`);
     // No anemometer: no tab, no canvas, no script data.
     expect(stationsMap([BALISE])).toContain("1 anémomètre, vent moyen");
     const calm = stationsMap([BRAS_SEC, PLUVIO]);
@@ -413,7 +413,7 @@ describe("the page /meteo with every station", () => {
     expect(html).toContain(`<span class="pz-now" hidden> En rose\u00a0: la pluie de 08:18–09:18 autour des pluviomètres de Météo-France`);
     // The site's rule for hours: minutes as « 08:18 », a whole hour as « 2 h », a span with no space around its dash.
     expect(pluvioLive("2026-11-15T23:00:00Z")).toContain("la pluie de 2\u00a0h–3\u00a0h autour");
-    expect(html).toContain(`<span data-radar hidden></span><span class="pz-now" hidden>`);
+    expect(html).toContain(`<span data-radar hidden></span> <span class="pz-now" hidden>`);
     expect(html).toContain(`<a href="#h-zones-roses">Comment c&#39;est calculé →</a></span></span>`);
     // Every gauge of the newest time dry: nothing, even with rain an hour before.
     expect(stationsMap([GILLOT, PLUVIO])).not.toContain("data-pz=");

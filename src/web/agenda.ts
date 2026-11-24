@@ -101,7 +101,7 @@ function ligne(r: AgendaRow, g: Porte): Html {
   const hours = agendaHours(r.quand);
   // Its title opens its page on rundata.re (web/fiche-evenement.ts), which links its source; a copy built before it, the source.
   const title = r.fiche ? html`<a href="${href(fichePath(r))}">${r.titre}</a>` : r.lien ? html`<a href="${href(r.lien)}" rel="noopener"${blank}>${r.titre}</a>` : r.titre;
-  return html`<li data-g="${r.genres.join(" ")}"><span>${badge}${title}${news}${appel}<small>${small}${logo}${book}</small>${allerVers(r, g)}</span><span class="q-none${hours.startsWith("jusqu'au") ? " fin" : ""}">${hours}</span></li>`;
+  return html`<li data-g="${r.genres.join(" ")}"><span>${badge}${title}${news}${appel} <small>${small}${logo}${book}</small>${allerVers(r, g)}</span> <span class="q-none${hours.startsWith("jusqu'au") ? " fin" : ""}">${hours}</span></li>`;
 }
 
 /** Under a day's title: its events, and those of more than a week going on that day (parJour). */

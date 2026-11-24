@@ -70,7 +70,7 @@ describe("past cyclones", () => {
     expect(html).toContain("<h1>Cyclone Hyacinthe, du 15 au 28 janvier 1980</h1>");
     expect(html).toContain("135 stations, de la plus arrosée à la moins arrosée, du 16/01/1980 au 27/01/1980. Rafales : seulement 3 stations les mesuraient en 1980.");
     expect(html).toContain('<th scope="col">Jour le plus pluvieux</th>');
-    expect(html).toContain("<tr><th scope=\"row\">Commerson<small>2\u202f310\u00a0m</small></th><td><b>6\u202f051</b></td><td>1\u202f029<small>25/01</small></td><td>—</td></tr>");
+    expect(html).toContain("<tr><th scope=\"row\">Commerson <small>2\u202f310\u00a0m</small></th><td><b>6\u202f051</b></td><td>1\u202f029 <small>25/01</small></td><td>—</td></tr>");
     // Firinga: the gusts at the instruments' limit, as Météo-France says it.
     const firinga = passePage("https://rundata.re", passe("firinga-1989"));
     expect(firinga).toContain("des rafales de 216\u00a0km/h qui sont la limite mesurable avec les instruments de l&#39;époque. » (<a href=\"https://web.archive.org/web/20240115035551/http://pluiesextremes.meteo.fr/lareunion/1989-Firinga.html\" rel=\"noopener\">1989 Firinga</a>, Météo-France, site « Pluies extrêmes à La Réunion », copie archivée : le site est suspendu depuis juillet 2024)</p>");

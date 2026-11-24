@@ -145,7 +145,7 @@ describe("coraux", () => {
     const c = { value: coraux.parse(CSV), fetchedAt: NOW, stale: false };
     const html = reefSection(c);
     expect(html).toContain('<h2 id="h-coraux">Coraux : risque de blanchissement</h2>');
-    expect(html).toContain("<b>Veille</b><span>selon NOAA</span>");
+    expect(html).toContain("<b>Veille</b> <span>selon NOAA</span>");
     expect(html).toContain('<span class="echelle" role="img" aria-label="niveau 1 sur une échelle de 0 à 7"><i></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i></span>');
     expect(html).toContain(`<b>${coraux.NIVEAUX[6].replace(/'/g, "&#39;")}</b>`);
     expect(html).toContain('aria-label="niveau 6 sur une échelle de 0 à 7"><i></i><i></i><i></i><i></i><i></i><i></i><i class="on"></i><i></i>');
@@ -166,7 +166,7 @@ describe("coraux", () => {
     const [o, s, e] = coraux.POINTS;
     const csv = HEAD + row("2026-03-01", o.lat, o.lon, "1.4", "4.3", "29.1") + row("2026-03-01", s.lat, s.lon, "NaN", "NaN", "NaN") + row("2026-03-02", s.lat, s.lon, "NaN", "NaN", "NaN") + row("2026-03-02", e.lat, e.lon, "0.5", "12.0", "30.2");
     const html = reefSection({ value: coraux.parse(csv), fetchedAt: NOW, stale: false });
-    expect(html).toContain('<span class="lieu">Au large de Saint-Pierre</span><b>—</b><span>pas de niveau sur ces jours</span></li>');
+    expect(html).toContain('<span class="lieu">Au large de Saint-Pierre</span> <b>—</b> <span>pas de niveau sur ces jours</span></li>');
     expect(html).not.toContain("ce jour-là");
     expect(html.match(/class="echelle"/g)).toHaveLength(2);
     expect(html).toContain("Niveau\u00a0: maximum des 2 jours disponibles sur les 7 derniers");

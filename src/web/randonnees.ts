@@ -58,7 +58,7 @@ export function secteurPage(origin: string, s: Secteur, data: Cached<RandonneesA
 
   const map = d && keys.size
     ? `<figure class="card mapcard">${hikesMap(d.lignes.filter((l) => keys.has(l.k)), `Carte de La Réunion (974) : les sentiers et les itinéraires de randonnée ${s.dans}, ouverts ou fermés`, d.lignes.filter((l) => own.has(l.k)))}
-  <figcaption class="note legend"><span><i class="sw rte"></i>itinéraire avec trace</span><span><i class="sw ouvert"></i>sentier ouvert</span><span><i class="sw ferme"></i>fermé</span><span><i class="sw inconnu"></i>hors gestion ONF</span>${traceSource(d.carte_mise_a_jour, true, d.carte_lue)}</figcaption></figure>`
+  <figcaption class="note legend"><span><i class="sw rte"></i>itinéraire avec trace</span> <span><i class="sw ouvert"></i>sentier ouvert</span> <span><i class="sw ferme"></i>fermé</span> <span><i class="sw inconnu"></i>hors gestion ONF</span>${traceSource(d.carte_mise_a_jour, true, d.carte_lue)}</figcaption></figure>`
     : "";
 
   const shut = !d

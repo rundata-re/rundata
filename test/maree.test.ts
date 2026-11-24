@@ -94,10 +94,10 @@ describe("tide gauges", () => {
     const maree = (await gauges(cache(), NOW)).map((g) => gaugeRow(g, NOW));
     const html = seaPage("https://rundata.re", { value: { plages: [], maree, sources: [] }, fetchedAt: NOW, stale: false }, NOW);
     expect(html).toContain('<h2 id="h-maree">La marée en ce moment</h2>');
-    expect(html).toMatch(/<li><span>Pointe des Galets \(Le Port\)<\/span><b>0,\d+\u202fm<\/b><span>marée descendante, mesurée le 24\/10 à 03:4\d<\/span><span>pleine mer vers 00:0\d \(0,86 m\)<\/span>/);
+    expect(html).toMatch(/<li><span>Pointe des Galets \(Le Port\)<\/span> <b>0,\d+\u202fm<\/b> <span>marée descendante, mesurée le 24\/10 à 03:4\d<\/span> <span>pleine mer vers 00:0\d \(0,86 m\)<\/span>/);
     // The next tides, computed at the view, labelled, with each gauge's precision and the citation.
     expect(html).toContain("<h3>Les prochaines marées : un calcul, pas la prédiction du SHOM</h3>");
-    expect(html).toMatch(/<li><span>Pointe des Galets \(Le Port\)<\/span><b>basse mer vers 06:00<\/b>/);
+    expect(html).toMatch(/<li><span>Pointe des Galets \(Le Port\)<\/span> <b>basse mer vers 06:00<\/b>/);
     expect(html).toContain("Calcul de rundata.re d&#39;après les mesures, pas la prédiction officielle du SHOM : analyse harmonique");
     expect(html).toContain("heures à environ 15 min près au Port, 20 min près à Sainte-Marie, hauteurs à environ 5 cm près ; pas de coefficient.");
     expect(html).toContain("REFMAR. <span class=\"adrweb\">http://<wbr>dx.<wbr>doi.<wbr>org/<wbr>10.<wbr>17183/<wbr>REFMAR#RONIM</span>");

@@ -77,7 +77,7 @@ describe("the page of Saint-Denis", () => {
     const tile = html.slice(html.indexOf("<h3>Mairie</h3>"), html.indexOf("<h3>", html.indexOf("<h3>Mairie</h3>") + 1));
     expect(tile).toContain('<summary>Mairies annexes et centres municipaux <span class="note">20</span></summary>');
     expect(tile).toContain(esc(LISTE));
-    expect(tile).toContain('<b>Bois de Nèfles</b> · mairie annexe<small>132, route des ananas, <span class="nw">97490 Sainte-Clotilde</span></small>');
+    expect(tile).toContain('<b>Bois de Nèfles</b> · mairie annexe <small>132, route des ananas, <span class="nw">97490 Sainte-Clotilde</span></small>');
     expect(html).toContain(`${annexes.SOURCE.nom} (${annexes.SOURCE.licence})`);
   });
 

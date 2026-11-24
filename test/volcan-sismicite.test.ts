@@ -76,7 +76,7 @@ describe("the located earthquakes per day under the volcano", () => {
     expect(html).toContain(`<h3>Séismes localisés par l'OVPF</h3><figure class="qdays"><figcaption>Sous le volcan, par jour (heure de La Réunion)</figcaption><ol>`);
     expect(html.match(/<figure class="qdays">[\s\S]*?<\/ol>/)![0].match(/<li/g)).toHaveLength(30);
     expect(html).toContain(`<li class="now" aria-label="23/10 (en cours) : `);
-    expect(html).toContain(`<p class="axis"><span>24/09</span><span>23/10 (en cours)</span></p>`);
+    expect(html).toContain(`<p class="axis"><span>24/09</span> <span>23/10 (en cours)</span></p>`);
     expect(html).toContain(`<p class="note">L&#39;OVPF ne localise qu&#39;une partie des séismes qu&#39;il enregistre\u00a0: son <a href="${BULLETIN_QUOTIDIEN}">bulletin quotidien</a> donne le nombre enregistré, les chiffres de rundata.re comptent ceux qu&#39;il a localisés, d&#39;après son catalogue.</p>`);
     // Said once on the page: the bulletin in the note, not a sentence more.
     expect(html).not.toContain("ne sont pas comptés ici");
@@ -100,7 +100,7 @@ describe("the located earthquakes per day under the volcano", () => {
   it("keeps each quake's comma with the place before it, never alone at the start of a line", async () => {
     const r = body(await volcanSeismes(cacheWith(), NOW));
     const html = volcanPage("https://rundata.re", { value: r, fetchedAt: NOW, stale: false }, NOW);
-    const rows = [...html.matchAll(/<li><b>[^<]*<\/b><span>(.*?)<\/span><span class="note">/g)].map((m) => m[1]);
+    const rows = [...html.matchAll(/<li><b>[^<]*<\/b> <span>(.*?)<\/span> <span class="note">/g)].map((m) => m[1]);
     expect(rows.length).toBeGreaterThan(0);
     // « …de la Fournaise, 1 km… »: Chrome and Safari put « , 1 km » on the next line at 160 px, the word alone fitting.
     for (const row of rows) {

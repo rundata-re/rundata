@@ -256,10 +256,10 @@ describe("the order of 12/11/2026 while VigiEau serves the one it replaced", () 
     const page = secheressePage("https://rundata.re", { value: d, fetchedAt: new Date(), stale: false });
     // « Ce qui est interdit »: a column per level some commune has, from the least to the most severe, crise last.
     const uses = page.slice(page.indexOf('<table class="drought niveaux usages">'));
-    const crise = uses.indexOf('<span class="lvl" style="--c:#862e9c;color:#fff">crise</span><small class="note" style="display:block;font-weight:400">Saint-Joseph</small>');
+    const crise = uses.indexOf('<span class="lvl" style="--c:#862e9c;color:#fff">crise</span> <small class="note" style="display:block;font-weight:400">Saint-Joseph</small>');
     expect(crise).toBeGreaterThan(-1);
-    expect(crise).toBeGreaterThan(uses.indexOf('alerte renforcée</span><small class="note" style="display:block;font-weight:400">Cilaos'));
-    expect(uses.indexOf('vigilance</span><small class="note" style="display:block;font-weight:400">Sainte-Rose</small>')).toBeGreaterThan(-1);
+    expect(crise).toBeGreaterThan(uses.indexOf('alerte renforcée</span> <small class="note" style="display:block;font-weight:400">Cilaos'));
+    expect(uses.indexOf('vigilance</span> <small class="note" style="display:block;font-weight:400">Sainte-Rose</small>')).toBeGreaterThan(-1);
     const sj = body(await restrictionsEau(cache(), "Saint-Joseph"));
     const rule = (u: string) => sj.restrictions_eau_du_robinet.find((r: { usage: string }) => r.usage === u)?.restriction;
     expect(rule("Remplissage et maintien du niveau d’eau des plans d’eau de loisirs et piscines privées")).toBe("Interdiction");

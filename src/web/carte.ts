@@ -276,7 +276,7 @@ const jm = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 function caseOf(c: Couche): string {
   const sous = SOUS[c.id] ? ` · ${esc(SOUS[c.id])}` : "";
   return `<li><label class="kc-${esc(c.id)}"><input type="checkbox" name="c" value="${esc(c.id)}"><i class="km" aria-hidden="true"></i>` +
-    `<span><b>${esc(c.nom)}</b><small><span class="nat n-${c.nature}">${MOTS.natures[c.nature]}</span>${sous}<span class="kh" data-c="${esc(c.id)}">${c.donnees ? ` · ${MOTS.datesDonnees[c.id] ?? `lue le ${jm(c.donnees().heure)}`}` : ""}</span></small></span></label></li>`;
+    `<span><b>${esc(c.nom)}</b> <small><span class="nat n-${c.nature}">${MOTS.natures[c.nature]}</span>${sous}<span class="kh" data-c="${esc(c.id)}">${c.donnees ? ` · ${MOTS.datesDonnees[c.id] ?? `lue le ${jm(c.donnees().heure)}`}` : ""}</span></small></span></label></li>`;
 }
 
 /** The list of layers, by theme; the children's three under « Avec les enfants ». */

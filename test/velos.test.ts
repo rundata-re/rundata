@@ -79,8 +79,8 @@ describe("Altervélo", () => {
     expect(html).toContain('<span class="mls">Vélos disponibles d&#39;après les stations, relevé du 24/10 à 00:35.</span>');
     expect(deadAnchors(html)).toEqual([]);
     expect(doubleIds(html)).toEqual([]);
-    expect(html).toContain("<li><span>ZAC Maxime Rivière</span><span><b>6</b>\u00a0vélos · <b>1</b>\u00a0trottinette · 4\u00a0places</span></li>");
-    expect(html).toContain("<li><span>Stade de Terre Sainte</span><span>location impossible en ce moment</span></li>");
+    expect(html).toContain("<li><span>ZAC Maxime Rivière</span> <span><b>6</b>\u00a0vélos · <b>1</b>\u00a0trottinette · 4\u00a0places</span></li>");
+    expect(html).toContain("<li><span>Stade de Terre Sainte</span> <span>location impossible en ce moment</span></li>");
     // A count stays with its word at the end of a line (marketing).
     expect(html).toContain('Saint-Pierre <span class="note">7\u00a0vélos, 4\u00a0stations</span>');
     const desc = html.match(/name="description" content="([^"]*)"/)![1];

@@ -339,7 +339,7 @@ describe("sport", () => {
     expect(b.a_venir.filter((r: { autre_date?: string }) => r.autre_date)).toHaveLength(1);
     // And on the page, under the match.
     const page = sportPage("https://rundata.re", { value: { ...b, a_venir: [row], classements: [] } as SportAnswer, fetchedAt: eve, stale: false }, eve);
-    expect(page).toMatch(/TGV – VBC SD<small>[^<]*La Ligue réunionnaise de volley-ball annonce ce match le samedi 07\/11 à 16:00 : vérifier auprès du club\.<\/small>/);
+    expect(page).toMatch(/TGV – VBC SD <small>[^<]*La Ligue réunionnaise de volley-ball annonce ce match le samedi 07\/11 à 16:00 : vérifier auprès du club\.<\/small>/);
     // Without the league's text, no such line.
     const none = body(await sportTool(new Cache(new MemoryStore(), () => eve.getTime()), "volley", undefined, "a_venir", eve));
     expect(none.a_venir.find((r: { epreuve?: string; quand?: string }) => r.epreuve === "TGV – VBC SD" && r.quand?.startsWith("vendredi 06/11"))).toBeDefined();

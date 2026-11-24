@@ -70,8 +70,8 @@ export function schoolLi(e: ecoles.Etablissement, attrs = ""): string {
   const link = e.web ?? e.onisep;
   const name = link ? `<a href="${esc(link)}" rel="noopener">${esc(e.nom)}</a>` : esc(e.nom);
   const tel = e.tel ? ` <small><a href="tel:${esc(e.tel.replace(/\s/g, ""))}">${esc(e.tel)}</a></small>` : "";
-  return `<li${attrs}><span>${name}<small>${esc(ecoles.services(e).join(" · "))}</small></span>` +
-    `<span class="l2"><span><small class="adr">${esc(e.adresse)}</small>${tel}</span></span></li>`;
+  return `<li${attrs}><span>${name} <small>${esc(ecoles.services(e).join(" · "))}</small></span>` +
+    ` <span class="l2"><span><small class="adr">${esc(e.adresse)}</small>${tel}</span></span></li>`;
 }
 
 // ---------------------------------------------------------------- the collège of an address
@@ -164,7 +164,7 @@ function map(): string {
     return `<a class="sp" href="#${rowId(e)}" data-t="${e.type}" data-s="${flags(e)}" data-pn="${esc(e.nom)}" data-p2="${esc([kind, ...ecoles.services(e).slice(0, 1)].join(" "))}" data-p3="${esc(e.commune)}" tabindex="-1">` +
       `<circle class="hit" cx="${x}" cy="${y}" r="${Math.round(6 * unit)}"/><path class="rg" d="M${x} ${y}h0"/><path class="pt ${KIND_CLS[e.type]}" d="M${x} ${y}h0"/></a>`;
   }).join("");
-  const legend = ecoles.KINDS.map((k) => `<span><i class="ksw ${KIND_CLS[k.type]}"></i>${esc(k.court[0].toUpperCase() + k.court.slice(1))}</span>`).join("");
+  const legend = ecoles.KINDS.map((k) => `<span><i class="ksw ${KIND_CLS[k.type]}"></i>${esc(k.court[0].toUpperCase() + k.court.slice(1))}</span>`).join(" ");
   return `<figure class="card mapcard emap">` +
     zoomIsland(islandMap({ overlay: `<g class="spots" aria-hidden="true">${dots}</g>`, peaks: true, fond: "e", label: "Carte de La Réunion (974) : les écoles, collèges et lycées" }), "e", { id: "emap" }) +
     `<figcaption class="note"><span class="lgc">${legend}</span></figcaption></figure>`;

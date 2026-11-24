@@ -461,7 +461,7 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
   const avis = l.coupures?.value.avis.filter((n) => n.communes.includes(nom)) ?? [];
   const dist = distributeur(nom);
   // Its distributor's feed did not answer at the last read (tools/coupures.ts).
-  const waterSilent = dist?.avis ? muetPour(l.coupures?.value.injoignable, nom) : undefined;
+  const waterSilent = dist?.avis ? muetPour(l.coupures?.value.injoignable, nom, avis.length) : undefined;
   const events = (l.agenda?.value.evenements ?? []).filter((r) => r.commune === nom && repris(r) && occurrences(r).some((o) => o.du <= today && today <= o.au));
   // The commune's own agendas that did not answer (its site's news, read by the scheduled event): said with the hour
   // of the try, so that the other sources' events are not read as the whole of the commune's day (rule 3 ter).

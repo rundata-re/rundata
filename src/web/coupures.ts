@@ -39,7 +39,7 @@ export function waterOf(commune: string, w: WaterCopies) {
     dry: !!w.coupures?.value.ne_pas_boire?.includes(commune) || avis.some((n) => n.ne_pas_boire),
     distributeur: distributeur(commune),
     // Its distributor's feed did not answer at the last read: never « pas de coupure annoncée » (tools/injoignable.ts).
-    muet: distributeur(commune)?.avis ? muetPour(w.coupures?.value.injoignable, commune) : undefined,
+    muet: distributeur(commune)?.avis ? muetPour(w.coupures?.value.injoignable, commune, avis.length) : undefined,
     secheresse: w.secheresse?.value.communes.find((c) => c.commune === commune),
     robinet: w.eau?.value.communes.find((c) => c.commune === commune),
   };

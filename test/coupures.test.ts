@@ -85,6 +85,23 @@ describe("coupures d'eau", () => {
     for (const t of ["le bassin tampon du réseau", "au port de pêche", "possession d'un compteur"]) expect(communesIn(t)).toEqual([]);
   });
 
+  it("gives each La Créole notice its place when it names one in a sentence, and its title in the case of a sentence", () => {
+    // La Créole's two notices of 25/11/2026 for Saint-Paul, as read: the same title, the place in the sentence only.
+    const salins = "La Régie La Créole, informe ses usagers de la Commune de Saint-Paul, qu’en raison de travaux de raccordement, la distribution de l’eau potable sera interrompue le mercredi 25 novembre 2026, de 8h à 15h, sauf incident, sur la rue des Salins.\nLa régie La Créole remercie ses usagers de leur compréhension.";
+    const bernica = "La Régie La Créole, informe ses usagers de la Commune de Saint-Paul, qu’en raison de travaux de nettoyage de réservoir, la distribution de l’eau potable sera interrompue le mercredi 25 novembre 2026, de 8h à 15h, sauf aléa, sur le secteur de Bernica :\nSa limite basse : la route de Bernica au niveau du réservoir\nLa régie La Créole remercie ses usagers de leur compréhension.";
+    const li = (t: string) => `<li>25/11/2026 - <i class="text-uppercase">Travaux</i> <br><span class="text-uppercase">INTERRUPTION DE LA DISTRIBUTION</span> <br><span>${t}</span></li>`;
+    const [a, b] = parseCreole(`<div id="infos-flash"><ul>${li(salins)}${li(bernica)}</ul>`);
+    expect([a.titre, b.titre]).toEqual(["Interruption de la distribution", "Interruption de la distribution"]);
+    expect([a.lieu, b.lieu]).toEqual(["rue des Salins", "secteur de Bernica"]);
+    // Neither is a list of streets: a street not named is not said spared.
+    expect([a.secteurs_complets, b.secteurs_complets]).toEqual([false, false]);
+    const now = new Date("2026-11-24T04:00:00Z");
+    expect(resumeAvis([a, b], now)).toBe("Interruption de la distribution, mercredi 25/11 de 08:00 à 15:00 (rue des Salins)\u00a0; Interruption de la distribution, mercredi 25/11 de 08:00 à 15:00 (secteur de Bernica)");
+    expect(noticeRow(a, now)).toMatchObject({ titre: "Interruption de la distribution", lieu: "rue des Salins" });
+    // The page's card says it too.
+    expect(noticeCard(noticeRow(b, now))).toContain("Lieu : secteur de Bernica");
+  });
+
   it("keeps the sector of a notice on the quality of the water, followed by the advice without a blank line", () => {
     // Dionéo's notice of 04/11/2026, word for word.
     const text = "Dionéo informe ses clients de SAINT DENIS, que suite aux dernières intempéries, l'eau distribuée peut devenir trouble (augmentation de la turbidité) dans les secteurs suivants :\nTRAITEMENT ST FRANCOIS\nLes abonnés doivent prendre la précaution de ne pas consommer l'eau du robinet, et notamment de ne pas utiliser l'eau pour la boisson ou la préparation des aliments ; privilégier les usages non alimentaires (toilette, WC, ménage...) ; et préférer la consommation d'eau embouteillée ou à défaut, faire bouillir au préalable l'eau du robinet au moins 3 minutes.\nCes dispositions restent valables jusqu'à l'annonce d'un retour à la normale par nos équipes.\nDionéo remercie ses clients pour leur compréhension et les tiendra informés de l'évolution de la situation.";
@@ -581,7 +598,7 @@ describe("coupures d'eau", () => {
     expect(more).toHaveLength(0);
     // « interrompue le mercredi 4 novembre 2026, de 8h à 15h, sauf incident sur le secteur suivant : »
     expect(raccordement).toMatchObject({
-      titre: "INTERRUPTION DE LA DISTRIBUTION", communes: ["Saint-Paul"], debut: "2026-11-04T08:00", fin: "2026-11-04T15:00",
+      titre: "Interruption de la distribution", communes: ["Saint-Paul"], debut: "2026-11-04T08:00", fin: "2026-11-04T15:00",
       // The list ends at « La régie La Créole remercie… »; a street with the part concerned is one street, its comma not.
       secteurs: ["Chemin Summer n°2 la portion comprise entre rue Balafon et rue Cymbale", "Rue Piker", "Rue Balafon", "Rue Cymbale"], secteurs_complets: true,
     });
@@ -869,8 +886,10 @@ describe("coupures d'eau", () => {
     await enCron(() => coupuresEau(at(), undefined, now));
     const sd = body(await coupuresEau(at(), "Saint-Denis", now));
     expect(sd.avis.length).toBeGreaterThan(0);
-    expect(sd.injoignable).toEqual([{ texte: "Lu le 24/10 à 08:00 : le site de Dionéo n'a pas répondu depuis. Ce qui suit peut avoir changé : voir son site.", court: "lu le 24/10 à 08:00, sans réponse depuis", de: "de Dionéo", site: "https://dioneo.re/" }]);
-    expect(sd.resume).toContain("Lu le 24/10 à 08:00 : le site de Dionéo n'a pas répondu depuis. Ce qui suit peut avoir changé : voir son site.");
+    // Said after its notices in the summary: « ces avis », never « ce qui suit ».
+    expect(sd.injoignable).toEqual([{ texte: "Lu le 24/10 à 08:00 : le site de Dionéo n'a pas répondu depuis. Ces avis peuvent avoir changé : voir son site.", court: "lu le 24/10 à 08:00, sans réponse depuis", de: "de Dionéo", site: "https://dioneo.re/", lu_a: "24/10 08:00" }]);
+    expect(sd.resume).toContain("Lu le 24/10 à 08:00 : le site de Dionéo n'a pas répondu depuis. Ces avis peuvent avoir changé : voir son site.");
+    expect(sd.resume).not.toContain("Ce qui suit");
     // runéo had nothing for Saint-Pierre at the first read: no notice kept, its read said failed.
     const sp = body(await coupuresEau(at(), "Saint-Pierre", now));
     expect(sp.resume).not.toContain("Aucun avis");
@@ -924,6 +943,47 @@ describe("coupures d'eau", () => {
     expect(sm).toContain("rundata.re lit, au moins toutes les 30 minutes, les communiqués de CISE Réunion publiés sur <a");
     expect(sm).toContain("Un communiqué publié en image ou en PDF n'est pas lu : la page donne seulement son lien.");
     expect(sm).not.toContain("FERMETURE");
+  });
+
+  it("says, for a commune of a silent feed with no notice at its last read, what that read held and its hour, never « Ce qui suit » with nothing after", async () => {
+    // runéo's first read has a notice for Saint-Louis only; then its site does not answer.
+    const item = `<item><title>Coupure d'eau à Saint-Louis</title><link>https://www.runeo.re/flash-infos/saint-louis</link><pubDate>Fri, 23 Oct 2026 10:00:00 +0400</pubDate>` +
+      `<description>Coupure d'eau le lundi 26 octobre 2026 de 8h à 12h à Saint-Louis, rue de la Gare.</description></item>`;
+    const store = new MemoryStore();
+    let t = NOW.getTime();
+    const at = () => new Cache(store, () => t);
+    const answer = (silent: boolean) => async (url: string) => {
+      if (url.includes("runeo")) return silent ? new Response("", { status: 503 }) : new Response(fixture("runeo.xml").replace("</channel>", `${item}</channel>`));
+      const file = url.includes("dioneo") ? "dioneo.xml" : url.includes("possession") ? "possession.xml"
+        : url.includes("lacreole") ? "lacreole.html" : url.includes("saintemarie") ? "saintemarie.json" : url.includes("saintleu") ? "saintleu.json" : communeFile(url) ?? "cirest.json";
+      return new Response(fixture(file));
+    };
+    vi.stubGlobal("fetch", answer(false));
+    await coupuresEau(at(), undefined, new Date(t));
+    t += 2 * 3600_000;
+    const now = new Date(t);
+    vi.stubGlobal("fetch", answer(true));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    await enCron(() => coupuresEau(at(), undefined, now));
+    const said = "Lu le 24/10 à 08:00 : pas d'avis de coupure récent ou à venir à Saint-Pierre sur le site de runéo. Il n'a pas répondu depuis : pour un avis publié depuis, voir son site.";
+    const sp = body(await coupuresEau(at(), "Saint-Pierre", now));
+    expect(sp.avis).toEqual([]);
+    expect(sp.injoignable[0]).toMatchObject({ texte: said, court: "pas d'avis lu le 24/10 à 08:00, sans réponse depuis" });
+    expect(sp.resume).toContain(said);
+    expect(sp.resume).not.toContain("Ce qui suit");
+    // Saint-Louis, its notice kept: said as these notices, whatever comes before or after them.
+    const port = body(await coupuresEau(at(), "Saint-Louis", now));
+    expect(port.avis.length).toBe(1);
+    expect(port.injoignable[0].texte).toBe("Lu le 24/10 à 08:00 : le site de runéo n'a pas répondu depuis. Ces avis peuvent avoir changé : voir son site.");
+    // The page, its tile and the day's summary say the same.
+    const coupures = { value: await buildCoupures(at(), now), fetchedAt: now };
+    const page = coupuresCommunePage("https://rundata.re", pageOf("saint-pierre")!, { coupures }, now);
+    expect(page).toContain("Lu le 24/10 à 08:00 : pas d&#39;avis de coupure récent ou à venir à Saint-Pierre sur le site de runéo.");
+    expect(page).not.toContain("Ce qui suit");
+    expect(waterLive(pageOf("saint-pierre")!, { coupures })).toMatchObject({ detail: expect.stringContaining("pas d&#39;avis lu le 24/10 à 08:00, sans réponse depuis") });
+    const day = resume(pageOf("saint-pierre")!, { coupures } as never, now);
+    expect(day.coupures_eau?.injoignable?.texte).toBe(said);
+    vi.restoreAllMocks();
   });
 
   it("follows runéo's communes like the others, from the table of distributors: a « ne pas boire » there is said for the island and on the map", async () => {

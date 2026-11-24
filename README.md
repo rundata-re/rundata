@@ -6,6 +6,8 @@ Sorties, randos, météo mesurée, routes : les données publiques de La Réunio
 
 Sur [rundata.re](https://rundata.re) et dans votre assistant IA (ChatGPT, Claude, Le Chat). Gratuit, sans compte.
 
+Sur le site : [météo en direct](https://rundata.re/meteo) · [sentiers fermés](https://rundata.re/sentiers) · [coupures d'eau](https://rundata.re/coupures-eau) · [bus](https://rundata.re/bus) · [volcan](https://rundata.re/volcan) · [crues](https://rundata.re/crues) · [prix des carburants](https://rundata.re/carburants) · [ajouter le connecteur à votre IA](https://rundata.re/mcp).
+
 Ce serveur [MCP](https://modelcontextprotocol.io) donne à votre assistant IA (Claude, ChatGPT, Le Chat…) les **données publiques de La Réunion en ce moment** : météo mesurée aux stations, vigilance, mer, volcan, électricité, qualité de l'air, services publics, horaires de bus, terrain et risques. Il répond à des questions comme « quel temps fait-il à Saint-Pierre ? », « le prochain bus à la gare de Saint-Pierre ? » ou « le volcan est en éruption ? » avec des valeurs datées et sourcées. Une mesure n'est jamais mélangée à une prévision : pour « il va pleuvoir demain ? », un outil à part donne la prévision d'un modèle, toujours étiquetée comme telle.
 
 > *English: an MCP server giving AI assistants the public data of Réunion Island right now (measured weather, warnings, sea, volcano, electricity, air quality, public offices, bus timetables, land and hazards), dated and sourced, with forecasts kept apart and clearly labelled. See [English summary](#english).*

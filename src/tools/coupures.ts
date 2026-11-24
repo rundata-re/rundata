@@ -259,7 +259,11 @@ export function resumeAvis(mine: notices.Avis[], now: Date): string {
     return kx && ky ? kx.localeCompare(ky) : kx ? -1 : ky ? 1 : y.publie.localeCompare(x.publie);
   });
   const rest = order.length - AVIS_AU_RESUME;
-  return order.slice(0, AVIS_AU_RESUME).map((n) => noticeSaid(n, now)).join("\u00a0; ") +
+  const shown = order.slice(0, AVIS_AU_RESUME).map((n) => ({ n, dit: noticeSaid(n, now) }));
+  // Two notices said in the same words (runéo's two « Incident : fuite sur le réseau » of 24/11/2026 for Saint-Pierre,
+  // same end, sectors cut from the excerpt) are told apart by their time of publication, as /coupures-eau does.
+  const twice = (dit: string) => shown.filter((x) => x.dit === dit).length > 1;
+  return shown.map(({ n, dit }) => (twice(dit) ? `${dit}, avis du ${publishedShort(n)}` : dit)).join("\u00a0; ") +
     (rest > 0 ? `\u00a0; et ${rest} autre${rest > 1 ? "s" : ""} avis, dans la liste des avis` : "");
 }
 

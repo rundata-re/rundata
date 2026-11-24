@@ -278,8 +278,25 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
   <p>${COMMUNES.filter((c) => c.slug !== p.slug).map((c) => `<a href="/coupures-eau/${c.slug}">${esc(c.nom)}</a>`).join(" · ")}</p>
   <p class="note"><a href="/coupures-eau">Tous les avis de l'île</a>, sur une carte.</p></section>`;
 
-  const title = [`Coupure d'eau ${p.nom} · La Réunion (974)`].find((t) => t.length <= TITLE_MAX) ?? `Coupure d'eau ${p.nom} · 974`;
-  const short = `Coupures d'eau ${where} (974) : avis du distributeur, restrictions sécheresse et qualité de l'eau du robinet.`;
+  // A commune whose notices are not read, its distributor's site linked (Les Avirons, Le Tampon, Saint-Joseph,
+  // L'Entre-Deux): the page is named by what it holds, not by notices it does not show (marketing, 24/11/2026: it was
+  // titled « Coupure d'eau » and said « rundata.re ne les reprend pas encore »). « Coupures » stays
+  // in the title, with who publishes them; the description, the h1 and the hook say the rest. A commune whose notices
+  // are read, one of two distributors' included (L'Étang-Salé), keeps its words.
+  // Ordinary spaces, as every title of the site: the page's typography puts the no-break ones in its text and its description.
+  const nonLus = dist && !dist.avis && (guide || siteDist) ? dist.nom : undefined;
+  const title = nonLus
+    ? [`Eau ${where} : coupures chez ${nonLus}, eau du robinet`, `Eau ${where} : coupures chez ${nonLus} · 974`].find((t) => t.length <= TITLE_MAX) ?? `Eau ${where} (974) : avis de coupure et robinet`
+    : [`Coupure d'eau ${p.nom} · La Réunion (974)`].find((t) => t.length <= TITLE_MAX) ?? `Coupure d'eau ${p.nom} · 974`;
+  // Too long (a long name), without its last words: those of the hook.
+  const ici = `${p.nom} (974) : les avis de coupure sont publiés par ${nonLus}, avec le lien vers sa page. Ici : l'eau du robinet analysée par l'ARS`;
+  const short = nonLus
+    ? describe(`${ici}, le distributeur et le niveau de sécheresse.`, `${ici} et la sécheresse.`)
+    : `Coupures d'eau ${where} (974) : avis du distributeur, restrictions sécheresse et qualité de l'eau du robinet.`;
+  // The link the hook announces is the lead's, under it: not while the notices load, nor over a notice read elsewhere.
+  const hook = nonLus
+    ? `Les avis de coupure ${de(p.nom)} sont publiés par ${nonLus}${d && !x.avis.length && !x.muet ? " : le lien est juste en dessous" : ""}. Ici, l'eau du robinet analysée par l'ARS et la sécheresse.`
+    : undefined;
   const description = !d
     ? short
     : x.avis.length && x.muet
@@ -307,7 +324,7 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
 <div class="wrap intro">
   <div class="pitch">
     <p class="pill"><span class="dot"></span>Avis des distributeurs</p>
-    <h1>Coupures d'eau ${esc(where)} <span class="n974">974</span></h1>
+    <h1>${nonLus ? "L'eau" : "Coupures d'eau"} ${esc(where)} <span class="n974">974</span></h1>
     ${status}
     ${ask(`Dolo la koupé ${p.nom} ? Kansa i rovien ? Gèt si ${url} é di amwin.`,
       `Y a-t-il une coupure d'eau ${where} ? Lis ${url} et dis-moi quand l'eau revient.`)}
@@ -344,5 +361,5 @@ ${cyclone.lead ? "" : cyclone.html}
 ${d && w.coupures ? sourcesNote([...d.sources, ...(p.nom === ARRETES.COMMUNE && d.arretes_sainte_suzanne ? [{ source: ARRETES.SOURCE.nom, licence: ARRETES.SOURCE.licence, attribution: ARRETES.SOURCE.attribution }] : []), { source: DISTRIBUTEURS, licence: "Licence Ouverte Etalab 2.0", attribution: "ARS La Réunion" }], w.coupures) : ""}
 ${connectorAsk("les coupures d'eau", p.nom)}`;
 
-  return layout(origin, { title, description, path, jsonld: [trail, webPage(origin, path, title, description, w.coupures), ...(faq.length ? [faqPage(faq)] : [])], alerte, iaAside: true, ...(indexable(p.nom) ? {} : { noindex: true }) }, band, body);
+  return layout(origin, { title, description, path, jsonld: [trail, webPage(origin, path, title, description, w.coupures), ...(faq.length ? [faqPage(faq)] : [])], alerte, iaAside: true, ...(hook ? { hook } : {}), ...(indexable(p.nom) ? {} : { noindex: true }) }, band, body);
 }

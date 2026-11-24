@@ -173,6 +173,8 @@ const finie = (x: Fiche, here: string) => {
  * /evenements (`rows`), only those it lists: an event to come no agenda announces any more answers 410 (ficheIssue),
  * and stays out as well. An event over at `here` stays out too, even while an older copy still lists it: the page
  * reads a newer one, which no longer does, and answers 410 (21/11/2026).
+ * Not read by the sitemap since 24/11/2026, which names no event's page (web/sitemap-gardees.ts): kept for the day
+ * they come back in it.
  */
 export function ficheUrls(fiches: Entree[] | undefined, here: string, rows?: Pick<Row, "fiche">[]): [string, string][] {
   const listed = rows && new Set(rows.map((r) => r.fiche));

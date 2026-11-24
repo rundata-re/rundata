@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { handle } from "../src/app.js";
 import { Cache, MemoryStore } from "../src/cache.js";
-import { empreinte, retiree } from "../src/web/sitemap-retires.js";
+import { gardee, NOMBRE } from "../src/web/sitemap-gardees.js";
 import { lien } from "../src/tools/citer.js";
 import { resolvePlace } from "../src/places/resolve.js";
 
@@ -12,46 +12,39 @@ async function sitemap(): Promise<string[]> {
   return [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1].slice(O.length) || "/");
 }
 
-// Pages of marketing's list of 18/11/2026 left out of the sitemap: a commune's day, a commune's children's page, a stop.
-const RETIREES = ["/aujourdhui/cilaos", "/enfants/les-avirons", "/bus/arret/saint-andre/lot-grand-pelvoisin"];
+// Pages left out of the sitemap by marketing's list of 24/11/2026: a commune's day, its children's page, its elections, a
+// stop of Saint-Pierre, a stop of the old sitemap, a place's weather.
+const RETIREES = ["/aujourdhui/cilaos", "/enfants/les-avirons", "/communes/petite-ile/elections", "/bus/arret/saint-pierre/pierrefonds", "/bus/arret/les-avirons/gare-des-avirons", "/meteo/les-avirons"];
 
-describe("the sitemap from 19/11/2026, marketing's list of 18/11/2026", () => {
-  it("holds the 842 pages kept, but for those not indexable here, and none of the 567 left out", async () => {
+describe("the sitemap from 24/11/2026, marketing's list of that day", () => {
+  it("holds the 231 pages kept, but for the one not served here, and nothing else", async () => {
     const urls = await sitemap();
-    // 842 kept, less two: /feux with no FIRMS key here and /entreprises while it is discreet (test/sitemap-entreprises.test.ts).
-    // The water cuts of Les Avirons are in it, said in words of their own (eau/distributeurs.ts GUIDES_AVIS). 1 406 before, 567 left out.
-    // Three since 20/11/2026: the water cuts of Saint-Philippe, Cilaos and Petite-Île, whose notices are read.
-    // Less /meteo/l-hermitage since 20/11/2026, out of the index: Saint-Gilles-les-Bains's says the same (places.ts PRINCIPAL).
-    // And one: the fiche of an address, /terrain (20/11/2026).
-    // 24 since 20/11/2026: each commune's elections page. And /en, the one page in English (23/11/2026).
-    expect(urls).toHaveLength(842 - 2 + 3 - 1 + 1 + 24 + 1);
-    expect(urls).toContain("/communes/petite-ile/elections");
-    for (const u of ["/coupures-eau/saint-philippe", "/coupures-eau/cilaos", "/coupures-eau/petite-ile"]) expect(urls, u).toContain(u);
-    expect(urls).not.toContain("/meteo/l-hermitage");
-    expect(urls).toContain("/meteo/saint-gilles-les-bains");
-    expect(urls).toContain("/terrain");
+    // 231 kept, less /feux with no FIRMS key here. 893 before.
+    expect(NOMBRE).toBe(231);
+    expect(urls).toHaveLength(NOMBRE - 1);
     expect(urls).not.toContain("/feux");
-    expect(urls).not.toContain("/entreprises");
-    expect(urls).toContain("/coupures-eau/les-avirons");
-    for (const u of ["/", "/meteo", "/communes/les-avirons", "/meteo/les-avirons", "/bus/arret/les-avirons/gare-des-avirons"]) expect(urls, u).toContain(u);
+    expect(urls.filter((u) => !gardee(u))).toEqual([]);
+    expect(new Set(urls).size).toBe(urls.length);
+    // The home page, the head pages, the 24 communes, the water cuts whose page is indexable, and what people look for.
+    for (const u of ["/", "/meteo", "/communes/les-avirons", "/coupures-eau/les-avirons", "/coupures-eau/petite-ile", "/meteo/maido", "/meteo/saint-gilles-les-bains", "/collecte/saint-paul", "/enfants/saint-leu", "/randonnees/mafate", "/sentiers/le-bloc-piton-des-neiges", "/terrain", "/en"]) expect(urls, u).toContain(u);
+    expect(urls.filter((u) => u.startsWith("/communes/"))).toHaveLength(24);
+    expect(urls.filter((u) => u.startsWith("/coupures-eau/"))).toHaveLength(21);
+    // No stop, no event's page, no elections, no past cyclone, no day of a commune.
+    expect(urls.filter((u) => /^\/(bus|evenements|cyclones|aujourdhui)\/|\/elections$/.test(u))).toEqual([]);
     for (const u of RETIREES) expect(urls, u).not.toContain(u);
-    expect(urls.filter(retiree)).toEqual([]);
+    expect(urls).not.toContain("/meteo/l-hermitage");
+    expect(urls).not.toContain("/entreprises");
   });
 
-  it("keeps the pages left out online and known", async () => {
+  it("keeps the pages left out online, and out of noindex", async () => {
     for (const u of RETIREES) {
-      expect(retiree(u), u).toBe(true);
+      expect(gardee(u), u).toBe(false);
       const r = await handle(get(u), new Cache(new MemoryStore()));
       expect(r.status, u).not.toBe(404);
+      expect(r.headers.get("x-robots-tag") ?? "", u).not.toContain("noindex");
       // Not put in noindex for it; a stop's page is, here only, with no timetables to read.
       if (!u.startsWith("/bus/")) expect(await r.text(), u).not.toMatch(/<meta name="robots" content="[^"]*noindex/);
     }
-  });
-
-  it("prints a path as FNV-1a over its UTF-8 bytes", () => {
-    expect(empreinte("")).toBe("811c9dc5");
-    expect(empreinte("a")).toBe("e40c292c");
-    expect(empreinte("/bus/arret/saint-andre/lot-grand-pelvoisin")).toMatch(/^[0-9a-f]{8}$/);
   });
 
   it("sends a place that says what another says to the other for good, and the tools' link with it (places.ts PRINCIPAL)", async () => {

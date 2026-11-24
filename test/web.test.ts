@@ -20,7 +20,7 @@ import { MOTIF_PATH } from "../src/web/fonds.js";
 import { CSS, DESCRIPTION_MAX, FONT_PATH, meteoPage, placePage, seaPage, STYLE_PATH, vigilanceLive, vigilancePage } from "../src/web/pages.js";
 import { PAGES, pageOf, PRINCIPAL } from "../src/web/places.js";
 import { htmlFor, isReader, site } from "../src/web/site.js";
-import { retiree } from "../src/web/sitemap-retires.js";
+import { NOMBRE as SITEMAP_NOMBRE } from "../src/web/sitemap-gardees.js";
 import { unzip } from "../src/zip.js";
 import { RANDONNEES, SENTIERS } from "../src/providers/traces.js";
 import { SECTEURS as SECTEURS_RANDO } from "../src/traces/secteurs.js";
@@ -524,21 +524,16 @@ describe("what crawlers and previews fetch", () => {
     const robots = await (await handle(new Request("https://rundata.re/robots.txt"), isolate())).text();
     expect(robots).toContain("Sitemap: https://rundata.re/sitemap.xml");
     const map = await (await handle(new Request("https://rundata.re/sitemap.xml"), isolate())).text();
-    // The pages, the 24 communes, their water where its notices are read or said in words of its own (21, with Saint-Philippe, Cilaos and Petite-Île
-    // read since 20/11/2026), their day and their places for children, a
-    // page per hike and per ONF trail with its GPS trace, and per past cyclone, and the busiest bus stops. Not the weather
-    // stations' pages, out of it while Google judges the site again, nor the pages left out from 19/11/2026 (marketing's
-    // list of 18/11/2026): 19 days and 14 places for children of a commune, and stops (web/sitemap-retires.ts, counted in
-    // test/sitemap-liste.test.ts). And the fiche of an address, /terrain (20/11/2026), and /en, the one page in English (23/11/2026).
-    const stops = [...stopPages().values()].filter((p) => p.indexe && !retiree(`/bus/arret/${p.slug}`));
-    // The places whose page sends to another (places.ts PRINCIPAL) are out of it.
-    expect(map.match(/<loc>/g)).toHaveLength(PAGES.length - Object.keys(PRINCIPAL).length + 61 + 24 + 21 + 24 + 24 + 24 - 19 - 14 + SECTEURS_RANDO.length + RANDONNEES.length + Object.keys(SENTIERS).length + PASSES.length + stops.length + 1 + 1);
+    // Only the pages of marketing's list of 24/11/2026 (web/sitemap-gardees.ts, counted in test/sitemap-liste.test.ts):
+    // the head pages, the 24 communes, their water where the page is indexable, and the trails, hikes and places people
+    // look for. Less /feux, with no FIRMS key here. No weather station's page, no stop's.
+    expect(map.match(/<loc>/g)).toHaveLength(SITEMAP_NOMBRE - 1);
     expect(map).not.toContain("<loc>https://rundata.re/meteo/station/97418110</loc>");
-    expect(map).toContain(`<loc>https://rundata.re/bus/arret/${stops[0].slug}</loc>`);
+    expect(map).not.toContain("<loc>https://rundata.re/bus/arret/");
     expect(map).toContain("<loc>https://rundata.re/enfants</loc>");
     expect(map).toContain("<loc>https://rundata.re/sites-sans-reponse</loc>");
     expect(map).toContain("<loc>https://rundata.re/chiffres</loc>");
-    expect(map).toContain("<loc>https://rundata.re/randonnees/sentier-du-piton-des-neiges</loc>");
+    expect(map).toContain("<loc>https://rundata.re/randonnees/mafate</loc>");
     expect(map).toContain("<loc>https://rundata.re/sentiers/le-bloc-piton-des-neiges</loc>");
     expect(map).toContain("<loc>https://rundata.re/communes</loc>");
     expect(map).toContain("<loc>https://rundata.re/communes/saint-paul</loc>");
@@ -549,7 +544,7 @@ describe("what crawlers and previews fetch", () => {
     expect(map).toContain("<loc>https://rundata.re/baignade</loc>");
     expect(map).toMatch(/<loc>https:\/\/rundata.re\/nouveautes<\/loc><lastmod>\d{4}-\d\d-\d\d<\/lastmod>/);
     expect(map).toContain("<loc>https://rundata.re/vigilance</loc>");
-    expect(map).toContain("<loc>https://rundata.re/meteo/cilaos</loc><changefreq>hourly</changefreq>");
+    expect(map).toContain("<loc>https://rundata.re/meteo/maido</loc><changefreq>hourly</changefreq>");
   });
 
   it("serves the privacy policy and the terms, linked from every page's footer", async () => {

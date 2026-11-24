@@ -69,8 +69,7 @@ import {
 import { dessinsAccueil } from "./accueil-dessins.js";
 import { OLD_MINUTES } from "../tools/meteo.js";
 import { COMMUNES, communePage, communesPage, electionsPage, electionsPath } from "./commune.js";
-import { type Entree, FICHES, ficheAttente, ficheIssue, fichePage, fichePassee, ficheOf, ficheTerminee, ficheUrls } from "./fiche-evenement.js";
-import { FICHES_EVERY_MS } from "./fiches.js";
+import { type Entree, FICHES, ficheAttente, ficheIssue, fichePage, fichePassee, ficheOf, ficheTerminee } from "./fiche-evenement.js";
 import { buildEmploi, emploiPage } from "./emploi.js";
 import { buildMarches, marchesPage } from "./marches-publics.js";
 import { actualitesPage, agendaPage, airPage, bornesPage, busOutran, busPage, calendrierPage, coupuresPage, cruesPage, cyclonesPage, daePage, eauPage, electricitePage, historiquePage, randonneesPage, secheressePage, sentiersPage, sportPage, tracePage, traficPage, velosPage, volcanPage } from "./domains.js";
@@ -145,7 +144,7 @@ import { applicationPage, PATH as APPLICATION } from "./application.js";
 import { APK_PATH, APK_URL, appliPage, PATH as APPLI } from "./appli.js";
 import { ouvrirDonneesPage, PATH as GUIDE } from "./ouvrir-donnees.js";
 import { ALIASES as ENTREPRISES_ALIASES, DISCRETE as ENTREPRISES_DISCRETE, entreprisesPage, PATH as ENTREPRISES } from "./entreprises.js";
-import { retiree } from "./sitemap-retires.js";
+import { gardee } from "./sitemap-gardees.js";
 import { PATH as SANS_REPONSE, sansReponsePage } from "./sans-reponse.js";
 import { chiffres, type Copie, inventaire, KEY as CHIFFRES_KEY, PATH as CHIFFRES } from "../chiffres.js";
 import { chiffresPage } from "./chiffres.js";
@@ -515,12 +514,11 @@ const localDay = (d: string | Date) => new Date(new Date(d).getTime() + 4 * 3600
  * always exact; « today » on a live page, or the day the traces were built for a trail whose state changed since,
  * would not be.
  */
-function sitemap(origin: string, now: Date, fuelDay?: string, fiches?: Entree[], rows?: AgendaAnswer["evenements"]): string {
-  // The events to come with a text of their own (web/fiche-evenement.ts), each with the day its row last changed; those
-  // the copy of /evenements no longer lists answer 410, and are left out.
-  const events: Url[] = ficheUrls(fiches, new Date(now.getTime() + 4 * 3600_000).toISOString().slice(0, 16), rows).map(([u, day]) => [u, day, "daily"]);
+function sitemap(origin: string, now: Date, fuelDay?: string): string {
+  // Only the pages of marketing's list of 24/11/2026 (web/sitemap-gardees.ts), and the companies' space once it is
+  // announced (siteUrls). The events' pages, the stops' and the others stay online, linked and indexable.
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
-    [...siteUrls(now, fuelDay), ...events].filter(([u]) => !horsSitemap.has(u) && !retiree(u)).map(([u, day, freq]) => `<url><loc>${origin}${u}</loc>${day ? `<lastmod>${day}</lastmod>` : ""}<changefreq>${freq}</changefreq></url>`).join("\n") +
+    siteUrls(now, fuelDay).filter(([u]) => (gardee(u) || u === ENTREPRISES) && !horsSitemap.has(u)).map(([u, day, freq]) => `<url><loc>${origin}${u}</loc>${day ? `<lastmod>${day}</lastmod>` : ""}<changefreq>${freq}</changefreq></url>`).join("\n") +
     `\n</urlset>\n`;
 }
 
@@ -530,8 +528,8 @@ function sitemap(origin: string, now: Date, fuelDay?: string, fiches?: Entree[],
  *   a source is read, unless it has a text of its own on where they are published (web/coupures.ts indexable);
  * - the weather stations' pages (#523), while Google judges the site again after the fall of 30/10/2026: they come
  *   back once its November 2026 core update is over;
- * - the pages of marketing's list of 18/11/2026, from 19/11/2026 (web/sitemap-retires.ts). A page out of that list and indexable, one
- *   added since or one whose noindex is lifted, goes in.
+ * And, from 24/11/2026, every page that is not in marketing's list of that day (web/sitemap-gardees.ts): a page of
+ * the list that is in noindex here stays out all the same.
  */
 const horsSitemap = new Set([
   ...COMMUNES.filter((p) => !indexable(p.nom)).map((p) => `/coupures-eau/${p.slug}`),
@@ -1295,14 +1293,8 @@ async function pages(request: Request, cache: Cache, background: Background, now
   if (path === "/sitemap.xml") {
     // The fuel page changes with the prefect's order: its date, from the stored copy when there is one. An order read
     // before its 1st changes the page the day it is read, not on its 1st: never a day ahead of today.
-    const [fuel, fiches, agenda] = await Promise.all([
-      cache.peek<carburants.Prix>("carburants:prix").catch(() => undefined),
-      cache.kept<Entree[]>(FICHES).catch(() => undefined),
-      // The copy of /evenements, to leave out the events it no longer lists (410): from this isolate's memory when it
-      // has one of the hour (the register is written hourly too), else the data center's cache; never KV.
-      cache.peek<AgendaAnswer>("web:agenda", now.getTime() - FICHES_EVERY_MS).catch(() => undefined),
-    ]);
-    return new Response(sitemap(origin, now, fuel?.value.depuis, fiches?.value, agenda ? (agenda.value.evenements ?? []) : undefined), { headers: { "content-type": "application/xml; charset=utf-8", "cache-control": "public, max-age=86400" } });
+    const fuel = await cache.peek<carburants.Prix>("carburants:prix").catch(() => undefined);
+    return new Response(sitemap(origin, now, fuel?.value.depuis), { headers: { "content-type": "application/xml; charset=utf-8", "cache-control": "public, max-age=86400" } });
   }
   if (path === SW_PATH) {
     // Checked again at each visit: a new version reaches the phones at once (web/pwa.ts). The light relief, the one

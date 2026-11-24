@@ -23,7 +23,7 @@ async function sitemap(): Promise<string[]> {
 describe("the sitemap, as a search engine's robot reads it", () => {
   it("holds no page in noindex, none that says it does not read its source, and never one still loading", async () => {
     const urls = await sitemap();
-    expect(urls.length).toBeGreaterThan(500);
+    expect(urls.length).toBeGreaterThan(200);
     const fautes: string[] = [];
     for (const path of urls) {
       // Cold and with no subrequest allowed: every page that reads a source has nothing yet, the worst case.

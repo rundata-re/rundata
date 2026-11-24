@@ -125,7 +125,7 @@ describe("the waves measured by the Candhis buoys", () => {
     const copy = { value: sea, fetchedAt: NOW };
     const page = seaPage("https://rundata.re", copy, NOW);
     expect(page).toContain(`<p class="eyebrow">Mesure, pas une prévision</p><h2 id="h-houle-mesuree">La houle mesurée au large</h2>`);
-    expect(page).toContain("<li><span>Saint-Pierre (large)</span><b>1,1 m</b>");
+    expect(page).toContain("<li><span>Saint-Pierre (large)</span> <b>1,1 m</b>");
     expect(page).toContain("mesurée le 22/10 à 09:20, mer à 26,8");
     // Its producer under the measurement, in the section itself, not only in the page's sources at its end.
     const section = page.slice(page.indexOf(`id="h-houle-mesuree"`), page.indexOf(`id="h-houle"`));

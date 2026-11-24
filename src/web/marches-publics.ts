@@ -38,8 +38,8 @@ function jour(d: string, now: Date): string {
 function row(a: Avis, now: Date): string {
   const place = a.commune ? aCommune(a.commune) : a.communeAcheteur ? `acheteur ${aCommune(a.communeAcheteur)}` : undefined;
   const small = [acheteur(a.acheteur), a.types.join(", "), place].filter(Boolean).map((x) => esc(x!)).join(" · ");
-  return `<li data-c="${esc(a.commune ?? a.communeAcheteur ?? "")}"><span>${lienNom(a.lien, objet(a.objet), ' rel="noopener"')}<small>${small}</small></span>` +
-    `<span class="q-none">${esc(`jusqu'au ${jour(a.limite, now)}`)}</span></li>`;
+  return `<li data-c="${esc(a.commune ?? a.communeAcheteur ?? "")}"><span>${lienNom(a.lien, objet(a.objet), ' rel="noopener"')} <small>${small}</small></span>` +
+    ` <span class="q-none">${esc(`jusqu'au ${jour(a.limite, now)}`)}</span></li>`;
 }
 
 /**

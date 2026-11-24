@@ -286,7 +286,7 @@ const readOn = (at: Date, now: Date) => readAt(at, now).a;
 /** A station on one line: its name and its bikes, « Y aller » beside them when its copy kept its position. */
 function bikeLine(s: NonNullable<CommuneData["velos"]>[number], g: Porte): string {
   const go = g.aller({ nom: s.nom, lat: s.lat ?? NaN, lon: s.lon ?? NaN });
-  return `<li><span>${esc(s.nom)}<small>${bikeStock(s)}</small></span>${go ? `<span class="ya">${go}</span>` : ""}</li>`;
+  return `<li><span>${esc(s.nom)} <small>${bikeStock(s)}</small></span>${go ? ` <span class="ya">${go}</span>` : ""}</li>`;
 }
 
 /** The commune's Altervélo stations: how many bikes in all, and those with the most; only their number once the count is old. */
@@ -415,10 +415,10 @@ function doctors(p: PlacePage): string {
     ["adhérents à l'OPTAM", g.optam, true],
   ] as const;
   const gpCard = g.total
-    ? `<li class="card" data-k><h3>Généralistes <span class="note">${g.total}</span></h3><ul class="rows eau">${bySector.filter(([, k, always]) => k || always).map(([what, k]) => `<li><span>${esc(what[0].toUpperCase() + what.slice(1))}</span><span>${k}</span></li>`).join("")}</ul></li>`
+    ? `<li class="card" data-k><h3>Généralistes <span class="note">${g.total}</span></h3><ul class="rows eau">${bySector.filter(([, k, always]) => k || always).map(([what, k]) => `<li><span>${esc(what[0].toUpperCase() + what.slice(1))}</span> <span>${k}</span></li>`).join("")}</ul></li>`
     : "";
   const specCard = others
-    ? `<li class="card" data-k><details><summary><h3>Spécialistes <span class="note">${others}</span></h3></summary><ul class="rows eau">${specialities.map(([s, k]) => `<li><span>${esc(s)}<small>${esc(sector1(k))}</small></span><span>${k.total}</span></li>`).join("")}</ul></details></li>`
+    ? `<li class="card" data-k><details><summary><h3>Spécialistes <span class="note">${others}</span></h3></summary><ul class="rows eau">${specialities.map(([s, k]) => `<li><span>${esc(s)} <small>${esc(sector1(k))}</small></span> <span>${k.total}</span></li>`).join("")}</ul></details></li>`
     : "";
   const lead = [g.total && n(g.total, "généraliste"), others && n(others, "spécialiste")].filter(Boolean).join(" et ");
   return `<section id="medecins" aria-labelledby="h-medecins">
@@ -512,7 +512,7 @@ function votesSummary(p: PlacePage): string {
 function pollingStations(p: PlacePage): string {
   const lieux = bureauxVote.lieuxDe(p.nom);
   if (!lieux.length) return "";
-  const li = (l: bureauxVote.Lieu) => `<li><span>${l.lieu ? `<b>${esc(l.lieu)}</b> · ` : ""}${esc(bureauxVote.numeros(l.bureaux))}<small>${esc(l.adresse)}</small></span></li>`;
+  const li = (l: bureauxVote.Lieu) => `<li><span>${l.lieu ? `<b>${esc(l.lieu)}</b> · ` : ""}${esc(bureauxVote.numeros(l.bureaux))} <small>${esc(l.adresse)}</small></span></li>`;
   return `<section id="bureaux" aria-labelledby="h-bureaux">
   <div class="sec-h"><p class="eyebrow">Insee</p><h2 id="h-bureaux">${esc(`Bureaux de vote ${aCommune(p.nom)}`)}</h2></div>
   <details class="plus"><summary>${esc(`${bureauxVote.nombreDe(lieux)} bureaux de vote dans ${lieux.length} lieux`)}</summary><ul class="rows lieux cols">${lieux.map(li).join("")}</ul></details>
@@ -690,7 +690,7 @@ function annexes(p: PlacePage): string {
   if (p.nom !== annexesSd.COMMUNE) return "";
   // « 97400 Saint-Denis » kept on one line.
   const where = (s: string) => esc(s).replace(/974\d\d .+$/, (t) => `<span class="nw">${t}</span>`);
-  const li = (l: annexesSd.Lieu) => `<li><span><b>${esc(l.nom)}</b> · ${esc(l.nature.toLowerCase())}<small>${where(l.adresse)}</small></span></li>`;
+  const li = (l: annexesSd.Lieu) => `<li><span><b>${esc(l.nom)}</b> · ${esc(l.nature.toLowerCase())} <small>${where(l.adresse)}</small></span></li>`;
   return `<details class="plus"><summary>${annexesSd.TITRE} <span class="note">${annexesSd.LIEUX.length}</span></summary>` +
     `<ul class="rows lieux cols">${annexesSd.LIEUX.map(li).join("")}</ul><p class="note">${esc(annexesSd.LISTE)}</p></details>`;
 }

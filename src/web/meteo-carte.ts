@@ -460,7 +460,7 @@ export function stationsMap(every: StationNow[], altPath = ALT_PATH): string {
   const wAm = amateurs.filter((s) => s.vent != null).length;
   const latestAll = every.reduce((m, s) => (s.time > m ? s.time : m), "");
   /** A legend's two versions, the box unticked then ticked; one only where the ticked box adds nothing to it. */
-  const both = (of: string, am: string | false) => (am ? `<span class="lg-of">${of}</span><span class="lg-am">${am}</span>` : of);
+  const both = (of: string, am: string | false) => (am ? `<span class="lg-of">${of}</span> <span class="lg-am">${am}</span>` : of);
   const tEstime = (am: string) => ` Entre les stations, les couleurs sont <b>estimées selon l'altitude</b>${am} : ce n'est pas une mesure.`;
   const pFin = (at: string) => `${hour ? "pluie de la dernière heure en mm" : "pluie des 6 dernières minutes seulement, en mm"}, la plus récente ${leAt(at)}${hour ? "" : " : l'heure complète n'est pas encore disponible"}.`;
   const vFin = (at: string, am: string) => `vent moyen mesuré en km/h, le plus récent ${leAt(at)}. La flèche montre où va le vent (un vent d'est vient de l'est).${landBreeze(list) ? " La nuit, l'air descend des pentes vers la mer (brise de terre)." : ""} Entre les stations, le mouvement et les couleurs sont <b>estimés</b> à partir des stations voisines${am} : ce n'est pas une mesure.`;
@@ -481,7 +481,7 @@ export function stationsMap(every: StationNow[], altPath = ALT_PATH): string {
       // sentence, never read as the rose's (16/11/2026). With the amateur stations' rain among them once their box is
       // ticked, the legend that says so and their credit.
       `<span data-radar hidden></span>` +
-      (pzWet ? `<span class="pz-now" hidden> ${both(esc(pluvioLive(rainEnd)), !!pzAm.length && `${esc(pluvioLive(rainEnd, PLUVIO_LEGENDE_AM))} ${PLUVIO_CREDIT_AM}.`)} <a href="#${PLUVIO_ANCRE}">${esc(PLUVIO_LIEN)}</a></span>` : "") },
+      (pzWet ? ` <span class="pz-now" hidden> ${both(esc(pluvioLive(rainEnd)), !!pzAm.length && `${esc(pluvioLive(rainEnd, PLUVIO_LEGENDE_AM))} ${PLUVIO_CREDIT_AM}.`)} <a href="#${PLUVIO_ANCRE}">${esc(PLUVIO_LIEN)}</a></span>` : "") },
     w.length && { id: "v", tab: "Vent", legend: `<span class="lgs">0<i class="vgrad wgrad"></i>${thin("60 km/h")}</span>` + both(
       `${n(w.length, "anémomètre", "anémomètres")}, ${vFin(latest, "")}`,
       !!wAm && `${n(w.length, "anémomètre officiel", "anémomètres officiels")} et ${wAm} amateur (${NON_VERIFIEE}), ${vFin(latestAll, COMPRISES)}`,
@@ -490,7 +490,7 @@ export function stationsMap(every: StationNow[], altPath = ALT_PATH): string {
   const tabs = `<div class="tabs aqtabs" role="radiogroup" aria-label="Mesure affichée sur la carte">` +
     layers.map((l, i) => `<input type="radio" name="wxl" id="wxl-${l.id}"${i ? "" : ' class="on" checked'}><label for="wxl-${l.id}">${l.tab}</label>`).join("") + `</div>`;
   // Each legend, and the replay's in its place while it plays.
-  const legend = layers.map((l, i) => `<span class="lg lg-${l.id}${i ? "" : " on"}"><span class="lg-now">${l.legend}</span><span class="rj-lg"></span></span>`).join("");
+  const legend = layers.map((l, i) => `<span class="lg lg-${l.id}${i ? "" : " on"}"><span class="lg-now">${l.legend}</span> <span class="rj-lg"></span></span>`).join(" ");
   const replay = layers.length ? replayBar(latest) : "";
   const bubble = `<a class="mtip" data-mtip hidden aria-hidden="true" tabindex="-1" href="#stations"><span class="mt-p"></span><b class="mt-v"></b><span class="mt-d"></span><span class="mt-go">Voir la station →</span></a>`;
   // The replay bar just under the map, before the legend: on a phone, the map, the lengths and the slider fit in one

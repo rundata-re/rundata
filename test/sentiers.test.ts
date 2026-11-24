@@ -163,7 +163,7 @@ describe("sentiers de randonnée", () => {
     // /sentiers drawn from a copy built on Sunday 23:59, shown on Monday 00:01: the same words, true both days.
     const copy = { value: await buildSentiers(new Cache(new MemoryStore(), () => sunday.getTime()), sunday), fetchedAt: sunday, stale: false };
     const html = sentiersPage("https://rundata.re", copy, monday);
-    expect(html).toContain(`Sentier de Montplaisir</a><small>${montplaisir.replace(/'/g, "&#39;")} · Travaux d&#39;exploitation forestière</small>`);
+    expect(html).toContain(`Sentier de Montplaisir</a> <small>${montplaisir.replace(/'/g, "&#39;")} · Travaux d&#39;exploitation forestière</small>`);
     expect(html).not.toMatch(/ouvert aujourd/);
   });
 
@@ -198,7 +198,7 @@ describe("sentiers de randonnée", () => {
     expect(ici.find((t: { sentier: string }) => t.sentier === "Route Forestière de la Scierie (RF58)").nuance).toContain("ouvert le samedi et le dimanche");
     const copy = { value: await buildSentiers(at_(), saturday), fetchedAt: saturday, stale: false };
     const html = sentiersPage("https://rundata.re", copy, saturday);
-    expect(html).toContain(`Sentier de Montplaisir</a><small>${past.replace(/'/g, "&#39;")} · Travaux d&#39;exploitation forestière</small>`);
+    expect(html).toContain(`Sentier de Montplaisir</a> <small>${past.replace(/'/g, "&#39;")} · Travaux d&#39;exploitation forestière</small>`);
     expect(html).not.toContain(active.replace(/'/g, "&#39;"));
   });
 

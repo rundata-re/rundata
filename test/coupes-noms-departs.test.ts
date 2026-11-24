@@ -345,7 +345,7 @@ describe("a bus departure", () => {
   const li = departureLi({ ligne: "GECK", direction: "Gare de Saint-Joseph", reseau: "CarSud", dans_min: 12, heure: "08:40", trajet: "/bus/trajet/x" } as Parameters<typeof departureLi>[0], "dans 12 min", "08:40");
 
   it("has its line, its direction with the network, then its time", () => {
-    expect(li).toMatch(/^<li><b>GECK<\/b><span><a href="\/bus\/trajet\/x">vers .*<\/a> <span class="note">\(CarSud\)<\/span><\/span><span class="note">dans 12 min<\/span><\/li>$/);
+    expect(li).toMatch(/^<li><b>GECK<\/b> <span><a href="\/bus\/trajet\/x">vers .*<\/a> <span class="note">\(CarSud\)<\/span><\/span> <span class="note">dans 12 min<\/span><\/li>$/);
   });
 
   it("keeps its line's code whole at 100 %: a column as wide as the code, 2.6 rem at least (« GECK » was « GEC / K »)", () => {

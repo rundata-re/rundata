@@ -340,7 +340,7 @@ export const dessine = (
     chips.push(["vois", D.figures[5][1], `${e(near.nom)}\u00a0: ${t(near.now.t)}${near.am ? '<span class="mk-am">amateur</span>' : ""}`, `${al(near.alt)} d'altitude, à ${fr(near.d)}\u00a0km`,
       `<b>${t(near.now.t)} à ${hh(near.now.at)} le ${jm(near.now.at)}</b><br>${near.am ? `station amateur ${e(near.nom)} (MétéoR-OI), ${al(near.alt)}, fiabilité non vérifiée` : `station Météo-France ${du(near.nom)}, ${al(near.alt)}`}`]);
   const chipsHtml = chips.filter((c) => !R.hide.includes(c[0])).map(([k, l, val, sub, tip]) =>
-    `<button type="button" class="mk" data-k="${k}" aria-expanded="false"><span class="mk-l">${l}</span><span class="mk-v">${val}</span><span class="mk-s">${sub}</span><span class="mk-tip" role="tooltip">${tip}</span></button>`).join("");
+    `<button type="button" class="mk" data-k="${k}" aria-expanded="false"><span class="mk-l">${l}</span> <span class="mk-v">${val}</span> <span class="mk-s">${sub}</span> <span class="mk-tip" role="tooltip">${tip}</span></button>`).join("");
   // The curve.
   // The curve: 250 high, from x 40 to W - 10 (X); the temperatures between 14 and 160 (Y), the rain's bars from 210 up
   // to 176, apart, so that a bar never hides a point (the UX review of 12/11/2026), the days' or hours' labels at 240.

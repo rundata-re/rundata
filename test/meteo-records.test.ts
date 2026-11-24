@@ -59,7 +59,7 @@ describe("the records of the stations of reference", () => {
     expect(s).not.toMatch(/\([^()]*\(/);
     // Its name, its climate and first year, then a box per record: words, figure, date.
     expect(s).toContain("<h3>Saint-Denis Gillot</h3><p>Nord (Saint-Denis) · <span>mesures depuis 1953</span></p>");
-    expect(s).toMatch(/<li class="chaud"><span>Le plus chaud<\/span><b>35,2[\s ]°C<\/b><small>le 28\/01\/1993<\/small><\/li><li class="rafale"><span>La plus forte rafale<\/span><b>223[\s ]km\/h<\/b><small>le 28\/02\/1962<\/small><\/li>/);
+    expect(s).toMatch(/<li class="chaud"><span>Le plus chaud<\/span> <b>35,2[\s ]°C<\/b> <small>le 28\/01\/1993<\/small><\/li><li class="rafale"><span>La plus forte rafale<\/span> <b>223[\s ]km\/h<\/b> <small>le 28\/02\/1962<\/small><\/li>/);
     expect(s).not.toContain("Saint-Benoît");
     expect(s).not.toContain("plus frais");
     expect(recordsSection({ ...h, records_reference: [] })).toBe("");
@@ -80,7 +80,7 @@ describe("the records of the stations of reference", () => {
     expect(html).toContain('id="h-records"');
     // Right after the data, before « Comment lire cette page ».
     expect(html.indexOf('id="h-records"')).toBeLessThan(html.indexOf('id="h-lire"'));
-    expect(html).toContain("<span>Le plus frais</span><b>0,1");
+    expect(html).toContain("<span>Le plus frais</span> <b>0,1");
     // The day as the copy of /historique gives it, already written JJ/MM/AAAA (frDate()).
     expect(html).toContain("jusqu'au 23/10/2026.");
     // One « h-lire » only: « Comment lire ces données » has its own id on the page without stations.

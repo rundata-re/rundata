@@ -124,7 +124,7 @@ export function installationsMap(): string {
 export function installationsLegend(): string {
   const present = new Set(INSTALLATIONS.communes.flatMap((c) => c.filieres.map((f) => f.nom)));
   const keys = ORDRE.filter((n) => present.has(n)).map((n) =>
-    `<span><svg viewBox="-20 -20 40 40" aria-hidden="true"><circle class="${CLASSE[n]}" r="15"/></svg>${esc(n)}</span>`).join("");
+    `<span><svg viewBox="-20 -20 40 40" aria-hidden="true"><circle class="${CLASSE[n]}" r="15"/></svg>${esc(n)}</span>`).join(" ");
   // The reference rounds at the map's scale: each in its own SVG, as wide against the legend as the round against the
   // map (the legend is as wide as the map); their words in HTML beside them, at the page's text size.
   const refs = [10, 50, 200].map((mw) => {
@@ -133,8 +133,8 @@ export function installationsLegend(): string {
       `<circle cx="${(d / 2).toFixed(1)}" cy="${(d / 2).toFixed(1)}" r="${(diametre(mw) / 2).toFixed(1)}"/></svg><span>${mwText(mw)}</span>`;
   }).join("");
   return `<span class="mlg ipk">${keys}</span>` +
-    `<span class="iprw">${refs}</span>` +
-    `<span class="mls">Puissance installée par commune et par filière, d'après le registre national des installations, mis à jour par EDF SEI le ${MIS_A_JOUR}. EDF publie la production pour toute l'île, filière par filière, pas centrale par centrale\u00a0: la carte montre ce qui peut produire, pas ce qui produit en ce moment.</span>`;
+    ` <span class="iprw">${refs}</span>` +
+    ` <span class="mls">Puissance installée par commune et par filière, d'après le registre national des installations, mis à jour par EDF SEI le ${MIS_A_JOUR}. EDF publie la production pour toute l'île, filière par filière, pas centrale par centrale\u00a0: la carte montre ce qui peut produire, pas ce qui produit en ce moment.</span>`;
 }
 
 /**
@@ -156,7 +156,7 @@ export function installationsReplay(j: Journee): string {
 /** Each commune's line, where its zone on the map leads: its filières, the strongest first. */
 export function installationsList(): string {
   return `<ul class="rows inst">${INSTALLATIONS.communes.map((c) =>
-    `<li id="inst-${slugify(c.commune)}" class="tgt"><b>${esc(c.commune)}</b><span>${installationsCoupables(esc(filieresText(c)))}</span></li>`).join("")}</ul>`;
+    `<li id="inst-${slugify(c.commune)}" class="tgt"><b>${esc(c.commune)}</b> <span>${installationsCoupables(esc(filieresText(c)))}</span></li>`).join("")}</ul>`;
 }
 
 // ---------------------------------------------------------------- the filières, one by one
@@ -309,9 +309,9 @@ export function productionChart(j: Journee): string {
   const vue = mix ? `<div class="ech-d ech-v" role="group" aria-label="Vue du graphique" hidden><button type="button" aria-pressed="true" data-v="ren">Renouvelable</button>` +
     `<button type="button" aria-pressed="false" data-v="fil">Par filière</button></div>` : "";
   const fkeys = mix ? `<span class="mlg ech-kf" hidden>${LEGENDE.map((i) =>
-    `<span><svg viewBox="-20 -20 40 40" aria-hidden="true"><rect class="${MIX[i][1]}" x="-15" y="-15" width="30" height="30" rx="4"/></svg>${MIX[i][0]}</span>`).join("")}</span>` : "";
+    `<span><svg viewBox="-20 -20 40 40" aria-hidden="true"><rect class="${MIX[i][1]}" x="-15" y="-15" width="30" height="30" rx="4"/></svg>${MIX[i][0]}</span>`).join(" ")}</span>` : "";
   return `<figure class="card ecard" data-ech="${data}" data-h="${HISTORIQUE_PATH}">${durees}${vue}<div class="ech-g"><div class="ech-p">${svg}<span class="ech-ax" aria-hidden="true">${ys}${xs}</span></div>` +
-    `<figcaption class="note"><p class="ech-m" aria-live="polite">${esc(momentText(tl, Math.round(last[3]), Math.round(last[1]), Math.round(last[2])))}</p>${bar}${keys}${fkeys}<span class="mls ech-src">${source}</span><span class="mls ech-n" hidden>${archive}</span></figcaption></div></figure>${script(CHART_SCRIPT)}`;
+    `<figcaption class="note"><p class="ech-m" aria-live="polite">${esc(momentText(tl, Math.round(last[3]), Math.round(last[1]), Math.round(last[2])))}</p>${bar}${keys}${fkeys}<span class="mls ech-src">${source}</span> <span class="mls ech-n" hidden>${archive}</span></figcaption></div></figure>${script(CHART_SCRIPT)}`;
 }
 
 /**

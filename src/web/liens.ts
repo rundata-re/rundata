@@ -53,7 +53,7 @@ export function hikesAround(p: PlacePage, hikes: Cached<RandonneesAnswer> | null
     return h.fermes.length ? `<span class="q-mauvaise">${h.fermes.length} tronçon${h.fermes.length > 1 ? "s" : ""} fermé${h.fermes.length > 1 ? "s" : ""}</span>` : h.onf > h.inconnus.length ? `<span class="q-bonne">ouvert</span>` : `<span class="q-none">état non suivi</span>`;
   };
   const list = near.length
-    ? `<ul class="rows eau">${near.map(({ r, km }) => `<li><span><a href="/randonnees/${esc(r.slug)}">${esc(r.nom)}</a><small>${kmFr(r.km)} km · +${nombre(r.dplus)}\u00a0m · passe à ${kmFr(km)} km</small></span>${state(r.slug)}</li>`).join("")}</ul>`
+    ? `<ul class="rows eau">${near.map(({ r, km }) => `<li><span><a href="/randonnees/${esc(r.slug)}">${esc(r.nom)}</a> <small>${kmFr(r.km)} km · +${nombre(r.dplus)}\u00a0m · passe à ${kmFr(km)} km</small></span>${state(r.slug)}</li>`).join("")}</ul>`
     : "";
   return `<section aria-labelledby="h-rando">
   <h2 id="h-rando">Randonner autour ${esc(de(p.nom))}</h2>
@@ -135,8 +135,8 @@ export function communeTrails(trails: TrailItem[]): TrailItem[] {
 }
 
 const trailRow = (t: TrailItem) =>
-  `<li><span><a href="/sentiers/${esc(t.slug!)}">${esc(t.nom)}</a><small>${kmFr(t.km)} km${t.dplus != null ? ` · +${nombre(t.dplus)}\u00a0m` : ""}</small></span>` +
-  (t.etat === "fermé" ? `<span class="q-mauvaise">${t.partiel ? "fermé en partie" : "fermé"}</span>` : t.etat === "ouvert" ? `<span class="q-bonne">ouvert</span>` : "") +
+  `<li><span><a href="/sentiers/${esc(t.slug!)}">${esc(t.nom)}</a> <small>${kmFr(t.km)} km${t.dplus != null ? ` · +${nombre(t.dplus)}\u00a0m` : ""}</small></span>` +
+  (t.etat === "fermé" ? ` <span class="q-mauvaise">${t.partiel ? "fermé en partie" : "fermé"}</span>` : t.etat === "ouvert" ? ` <span class="q-bonne">ouvert</span>` : "") +
   "</li>";
 
 /**

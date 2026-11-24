@@ -70,7 +70,7 @@ function firesList(fires: feux.Feux | null, now: Date): string {
   if (!feux.enabled()) return `<p>${esc(OFF)}</p>`;
   if (!fires) return `<p>${esc(DOWN)}</p>`;
   if (!fires.detections.length) return `<p>${esc(QUIET)}</p>`;
-  return `<ul class="rows eau">${fires.detections.map((d, i) => `<li class="tgt" id="${fireId(i)}"><span>${esc(listLine(d, now))}<small>${esc(d.commune)} · satellite ${esc(d.satellite)}</small></span><span class="q-mauvaise">point chaud</span></li>`).join("")}</ul>`;
+  return `<ul class="rows eau">${fires.detections.map((d, i) => `<li class="tgt" id="${fireId(i)}"><span>${esc(listLine(d, now))} <small>${esc(d.commune)} · satellite ${esc(d.satellite)}</small></span> <span class="q-mauvaise">point chaud</span></li>`).join("")}</ul>`;
 }
 
 function trails(s: Cached<SentiersAnswer> | null | undefined): string {

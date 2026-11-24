@@ -368,7 +368,7 @@ describe("the tool emploi and the page /emploi", () => {
     expect(page).toContain("20 offres ouvertes à la candidature suivies par rundata.re sur Choisir le service public, dernière lecture le 29/10 à 12:45. Le site en affiche 628 pour La Réunion.</p>");
     const first = page.indexOf('<div id="offres" class="plis">');
     expect(first).toBeGreaterThan(page.indexOf("</h1>"));
-    expect(page).toContain('<small>Direction Générale de l&#39;Aviation Civile (DGAC), Service navigation aérienne Océan Indien (SNA/OI) · Responsable sectorielle / sectoriel</small></span><span class="q-none">jusqu&#39;au 20/11</span>');
+    expect(page).toContain('<small>Direction Générale de l&#39;Aviation Civile (DGAC), Service navigation aérienne Océan Indien (SNA/OI) · Responsable sectorielle / sectoriel</small></span> <span class="q-none">jusqu&#39;au 20/11</span>');
     expect(page).toContain("· Assistante / Assistant de direction</small>");
     expect(page).toContain("<p>Sauf mention, les offres sont ouvertes aux titulaires et aux contractuels.</p>");
     expect(page).toContain("<option>Sainte-Marie</option>");
@@ -467,8 +467,8 @@ describe("the tool emploi and the page /emploi", () => {
     const page = emploiPage("https://rundata.re", { value: d, fetchedAt: new Date(c.lu), stale: false }, NOW);
     // In marketing's words: the title alone, « 4 offres : », a link per line with the whole reference.
     // Across the whole line, under the date, each reference never cut.
-    expect(page).toContain('<li data-c="Sainte-Marie" data-n="4"><span><b>Gestionnaire finances*SG/<wbr class="adr">SIR/<wbr class="adr">OI/<wbr class="adr">FIN</b><small>');
-    expect(page).toContain('<span class="q-none">jusqu&#39;au 20/11</span><span class="refs"><small>4 offres\u00a0:</small><a href="https://choisirleservicepublic.gouv.fr/offre-emploi/DGAC-AVE-128051-CAT-B/" rel="noopener">Réf. <span class="nw">DGAC-AVE-128051-CAT-B</span></a><a href=');
+    expect(page).toContain('<li data-c="Sainte-Marie" data-n="4"><span><b>Gestionnaire finances*SG/<wbr class="adr">SIR/<wbr class="adr">OI/<wbr class="adr">FIN</b> <small>');
+    expect(page).toContain('<span class="q-none">jusqu&#39;au 20/11</span> <span class="refs"><small>4 offres\u00a0:</small><a href="https://choisirleservicepublic.gouv.fr/offre-emploi/DGAC-AVE-128051-CAT-B/" rel="noopener">Réf. <span class="nw">DGAC-AVE-128051-CAT-B</span></a><a href=');
     expect(page.match(/<li /g)!.length).toBeLessThan(20);
     // The filter counts the offers, not the lines.
     expect(page).toContain("+e.dataset.n||1");

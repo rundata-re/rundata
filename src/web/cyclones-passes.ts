@@ -57,11 +57,11 @@ function wettest(s: Mesure, jours: string[]): { mm: number; jour: string } | und
 
 function row(s: Mesure, jours: string[]): string {
   const g = rafale(s, jours);
-  const gust = `<td>${g ? `${kmh(g.ms)}<small>${dm(g.jour)}</small>` : "—"}</td>`;
-  const name = `<th scope="row">${esc(s.station)}<small>${num(s.alt)}\u00a0m</small></th>`;
+  const gust = `<td>${g ? `${kmh(g.ms)} <small>${dm(g.jour)}</small>` : "—"}</td>`;
+  const name = `<th scope="row">${esc(s.station)} <small>${num(s.alt)}\u00a0m</small></th>`;
   if (jours.length > LONG) {
     const w = wettest(s, jours);
-    return `<tr>${name}<td><b>${num(total(s.rr))}</b></td><td>${w ? `${num(w.mm)}<small>${dm(w.jour)}</small>` : "—"}</td>${gust}</tr>`;
+    return `<tr>${name}<td><b>${num(total(s.rr))}</b></td><td>${w ? `${num(w.mm)} <small>${dm(w.jour)}</small>` : "—"}</td>${gust}</tr>`;
   }
   const rain = jours.map((_, i) => {
     const v = s.rr?.[i];

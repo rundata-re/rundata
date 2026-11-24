@@ -1015,7 +1015,7 @@ export function accueilCarte(h: HomeLive, now: Date): string | null {
   const bubble = `<a class="mtip" data-mtip hidden aria-hidden="true" tabindex="-1" href="/meteo"><span class="mt-p"></span><b class="mt-v"></b><span class="mt-d"></span><span class="mt-go">Voir le détail →</span></a>`;
   return `<figure class="hero-map ile">${reliefDefs(GLOW)}${tel.svg}${large.svg}${bubble}` +
     `<figcaption><span class="cap"><span class="dot"></span>Lu ${times[0] === times[times.length - 1] || leAt(times[0]) === leAt(times[times.length - 1]) ? when(times[0], now) : `entre ${when(times[0], now).startsWith("le") ? `${leAt(times[0])} et ${leAt(times[times.length - 1])}` : `${hm(times[0])} et ${hm(times[times.length - 1])}`}`}\u00a0· <a href="#en-ce-moment">tout voir par thème\u00a0→</a></span>` +
-    `<small>Sources\u00a0: ${esc(sources)}. Chaque point dit son heure de lecture.</small></figcaption></figure>`;
+    ` <small>Sources\u00a0: ${esc(sources)}. Chaque point dit son heure de lecture.</small></figcaption></figure>`;
 }
 
 /** The problems of both layouts: none on a good day (the tests, and a check in the browser). */

@@ -129,10 +129,10 @@ describe("the commune page's doctors", () => {
     const c = C.communes["Saint-Paul"];
     expect(part).toContain("Médecins à Saint-Paul");
     expect(part).toContain(`<h3>Généralistes <span class="note">${c.generalistes.total}</span></h3>`);
-    expect(part).toContain(`<li><span>En secteur 1</span><span>${c.generalistes.secteur_1}</span></li>`);
-    expect(part).toContain(`<li><span>Adhérents à l&#39;OPTAM</span><span>${c.generalistes.optam}</span></li>`);
+    expect(part).toContain(`<li><span>En secteur 1</span> <span>${c.generalistes.secteur_1}</span></li>`);
+    expect(part).toContain(`<li><span>Adhérents à l&#39;OPTAM</span> <span>${c.generalistes.optam}</span></li>`);
     const eyes = c.specialistes.Ophtalmologiste;
-    expect(part).toContain(`<li><span>Ophtalmologistes<small>${eyes.secteur_1} en secteur 1</small></span><span>${eyes.total}</span></li>`);
+    expect(part).toContain(`<li><span>Ophtalmologistes <small>${eyes.secteur_1} en secteur 1</small></span> <span>${eyes.total}</span></li>`);
     expect(part).toContain("le tarif de la Sécurité sociale, sans dépassement");
     expect(part).toContain("Un médecin qui a plusieurs cabinets dans la commune compte une fois\u00a0; Ameli montre chaque cabinet. L&#39;annuaire ne dit pas si un médecin prend de nouveaux patients");
     expect(part).toContain("fichier du 09/11");

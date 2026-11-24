@@ -96,7 +96,7 @@ function row(o: OffreRow, once: boolean): string {
   // Several offers: the title alone, then, across the whole line, a link to each, its reference never cut, its day said
   // when the line has none.
   const refs = "references" in o
-    ? `<span class="refs"><small>${o.nombre_offres} offres\u00a0:</small>` +
+    ? ` <span class="refs"><small>${o.nombre_offres} offres\u00a0:</small>` +
       o.references.map((r) => {
         // A reference joined by « _ » may go to the next line after it (soulignesCoupables), the link named by its text.
         const jour = o.date_limite || o.publiee_le ? "" : `, publiée\u00a0le\u00a0${esc(String(r.publiee_le))}`;
@@ -105,7 +105,7 @@ function row(o: OffreRow, once: boolean): string {
       }).join("") + "</span>"
     : "";
   const title = "references" in o ? `<b>${intituleCoupable(o.intitule)}</b>` : lienIntitule(o.lien, o.intitule);
-  return `<li data-c="${esc("commune" in o && o.commune ? o.commune : "")}"${"references" in o ? ` data-n="${o.nombre_offres}"` : ""}><span>${title}<small>${small}</small></span>` +
+  return `<li data-c="${esc("commune" in o && o.commune ? o.commune : "")}"${"references" in o ? ` data-n="${o.nombre_offres}"` : ""}><span>${title} <small>${small}</small></span> ` +
     `<span class="q-none${"references" in o && !o.date_limite && !o.publiee_le ? " du" : ""}">${esc(quand(o))}</span>${refs}</li>`;
 }
 

@@ -220,7 +220,7 @@ describe("home page", () => {
     for (const b of sea.plages) if (b !== leu && b.jour) b.jour = "2026-10-18";
     await edge.put("web:mer", { value: sea, fetchedAt: NOW.getTime() - 3 * 3600_000 });
     const { text } = await serve(isolate(edge), "/meteo");
-    expect(text).toMatch(/<li><span>Saint-Leu<\/span><b>26,4[^<]*°C<\/b><\/li>/);
+    expect(text).toMatch(/<li><span>Saint-Leu<\/span> <b>26,4[^<]*°C<\/b><\/li>/);
     // Every day of the readings shown, not the newest alone: the other beaches are of 18 October.
     expect(text).toContain("Par satellite, les 18 et 19/10.");
     // Under the section's h2 « La mer au large », never a second heading of the same words, white on the white card.
@@ -349,7 +349,7 @@ describe("home page", () => {
     }
     expect(page).toMatch(/<a class="k-[a-z-]+" href="\/electricite"><span class="kb">/);
     // The menu: every category, with its icon, the current one marked.
-    expect(meteoPage("https://rundata.re", null, NOW)).toMatch(/<a class="k-meteo" href="\/meteo" aria-current="page"><span class="kb"><svg[^]*?<\/svg><\/span><span class="gn">Météo<\/span><\/a>/);
+    expect(meteoPage("https://rundata.re", null, NOW)).toMatch(/<a class="k-meteo" href="\/meteo" aria-current="page"><span class="kb"><svg[^]*?<\/svg><\/span> <span class="gn">Météo<\/span><\/a>/);
     expect(placePage("https://rundata.re", pageOf("cilaos")!, null, NOW)).toMatch(/<a class="k-meteo" href="\/meteo" aria-current="page">/);
     expect(page).toMatch(/<a class="k-velos" href="\/velos"><span class="kb">/);
   });
@@ -919,7 +919,7 @@ describe("vigilance and sea pages", () => {
     const swell = text.match(/<section aria-labelledby="h-houle">[^]*?<\/section>/)![0];
     expect(swell).toContain("Prévision, pas une mesure");
     expect(swell.match(/<li>/g)).toHaveLength(14);
-    expect(swell).toMatch(/<b>\d+(,\d)?\u202fm<\/b><span>(du |de l')[a-z-]+, période \d+ s, vers \d+\u00a0h<\/span><span>jusqu'à\u00a0\d+(,\d)?\u202fm /);
+    expect(swell).toMatch(/<b>\d+(,\d)?\u202fm<\/b> <span>(du |de l')[a-z-]+, période \d+ s, vers \d+\u00a0h<\/span> <span>jusqu'à\u00a0\d+(,\d)?\u202fm /);
     expect(used).toBeLessThanOrEqual(PAGE_BUDGET);
     expect(refused).toBe(0);
     // A coastal commune's tile says it too, from the same copy.

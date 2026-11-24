@@ -55,7 +55,7 @@ describe("the crèches' part of /enfants", () => {
     expect(html).toContain('<section id="creches"');
     expect(html).toContain('<tr><th scope="row">La Réunion</th><td>22,0</td><td>38,5</td><td>8\u202f150</td></tr>');
     expect(html.match(/<tr><th scope="row">[^<]+<\/th>/g)).toHaveLength(18);
-    expect(html).toContain("<tr><th scope=\"row\">La CIVIS<small>Saint-Pierre, Saint-Louis, Petite-Île, L&#39;Étang-Salé, Les Avirons, Cilaos</small></th>");
+    expect(html).toContain("<tr><th scope=\"row\">La CIVIS <small>Saint-Pierre, Saint-Louis, Petite-Île, L&#39;Étang-Salé, Les Avirons, Cilaos</small></th>");
     expect(html).toContain(`Cilaos, Entre-Deux, La Plaine-des-Palmistes, Les Trois-Bassins, Saint-Philippe, Sainte-Rose et Salazie n&#39;en ont pas`);
     expect(html).toContain("C&#39;est une offre théorique");
     expect(html).toContain("chiffres de décembre 2023, publiés le 22/01/2026.");

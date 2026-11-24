@@ -142,7 +142,7 @@ export function pressePage(origin: string, figures: Figure[], alerte?: Alerte): 
   const keyFigures = `<section aria-labelledby="h-chiffres">
   <div class="sec-h"><p class="eyebrow">En direct</p><h2 id="h-chiffres">Chiffres clés</h2>
   <p>Comptés au moment où cette page s'affiche, dans les données que le site sert. Tous les chiffres, avec les sources, leurs producteurs et leurs licences : <a href="/chiffres">rundata.re en chiffres</a>.</p></div>
-  <ul class="figs">${figures.map((f) => `<li class="card"><span class="fig">${n(f.valeur)}</span><span>${esc(f.label)}${f.detail ? `<small>${esc(f.detail)}</small>` : ""}</span></li>`).join("")}</ul>
+  <ul class="figs">${figures.map((f) => `<li class="card"><span class="fig">${n(f.valeur)}</span> <span>${esc(f.label)}${f.detail ? `<small>${esc(f.detail)}</small>` : ""}</span></li>`).join("")}</ul>
 </section>`;
 
   // After the dated release, never in it: the clubs' space came out after it.

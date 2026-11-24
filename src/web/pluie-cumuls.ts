@@ -133,13 +133,13 @@ function figure(): string {
   }).join("");
   const radios = [`<input type="radio" name="cud" id="cud-a" value="a"><label for="cud-a">Début de l'averse</label>`,
     ...DUREES_H.map((h) => `<input type="radio" name="cud" id="cud-${h}" value="${h}"><label for="cud-${h}">${h}\u00a0h</label>`)].join("");
-  const legend = PALIERS.map((p, i) => `<span class="cu-sw"><i style="--c:var(--cu${i})"></i>${i < PALIERS.length - 1 ? `${p} à ${PALIERS[i + 1]}\u00a0mm` : `${p}\u00a0mm et plus`}</span>`).join("");
+  const legend = PALIERS.map((p, i) => `<span class="cu-sw"><i style="--c:var(--cu${i})"></i>${i < PALIERS.length - 1 ? `${p} à ${PALIERS[i + 1]}\u00a0mm` : `${p}\u00a0mm et plus`}</span>`).join(" ");
   const canvas = `<foreignObject width="${W}" height="${H}" clip-path="url(#isl-clip)"><canvas class="voile" width="${GW}" height="${GH}"></canvas></foreignObject>`;
   const mark = `<circle class="cu-mk" r="${Math.round(RAYON_KM / KM)}" cx="-99" cy="-99"/>`;
   return `<div class="cu-c"><label for="cu-l">Lieu</label> <select id="cu-l">${options}</select></div>` +
     `<fieldset class="tabs cu-d"><legend>Depuis\u00a0:</legend>${radios}</fieldset><p class="cu-t" aria-live="polite">Chargement…</p><p class="cu-r" aria-live="polite" hidden></p>` +
     islandMap({ under: canvas, top: mark, label: "Carte de La Réunion (974) : la pluie estimée par le radar sur la durée choisie" }) +
-    `<figcaption class="note"><span class="cu-lg">${legend}</span><span class="cu-n"></span></figcaption>`;
+    `<figcaption class="note"><span class="cu-lg">${legend}</span> <span class="cu-n"></span></figcaption>`;
 }
 
 /** The section, hidden until the page's script shows it and asks its own. */

@@ -107,7 +107,7 @@ describe("the Vélos tile", () => {
     expect(t).toContain('<p class="tv">9 vélos</p>');
     expect(t).toContain("électriques en libre-service dans 6 stations Altervélo, relevé le 31/10 à 01:12");
     expect(t.match(/<li>/g)).toHaveLength(4);
-    expect(t).toContain('<li><span>Station A<small><b>5</b> vélos · 6 places</small></span><span class="ya"><a class="aller"');
+    expect(t).toContain('<li><span>Station A <small><b>5</b> vélos · 6 places</small></span> <span class="ya"><a class="aller"');
     expect(t).not.toContain("Station E");
   });
 

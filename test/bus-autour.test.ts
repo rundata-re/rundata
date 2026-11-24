@@ -80,7 +80,7 @@ describe("« Arrêts autour de moi » on /bus", () => {
     const { asked, list, res } = await clicked(GARE_SP);
     // The only request: the list, the same for everyone; never the position.
     expect(asked).toEqual([ARRETS_LISTE]);
-    const links = [...list.matchAll(/<a href="\/bus\/arret\/([^"]+)"><span>[^<]+<\/span><small>[^<]+<\/small><\/a>/g)].map((m) => m[1]);
+    const links = [...list.matchAll(/<a href="\/bus\/arret\/([^"]+)"><span>[^<]+<\/span> <small>[^<]+<\/small><\/a>/g)].map((m) => m[1]);
     expect(links).toHaveLength(ARRETS_AUTOUR);
     expect(links[0]).toBe("saint-pierre/gare-de-saint-pierre");
     expect(list).toMatch(/<small>\d+ m · Saint-Pierre<\/small>/);

@@ -73,9 +73,9 @@ describe("press page", () => {
 
   it("counts its key figures in the data it serves", async () => {
     const html = await page();
-    expect(html).toContain(`<span class="fig">${insecables(fr(DAES.length))}</span><span>défibrillateurs`);
-    expect(html).toContain(`<span class="fig">${fr(IDS.size)}</span><span>points de recharge`);
-    expect(html).toMatch(/<span class="fig">\d+<\/span><span>outils dans le connecteur/);
+    expect(html).toContain(`<span class="fig">${insecables(fr(DAES.length))}</span> <span>défibrillateurs`);
+    expect(html).toContain(`<span class="fig">${fr(IDS.size)}</span> <span>points de recharge`);
+    expect(html).toMatch(/<span class="fig">\d+<\/span> <span>outils dans le connecteur/);
     // The stations: counted on /meteo's copy only, never a number written in the code.
     expect(html).not.toContain("stations météo en direct");
     expect(html).toContain("et les retards quand le réseau les publie");
@@ -91,8 +91,8 @@ describe("press page", () => {
     // The stations that measured, the number /meteo says in its title.
     await c.get("web:meteo", 600, async () => ({ stations: [], toutes: Array.from({ length: 61 }, () => ({})), mer: [], sources: [], indisponibles: [] }));
     const html = await page(c);
-    expect(html).toContain(`<span class="fig">61</span><span>stations météo en direct`);
-    expect(html).toContain(`<span class="fig">37</span><span>événements dans les deux semaines qui viennent`);
+    expect(html).toContain(`<span class="fig">61</span> <span>stations météo en direct`);
+    expect(html).toContain(`<span class="fig">37</span> <span>événements dans les deux semaines qui viennent`);
     expect(html).toContain("dont 56 fermés aujourd");
   });
 
@@ -137,6 +137,6 @@ describe("the key figures, with the text at 200 % on a phone", () => {
 
   it("keep the words in a span of their own beside the figure, which the rule reaches", async () => {
     const html = await page();
-    expect(html).toMatch(/<ul class="figs"><li class="card"><span class="fig">[^<]+<\/span><span>/);
+    expect(html).toMatch(/<ul class="figs"><li class="card"><span class="fig">[^<]+<\/span> <span>/);
   });
 });

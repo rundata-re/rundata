@@ -151,10 +151,10 @@ describe("the classes of the rain of /historique", () => {
     // The stations' names in the bubble only: none written on the map, where one by the coast ran past its edge.
     expect(html).not.toContain('class="mn"');
     for (let i = 0; i < 6; i++) expect(html).toContain(`data-pn="Station ${i}"`);
-    expect(html.match(/<span class="mlg">.*?<\/span><span class="mls">/s)![0].match(/<rect /g)).toHaveLength(3);
+    expect(html.match(/<span class="mlg">.*?<\/span> <span class="mls">/s)![0].match(/<rect /g)).toHaveLength(3);
     expect(html).toContain("<span class=\"mls\">Pluie mesurée par Météo-France du 01/10 au 30/10, en % de la normale 1991-2020.</span>");
     // In the table, no figure parted from its unit on a phone.
-    expect(html).toContain("<b>20\u00a0mm</b><small class=\"note\">normale 60\u00a0mm</small>");
+    expect(html).toContain("<b>20\u00a0mm</b> <small class=\"note\">normale 60\u00a0mm</small>");
     expect(html).toContain("Nord, 10\u00a0m</small>");
     expect(html).not.toMatch(/\d (mm|°C|m|h\/j)</);
   });

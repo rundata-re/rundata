@@ -443,15 +443,15 @@ export function volcanPage(origin: string, data: Cached<VolcanAnswer> | null, no
   const quakeRow = (s: NonNullable<typeof q>["derniers"][number]) =>
     a
       ? `<li>${esc(s.heure.replace(" heure de La Réunion", ""))} · magnitude\u00a0<b>${esc(md(s.magnitude))}</b> · ${esc(where(s))}</li>`
-      : `<li><b>${esc(md(s.magnitude))}</b><span>${virgulesTenues(esc(`${s.lieu}, ${depthText(s.profondeur_km)}`))}</span><span class="note">${esc(s.heure.replace(" heure de La Réunion", ""))}</span></li>`;
+      : `<li><b>${esc(md(s.magnitude))}</b> <span>${virgulesTenues(esc(`${s.lieu}, ${depthText(s.profondeur_km)}`))}</span> <span class="note">${esc(s.heure.replace(" heure de La Réunion", ""))}</span></li>`;
   const quakes = q
     ? `<div class="card">${icon("gauge")}<h3>Séismes localisés par l'OVPF</h3>` +
       quakeDays(q.par_jour_sous_le_volcan, e?.image_ovpf_plus_recente && !folded && !a ? apres : undefined) +
       (a
         ? `<p class="facts"><span>Sous le volcan${esc(jusqua)} : <b>${q.sous_le_volcan["7_jours"]}</b> en 7 jours, <b>${q.sous_le_volcan["30_jours"]}</b> en 30 jours, magnitude max ${md(q.sous_le_volcan.magnitude_max_30j)}</span>` +
-          `<span>Ailleurs sur l'île : <b>${q.ailleurs_sur_l_ile["30_jours"]}</b> en 30 jours, magnitude max ${md(q.ailleurs_sur_l_ile.magnitude_max_30j)}</span></p>`
+          ` <span>Ailleurs sur l'île : <b>${q.ailleurs_sur_l_ile["30_jours"]}</b> en 30 jours, magnitude max ${md(q.ailleurs_sur_l_ile.magnitude_max_30j)}</span></p>`
         : `<p class="facts"><span>Sous le volcan${esc(jusqua)} : <b>${q.sous_le_volcan["30_jours"]}</b> en 30 jours, magnitude max ${md(q.sous_le_volcan.magnitude_max_30j)}</span>` +
-          `<span>Ailleurs sur l'île : <b>${q.ailleurs_sur_l_ile["30_jours"]}</b>, magnitude max ${md(q.ailleurs_sur_l_ile.magnitude_max_30j)}</span></p>`) +
+          ` <span>Ailleurs sur l'île : <b>${q.ailleurs_sur_l_ile["30_jours"]}</b>, magnitude max ${md(q.ailleurs_sur_l_ile.magnitude_max_30j)}</span></p>`) +
       (q.derniers.length ? `<ul class="rows${a ? " seismes" : ""}">${q.derniers.slice(0, a ? 5 : undefined).map(quakeRow).join("")}</ul>` : "") +
       // The short rows give a depth above the sea level as « −1,2 km »: said once under them.
       (a && q.derniers.slice(0, 5).some((s) => s.profondeur_km < 0) ? `<p class="note">${esc(ABOVE_SEA)}</p>` : "") +
@@ -584,7 +584,7 @@ function quakeDays(days: Jour[] | undefined, imageAfter: string | undefined): st
     (top?.nombre ? ` Le plus en un jour sur ${"en_cours" in today ? "" : "ces "}30 jours : <b>${top.nombre}</b>, le ${dd(top.jour)}.` : "");
   const end = `${dd(today.jour)}${"en_cours" in today ? " (en cours)" : "non_lu" in today ? ` (${NON_LU})` : ""}`;
   return `<figure class="qdays"><figcaption>Sous le volcan, par jour (heure de La Réunion)</figcaption>` +
-    `<ol>${bars}</ol><p class="axis"><span>${dd(days[0].jour)}</span><span>${end}</span></p></figure>` +
+    `<ol>${bars}</ol><p class="axis"><span>${dd(days[0].jour)}</span> <span>${end}</span></p></figure>` +
     `<p>${facts}</p><p class="note">${esc(LOCALISES_LIEN[0])} <a href="${BULLETIN_QUOTIDIEN}">bulletin quotidien</a> ${esc(LOCALISES_LIEN[1])}</p>` +
     (imageAfter ? `<p class="note">${esc(imageAfter)}</p>` : "");
 }
@@ -945,7 +945,7 @@ export function electricitePage(origin: string, data: Cached<ElectriciteAnswer> 
       : `<p class="lead">${esc(d.resume)}</p>`;
 
   const bars = p
-    ? `<ul class="bars">${p.parts.map((x) => `<li><span>${esc(FILIERES_DITES[x.filiere] ?? x.filiere)}</span><b>${esc(fr(x.part_pct))} %</b><i class="${x.renouvelable ? "ren" : ""}" style="width:${Math.max(1, x.part_pct)}%"></i></li>`).join("")}</ul>` +
+    ? `<ul class="bars">${p.parts.map((x) => `<li><span>${esc(FILIERES_DITES[x.filiere] ?? x.filiere)}</span> <b>${esc(fr(x.part_pct))} %</b><i class="${x.renouvelable ? "ren" : ""}" style="width:${Math.max(1, x.part_pct)}%"></i></li>`).join("")}</ul>` +
       `<p class="note">En vert, les filières renouvelables. ${esc(p.statut[0].toUpperCase() + p.statut.slice(1))}.</p>`
     : "";
 
@@ -1265,8 +1265,14 @@ export function liveText(x: Row): string {
  * One departure as a row: line, direction, wait (from the real-time feed when there is one). Its hour (`heure`, « 16:12 »)
  * read after the direction by screen readers: the links of a station's list often go the same way (« vers St-Denis »).
  */
+/**
+ * A line's name as a screen reader says it: a line of one letter (« T ») is read « T majuscule » on its own, so it is
+ * said « ligne T »; « E2 » or « 32 » read as they are.
+ */
+export const ligneDite = (ligne: string) => (/^\p{L}$/u.test(ligne) ? `<span class="sr">ligne </span>${esc(ligne)}` : esc(ligne));
+
 export const departureLi = (x: Row, wait: string, heure?: string) =>
-  `<li><b>${esc(x.ligne)}</b><span>${x.trajet ? `<a href="${esc(x.trajet)}">vers ${esc(casse(x.direction))}${heure && /^\d\d:\d\d$/.test(heure) ? `<span class="sr">, départ à ${heure}</span>` : ""}</a>` : `vers ${esc(casse(x.direction))}`} <span class="note">(${esc(x.reseau)})</span></span><span class="note">${esc(wait)}${liveText(x)}</span></li>`;
+  `<li><b>${ligneDite(x.ligne)}</b> <span>${x.trajet ? `<a href="${esc(x.trajet)}">vers ${esc(casse(x.direction))}${heure && /^\d\d:\d\d$/.test(heure) ? `<span class="sr">, départ à ${heure}</span>` : ""}</a>` : `vers ${esc(casse(x.direction))}`} <span class="note">(${esc(x.reseau)})</span></span> <span class="note">${esc(wait)}${liveText(x)}</span></li>`;
 
 export const STOP_PATH = "/bus/arret";
 
@@ -1429,7 +1435,7 @@ export function bikeStock(s: VeloStation): string {
 /** A station, and « Y aller » below its name when its copy kept its position (no address: the sheet copies the coordinates). */
 export const bikeRow = (s: VeloStation, g: Porte = porte()) => {
   const go = g.aller({ nom: s.nom, lat: s.lat ?? NaN, lon: s.lon ?? NaN });
-  return `<li><span>${esc(s.nom)}${go ? `<span class="ya">${go}</span>` : ""}</span><span>${bikeStock(s)}</span></li>`;
+  return `<li><span>${esc(s.nom)}${go ? `<span class="ya">${go}</span>` : ""}</span> <span>${bikeStock(s)}</span></li>`;
 };
 
 export function velosPage(origin: string, data: Cached<VelosAnswer> | null, now = new Date(), alerte?: Alerte): string {
@@ -1604,7 +1610,7 @@ function gaugeRow(s: CruesStation, read: string): string {
   const marks = floods.length
     ? `<details><summary>Crues de référence</summary><ul class="plain">${floods.map((c) => `<li>${[metres(c.hauteur_m), ...(c.debit_m3s != null ? [flow(c.debit_m3s)] : []), esc(c.nom)].join(" · ")}</li>`).join("")}</ul></details>`
     : "";
-  return `<li class="tgt" id="${anchorId("s", s.station)}"><span>${esc(s.station)} · ${esc(s.commune)}<small>${value}</small>${marks}</span><span></span></li>`;
+  return `<li class="tgt" id="${anchorId("s", s.station)}"><span>${esc(s.station)} · ${esc(s.commune)} <small>${value}</small>${marks}</span> <span></span></li>`;
 }
 
 // The fords (marketing): the préfecture's instruction in heavy rain, word for word with its communiqué, then the
@@ -1644,7 +1650,7 @@ export function cruesPage(origin: string, data: Cached<CruesAnswer> | null, now 
   // The rivers under vigilance, the worst first; Vigicrues Réunion's order within a colour.
   const rivers = [...(v?.rivieres ?? [])].sort((a, b) => FLOOD_ORDER.indexOf(a.couleur) - FLOOD_ORDER.indexOf(b.couleur));
   const riverLi = (r: { nom: string; couleur: string; precedente: string }) =>
-    `<li><span>${esc(r.nom)}${r.couleur !== r.precedente ? `<small>(${esc(r.precedente)} au bulletin précédent)</small>` : ""}</span><span>${floodBadge(r.couleur)}</span></li>`;
+    `<li><span>${esc(r.nom)}${r.couleur !== r.precedente ? `<small>(${esc(r.precedente)} au bulletin précédent)</small>` : ""}</span> <span>${floodBadge(r.couleur)}</span></li>`;
   const allGreen = rivers.length > 0 && rivers.every((r) => r.couleur === "vert");
   const riverList = !rivers.length
     ? ""
@@ -1754,9 +1760,9 @@ export function cruesLive(data: Cached<CruesAnswer> | null, now: Date): Live | u
 /** `ancre`: the row of its commune's list, the one /carte's bubble leads to (`s-<id>`); not the fast stations' list, which repeats it. */
 export function borneRow(s: BorneStation, g: Porte = porte(), ancre = false): string {
   const free = s.libres ? `<b>${s.libres}</b> libre${s.libres > 1 ? "s" : ""} sur ${s.total}` : `aucun libre sur ${s.total}`;
-  return `<li${ancre && s.id ? ` id="s-${esc(s.id)}" class="tgt"` : ""}><span>${esc(s.station)}<small>${fr(s.puissance_max_kw)} kW · ${esc(s.prises.join(", "))}${s.horaires && s.horaires !== "24 h/24, 7 j/7" ? ` · ${esc(s.horaires)}` : ""}</small>` +
+  return `<li${ancre && s.id ? ` id="s-${esc(s.id)}" class="tgt"` : ""}><span>${esc(s.station)} <small>${fr(s.puissance_max_kw)} kW · ${esc(s.prises.join(", "))}${s.horaires && s.horaires !== "24 h/24, 7 j/7" ? ` · ${esc(s.horaires)}` : ""}</small>` +
     `${g.aller({ nom: s.station, lat: s.lat, lon: s.lon, adresse: s.adresse })}</span>` +
-    `<span class="${s.libres ? "free" : "busy"}">${free}</span></li>`;
+    ` <span class="${s.libres ? "free" : "busy"}">${free}</span></li>`;
 }
 
 export function bornesPage(origin: string, data: Cached<BornesAnswer> | null, now = new Date(), alerte?: Alerte): string {
@@ -1865,11 +1871,11 @@ function siteLine(s: EauAnswer["baignades"][number], g: Porte): string {
   const q = s.qualite_dernier_prelevement;
   // The ARS's classification, as qualite_eau gives it (« Excellent (saison 2026) »); none for a site not classified.
   const classe = s.classement ? /^(.+) \(saison (\d{4})\)$/.exec(s.classement) : null;
-  return `<li class="tgt" id="${anchorId("b", s.site)}"><span>${esc(s.site)}<small>dernier prélèvement le ${esc(s.dernier_prelevement)}` +
+  return `<li class="tgt" id="${anchorId("b", s.site)}"><span>${esc(s.site)} <small>dernier prélèvement le ${esc(s.dernier_prelevement)}` +
     (last ? ` · ${esc(last.enterocoques_100ml)} entérocoques et ${esc(last.e_coli_100ml)} E. coli pour 100 mL` : "") +
     (s.mauvais_sur_12_mois ? ` · ${s.mauvais_sur_12_mois} mauvais résultat${s.mauvais_sur_12_mois > 1 ? "s" : ""} sur 12 mois` : "") +
     (classe ? ` · classée ${esc(classe[1])} par l'ARS (saison ${classe[2]})` : "") + `</small>${g.aller({ nom: s.site, lat: s.lat, lon: s.lon }, "baignade")}</span>` +
-    `<span class="q-${q ?? "none"}">${q ? esc(q) : "pas de résultat"}</span></li>`;
+    ` <span class="q-${q ?? "none"}">${q ? esc(q) : "pas de résultat"}</span></li>`;
 }
 
 /**
@@ -1888,8 +1894,8 @@ function tapCard(c: EauAnswer["communes"][number], dry?: { dit: string; lien?: s
     return `<li class="card${warn}">${head}<p>${c.analyses_6_mois ? "Toutes les analyses conformes" : "Pas d'analyse publiée"}${c.derniere_analyse ? ` (dernière le ${esc(dayFr(c.derniere_analyse))})` : ""}.</p></li>`;
   }
   return `<li class="card${warn}">${head}<ul class="rows eau">${c.a_surveiller.map((r) =>
-    `<li><span>Réseau ${esc(r.reseau)}<small>${r.quartiers ? `${esc(r.quartiers)} · ` : ""}${(r.non_conformites ?? []).map((n) => `${esc(n.date)}${n.depassements ? ` : ${esc(n.depassements.join(", "))}` : ""}`).join(" ; ")}</small></span>` +
-    `<span class="q-mauvaise">${r.non_conformes_6_mois} non conforme${r.non_conformes_6_mois > 1 ? "s" : ""}</span></li>`).join("")}</ul></li>`;
+    `<li><span>Réseau ${esc(r.reseau)} <small>${r.quartiers ? `${esc(r.quartiers)} · ` : ""}${(r.non_conformites ?? []).map((n) => `${esc(n.date)}${n.depassements ? ` : ${esc(n.depassements.join(", "))}` : ""}`).join(" ; ")}</small></span>` +
+    ` <span class="q-mauvaise">${r.non_conformes_6_mois} non conforme${r.non_conformes_6_mois > 1 ? "s" : ""}</span></li>`).join("")}</ul></li>`;
 }
 
 /**
@@ -2093,7 +2099,7 @@ export const closedMarkers = (s: SentiersAnswer | undefined, page = ""): Marker[
 export function firesSection(f: feux.Feux | undefined, now: Date): string {
   if (!f) return "";
   const list = f.detections.length
-    ? `<ul class="rows eau">${f.detections.map((d, i) => `<li class="tgt" id="${fireId(i)}"><span>${esc(fire.listLine(d, now))}<small>${esc(d.commune)} · satellite ${esc(d.satellite)}</small></span><span class="q-mauvaise">feu</span></li>`).join("")}</ul>`
+    ? `<ul class="rows eau">${f.detections.map((d, i) => `<li class="tgt" id="${fireId(i)}"><span>${esc(fire.listLine(d, now))} <small>${esc(d.commune)} · satellite ${esc(d.satellite)}</small></span> <span class="q-mauvaise">feu</span></li>`).join("")}</ul>`
     : `<p>${esc(fire.QUIET)}</p>`;
   return `<section aria-labelledby="h-feux">
   <div class="sec-h"><p class="eyebrow">NASA FIRMS</p><h2 id="h-feux">Feux de végétation vus par satellite</h2>
@@ -2153,14 +2159,14 @@ export function sentiersPage(origin: string, data: Cached<SentiersAnswer> | null
         `<li class="card">${folded(foldTrails,
           `<h3>${esc(c.commune)}${foldTrails ? "\u00a0" : " "}<span class="note">${foldTrails ? "· " : ""}${c.sentiers_fermes.length}\u00a0fermé${c.sentiers_fermes.length > 1 ? "s" : ""}</span></h3>`,
           `<ul class="rows eau">` +
-        c.sentiers_fermes.map((t) => `<li${rowId(t.sentier)}><span>${t.page ? `<a href="${esc(t.page.replace(/^https:\/\/rundata\.re/, ""))}">${esc(t.sentier)}</a>` : esc(t.sentier)}<small>${onf.motifs(t, now).map(esc).join(" · ") || "fermé"}</small>` +
+        c.sentiers_fermes.map((t) => `<li${rowId(t.sentier)}><span>${t.page ? `<a href="${esc(t.page.replace(/^https:\/\/rundata\.re/, ""))}">${esc(t.sentier)}</a>` : esc(t.sentier)} <small>${onf.motifs(t, now).map(esc).join(" · ") || "fermé"}</small>` +
           (t.randonnees?.length ? `<small class="cuts">Coupe : ${t.randonnees.map((r) => `<a href="/randonnees/${esc(r.slug)}">${esc(r.nom)}</a>`).join(", ")}</small>` : "") + `</span>` +
-          `<span class="q-mauvaise">fermé</span></li>`).join("") + `</ul>`)}</li>`).join("")}</ul>`
+          ` <span class="q-mauvaise">fermé</span></li>`).join("") + `</ul>`)}</li>`).join("")}</ul>`
     : `<p class="card">L'état des sentiers se charge : rechargez la page dans quelques secondes.</p>`;
 
   const roads = d?.routes_forestieres_fermees.length
     ? `<div class="card"><h3>Routes forestières interdites à la circulation</h3><ul class="rows eau">${d.routes_forestieres_fermees.map((r) =>
-        `<li><span>${esc(r.route)}<small>${[r.cause, r.precision].filter(Boolean).map((x) => esc(x!)).join(" · ")}</small></span><span class="q-mauvaise">interdite</span></li>`).join("")}</ul></div>`
+        `<li><span>${esc(r.route)} <small>${[r.cause, r.precision].filter(Boolean).map((x) => esc(x!)).join(" · ")}</small></span> <span class="q-mauvaise">interdite</span></li>`).join("")}</ul></div>`
     : "";
 
   const hikes = `<section aria-labelledby="h-traces">
@@ -2291,7 +2297,7 @@ export function traficPage(origin: string, data: Cached<TraficAnswer> | null, no
       : `<div class="card">${icon("bus")}<h3>Retards des bus au départ des gares</h3>
   <p class="note">Retards des bus, pas une mesure des bouchons : un car en retard l'est souvent depuis sa course précédente.</p>
   ${b.retards.length
-    ? `<ul class="rows eau">${b.retards.slice(0, 12).map((r) => `<li><span>${esc(r.reseau)} ${esc(r.ligne)} vers ${esc(casse(r.direction))}<small>gare ${esc(de(r.gare))}, départ prévu ${esc(atDay(saidNow(r.heure, data!.fetchedAt.getTime(), now)))}</small></span><span class="score">${r.retard_min} min</span></li>`).join("")}</ul>`
+    ? `<ul class="rows eau">${b.retards.slice(0, 12).map((r) => `<li><span>${esc(r.reseau)} ${esc(r.ligne)} vers ${esc(casse(r.direction))} <small>gare ${esc(de(r.gare))}, départ prévu ${esc(atDay(saidNow(r.heure, data!.fetchedAt.getTime(), now)))}</small></span> <span class="score">${r.retard_min} min</span></li>`).join("")}</ul>`
     : `<p>${b.suivis ? `Aucun des ${b.suivis} départs suivis en direct n'a plus de ${LATE_MIN} min de retard.` : "Pas de départ suivi en direct en ce moment."}</p>`}
   ${b.alertes.length ? `<h4>Déviations et avis des réseaux</h4>${alertList(b.alertes)}` : ""}
   ${b.temps_reel.length ? `<p class="note">Flux en direct : ${b.temps_reel.map((t) => `${esc(t.reseau)} ${esc(leJour(t.heure))}`).join(", ")}. <a href="/bus">Les prochains départs</a>.</p>` : `<p class="note"><a href="/bus">Les prochains départs</a>.</p>`}</div>`;
@@ -2343,7 +2349,7 @@ export function traficPage(origin: string, data: Cached<TraficAnswer> | null, no
   <p>${radarsLead}</p>
   <figure class="mapcard">${islandMap({ markers: radarMarkers, label: radarsLead, apart: true })}
   <figcaption class="note">${legende([{ forme: "pastille", couleur: COUNT_COLOR, texte: "90", dit: "Radar fixe : vitesse limitée en km/h" }])}</figcaption></figure>
-  <ul class="rows eau">${cameras.map((c) => `<li><span>${esc(c.commune)}<small>${esc(radars.vitesses(c.radars).join(", "))}</small></span><span class="score">${c.radars.length}</span></li>`).join("")}</ul>
+  <ul class="rows eau">${cameras.map((c) => `<li><span>${esc(c.commune)} <small>${esc(radars.vitesses(c.radars).join(", "))}</small></span> <span class="score">${c.radars.length}</span></li>`).join("")}</ul>
   <details><summary>Où ils sont</summary><ul class="plain">${cameras.flatMap((c) => c.radars.map((r) => `<li>${esc(c.commune)}${r.vma_kmh != null ? `, ${r.vma_kmh}\u00a0km/h` : ""} : <a href="${esc(radars.carte(r))}" rel="noopener">la carte ↗</a></li>`)).join("")}</ul></details>
   <p class="note">${esc(radars.RESERVE())}</p></div>`;
   const ours = `<section aria-labelledby="h-nous">
@@ -2503,7 +2509,7 @@ function trailLi(t: TrailItem, now: Date): string {
   const label = e === "f" ? (t.partiel ? "fermé en partie" : "fermé") : e === "o" ? "ouvert" : "état inconnu";
   const small = [`${t.commune ? `${esc(t.commune)} · ` : ""}${kmFr(t.km)} km${t.dplus != null ? ` · ${upDown({ dplus: t.dplus, dmoins: t.dmoins })}` : ""}${t.boucle ? " · boucle" : ""}`, why_(t, now)].filter(Boolean).join(" · ");
   const on = t.randonnees.length ? `<small>Sur : ${t.randonnees.map((r) => `<a href="/randonnees/${esc(r.slug)}">${esc(r.nom)}</a>`).join(", ")}</small>` : "";
-  return `<li ${dataOf(t, e)}><span>${t.slug ? `<a href="/sentiers/${esc(t.slug)}">${esc(t.nom)}</a>` : esc(t.nom)}<small>${small}</small>${on}</span><span class="${cls}">${label}</span></li>`;
+  return `<li ${dataOf(t, e)}><span>${t.slug ? `<a href="/sentiers/${esc(t.slug)}">${esc(t.nom)}</a>` : esc(t.nom)} <small>${small}</small>${on}</span> <span class="${cls}">${label}</span></li>`;
 }
 
 // The filter: shown once the script runs; without it, everything is listed.
@@ -2544,7 +2550,7 @@ export function randonneesPage(origin: string, data: Cached<RandonneesAnswer> | 
 
   const map = d
     ? `<figure class="card mapcard">${hikesMap(d.lignes, "Carte de La Réunion (974) : les itinéraires de randonnée et les sentiers de l'ONF, ouverts ou fermés")}
-  <figcaption class="note legend"><span><i class="sw rte"></i>itinéraire avec trace</span><span><i class="sw ouvert"></i>sentier ouvert</span><span><i class="sw ferme"></i>fermé</span><span><i class="sw inconnu"></i>hors gestion ONF</span>${traceSource(d.carte_mise_a_jour, true, d.carte_lue)}</figcaption></figure>`
+  <figcaption class="note legend"><span><i class="sw rte"></i>itinéraire avec trace</span> <span><i class="sw ouvert"></i>sentier ouvert</span> <span><i class="sw ferme"></i>fermé</span> <span><i class="sw inconnu"></i>hors gestion ONF</span>${traceSource(d.carte_mise_a_jour, true, d.carte_lue)}</figcaption></figure>`
     : "";
 
   const band = `${crumbBar("Randonnée")}
@@ -2700,7 +2706,7 @@ function traceLegend(kind: "sentier" | "randonnee", etats: string[]): string {
   const marks: [string, string][] = kind === "sentier"
     ? ([["ouvert", "sentier ouvert"], ["ferme", "fermé"], ["inconnu", "hors gestion ONF"]] as [string, string][]).filter(([e]) => etats.includes(e))
     : [["rte", "itinéraire avec trace"], ...(etats.includes("ferme") ? [["ferme", "fermé"] as [string, string]] : [])];
-  return [...marks, ["st", "départ"]].map(([c, t]) => `<span><i class="sw ${c}"></i>${t}</span>`).join("");
+  return [...marks, ["st", "départ"]].map(([c, t]) => `<span><i class="sw ${c}"></i>${t}</span>`).join(" ");
 }
 
 /**
@@ -2832,7 +2838,7 @@ export function tracePage(origin: string, kind: "sentier" | "randonnee", slug: s
     ? `<ul class="rows eau">${d.troncons.map((t) => {
         const cls = t.etat === "fermé" ? "q-mauvaise" : t.etat === "ouvert" ? "q-bonne" : "q-none";
         const name = t.sentier ? (t.page ? `<a href="${esc(t.page)}">${esc(t.sentier)}</a>` : esc(t.sentier)) : esc(nom);
-        return `<li><span>${name}<small>${(t.etat === "fermé" ? onf.motifs(t, now) : [t.cause, t.precision].filter((x): x is string => !!x)).map(esc).join(" · ")}</small></span><span class="${cls}">${esc(t.etat)}</span></li>`;
+        return `<li><span>${name} <small>${(t.etat === "fermé" ? onf.motifs(t, now) : [t.cause, t.precision].filter((x): x is string => !!x)).map(esc).join(" · ")}</small></span> <span class="${cls}">${esc(t.etat)}</span></li>`;
       }).join("")}</ul>`
     : "";
   const stateBlock = rows
@@ -2935,7 +2941,7 @@ function droughtUses(interdits: SecheresseAnswer["interdits"]): string {
   const cols = [...interdits].filter((x) => DROUGHT_ORDER.includes(x.niveau)).sort((x, y) => DROUGHT_ORDER.indexOf(y.niveau) - DROUGHT_ORDER.indexOf(x.niveau));
   const uses = [...new Set(cols.flatMap((x) => x.restrictions.map((r) => r.usage)))];
   if (!cols.length || !uses.length) return "";
-  const head = cols.map((x) => `<th scope="col">${droughtBadge(x.niveau)}<small class="note" style="display:block;font-weight:400">${esc(x.communes.join(", "))}</small></th>`).join("");
+  const head = cols.map((x) => `<th scope="col">${droughtBadge(x.niveau)} <small class="note" style="display:block;font-weight:400">${esc(x.communes.join(", "))}</small></th>`).join("");
   const rows = uses.map((u) => `<tr><th scope="row">${esc(u)}</th>${cols.map((x) => {
     const said = x.restrictions.find((r) => r.usage === u)?.restriction;
     return said ? `<td data-label="${esc(x.niveau)}">${esc(heuresDites(said))}</td>` : "<td></td>";
@@ -3262,7 +3268,7 @@ const far=(k)=>k<1?Math.max(10,Math.round(k*100)*10)+" m":(Math.round(k*10)/10).
 const xy=(la,lo)=>[(lo-BOX[0])/(BOX[2]-BOX[0])*W,(BOX[3]-la)/(BOX[3]-BOX[1])*H];
 let list=null;
 const show=(la,lo)=>{const near=list.d.map((d)=>({d,k:km(la,lo,d[0],d[1])})).sort((a,b)=>a.k-b.k).slice(0,N);
-ul.innerHTML=near.map(({d,k},i)=>"<li><span><b>"+(i+1)+".</b> "+e(d[2])+"<small>"+[far(k),[d[4],list.communes[d[5]]].filter(Boolean).join(", "),d[6],d[8],d[7]].filter(Boolean).map(e).join(" · ")+"</small><a class=\\"aller\\" href=\\""+e(route(d[0],d[1]))+"\\" rel=\\"noopener\\" data-go=\\""+d[0]+","+d[1]+"\\""+(d[4]?" data-a=\\""+e([d[4],list.communes[d[5]]].filter(Boolean).join(", "))+"\\"":"")+" data-m=\\"pied\\" aria-label=\\""+e(T.label+d[2])+"\\">"+e(T.route)+"</a></span><span class=\\""+(d[3]<2?"q-bonne":"q-none")+"\\">"+e(ACCES[d[3]])+"</span></li>").join("");
+ul.innerHTML=near.map(({d,k},i)=>"<li><span><b>"+(i+1)+".</b> "+e(d[2])+"<small>"+[far(k),[d[4],list.communes[d[5]]].filter(Boolean).join(", "),d[6],d[8],d[7]].filter(Boolean).map(e).join(" · ")+"</small><a class=\\"aller\\" href=\\""+e(route(d[0],d[1]))+"\\" rel=\\"noopener\\" data-go=\\""+d[0]+","+d[1]+"\\""+(d[4]?" data-a=\\""+e([d[4],list.communes[d[5]]].filter(Boolean).join(", "))+"\\"":"")+" data-m=\\"pied\\" aria-label=\\""+e(T.label+d[2])+"\\">"+e(T.route)+"</a></span> <span class=\\""+(d[3]<2?"q-bonne":"q-none")+"\\">"+e(ACCES[d[3]])+"</span></li>").join("");
 res.hidden=false;const svg=document.querySelector(".mapcard svg");if(!svg)return;
 const old=svg.querySelector("#autour-g");if(old)old.remove();
 const pts=near.map(({d})=>xy(d[0],d[1])),me=xy(la,lo),all=[...pts,me],xs=all.map((p)=>p[0]),ys=all.map((p)=>p[1]);
@@ -3292,11 +3298,11 @@ export function daePage(origin: string, data: Cached<DaeAnswer> | null, now = ne
         `<li class="card tgt" id="${anchorId("c", c.commune)}">${folded(foldDae,
           `<h3>${esc(c.commune)}${foldDae ? "\u00a0" : " "}<span class="note">${foldDae ? "· " : ""}${c.nombre}\u00a0défibrillateur${c.nombre > 1 ? "s" : ""}${c.toute_heure ? `, dont ${c.toute_heure}\u00a0accessible${c.toute_heure > 1 ? "s" : ""} à toute heure` : ""}</span></h3>`,
           `<ul class="rows eau dae">` +
-        c.liste.map((x) => `<li><span>${soulignesCoupables(esc(x.lieu))}<small>${[x.adresse, x.emplacement, x.etage].filter(Boolean).map((v) => esc(v!)).join(" · ")}</small>` +
+        c.liste.map((x) => `<li><span>${soulignesCoupables(esc(x.lieu))} <small>${[x.adresse, x.emplacement, x.etage].filter(Boolean).map((v) => esc(v!)).join(" · ")}</small>` +
           // The normal route, not on foot as « Autour de moi »: a device of the commune may be kilometres away.
           `${aller({ nom: x.lieu, lat: x.lat ?? NaN, lon: x.lon ?? NaN, adresse: x.adresse })}</span>` +
-          `<span class="${x.acces.includes("toute heure") || x.acces.includes("24 h") ? "q-bonne" : "q-none"}">${esc(shortAccess(x.acces))}</span></li>`).join("") +
-        (c.nombre > c.liste.length ? `<li><span class="note">et ${c.nombre - c.liste.length} autres : demandez le plus proche à votre IA.</span><span></span></li>` : "") +
+          ` <span class="${x.acces.includes("toute heure") || x.acces.includes("24 h") ? "q-bonne" : "q-none"}">${esc(shortAccess(x.acces))}</span></li>`).join("") +
+        (c.nombre > c.liste.length ? `<li><span class="note">et ${c.nombre - c.liste.length} autres : demandez le plus proche à votre IA.</span> <span></span></li>` : "") +
         `</ul>`)}</li>`).join("")}</ul>`
     : "";
 
@@ -3362,7 +3368,7 @@ function sportRow(r: SportAnswer["resultats"] extends (infer T)[] | undefined ? 
     : r.etat === "annulée" || r.etat === "reportée" ? `<span class="q-mauvaise">${esc(r.etat)}</span>` : `<span class="q-none">${esc(shortWhen(r.quand))}</span>`;
   // A match links nowhere of its own: its championship's page is linked once, under the standings.
   const name = r.lien && !r.competition ? `<a href="${esc(r.lien)}" rel="noopener">${esc(r.epreuve)}</a>` : esc(r.epreuve);
-  return `<li><span>${name}<small>${small}${withScore && r.detail ? ` · ${esc(r.detail)}` : ""}</small></span>${right}</li>`;
+  return `<li><span>${name} <small>${small}${withScore && r.detail ? ` · ${esc(r.detail)}` : ""}</small></span>${right}</li>`;
 }
 
 /** The link to a championship's page, inside it when it is folded (words from marketing). */
@@ -3377,7 +3383,7 @@ function bySport(rows: NonNullable<SportAnswer["a_venir"]>, withScore: boolean, 
     `<li class="card">${folded(folds,
       `<h3>${esc(sportName(g.sp))}${folds ? "\u00a0" : " "}<span class="note">${folds ? "· " : ""}${g.list.length}\u00a0${withScore ? "résultat" : "rendez-vous"}${withScore && g.list.length > 1 ? "s" : ""}</span></h3>`,
       `<ul class="rows eau">${g.list.slice(0, SPORT_LISTED).map((r) => sportRow(r, withScore)).join("")}` +
-      (g.list.length > SPORT_LISTED ? `<li><span class="note">et ${g.list.length - SPORT_LISTED} autres : demandez-les à votre IA.</span><span></span></li>` : "") +
+      (g.list.length > SPORT_LISTED ? `<li><span class="note">et ${g.list.length - SPORT_LISTED} autres : demandez-les à votre IA.</span> <span></span></li>` : "") +
       `</ul>`)}</li>`).join("")}</ul>`;
 }
 
@@ -3414,7 +3420,7 @@ export function sportPage(origin: string, data: Cached<SportAnswer> | null, now 
           : `<h3>${site}</h3>`;
         return `<li class="card">${folded(foldTables, head, (foldTables ? `<p class="note">${site}</p>` : "") +
           `${c.muet ? `<p class="note">${silentText(c.muet)}</p>` : ""}${c.lignes.length ? `<ul class="rows eau">${c.lignes.map((l) =>
-          `<li><span>${l.place}. ${esc(l.equipe)}<small>${l.joues} match${l.joues > 1 ? "s" : ""} joué${l.joues > 1 ? "s" : ""}</small></span><span class="score">${l.points} pts</span></li>`).join("")}</ul>` : ""}`)}</li>`;
+          `<li><span>${l.place}. ${esc(l.equipe)} <small>${l.joues} match${l.joues > 1 ? "s" : ""} joué${l.joues > 1 ? "s" : ""}</small></span> <span class="score">${l.points} pts</span></li>`).join("")}</ul>` : ""}`)}</li>`;
       }).join("")}</ul>`
     : "";
 
@@ -3458,7 +3464,7 @@ ${d?.programmes_communes?.length ? `<section aria-labelledby="h-prog">
   <div class="sec-h"><p class="eyebrow">Publiés par les mairies</p><h2 id="h-prog">Programmes sportifs des communes</h2>
   ${d.programmes_communes?.length ? `<p>${esc(d.programmes_a_savoir ?? "")}</p>` : ""}</div>
   ${d.programmes_communes?.length ? `<ul class="zones"><li class="card"><ul class="rows eau">${d.programmes_communes.map((p) =>
-    `<li><span><a href="${esc(p.lien)}" rel="noopener"${ACCUEILS.has(p.lien) ? ' target="_blank"' : ""}>${esc(p.titre)}</a><small>${[p.commune && esc(p.commune), adresseTexte(`Source\u00a0: ${p.source}`)].filter(Boolean).join(" · ")}</small></span><span class="q-none">${esc(shortWhen(p.dates))}</span></li>`).join("")}</ul></li></ul>` : ""}
+    `<li><span><a href="${esc(p.lien)}" rel="noopener"${ACCUEILS.has(p.lien) ? ' target="_blank"' : ""}>${esc(p.titre)}</a> <small>${[p.commune && esc(p.commune), adresseTexte(`Source\u00a0: ${p.source}`)].filter(Boolean).join(" · ")}</small></span> <span class="q-none">${esc(shortWhen(p.dates))}</span></li>`).join("")}</ul></li></ul>` : ""}
 </section>` : ""}
 ${d?.resultats?.length ? `<section aria-labelledby="h-res">
   <div class="sec-h"><p class="eyebrow">Sept derniers jours</p><h2 id="h-res">Derniers résultats</h2>
@@ -3687,7 +3693,7 @@ function rainBar(total: number, normal?: number, ratio?: number): string {
   if (normal == null || normal <= 0) return `<b>${fr(total)}\u00a0mm</b>`;
   const x = ratio ?? Math.round((100 * total) / normal);
   const w = Math.min(x / 100, 2) * 50;
-  return `<b>${fr(total)}\u00a0mm</b><small class="note">normale ${normal}\u00a0mm</small><span class="ratio" role="img" aria-label="${x} % de la normale"><i style="width:${w}%;background:${rainClass(x).couleur}"></i><s></s></span>`;
+  return `<b>${fr(total)}\u00a0mm</b> <small class="note">normale ${normal}\u00a0mm</small> <span class="ratio" role="img" aria-label="${x} % de la normale"><i style="width:${w}%;background:${rainClass(x).couleur}"></i><s></s></span>`;
 }
 const vsNormal = (v?: number, n?: number, unit = "\u00a0°C") =>
   v == null ? "—" : `<b>${fr(v)}${unit}</b>${n != null ? `<small class="note">normale ${fr(n)}${unit}</small>` : ""}`;
@@ -3731,11 +3737,11 @@ export function historiquePage(origin: string, data: Cached<HistoriqueAnswer> | 
   const table = rows.length
     ? `<div class="card table-wrap"><table class="drought histo"><caption class="sr">Les 30 derniers jours</caption><thead><tr><th>Station</th><th>Pluie, 30 jours</th><th>Maximales</th><th>Minimales</th><th>Soleil</th></tr></thead><tbody>${rows.map((r) => {
         const e = r.ensoleillement;
-        return `<tr><th scope="row" class="tgt" id="${anchorId("s", r.station)}">${esc(r.station)}<small class="note">${esc(r.zone)}, ${nombre(r.altitude_m)}\u00a0m</small></th>` +
+        return `<tr><th scope="row" class="tgt" id="${anchorId("s", r.station)}">${esc(r.station)} <small class="note">${esc(r.zone)}, ${nombre(r.altitude_m)}\u00a0m</small></th>` +
           `<td>${r.pluie ? rainBar(r.pluie.total_mm, r.pluie.normale_mm, pct(r.pluie.rapport_a_la_normale)) : "—"}</td>` +
           `<td>${vsNormal(r.temperatures?.maximales_moyenne, r.temperatures?.maximales_normale)}</td>` +
           `<td>${vsNormal(r.temperatures?.minimales_moyenne, r.temperatures?.minimales_normale)}</td>` +
-          `<td>${e?.jours_mesures ? `${vsNormal(e.heures_par_jour, e.normale_heures_par_jour, "\u00a0h/j")}<small class="note">${e.jours_gris} jour${e.jours_gris > 1 ? "s" : ""} gris</small>` : "—"}</td></tr>`;
+          `<td>${e?.jours_mesures ? `${vsNormal(e.heures_par_jour, e.normale_heures_par_jour, "\u00a0h/j")} <small class="note">${e.jours_gris} jour${e.jours_gris > 1 ? "s" : ""} gris</small>` : "—"}</td></tr>`;
       }).join("")}</tbody></table></div>`
     : "";
 
@@ -3835,7 +3841,7 @@ const newsTime = (r: Pick<NewsRow, "publie" | "il_y_a">) => (r.il_y_a ? leAt(r.p
 function newsRow(r: NewsRow): string {
   const small = [r.media + (r.aussi?.length ? ` (aussi ${r.aussi.map((x) => x.media).join(", ")})` : ""), r.communes?.join(", ")].filter(Boolean).map((x) => esc(x!)).join(" · ");
   return `<li data-k="${esc(r.lien)}" data-c="${esc((r.communes ?? []).join("|"))}" data-s="${esc((r.sujets ?? []).join("|"))}"><span><a href="${esc(r.lien)}" rel="noopener"${fenetre(r.lien)}>${esc(r.titre)}</a>` +
-    `${r.resume ? `<small>${esc(r.resume)}</small>` : ""}<small>${small}<span class="nt">${small ? " · " : ""}${esc(newsTime(r))}</span></small></span><span class="q-none">${esc(newsTime(r))}</span></li>`;
+    `${r.resume ? `<small>${esc(r.resume)}</small>` : ""} <small>${small}<span class="nt">${small ? " · " : ""}${esc(newsTime(r))}</span></small></span> <span class="q-none">${esc(newsTime(r))}</span></li>`;
 }
 
 const NEWS_FILTER = `<form id="nf" class="card filter" hidden role="search" aria-label="Filtrer les informations">
@@ -3883,7 +3889,7 @@ export function actualitesPage(origin: string, data: Cached<ActualitesAnswer> | 
   <div class="sec-h"><p class="eyebrow">Heure par heure</p><h2 id="h-direct">Le direct ${/^[aeiouyéèêiî]/i.test(d.en_direct[0].media) ? "d'" : "de "}${esc(d.en_direct[0].media)}</h2>
   <p>Les entrées du direct, la plus récente en haut, avec leur première phrase et ce qu'elles disent des communes. Le texte complet est sur le site du média.</p></div>
   <ul class="rows eau news">${d.en_direct.map((r) => `<li><span><a href="${esc(r.lien)}" rel="noopener"${fenetre(r.lien)}>${esc(r.titre)}</a>${r.resume ? `<small>${esc(r.resume)}</small>` : ""}` +
-    `${r.communes?.length ? `<small>${esc(r.communes.join(", "))}</small>` : ""}<small class="nt">${esc(newsTime(r))}</small></span><span class="q-none">${esc(newsTime(r))}</span></li>`).join("")}</ul>
+    `${r.communes?.length ? `<small>${esc(r.communes.join(", "))}</small>` : ""} <small class="nt">${esc(newsTime(r))}</small></span> <span class="q-none">${esc(newsTime(r))}</span></li>`).join("")}</ul>
 </section>`
     : "";
 
@@ -3891,7 +3897,7 @@ export function actualitesPage(origin: string, data: Cached<ActualitesAnswer> | 
     ? `<section aria-labelledby="h-pref">
   <div class="sec-h"><p class="eyebrow">Officiel</p><h2 id="h-pref">Communiqués de la préfecture</h2><p>Mesures de sécurité, interdictions, routes, eau : les consignes officielles priment.</p></div>
   ${d.prefecture_injoignable ? `<p class="note">${silentText(d.prefecture_injoignable)}</p>` : ""}
-  <ul class="rows eau news">${d.prefecture.map((r) => `<li><span><a href="${esc(r.lien)}" rel="noopener">${esc(r.titre)}</a><small class="nt">${esc(newsTime(r))}</small></span><span class="q-none">${esc(newsTime(r))}</span></li>`).join("")}</ul>
+  <ul class="rows eau news">${d.prefecture.map((r) => `<li><span><a href="${esc(r.lien)}" rel="noopener">${esc(r.titre)}</a> <small class="nt">${esc(newsTime(r))}</small></span> <span class="q-none">${esc(newsTime(r))}</span></li>`).join("")}</ul>
 </section>`
     : "";
 

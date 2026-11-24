@@ -49,7 +49,7 @@ describe("the commune's elections page and the tool", () => {
     const page = flat(electionsPage("https://rundata.re", pageOf("saint-denis")!)!);
     expect(page).toContain('<section id="bureaux"');
     expect(page).toContain(`<summary>133 bureaux de vote dans 31 lieux</summary>`);
-    expect(page).toContain("<b>Hotel de ville</b> · bureaux 1 à 6<small>1 RUE PASTEUR, 97400 saint denis</small>");
+    expect(page).toContain("<b>Hotel de ville</b> · bureaux 1 à 6 <small>1 RUE PASTEUR, 97400 saint denis</small>");
     expect(page).toContain("d&#39;avant les municipales de 2026");
     expect(page).toContain(`href="${bv.ISE}"`);
     // The source and its licence, in the section's own line of sources.

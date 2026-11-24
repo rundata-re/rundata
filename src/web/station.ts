@@ -144,7 +144,7 @@ function band(d: StationData, now: Date): string {
   if (h?.ins != null && (h.ins > 0 || daylight(d, h.fin))) rows.push(["Soleil", `${h.ins}${T}min ${span}`]);
   const box = d.derniere
     ? `<figure class="card mapcard sta-now"><h2>La dernière mesure, ${at}</h2>
-    <ul class="bars">${rows.map(([k, v]) => `<li><span>${k}</span><b>${esc(v)}</b></li>`).join("")}</ul>
+    <ul class="bars">${rows.map(([k, v]) => `<li><span>${k}</span> <b>${esc(v)}</b></li>`).join("")}</ul>
     <p class="note">${cirad(d.nom) ? "Mesures du CIRAD, diffusées par Météo-France" : "Mesures de Météo-France"}, toutes les 6${T}minutes. <a href="/meteo#stations">Les autres stations →</a></p>
   </figure>`
     : `<figure class="card mapcard sta-now"><p>${esc(silence(d, now))} <a href="/meteo#stations">Les autres stations →</a></p></figure>`;
@@ -224,7 +224,7 @@ function archive(h: StationHistory, now: Date): string {
 
   const y = h.annee.resume as Resume;
   const since = y.pluie?.jours_mesures ? thin(` Depuis janvier : ${fr(Math.round(y.pluie.total_mm))} mm de pluie${y.pluie.rapport_a_la_normale ? `, ${esc(String(y.pluie.rapport_a_la_normale))} de la normale` : ""}.`) : "";
-  const cell = (v: number | undefined, unit: string, normal?: number, round = num) => (v == null ? "<td>—</td>" : `<td><b>${thin(`${round(v)} ${unit}`)}</b>${normal != null ? `<small>normale ${round(normal)}</small>` : ""}</td>`);
+  const cell = (v: number | undefined, unit: string, normal?: number, round = num) => (v == null ? "<td>—</td>" : `<td><b>${thin(`${round(v)} ${unit}`)}</b>${normal != null ? ` <small>normale ${round(normal)}</small>` : ""}</td>`);
   const whole = (n: number) => fr(Math.round(n));
   const rows = h.annee.mois.map((m) => {
     const name = String(m.mois).replace(/ \d{4}$/, "");
@@ -241,7 +241,7 @@ function archive(h: StationHistory, now: Date): string {
 
   const rec = h.records;
   const card = (label: string, x: { valeur: number; date: string } | undefined, v: (n: number) => string) =>
-    x ? `<li class="card"><span>${label}</span><b>${thin(v(x.valeur))}</b><small>le ${esc(x.date)}</small></li>` : "";
+    x ? `<li class="card"><span>${label}</span> <b>${thin(v(x.valeur))}</b> <small>le ${esc(x.date)}</small></li>` : "";
   const items = rec
     ? card("Température la plus haute", rec.temperature_max, deg) + card("Température la plus basse", rec.temperature_min, deg) +
       card("Pluie en un jour", rec.pluie_en_un_jour_mm, (n) => `${fr(Math.round(n))} mm`) + card("Rafale la plus forte", rec.rafale_max_kmh, (n) => `${n} km/h`)

@@ -97,8 +97,8 @@ describe("the sentiers marmailles on /enfants and /carte", () => {
     expect(html.indexOf('id="h-marmailles"')).toBeLessThan(html.indexOf('id="h-ecoles"'));
     expect(html).toContain("<b>Tracés du Conseil Général, sans date : un chemin a pu changer depuis.</b>");
     expect(html).toContain('<li class="card" id="m-cilaos"><details><summary><h3>Cilaos <span class="note">3 sentiers</span></h3></summary>');
-    expect(html).toContain('<li><span>De Cilaos à Bras Sec<small>2,2 km aller-retour · 1 h 40</small><small>État sur la carte de l&#39;ONF : <a href="/sentiers/cilaos-bras-sec-par-bras-de-benjoin">Cilaos - Bras Sec par Bras de Benjoin</a></small></span></li>');
-    expect(html).toContain("<small>7,3 km · 3 h</small><small>État sur la carte de l&#39;ONF");
+    expect(html).toContain('<li><span>De Cilaos à Bras Sec <small>2,2 km aller-retour · 1 h 40</small> <small>État sur la carte de l&#39;ONF : <a href="/sentiers/cilaos-bras-sec-par-bras-de-benjoin">Cilaos - Bras Sec par Bras de Benjoin</a></small></span></li>');
+    expect(html).toContain("<small>7,3 km · 3 h</small> <small>État sur la carte de l&#39;ONF");
     expect(html).toContain("<small>État non suivi par l&#39;ONF.</small>");
     // The filter of the places leaves them as they are.
     expect(html).toContain('document.querySelectorAll("#enf [data-k] details")');

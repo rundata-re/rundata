@@ -57,8 +57,8 @@ function mark(c: Cle): string {
 
 /** The legend's two parts: the marks, then `ligne` (HTML: it may hold a link). */
 export const legende = (cles: Cle[], ligne?: string): string =>
-  (cles.length ? `<span class="mlg">${cles.map((c) => `<span>${mark(c)}${esc(c.dit)}</span>`).join("")}</span>` : "") +
-  (ligne ? `<span class="mls">${ligne}</span>` : "");
+  (cles.length ? `<span class="mlg">${cles.map((c) => `<span>${mark(c)}${esc(c.dit)}</span>`).join(" ")}</span>` : "") +
+  (ligne ? `${cles.length ? " " : ""}<span class="mls">${ligne}</span>` : "");
 
 /** Its style, in the page's sheet. At 1.6 rem, a disc's figures are 11 px high, a pill's 13 px. */
 export const LEGENDE_CSS = `.mlg{display:flex;flex-wrap:wrap;gap:.3rem .9rem;margin-bottom:.35rem}.mlg>span{display:inline-flex;align-items:center;gap:.4rem}` +

@@ -12,7 +12,7 @@ const NOW = new Date("2026-10-22T06:00:00Z");
 const ALERTE = { couleur: 3, texte: "ALERTE CYCLONIQUE orange", ecoles: false, court: { cyclone: 3, prevue: false } } as Alerte;
 
 const inMain = (html: string, what: string) => {
-  const from = html.indexOf('<main id="contenu" tabindex="-1">');
+  const from = html.indexOf('<main id="contenu">');
   return from >= 0 && html.indexOf(what, from) > from && html.indexOf(what, from) < html.indexOf("</main>");
 };
 

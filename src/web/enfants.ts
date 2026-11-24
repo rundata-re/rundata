@@ -77,7 +77,7 @@ function eventLi(r: Row, g: Porte): string {
   const small = [r.quand.replace(/ (de|à) \d\d:\d\d.*$/, "") + (hours ? ` · ${hours}` : ""), r.commune, r.lieu && r.lieu.length < 80 ? r.lieu : undefined, r.source ? `Source\u00a0: ${r.source}` : r.publie_par]
     .filter(Boolean).map((x) => esc(x!)).join(" · ");
   const status = r.statut && r.statut !== "complet" ? `<span class="badge">${esc(r.statut)}</span> ` : "";
-  return `<li data-b="${a.bands.join(" ")}" data-t="agenda"><span>${status}${r.lien ? `<a href="${esc(r.lien)}" rel="noopener"${ACCUEILS.has(r.lien) ? ' target="_blank"' : ""}>${esc(r.titre)}</a>` : esc(r.titre)}<small>${small}</small>${eventGo(r, g)}</span>${badge(a)}</li>`;
+  return `<li data-b="${a.bands.join(" ")}" data-t="agenda"><span>${status}${r.lien ? `<a href="${esc(r.lien)}" rel="noopener"${ACCUEILS.has(r.lien) ? ' target="_blank"' : ""}>${esc(r.titre)}</a>` : esc(r.titre)} <small>${small}</small>${eventGo(r, g)}</span>${badge(a)}</li>`;
 }
 
 /**
@@ -140,7 +140,7 @@ export function marmaillesSection(): string {
       return t ? `<a href="/sentiers/${t.slug}">${esc(nom)}</a>` : esc(nom);
     });
     const etat = onf.length ? `${esc(MARMAILLES.etat)}${onf.join(", ")}${m.part_onf < marmailles.PRESQUE ? esc(MARMAILLES.reste) : ""}` : esc(MARMAILLES.nonSuivi);
-    return `<li><span>${esc(m.nom)}<small>${esc(marmailles.figures(m))}</small><small>${etat}</small></span></li>`;
+    return `<li><span>${esc(m.nom)} <small>${esc(marmailles.figures(m))}</small> <small>${etat}</small></span></li>`;
   };
   const cards = marmailles.communes().map((c) => {
     const list = marmailles.inCommune(c);
@@ -245,7 +245,7 @@ export function crechesSection(): string {
   const head = (first: string) => `<thead><tr><th scope="col">${first}</th><th scope="col">${CRECHES.creche}</th><th scope="col">${CRECHES.global}</th><th scope="col">${CRECHES.places}</th></tr></thead>`;
   const rows = creches.communes().map(([nom, o]) => `<tr><th scope="row">${esc(nom)}</th>${cells(o)}</tr>`).join("");
   const ile = `<tr><th scope="row">${CRECHES.ile}</th>${cells(creches.ILE)}</tr>`;
-  const epci = creches.intercommunalites().map((e) => `<tr><th scope="row">${esc(e.nom[0].toUpperCase() + e.nom.slice(1))}<small>${esc(creches.nomsDe(e).join(", "))}</small></th>${cells(e)}</tr>`).join("");
+  const epci = creches.intercommunalites().map((e) => `<tr><th scope="row">${esc(e.nom[0].toUpperCase() + e.nom.slice(1))} <small>${esc(creches.nomsDe(e).join(", "))}</small></th>${cells(e)}</tr>`).join("");
   return `<section id="creches" aria-labelledby="h-creches">
   <div class="sec-h"><p class="eyebrow">Avant l'école</p><h2 id="h-creches">${CRECHES.titre}</h2></div>
   <div class="card"><p>${esc(CRECHES.intro(creches.ANNEE))}</p><p>${esc(CRECHES.sans(creches.sansChiffre()))}</p><p>${CRECHES.trouver}</p></div>
@@ -365,7 +365,7 @@ function communeLi(l: enfants.Lieu, i: number, now: Date, g: Porte): string {
   // Its site, for the bubble of its dot (carte-points.ts).
   return `<li id="lieu-${i}" class="tgt" data-i="${i}" data-t="${l.type}"${l.site ? ` data-site="${esc(l.site)}"` : ""}${named ? ` data-n="${esc(capital(enfants.typeOf(l.type).un))}"` : ""}${named && l.quartier ? ` data-q="${esc(l.quartier)}"` : ""}>` +
     `<span><span class="nm">${link ? `<a href="${esc(link)}" rel="noopener">${name}</a>` : name}</span>${small ? `<small>${small}</small>` : ""}</span>` +
-    `<span class="end"><button type="button" class="tomap f-${familleOf(l.type).f}" hidden aria-label="${esc(MOTS.surCarte(nomOf(l)))}">${icon("pin")}</button></span>` +
+    ` <span class="end"><button type="button" class="tomap f-${familleOf(l.type).f}" hidden aria-label="${esc(MOTS.surCarte(nomOf(l)))}">${icon("pin")}</button></span>` +
     `${second(l, nomOf(l), a, today, g)}</li>`;
 }
 
@@ -390,7 +390,7 @@ export function enfantsCommunePage(origin: string, p: PlacePage, data: Cached<En
     `<label class="chip"><input type="radio" name="t" value="" checked> ${esc(MOTS.tous)} <span class="n">${list.length}</span></label>` +
     kinds.map((t) => `<label class="chip"><input type="radio" name="t" value="${t.type}"> <i class="ksw f-${familleOf(t.type).f}"></i>${esc(FILTRES[t.type])} <span class="n">${list.filter((l) => l.type === t.type).length}</span></label>`).join("") +
     `</form>`;
-  const legend = `<p class="klegend note">${families.map((x) => `<span><i class="ksw f-${x.f}"></i>${esc(couleur(x.types, list))}</span>`).join("")}</p>`;
+  const legend = `<p class="klegend note">${families.map((x) => `<span><i class="ksw f-${x.f}"></i>${esc(couleur(x.types, list))}</span>`).join(" ")}</p>`;
   const sheet = `<div id="ecs" class="card ksheet" hidden aria-live="polite"><button type="button" class="x" aria-label="${esc(MOTS.fermer)}">×</button><p class="nm"></p><p class="note tp"></p><p class="ya"></p><p><a class="go" href="#">${esc(MOTS.dansListe)}</a></p></div>`;
 
   // Each kind folded, its count in its line (marketing's words), but in a short list or a commune of one kind.

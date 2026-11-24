@@ -3129,7 +3129,7 @@ export function coupuresPage(origin: string, data: Cached<CoupuresAnswer> | null
   const silent = d?.injoignable ?? [];
   const status = !d
     ? loading("Les avis des distributeurs")
-    : copieBandeau(copieAncienne("eau", data!.fetchedAt, now, "page"), esc(VOIR_EAU)) +
+    : copieBandeau(copieAncienne("eau", new Date(lusLe(data!)), now, "page"), esc(VOIR_EAU)) +
       noticesHead(d.avis, "", dry, silent.length && d.avis.length ? "" : leAt(lusLe(data!)), silent.length > 0) +
       silent.map((f) => `<p class="note">${silentText(f)}</p>`).join("");
 

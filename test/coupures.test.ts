@@ -330,6 +330,19 @@ describe("coupures d'eau", () => {
     expect(waterLive(pageOf("le-port")!, { coupures: { value, fetchedAt: later } })!.detail.replace(/\u00a0/g, " ")).toContain("08:00");
   });
 
+  it("counts the old-read warning from when the notices were read, on the commune's page and the island's (24/11/2026)", async () => {
+    // Read long ago, the copy rebuilt just now from that read: both pages say it was not read again since.
+    const value = { ...(await buildCoupures(cache(), NOW)), avis_lus_le: new Date(NOW.getTime() - 3 * 86_400_000).toISOString() };
+    const copy = { value, fetchedAt: NOW };
+    const said = "ont été lus le 21/10 à 08:00 et n'ont pas pu être relus depuis";
+    const flat = (h: string) => unescape(h).replace(/\u00a0/g, " ");
+    expect(flat(coupuresCommunePage("https://rundata.re", pageOf("le-port")!, { coupures: copy }, NOW))).toContain(said);
+    expect(flat(coupuresPage("https://rundata.re", copy, NOW))).toContain(said);
+    // Read just now: neither page says it.
+    const fresh = { value: { ...value, avis_lus_le: NOW.toISOString() }, fetchedAt: NOW };
+    expect(flat(coupuresPage("https://rundata.re", fresh, NOW))).not.toContain("n'ont pas pu être relus");
+  });
+
   it("shows a list read whole, else sends to the notice for the streets, on the page and in the tool", async () => {
     const coupures = { value: await buildCoupures(cache(), NOW), fetchedAt: NOW };
     const page = (slug: string) => coupuresCommunePage("https://rundata.re", pageOf(slug)!, { coupures }, NOW);

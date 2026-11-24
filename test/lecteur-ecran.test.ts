@@ -4,35 +4,12 @@ import { legende, ROND } from "../src/web/carte-legende.js";
 import type { DepuisMinuit } from "../src/web/data.js";
 import { departureLi } from "../src/web/domains.js";
 import { homePage } from "../src/web/home.js";
-import { EVITE_SCRIPT, meteoPage, notFoundPage, sinceMidnightCard } from "../src/web/pages.js";
+import type { StationNow } from "../src/web/data.js";
+import { CSS, EVITE_SCRIPT, meteoPage, notFoundPage, sinceMidnightCard, stationsList } from "../src/web/pages.js";
+import { lu as luCss, separateursEnFlex } from "./lecteur.js";
 
-// What TalkBack reads, from its pass on the emulator (24/11/2026, TalkBack 14.2): the text of a piece of HTML as a screen
-// reader joins it. What is hidden from it is dropped, tags join their texts with nothing between them: two words in two
-// elements with no space between them are read as one (« bonnemoyennemauvaise »).
-const lu = (html: string) => {
-  // A walk over the tags, not a replacement: what follows a tag is read, a tag itself adds nothing.
-  let out = "";
-  let i = 0;
-  /** Where the element opened by the tag ending at `from` ends, its nested namesakes counted. */
-  const fin = (name: string, from: number) => {
-    const re = new RegExp(`<(/?)${name}\\b[^>]*>`, "gi");
-    re.lastIndex = from;
-    for (let depth = 1, m; (m = re.exec(html)); ) if ((depth += m[1] ? -1 : 1) === 0) return re.lastIndex;
-    return html.length;
-  };
-  while (i < html.length) {
-    const lt = html.indexOf("<", i);
-    if (lt < 0) { out += html.slice(i); break; }
-    out += html.slice(i, lt);
-    const gt = html.indexOf(">", lt);
-    if (gt < 0) break;
-    const tag = html.slice(lt, gt + 1);
-    const name = /^<([a-z0-9]+)/i.exec(tag)?.[1].toLowerCase();
-    const hidden = /\saria-hidden="true"/.test(tag) && !tag.endsWith("/>");
-    i = name && (name === "script" || name === "style" || hidden) ? fin(name, gt + 1) : gt + 1;
-  }
-  return out.replace(/&nbsp;|\u00a0|\u202f/g, " ").replace(/\s+/g, " ").trim();
-};
+// What TalkBack reads (test/lecteur.ts), with the site's sheet: a space is the layout's, not the HTML's alone.
+const lu = (html: string) => luCss(html, CSS);
 
 const ORIGIN = "https://rundata.re";
 const NOW = new Date("2026-11-24T09:00:00Z");
@@ -121,9 +98,30 @@ describe("words in two elements, read with their space", () => {
       avertissements: [],
     };
     const text = lu(sinceMidnightCard(j));
+    // The card is a grid, its value a flex: a space between their boxes is not one for the reader (« Au plus28 °Cà 12:54 »).
     expect(text).toContain("Au plus 28 °C à 12:54");
     expect(text).toContain("Au moins 14,2 °C à 05:42");
   });
+
+  it("/meteo's stations: the temperature, when it was measured, the wind and the rain, each its words", () => {
+    const st = { nom: "Bois-Rouge", source: "meteofrance", id: "97409240", lon: 55.65, lat: -20.9, altitude_m: 10, time: "2026-11-24T08:48:00Z", stale: false,
+      temperature: 27.3, vent: 4, rafales: 8, direction: 45, pluie_1h: 0 } as StationNow;
+    const text = lu(stationsList([st], NOW));
+    expect(text).toContain("27,3 °C mesurée le 24/11 à 12:48");
+    expect(text).not.toMatch(/[\p{L}\d]\p{Lu}|km\/h\p{L}|[\p{L}\d]pas de pluie/u);
+  });
+
+  it("a row of a list, its name and its state (the hikes around a place, the roads of /trafic): « ouvert » its own word", () => {
+    const row = `<ul class="rows eau"><li><span><a href="/randonnees/gr-r2">GR R2</a> <small>144,4 km · passe à 0,5 km</small></span> <span class="q-bonne">ouvert</span></li></ul>`;
+    expect(lu(row)).toBe("GR R2 144,4 km · passe à 0,5 km ouvert");
+  });
+
+  it("the space for the reader moves nothing on screen: never in a box that is itself a flex or a grid", () => {
+    const st = { nom: "Bois-Rouge", source: "meteofrance", id: "97409240", lon: 55.65, lat: -20.9, altitude_m: 10, time: "2026-11-24T08:48:00Z", stale: false,
+      temperature: 27.3, vent: 4, rafales: 8, direction: 45, pluie_1h: 0 } as StationNow;
+    for (const html of [homePage(ORIGIN, null, NOW), notFoundPage(ORIGIN, "/nulle-part"), stationsList([st], NOW)])
+      expect(separateursEnFlex(html, CSS)).toEqual([]);
+  }, 30_000);
 
   it("no other piece of the site puts a text and another one in two elements side by side without a space", () => {
     // The same pattern: « </span><b> », « </b><span> », « …<small> ». Kept: what a screen reader does not read
@@ -145,11 +143,22 @@ describe("a bus line of one letter", () => {
     ({ ligne, direction: "ST-DENIS", reseau: "Car Jaune", trajet: "/bus/trajet/carjaune/1/x", dans_min: 6, heure: "13:10" }) as Parameters<typeof departureLi>[0];
 
   it("is read « ligne T », not « T majuscule »", () => {
-    expect(lu(departureLi(row("T"), "dans 6 min"))).toMatch(/^ligne T vers St-Denis/);
+    // In its list (.rows, a grid), the hidden « ligne » taken out of the flow: its space must not be a collapsible one.
+    expect(lu(`<ul class="rows">${departureLi(row("T"), "dans 6 min")}</ul>`)).toMatch(/^ligne T vers St-Denis/);
   });
 
   it("leaves the others as they are: « E2 », « 32 »", () => {
-    expect(lu(departureLi(row("E2"), "dans 6 min"))).toMatch(/^E2 vers St-Denis/);
-    expect(lu(departureLi(row("32"), "dans 6 min"))).toMatch(/^32 vers St-Denis/);
+    expect(lu(`<ul class="rows">${departureLi(row("E2"), "dans 6 min")}</ul>`)).toMatch(/^E2 vers St-Denis/);
+    expect(lu(`<ul class="rows">${departureLi(row("32"), "dans 6 min")}</ul>`)).toMatch(/^32 vers St-Denis/);
+  });
+});
+
+describe("a link of one letter", () => {
+  it("is named in words, never read « X majuscule »: the footer's list of the accounts", () => {
+    for (const html of [homePage(ORIGIN, null, NOW), notFoundPage(ORIGIN, "/nulle-part")]) {
+      const alone = [...html.matchAll(/<a ([^>]*)>(\p{L})<\/a>/gu)];
+      expect(alone.length).toBeGreaterThan(0);
+      for (const m of alone) expect(m[1]).toMatch(/aria-label="[^"]+ [^"]+"/);
+    }
   });
 });

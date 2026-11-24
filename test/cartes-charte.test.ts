@@ -48,7 +48,7 @@ describe("the charter of the maps", () => {
     expect(dae).toContain('<circle class="sh" cx=');
     expect(dae.match(/<circle class="sh"[^>]*fill="([^"]+)"/g)?.every((c) => c.endsWith('fill="#14202b"'))).toBe(true);
     expect(dae).not.toContain("#2b8a3e");
-    expect(dae).toContain('<circle r="34" fill="#14202b"/><text y="11">52</text></svg>défibrillateurs de la commune</span>');
+    expect(dae).toContain('<circle r="34" fill="#14202b"/><text y="11">52</text></svg>défibrillateurs de la commune<span class="sr">\u00a0</span></span>');
     expect(dae).toContain(`<span class="mls">Liste nationale Géo&#39;DAE, lue le ${DAE_LUE}.</span>`);
     const enfants = figure(enfantsPage(ORIGIN, null, NOW));
     expect(enfants.match(/<circle class="sh"[^>]*fill="([^"]+)"/g)?.every((c) => c.endsWith('fill="#14202b"'))).toBe(true);
@@ -64,10 +64,10 @@ describe("the charter of the maps", () => {
       baignades: [site("Plage de l'Hermitage", 55.22, -21.08, "bonne", "14/10/2026"), site("Bassin Manapany", 55.6, -21.37, "mauvaise", "20/10/2026")],
       communes: [], lu: NOW.toISOString(), a_savoir: COMMON, sources: [],
     } as unknown as EauAnswer), NOW));
-    expect(eau).toContain('<circle r="34" fill="#e3262d"/><text y="11">!</text></svg>mauvaise</span>');
+    expect(eau).toContain('<circle r="34" fill="#e3262d"/><text y="11">!</text></svg>mauvaise<span class="sr">\u00a0</span></span>');
     // Each white mark over 4.5:1 on its disc (ROND, carte-legende.ts), on the map as in the legend.
-    expect(eau).toContain('<circle r="34" fill="#237534"/><text y="11">✓</text></svg>bonne</span>');
-    expect(eau).toContain('<circle r="34" fill="#c2410c"/><text y="11">~</text></svg>moyenne</span>');
+    expect(eau).toContain('<circle r="34" fill="#237534"/><text y="11">✓</text></svg>bonne<span class="sr">\u00a0</span></span>');
+    expect(eau).toContain('<circle r="34" fill="#c2410c"/><text y="11">~</text></svg>moyenne<span class="sr">\u00a0</span></span>');
     expect(eau).toMatch(/r="34" fill="#237534"\/><text x="[\d.]+" y="[\d.]+" class="mv">✓<\/text>/);
     expect(eau).not.toMatch(/fill="#(?:2b8a3e|e8590c|868e96)"/);
     // The white edge that parts a mark from the map must not paint over the ring of a station with no recent measure.
@@ -83,12 +83,12 @@ describe("the charter of the maps", () => {
     const historique = figure(historiquePage(ORIGIN, cached({
       resume: "", periode: { du: "24/09/2026", au: "23/10/2026", jours: 30 }, stations: [station("Saint-Denis-Gillot", 55.52, -20.89, "33 %"), station("Bellecombe", 55.68, -21.21, "100 %"), station("Saint-Benoît", 55.71, -21.03, "160 %")], a_savoir: [], sources: [],
     } as HistoriqueAnswer), NOW));
-    expect(historique).toContain('<rect x="-64" y="-24" width="128" height="48" rx="24" fill="#ff922b"/><text y="11" style="fill:#14202b">40\u00a0%</text></svg>moins de 80\u00a0%\u00a0: nettement moins que la normale</span>');
+    expect(historique).toContain('<rect x="-64" y="-24" width="128" height="48" rx="24" fill="#ff922b"/><text y="11" style="fill:#14202b">40\u00a0%</text></svg>moins de 80\u00a0%\u00a0: nettement moins que la normale<span class="sr">\u00a0</span></span>');
     expect(historique).not.toMatch(/<span style="color:/);
     expect(historique).toContain('<span class="mls">Pluie mesurée par Météo-France du 24/09 au 23/10, en % de la normale 1991-2020.</span>');
     // The figure in the night's colour on every pill, where white reads badly (contrast 1.75 to 2.48:1, night 6.67 to 9.46:1), on the map as in the legend.
-    expect(historique).toContain('fill="#69db7c"/><text y="11" style="fill:#14202b">100\u00a0%</text></svg>de 80 à 125\u00a0%\u00a0: proche de la normale</span>');
-    expect(historique).toContain('fill="#4dabf7"/><text y="11" style="fill:#14202b">160\u00a0%</text></svg>plus de 125\u00a0%\u00a0: nettement plus que la normale</span>');
+    expect(historique).toContain('fill="#69db7c"/><text y="11" style="fill:#14202b">100\u00a0%</text></svg>de 80 à 125\u00a0%\u00a0: proche de la normale<span class="sr">\u00a0</span></span>');
+    expect(historique).toContain('fill="#4dabf7"/><text y="11" style="fill:#14202b">160\u00a0%</text></svg>plus de 125\u00a0%\u00a0: nettement plus que la normale<span class="sr">\u00a0</span></span>');
     expect(historique).toMatch(/fill="#69db7c"\/><text x="[\d.]+" y="[\d.]+" class="mv" style="fill:#14202b">100\u00a0%<\/text>/);
     expect(historique).toMatch(/fill="#ff922b"\/><text x="[\d.]+" y="[\d.]+" class="mv" style="fill:#14202b">33\u00a0%<\/text>/);
     expect(historique).toMatch(/fill="#4dabf7"\/><text x="[\d.]+" y="[\d.]+" class="mv" style="fill:#14202b">160\u00a0%<\/text>/);
@@ -97,14 +97,14 @@ describe("the charter of the maps", () => {
       plages: [{ nom: "Plage de Boucan Canot", commune: "Saint-Paul", lon: 55.22, lat: -21.03, valeur: 25.4, jour: "2026-10-22", distance_km: 3 }],
       sources: [],
     } as unknown as SeaData), NOW));
-    expect(mer).toContain("</svg>température de l&#39;eau au large de la plage</span>");
+    expect(mer).toContain("</svg>température de l&#39;eau au large de la plage<span class=\"sr\">\u00a0</span></span>");
     expect(mer).toContain('<span class="mls">Mesure par satellite (NOAA CoastWatch et NASA), moyenne du 22/10.</span>');
   });
 
   it("puts the speed cameras' map in a card of its own, with its legend; the Waze map as wide as the island it draws", () => {
     const trafic = traficPage(ORIGIN, null, NOW);
     expect(trafic).toMatch(/<figure class="mapcard"><svg class="map terrain"[^>]*aria-label="\d+ radars fixes à La Réunion/);
-    expect(trafic).toContain('fill="#14202b"/><text y="11">90</text></svg>Radar fixe : vitesse limitée en km/h</span>');
+    expect(trafic).toContain('fill="#14202b"/><text y="11">90</text></svg>Radar fixe : vitesse limitée en km/h<span class="sr">\u00a0</span></span>');
     // In the night's colour on the map too: the dark theme's ink made white figures on light pills.
     const radars = trafic.match(/<figure class="mapcard">(?:(?!<\/figure>).)*<\/figure>/s)?.[0] ?? "";
     expect(radars.match(/<rect class="sh"[^>]*fill="([^"]+)"/g)?.every((c) => c.endsWith('fill="#14202b"'))).toBe(true);

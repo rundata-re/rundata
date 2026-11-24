@@ -14,6 +14,7 @@
  */
 import data from "../electricite/installations.json" with { type: "json" };
 import { resolvePlace } from "../places/resolve.js";
+import { ESPACE_LU } from "./carte-legende.js";
 import { a, enumeration } from "../tools/format.js";
 import type { Journee } from "./data.js";
 import { esc, H, inScript, islandMap, project, W } from "./map.js";
@@ -124,7 +125,7 @@ export function installationsMap(): string {
 export function installationsLegend(): string {
   const present = new Set(INSTALLATIONS.communes.flatMap((c) => c.filieres.map((f) => f.nom)));
   const keys = ORDRE.filter((n) => present.has(n)).map((n) =>
-    `<span><svg viewBox="-20 -20 40 40" aria-hidden="true"><circle class="${CLASSE[n]}" r="15"/></svg>${esc(n)}</span>`).join(" ");
+    `<span><svg viewBox="-20 -20 40 40" aria-hidden="true"><circle class="${CLASSE[n]}" r="15"/></svg>${esc(n)}${ESPACE_LU}</span>`).join(" ");
   // The reference rounds at the map's scale: each in its own SVG, as wide against the legend as the round against the
   // map (the legend is as wide as the map); their words in HTML beside them, at the page's text size.
   const refs = [10, 50, 200].map((mw) => {
@@ -290,8 +291,8 @@ export function productionChart(j: Journee): string {
   // and the hours read as a phone number to iOS, which underlined them as a link (the user's iPhone, 31/10/2026).
   const ys = levels.map((mw) => `<span class="cy" style="top:${at(Y(mw) / CH)}" data-v="${mw === top ? `${mw}\u00a0MW` : mw}"></span>`).join("");
   const xs = hours.map((t) => `<span class="cx" style="left:${at(X((t - t0) / 60_000) / CW)}" data-v="${hm(t)}"></span>`).join("");
-  const keys = `<span class="mlg ech-kr"><span><svg viewBox="-20 -20 40 40" aria-hidden="true"><rect class="ar-ren" x="-15" y="-15" width="30" height="30" rx="4"/></svg>renouvelable</span>` +
-    `<span><svg viewBox="-20 -20 40 40" aria-hidden="true"><rect class="ar-non" x="-15" y="-15" width="30" height="30" rx="4"/></svg>non renouvelable</span></span>`;
+  const keys = `<span class="mlg ech-kr"><span><svg viewBox="-20 -20 40 40" aria-hidden="true"><rect class="ar-ren" x="-15" y="-15" width="30" height="30" rx="4"/></svg>renouvelable${ESPACE_LU}</span>` +
+    `<span><svg viewBox="-20 -20 40 40" aria-hidden="true"><rect class="ar-non" x="-15" y="-15" width="30" height="30" rx="4"/></svg>non renouvelable${ESPACE_LU}</span></span>`;
   const bar = `<div class="rj ech-rj" hidden><button type="button" class="rj-b" aria-label="Lire les 24\u00a0dernières heures">▶ Lire</button>${vitesseBouton("rj-v")}` +
     `<input type="range" min="0" max="${pts.length - 1}" step="1" value="${pts.length - 1}" aria-label="Moment affiché sur le graphique"></div>`;
   // The durations: the archive's, shown by the script once it has them; « depuis le … » under them while one is not
@@ -309,7 +310,7 @@ export function productionChart(j: Journee): string {
   const vue = mix ? `<div class="ech-d ech-v" role="group" aria-label="Vue du graphique" hidden><button type="button" aria-pressed="true" data-v="ren">Renouvelable</button>` +
     `<button type="button" aria-pressed="false" data-v="fil">Par filière</button></div>` : "";
   const fkeys = mix ? `<span class="mlg ech-kf" hidden>${LEGENDE.map((i) =>
-    `<span><svg viewBox="-20 -20 40 40" aria-hidden="true"><rect class="${MIX[i][1]}" x="-15" y="-15" width="30" height="30" rx="4"/></svg>${MIX[i][0]}</span>`).join(" ")}</span>` : "";
+    `<span><svg viewBox="-20 -20 40 40" aria-hidden="true"><rect class="${MIX[i][1]}" x="-15" y="-15" width="30" height="30" rx="4"/></svg>${MIX[i][0]}${ESPACE_LU}</span>`).join(" ")}</span>` : "";
   return `<figure class="card ecard" data-ech="${data}" data-h="${HISTORIQUE_PATH}">${durees}${vue}<div class="ech-g"><div class="ech-p">${svg}<span class="ech-ax" aria-hidden="true">${ys}${xs}</span></div>` +
     `<figcaption class="note"><p class="ech-m" aria-live="polite">${esc(momentText(tl, Math.round(last[3]), Math.round(last[1]), Math.round(last[2])))}</p>${bar}${keys}${fkeys}<span class="mls ech-src">${source}</span> <span class="mls ech-n" hidden>${archive}</span></figcaption></div></figure>${script(CHART_SCRIPT)}`;
 }

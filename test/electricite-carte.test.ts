@@ -58,7 +58,7 @@ describe("the 24 hours of /electricite", () => {
     expect(html).toContain('<div class="ech-d ech-v" role="group" aria-label="Vue du graphique" hidden><button type="button" aria-pressed="true" data-v="ren">Renouvelable</button><button type="button" aria-pressed="false" data-v="fil">Par filière</button></div>');
     const keys = html.match(/<span class="mlg ech-kf" hidden>(.*?)<\/span><span class="mls/)![1];
     expect([...keys.matchAll(/class="(f-[a-z]+)"/g)].map((m) => m[1])).toEqual(["f-bio", "f-sol", "f-hyd", "f-eol", "f-the"]);
-    expect(keys).toContain("thermique non renouvelable</span>");
+    expect(keys).toContain('thermique non renouvelable<span class="sr">\u00a0</span></span>');
     // The durations without « depuis le … » in their buttons: under them, filled by the script.
     expect(html).toContain('data-d="j7" hidden>7\u00a0jours</button>');
     expect(html).toContain('<p class="mls ech-dd" hidden></p>');

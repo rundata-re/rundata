@@ -75,7 +75,7 @@ describe("Altervélo", () => {
     // no station. The legend draws the colour, then when the stations were read.
     expect(html).toMatch(/<a class="zn" href="#c-saint-pierre" aria-label="Saint-Pierre : 7\u00a0vélos disponibles, voir le détail" data-pn="Saint-Pierre" data-p2="7\u00a0vélos disponibles" data-pv="commune" tabindex="-1">/);
     expect(html).toContain('<a class="zn" tabindex="-1" aria-hidden="true" data-pn="Le Tampon" data-p2="pas de station Altervélo">');
-    expect(html).toContain('<rect x="-30" y="-30" width="60" height="60" rx="8" style="fill:var(--zone-on)"/></svg>commune desservie par Altervélo</span>');
+    expect(html).toContain('<rect x="-30" y="-30" width="60" height="60" rx="8" style="fill:var(--zone-on)"/></svg>commune desservie par Altervélo<span class="sr">\u00a0</span></span>');
     expect(html).toContain('<span class="mls">Vélos disponibles d&#39;après les stations, relevé du 24/10 à 00:35.</span>');
     expect(deadAnchors(html)).toEqual([]);
     expect(doubleIds(html)).toEqual([]);
@@ -96,12 +96,12 @@ describe("Altervélo", () => {
       { kind: "mk", href: "#c-l-etang-sale", label: "L&#39;Étang-Salé : 12\u00a0vélos disponibles, voir le détail" },
     ]);
     // The legend draws both: a commune with bikes, one with none.
-    expect(html).toContain('<circle r="34" fill="#237534"/><text y="11">3</text></svg>vélos disponibles dans la commune</span>');
+    expect(html).toContain('<circle r="34" fill="#237534"/><text y="11">3</text></svg>vélos disponibles dans la commune<span class="sr">\u00a0</span></span>');
     // On the map as in the legend, the white figure over 4.5:1 on its disc (ROND, carte-legende.ts): grey when none is free.
     expect(html).toMatch(/r="34" fill="#5f6b75"\/><text x="[\d.]+" y="[\d.]+" class="mv">0<\/text>/);
     expect(html).toMatch(/r="34" fill="#237534"\/><text x="[\d.]+" y="[\d.]+" class="mv">7<\/text>/);
     expect(html).not.toMatch(/fill="#(?:2b8a3e|868e96)"/);
-    expect(html).toContain('<text y="11">0</text></svg>aucun vélo disponible</span>');
+    expect(html).toContain('<text y="11">0</text></svg>aucun vélo disponible<span class="sr">\u00a0</span></span>');
     expect(deadAnchors(html)).toEqual([]);
     expect(tabStops(html)).toBe(0);
     // Without the stations' position, no marker and no such legend.

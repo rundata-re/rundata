@@ -996,7 +996,7 @@ describe("coupures d'eau", () => {
     const spPath = island.paths.find((p: { nom: string }) => p.nom === "Saint-Pierre")!;
     expect(isle).toContain(`<path d="${spPath.d}" style="fill:#868e96"/>`);
     expect(mapLinks(isle).find((l) => l.href === "/coupures-eau/saint-pierre")?.label).toBe("Saint-Pierre : site sans réponse à la dernière lecture, voir le détail");
-    expect(isle).toContain(`<rect x="-30" y="-30" width="60" height="60" rx="8" style="fill:#868e96"/></svg>Site sans réponse à la dernière lecture</span>`);
+    expect(isle).toContain(`<rect x="-30" y="-30" width="60" height="60" rx="8" style="fill:#868e96"/></svg>Site sans réponse à la dernière lecture<span class="sr">\u00a0</span></span>`);
     expect(mapLinks(isle).find((l) => l.href === "/coupures-eau/saint-pierre")?.label).not.toMatch(/aucun avis/i);
     const sdPage = coupuresCommunePage("https://rundata.re", pageOf("saint-denis")!, { coupures }, now);
     expect(head(sdPage)).not.toMatch(/\blus? le /);
@@ -1090,8 +1090,8 @@ describe("coupures d'eau", () => {
     expect(links.find((l) => l.href === "/coupures-eau/saint-pierre")?.label).toBe("Saint-Pierre : eau à ne pas boire dans les secteurs de l&#39;avis, voir le détail");
     // The legend never says « aucun avis » where nothing is read, and tells what the others are: each colour drawn, never a
     // coloured word (the brand charter of the maps), then when the notices were read.
-    expect(page).toContain(`<rect x="-30" y="-30" width="60" height="60" rx="8" style="fill:#a5d8ff"/></svg>Aucun avis en cours (site lu)</span>`);
-    expect(page).toContain(`<rect x="-30" y="-30" width="60" height="60" rx="8" style="fill:#adb5bd"/></svg>Site pas lu\u00a0: voir la mairie ou le distributeur</span>`);
+    expect(page).toContain(`<rect x="-30" y="-30" width="60" height="60" rx="8" style="fill:#a5d8ff"/></svg>Aucun avis en cours (site lu)<span class="sr">\u00a0</span></span>`);
+    expect(page).toContain(`<rect x="-30" y="-30" width="60" height="60" rx="8" style="fill:#adb5bd"/></svg>Site pas lu\u00a0: voir la mairie ou le distributeur<span class="sr">\u00a0</span></span>`);
     expect(page).toContain(`<span class="mls">Avis des distributeurs, lus le 24/10 à 08:00.</span>`);
     expect(page).not.toContain('<span style="color:');
     expect(page).toContain("L'eau du robinet est-elle bonne à Saint-Denis\u00a0?\u00a0»</p>");

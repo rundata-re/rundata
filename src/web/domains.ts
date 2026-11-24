@@ -519,7 +519,7 @@ export function liveText(x: Row): string {
  * A line's name as a screen reader says it: a line of one letter (« T ») is read « T majuscule » on its own, so it is
  * said « ligne T »; « E2 » or « 32 » read as they are.
  */
-export const ligneDite = (ligne: string) => (/^\p{L}$/u.test(ligne) ? `<span class="sr">ligne </span>${esc(ligne)}` : esc(ligne));
+export const ligneDite = (ligne: string) => (/^\p{L}$/u.test(ligne) ? `<span class="sr">ligne\u00a0</span>${esc(ligne)}` : esc(ligne));
 
 export const departureLi = (x: Row, wait: string, heure?: string) =>
   `<li><b>${ligneDite(x.ligne)}</b> <span>${x.trajet ? `<a href="${esc(x.trajet)}">vers ${esc(casse(x.direction))}${heure && /^\d\d:\d\d$/.test(heure) ? `<span class="sr">, départ à ${heure}</span>` : ""}</a>` : `vers ${esc(casse(x.direction))}`} <span class="note">(${esc(x.reseau)})</span></span> <span class="note">${esc(wait)}${liveText(x)}</span></li>`;

@@ -172,8 +172,8 @@ describe("bornes de recharge", () => {
     expect(page).not.toContain("en ce moment");
     expect(page).toContain("Recharge rapide");
     // The legend drawn as on the map (charter of the maps): a free point, none free, then the state's nature and time.
-    expect(page).toContain('<circle r="34" fill="#237534"/><text y="11">3</text></svg>points de charge libres dans la commune</span>');
-    expect(page).toContain('<circle r="34" fill="#5f6b75"/><text y="11">0</text></svg>aucun libre</span>');
+    expect(page).toContain('<circle r="34" fill="#237534"/><text y="11">3</text></svg>points de charge libres dans la commune<span class="sr">\u00a0</span></span>');
+    expect(page).toContain('<circle r="34" fill="#5f6b75"/><text y="11">0</text></svg>aucun libre<span class="sr">\u00a0</span></span>');
     expect(page).not.toMatch(/fill="#(?:2b8a3e|868e96)"/);
     // The state is that of the latest change in the national file, said beside its reading, each with its day.
     expect(page).toMatch(/<span class="mls">D&#39;après les opérateurs de recharge \(<span class="adrweb">transport\.<wbr class="adr">data\.<wbr class="adr">gouv\.<wbr class="adr">fr<\/span>\), état jusqu&#39;au \d\d\/\d\d à \d\d:\d\d, lu le 24\/10 à 04:40\.<\/span>/);

@@ -18,6 +18,7 @@ import * as sitesHs from "./providers/sites-hs.js";
 import * as internetArcep from "./vie/internet.js";
 import * as loyersAnil from "./vie/loyers.js";
 import * as ecolesAnnuaire from "./vie/ecoles.js";
+import * as associationsRna from "./vie/associations.js";
 import * as carteScolaire from "./vie/carte-scolaire.js";
 import * as monumentsMerimee from "./vie/monuments.js";
 import * as canyonsParc from "./vie/canyons.js";
@@ -141,7 +142,7 @@ import * as peche from "./tools/peche.js";
 import * as cetaces from "./tools/cetaces.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.980";
+export const VERSION = "1.0.981";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -287,7 +288,7 @@ const lieuAvecExemples = z
 export const toutesLesSources = (inactives = false) =>
   oncePerId([...weatherProviders().map((p) => p.source), ...(inactives ? [meteofranceStations.SOURCE] : []), ...(inactives || vigilance.enabled() ? [vigilance.SOURCE] : []), viirs.SOURCE, acspo.SOURCE, modis.SOURCE, coraux.SOURCE, houle.SOURCE, houle.SOURCE_MF, seismes.SOURCE, volcanSources.OVPF, volcanSources.PITONLIVE, edf.SOURCE, calendar.SCHOOL, calendar.HOLIDAYS, atmo.SOURCE, airMesures.SOURCE, capteurs.SOURCE, ...(inactives || autorisee(capteurs.SOCIAL_AUTORISATION) ? [capteurs.SOURCE_SOCIAL] : []), annuaire.SOURCE, ...Object.values(terrain.SOURCES), ...(inactives || transit.enabled() ? [transit.SOURCE, gtfsrt.SOURCE] : []), velos.SOURCE, maregraphes.SOURCE, vigicrues.SOURCE, irve.SOURCE, eauPotable.SOURCE, baignades.SOURCE, requin.SOURCE, onf.SOURCE, airesOnf.SOURCE, vigieau.SOURCE, avisEau.SOURCE, arretesVille.SOURCE, dae.SOURCE, ffck.SOURCE, ...Object.values(sportSources.SOURCES).filter((x) => inactives || (autorisee(`sport:${x.id}`) && autorisee(`agenda:${x.id}`))), gdacs.SOURCE, ...(inactives || cmrsTrace.enLigne() ? [cmrsTrace.SOURCE] : []), ...agendaSources.SOURCES_LUES.filter((s) => inactives || connecteursEnLigne() || s !== CONNECTEURS_SOURCE), ...Object.values(actuSources.SOURCES), raaPrefecture.SOURCE, ...Object.values(traceSources.SOURCES), ...(inactives || climat.enabled() ? [climat.SOURCE] : []), ...(inactives || merHistorique.enabled() ? [merHistorique.SOURCE_CANDHIS, merHistorique.SOURCE_CRW] : []), ...(inactives || climat.hourlyEnabled() ? [climat.SOURCE_HORAIRE] : []), ...(inactives || arome.enabled() ? [arome.SOURCE] : []), openmeteo.SOURCE, uv.SOURCE, ...(inactives || uvMesure.configured() ? [uvMesure.SOURCE, uvMesure.SOURCE_OZONE] : []), ensemble.SOURCE, ...(inactives || feux.enabled() ? [feux.SOURCE] : []),
     // The vie pratique's and the power cuts' (annuaire_services_publics, electricite).
-    carburantsPrix.SOURCE, radarMf.SOURCE, radarsFixes.SOURCE, accidentsRoute.SOURCE, BDTOPO, PHOTOS, courantMairies.SOURCE, elusRne.SOURCE, bureauxVote.SOURCE, tcoDecheteries.SOURCE, decheteriesAdeme.ADEME, santeSources.FINESS, santeSources.ARS_GARDE, santeSources.SANTE_FR, gardeArs.PDSA, collecteTco.SOURCE, collecteTco.SOURCE_CIREST, ...Object.values(lieuxEnfants.SOURCES), marchesOsm.OSM, ...Object.values(marchesOsm.MAIRIES), loyersAnil.SOURCE, ecolesAnnuaire.SOURCE, carteScolaire.SOURCE, parcoursupFormations.SOURCE, ipsDepp.SOURCE_IPS, ipsDepp.SOURCE_VA, medecinsAmeli.SOURCE, electionsCommunes.SOURCE, internetArcep.SOURCE, antennesAnfr.SOURCE_MOBILE, antennesAnfr.SOURCE_RADIO, sitesHs.SOURCE, monumentsMerimee.SOURCE, lieuxRemarquables.SOURCE, sentiersMarmailles.SOURCE, canyonsParc.SOURCE, mairiesAnnexesSd.SOURCE, accueilJeuneEnfant.SOURCE,
+    carburantsPrix.SOURCE, radarMf.SOURCE, radarsFixes.SOURCE, accidentsRoute.SOURCE, BDTOPO, PHOTOS, courantMairies.SOURCE, elusRne.SOURCE, bureauxVote.SOURCE, tcoDecheteries.SOURCE, decheteriesAdeme.ADEME, santeSources.FINESS, santeSources.ARS_GARDE, santeSources.SANTE_FR, gardeArs.PDSA, collecteTco.SOURCE, collecteTco.SOURCE_CIREST, ...Object.values(lieuxEnfants.SOURCES), marchesOsm.OSM, ...Object.values(marchesOsm.MAIRIES), loyersAnil.SOURCE, ecolesAnnuaire.SOURCE, associationsRna.SOURCE, carteScolaire.SOURCE, parcoursupFormations.SOURCE, ipsDepp.SOURCE_IPS, ipsDepp.SOURCE_VA, medecinsAmeli.SOURCE, electionsCommunes.SOURCE, internetArcep.SOURCE, antennesAnfr.SOURCE_MOBILE, antennesAnfr.SOURCE_RADIO, sitesHs.SOURCE, monumentsMerimee.SOURCE, lieuxRemarquables.SOURCE, sentiersMarmailles.SOURCE, canyonsParc.SOURCE, mairiesAnnexesSd.SOURCE, accueilJeuneEnfant.SOURCE,
     // The bike lanes, the bike racks and the speeds of the routes nationales, of /carte only.
     ...Object.values(velo.SOURCES), geovelo.SOURCE, vitessesRn.SOURCE,
     // The public sector's job offers and the formations eligible to the CPF (emploi), the public procurement notices (the
@@ -581,18 +582,19 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
       description:
         "Adresse, horaires d'ouverture (et si c'est ouvert), téléphone et site des services publics de La Réunion (974) : " +
         "mairies et mairies annexes, préfecture et sous-préfectures, CAF, CPAM, France Travail, impôts, tribunaux, points-justice, aide aux victimes, France services… " +
-        "Aussi les prix maximum des carburants et de la bouteille de gaz du mois, " +
+        "Aussi les prix maximum des carburants et de la bouteille de gaz du mois " +
         "(quoi = « carburant », « essence », « gazole », « gaz »), les pharmacies et les hôpitaux les plus proches " +
         "(quoi = « pharmacie », « médecin de garde », « urgences », « hôpital ») : la pharmacie de garde n'est connue que de 3237.fr et du 32 37, l'urgence et la garde passent par le 15\u00a0; " +
         "les marchés forains et couverts (quoi = « marché »\u00a0; un marché de Noël ou nocturne annoncé : evenements), " +
         "les avis de marchés publics ouverts d'une commune (quoi = « marchés publics », « appels d'offres »), " +
         "et les déchèteries de l'île, avec les bennes pleines " +
-        "en direct dans l'Ouest (TCO) (quoi = « déchèterie », « encombrants », « déchets verts »), et le jour de collecte rue par rue dans l'Ouest (TCO) et l'Est (CIREST, sauf Sainte-Rose) " +
+        "en direct dans l'Ouest (quoi = « déchèterie », « encombrants », « déchets verts »), et le jour de collecte rue par rue dans l'Ouest (TCO) et l'Est (CIREST, sauf Sainte-Rose) " +
         "(quoi = « collecte », « poubelles », lieu = la rue et la commune : « rue Labourdonnais, Saint-Paul »)\u00a0; " +
         "où aller avec les enfants (quoi = « enfants », « aire de jeux », « piscine », « médiathèque », « skatepark »…) : aussi parcs, zoos, " +
         "parcs de loisirs, salles de jeux, escalade, musées\u00a0; " +
+        "les associations (quoi = « association de surf »)\u00a0; " +
         "les places en crèche de chaque commune, d'après la CAF (quoi = « crèche »)\u00a0; " +
-        "les écoles, collèges et lycées (quoi = « école », « collège », « lycée », avec le nom s'il est connu : « collège Émile Hugot ») : cantine, internat, ULIS, l'indice de position sociale (IPS) et les résultats au brevet ou au bac avec le taux attendu, et le collège de secteur d'une adresse sur laquelle on s'interroge (adresse)\u00a0; " +
+        "les écoles, collèges et lycées (quoi = « école », « collège », « lycée », ou son nom : « collège Émile Hugot ») : cantine, internat, ULIS, l'indice de position sociale (IPS) et les résultats au brevet ou au bac avec le taux attendu, et le collège de secteur d'une adresse sur laquelle on s'interroge (adresse)\u00a0; " +
         "combien de médecins libéraux par commune (quoi = « médecin », « pédiatre »…). " +
         "Pour : « horaires de la mairie de Saint-Paul ? », « prix de l'essence ? », « quel jour passent les poubelles à Saint-Paul ? ».",
       inputSchema: {

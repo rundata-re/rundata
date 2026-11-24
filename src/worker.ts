@@ -72,6 +72,7 @@ import * as pluieRadar from "./web/pluie-radar.js";
 import * as radarSemaine from "./web/radar-semaine.js";
 import * as rejeu from "./web/rejeu.js";
 import * as carteScolaire from "./vie/carte-scolaire.js";
+import * as rna from "./vie/associations.js";
 import { why } from "./types.js";
 import { COLLECTEURS, dit, passage } from "./collecteurs.js";
 import { configure as metaWebhookSecrets } from "./meta-webhook.js";
@@ -421,6 +422,9 @@ function setup(env: Env): Cache {
     env.EMAIL && propositions.envoiCloudflare(env.EMAIL),
     avisDb && (async <T>(sql: string, ...params: unknown[]) => (count(), (await avisDb.prepare(sql).bind(...params).all<T>()).results)),
   );
+  // The declared associations (RNA), in the same database (scripts/associations.sql), imported by
+  // .github/workflows/associations.yml: read only, by /associations and annuaire_services_publics (vie/associations.ts).
+  rna.configure(avisDb && (async <T>(sql: string, ...params: unknown[]) => (await avisDb.prepare(sql).bind(...params).all<T>()).results));
   formulaires.configure(env.TURNSTILE_SECRET);
   configurerEquipe(env.EQUIPE_JETON);
   // The alerts on the phone (web/alertes.ts): open on the trial Worker only until the flag; the subscriptions in the

@@ -142,6 +142,7 @@ export const FICHES: Record<string, Fiche> = {
   // The ANIL's estimates, from the ads of SeLoger and leboncoin, which write ads, not the rents.
   anil_loyers: { famille: "licence_ouverte", producteurs: ["ANIL"] },
   annuaire_education: { famille: "licence_ouverte", producteurs: ["Ministère de l'Éducation nationale"] },
+  rna: { famille: "licence_ouverte", producteurs: ["Ministère de l'Intérieur"] },
   carte_scolaire_colleges: { famille: "licence_ouverte", producteurs: ["Ministère de l'Éducation nationale"] },
   esr_parcoursup: { famille: "licence_ouverte", producteurs: ["Ministère de l'Enseignement supérieur"] },
   depp_ips: { famille: "licence_ouverte", producteurs: ["Ministère de l'Éducation nationale"] },

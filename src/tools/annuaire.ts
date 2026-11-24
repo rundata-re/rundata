@@ -15,6 +15,7 @@ import { CHILDREN, enfantsAnswer } from "./enfants.js";
 import { collegeAnswer, ecolesAnswer, SCHOOL } from "./etablissements.js";
 import { JUSTICE, justiceAnswer } from "./justice.js";
 import { MARKET, marchesAnswer } from "./marches.js";
+import { asksAssociation, associationsAnswer } from "./associations.js";
 import { marchesPublicsAnswer, PROCUREMENT } from "./marches-publics.js";
 import { DOCTOR, medecinsAnswer } from "./medecins.js";
 import { EMERGENCY, GARDE, gardeAnswer, PHARMACY, pharmaciesAnswer, urgencesAnswer } from "./sante.js";
@@ -162,7 +163,9 @@ const EXAM = /baccalaur|\bbrevet\b|r[ée]sultats?|taux de r[ée]ussite|lyc[ée]e
 /** Which part of practical life `quoi` asks about; « annuaire » for the administration's directory. */
 export function branche(quoi: string, adresse?: string) {
   // The places of justice first (« tribunal pour enfants »), public procurement before the markets (« marchés publics »
-  // is no market), a school's results before the bins (« résultats du bac », 23/11/2026).
+  // is no market), a school's results before the bins (« résultats du bac », 23/11/2026). An association before all: the
+  // word says it (« association d'aide aux victimes » is no court), but not the town's « maison des associations ».
+  if (asksAssociation(quoi)) return "associations";
   if (JUSTICE.test(quoi)) return "justice";
   // The crèches before the doctor on duty (« mode de garde ») and the places to go with children (« garde d'enfants »).
   if (NURSERY.test(quoi)) return "creches";
@@ -187,6 +190,7 @@ export async function annuaireTool(cache: Cache, quoi: string, lieu: string | un
   // Practical life, asked the same way: the pharmacies, the doctor on duty, the emergencies, the markets, the déchèteries,
   // the fuel prices, the doctors, the schools, where to go with children.
   switch (branche(quoi, adresse)) {
+    case "associations": return associationsAnswer(quoi, lieu);
     case "justice": return justiceAnswer(cache, quoi, lieu, now);
     case "pharmacies": return pharmaciesAnswer(lieu);
     case "garde": return gardeAnswer(quoi, lieu);

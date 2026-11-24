@@ -22,6 +22,9 @@ import { adressesCoupables, layout } from "./pages.js";
 import { lienForm, PROPOSER_PATH, TURNSTILE_SCRIPT } from "./propositions.js";
 import brand from "./brand.json" with { type: "json" };
 import { KREOL } from "./publier-texte.js";
+import { INSEE } from "../places/insee.js";
+import * as rna from "../vie/associations.js";
+import { slugify } from "./places.js";
 
 export const PATH = "/associations";
 /** The short addresses people type, sent here. */
@@ -157,7 +160,96 @@ function preuveSection(p: Preuve): string {
 </section>`;
 }
 
-export function associationsPage(origin: string, p: Preuve, alerte?: Alerte): string {
+/** Per page of the directory's search. */
+export const PAR_PAGE = 20;
+const COMMUNES = Object.keys(INSEE).sort((a, b) => a.localeCompare(b, "fr"));
+
+/** The search in the RNA below the space, as asked by the page's address: ?commune=<slug>&mot=<words>&page=<n>. */
+export interface Annuaire {
+  maj: string;
+  commune?: string;
+  mot: string;
+  page: number;
+  /** Undefined when nothing is asked yet: the form only. */
+  trouve?: { liste: rna.Association[]; total: number };
+}
+
+/** The search the address asks, read from the table; undefined when the table cannot be read or holds nothing yet. */
+export async function annuaire(url: URL): Promise<Annuaire | undefined> {
+  if (!rna.lisible()) return undefined;
+  try {
+    const imp = await rna.importe();
+    if (!imp) return undefined;
+    const slug = url.searchParams.get("commune") ?? "";
+    const commune = COMMUNES.find((c) => slugify(c) === slug);
+    const mot = (url.searchParams.get("mot") ?? "").slice(0, 80).trim();
+    const page = Math.min(Math.max(1, Number.parseInt(url.searchParams.get("page") ?? "1", 10) || 1), 500);
+    const asked = !!commune || !!rna.requete(mot);
+    const trouve = asked ? await rna.chercher({ insee: commune && INSEE[commune], mots: mot, limit: PAR_PAGE, offset: (page - 1) * PAR_PAGE }) : undefined;
+    return { maj: imp.maj, commune, mot, page, trouve };
+  } catch (err) {
+    // The space's page never fails for its directory: shown without it.
+    console.error("associations (RNA) non lues :", err instanceof Error ? err.message : String(err));
+    return undefined;
+  }
+}
+
+const SOURCE_RNA = (maj: string) => `Répertoire national des associations, ministère de l'Intérieur, fichier du ${rna.dateDite(maj)} (Licence Ouverte 2.0).`;
+
+/** An association: its title (its site's link when it has one), its commune and year, its object cut, the rest on a click. */
+function fiche(a: rna.Association): string {
+  const { debut, suite } = rna.court(a.objet);
+  const titre = a.site ? `<a href="${esc(a.site)}" rel="noopener nofollow">${esc(a.titre)}</a>` : esc(a.titre);
+  const meta = [rna.communeOf(a.insee), a.creee ? `créée en ${a.creee.slice(0, 4)}` : undefined].filter(Boolean).join(" · ");
+  const objet = !a.objet
+    ? ""
+    : suite
+      ? `<details class="pli"><summary>${esc(debut)} <span class="aide">la suite</span></summary><p>${esc(a.objet)}</p></details>`
+      : `<p>${esc(a.objet)}</p>`;
+  return `<li><h3>${titre}</h3><p class="aide">${esc(meta)}</p>${objet}</li>`;
+}
+
+/** The address of another page of the same search. */
+const pageDe = (v: Annuaire, n: number) => {
+  const q = new URLSearchParams();
+  if (v.commune) q.set("commune", slugify(v.commune));
+  if (v.mot) q.set("mot", v.mot);
+  if (n > 1) q.set("page", String(n));
+  return `${PATH}?${q}#annuaire`;
+};
+
+/** The directory's section: the form, then what it found, the source and where an association corrects its entry. */
+export function annuaireSection(v: Annuaire): string {
+  const options = COMMUNES.map((c) => `<option value="${esc(slugify(c))}"${c === v.commune ? " selected" : ""}>${esc(c)}</option>`).join("");
+  const form = `<form class="card fo" method="get" action="${PATH}#annuaire" role="search">
+    <label>Commune <select name="commune"><option value="">toute l'île</option>${options}</select></label>
+    <label>Mot <input type="search" name="mot" value="${esc(v.mot)}" maxlength="80" placeholder="surf, quartier, parents d'élèves…"></label>
+    <p><button type="submit" class="btn">Chercher</button></p>
+  </form>`;
+  let found = "";
+  if (v.trouve) {
+    const { liste, total } = v.trouve;
+    const where = v.commune ? ` à ${v.commune}` : " à La Réunion";
+    const said = rna.requete(v.mot) ? ` pour «\u00a0${v.mot}\u00a0»` : "";
+    const pages = Math.ceil(total / PAR_PAGE);
+    const nav = pages > 1
+      ? `<p class="note">${v.page > 1 ? `<a href="${esc(pageDe(v, v.page - 1))}">Page précédente</a> · ` : ""}page ${v.page} sur ${pages}${v.page < pages ? ` · <a href="${esc(pageDe(v, v.page + 1))}">Page suivante</a>` : ""}</p>`
+      : "";
+    found = total
+      ? `<p><strong>${total.toLocaleString("fr-FR")} association${total > 1 ? "s" : ""} déclarée${total > 1 ? "s" : ""}${esc(where)}${esc(said)}</strong></p>
+  <ul class="card asso-liste">${liste.map(fiche).join("")}</ul>${nav}`
+      : `<p>Aucune association déclarée${esc(where)}${esc(said)}. Essayez un mot plus court ou plus général, ou toute l'île.</p>`;
+  }
+  return `<section id="annuaire" aria-labelledby="h-annuaire">
+  <div class="sec-h"><p class="eyebrow">Annuaire</p><h2 id="h-annuaire">Les associations déclarées à La Réunion</h2>
+  <p>Cherchez une association par commune et par mot\u00a0: son nom, son objet, son année de création et son site, tels que le répertoire national les publie. Aucune adresse n'est donnée.</p></div>
+  ${form}
+  ${found}
+  <p class="note">Source\u00a0: ${esc(SOURCE_RNA(v.maj))} Une association dissoute sans l'avoir déclaré peut y figurer encore. rundata.re ne corrige rien\u00a0: une association corrige sa fiche auprès du greffe des associations, ${lienNom(rna.CORRIGER, "démarche sur service-public.fr", ' rel="noopener"')}.</p>
+</section>`;
+}
+
+export function associationsPage(origin: string, p: Preuve, alerte?: Alerte, rep?: Annuaire): string {
   const band = `${crumbBar("Clubs et associations")}
 <div class="wrap intro solo"><div class="pitch">
   <p class="pill">Gratuit, sans compte</p>
@@ -196,7 +288,10 @@ ${lienForm(PATH)}
   <div class="card fo"><p id="relais">${adressesCoupables(RELAIS, true)}</p>
   <p><button type="button" data-copy="relais">Copier le texte</button> <a class="sh wa" href="https://wa.me/?text=${encodeURIComponent(RELAIS)}" target="_blank" rel="noopener">Partager sur WhatsApp</a></p></div>
 </section>
+${rep ? annuaireSection(rep) : ""}
 <p>Une question\u00a0? ${lienNom("mailto:contact@rundata.re", "contact@rundata.re")}</p>
 ${TURNSTILE_SCRIPT}`;
-  return layout(origin, { title: TITLE, description: META, path: PATH, jsonld: [crumbs(origin, "Clubs et associations", PATH), webPage(origin, PATH, TITLE, META, null), howTo(origin)], alerte, sansPartage: true }, band, body);
+  // A search's own address is not a page to index: the space's is.
+  const asked = !!rep && (!!rep.commune || !!rep.mot || rep.page > 1);
+  return layout(origin, { title: TITLE, description: META, path: PATH, jsonld: [crumbs(origin, "Clubs et associations", PATH), webPage(origin, PATH, TITLE, META, null), howTo(origin)], alerte, sansPartage: true, ...(asked ? { noindex: true } : {}) }, band, body);
 }

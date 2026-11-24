@@ -12,6 +12,7 @@ const KEY = "web:commune:saint-paul";
 const UA = {
   oai: "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; OAI-SearchBot/1.0; +https://openai.com/searchbot",
   google: "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+  inspection: "Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36 (compatible; Google-InspectionTool/1.0;)",
   chatgpt: "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; ChatGPT-User/1.0; +https://openai.com/bot",
   personne: "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Mobile Safari/537.36",
   check: "rundata-check/ux",
@@ -41,6 +42,13 @@ describe("a commune's page, its copy of the day 3 hours old (web/site.ts `indexW
     expect(indexeur(request(UA.google))).toBe(true);
     expect(await view(UA.oai, 180)).toEqual({ got: "avant", builds: 1 });
     expect(await view(UA.google, 180)).toEqual({ got: "avant", builds: 1 });
+  });
+
+  // The Search Console's URL inspection, when an indexing is asked: it waited for the rebuild of a copy older than
+  // OLD_MINUTES, 12 of its 40 reads of /communes/<commune> past 2 s from 21 to 24/11/2026 (Worker logs).
+  it("is given as it is to the Search Console's inspection too, which indexes the page", async () => {
+    expect(indexeur(request(UA.inspection))).toBe(true);
+    expect(await view(UA.inspection, 180)).toEqual({ got: "avant", builds: 1 });
   });
 
   it("is not given to a fetcher that answers someone now: it waits for the new one, as before", async () => {

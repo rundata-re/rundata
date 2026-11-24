@@ -6,7 +6,8 @@ import { parse } from "../src/providers/seismes.js";
 import { activityPosts, enclosWords, phaseOf } from "../src/providers/volcan.js";
 import { enGrand } from "../src/tools/format.js";
 import { buildVolcan, type TraficAnswer, type VolcanAnswer } from "../src/web/data.js";
-import { traficPage, volcanLive, volcanPage } from "../src/web/domains.js";
+import { volcanLive, volcanPage } from "../src/web/domains.js";
+import { traficPage } from "../src/web/trafic.js";
 import { demos, homePage, type HomeLive } from "../src/web/home.js";
 
 // Out of an alert: the prefecture's phase of May kept, or its release of 20/10 back in vigilance; pitonlive at

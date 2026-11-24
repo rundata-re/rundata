@@ -8,7 +8,7 @@ import { block, muets, QUIET, URGENCE } from "../src/tools/feux.js";
 import { sentiersRandonnee } from "../src/tools/sentiers.js";
 import { vigilanceMeteo } from "../src/tools/vigilance.js";
 import type { RandonneesAnswer, SentiersAnswer } from "../src/web/data.js";
-import { sentiersPage } from "../src/web/domains.js";
+import { sentiersPage } from "../src/web/sentiers.js";
 import { feuxDescription, feuxPage, heroFeux } from "../src/web/feux.js";
 import { site } from "../src/web/site.js";
 import { communeHikes } from "../src/web/liens.js";

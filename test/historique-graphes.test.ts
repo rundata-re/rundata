@@ -8,7 +8,7 @@ import chaud from "../src/historique/plus-chaud.json" with { type: "json" };
 import * as climat from "../src/providers/climat.js";
 import { historiqueMeteo } from "../src/tools/historique.js";
 import type { HistoriqueAnswer } from "../src/web/data.js";
-import { heroHistorique, historiquePage } from "../src/web/domains.js";
+import { heroHistorique, historiquePage } from "../src/web/historique.js";
 import { GRAPHES_SCRIPT, graphes, warmer } from "../src/web/historique-graphes.js";
 import { CSS } from "../src/web/pages.js";
 

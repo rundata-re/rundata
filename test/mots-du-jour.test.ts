@@ -3,7 +3,7 @@ import { Cache, type Cached, MemoryStore } from "../src/cache.js";
 import { daysApart, sinceMidnight } from "../src/geo.js";
 import { communePage } from "../src/web/commune.js";
 import { type AirAnswer, type CalendrierAnswer, FRESH_SECONDS, joursDuJour, snapshot } from "../src/web/data.js";
-import { calendrierLive, calendrierPage, feriesDuJour } from "../src/web/domains.js";
+import { calendrierLive, calendrierPage, feriesDuJour } from "../src/web/calendrier.js";
 import { pageOf } from "../src/web/places.js";
 import { site, tileFreshMs } from "../src/web/site.js";
 

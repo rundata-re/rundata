@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import * as mf from "../src/providers/vigilance.js";
 import { alertePage, STEPS } from "../src/web/alerte-cyclone.js";
 import type { CyclonesAnswer } from "../src/web/data.js";
-import { cyclonesPage } from "../src/web/domains.js";
+import { cyclonesPage } from "../src/web/cyclones.js";
 import { kitPage, SECTIONS, TITLE, VITAL } from "../src/web/kit-cyclone.js";
 import { cited, onPages } from "./dso.js";
 

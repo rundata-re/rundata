@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import * as collecte from "../src/vie/collecte.js";
 import { communePage, COMMUNES } from "../src/web/commune.js";
-import { cruesPage } from "../src/web/domains.js";
+import { cruesPage } from "../src/web/crues.js";
 import { enPage } from "../src/web/en.js";
 import { homePage } from "../src/web/home.js";
 import { pageOf } from "../src/web/places.js";

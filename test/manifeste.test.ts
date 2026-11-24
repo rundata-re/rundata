@@ -8,7 +8,7 @@ import { pressePage } from "../src/web/presse.js";
 import { pageOf } from "../src/web/places.js";
 import { CAPTURES, manifest, site } from "../src/web/site.js";
 import { LOGO_PETIT_SVG } from "../src/web/logo.js";
-import { sentiersPage } from "../src/web/domains.js";
+import { sentiersPage } from "../src/web/sentiers.js";
 import { textOf } from "../src/providers/avis-eau.js";
 
 const NOW = new Date("2026-10-24T04:00:00Z");

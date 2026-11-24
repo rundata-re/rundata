@@ -7,7 +7,7 @@ import * as mf from "../src/providers/vigilance.js";
 import type { Store } from "../src/providers/vigilance-carte.js";
 import { cyclones } from "../src/tools/cyclones.js";
 import { buildCyclones } from "../src/web/data.js";
-import { cyclonesPage } from "../src/web/domains.js";
+import { cyclonesPage } from "../src/web/cyclones.js";
 
 // The RSMC follows its system n° 2 of 2026-2027 (a disturbed zone, bulletin of 06/11/2026 at 06:54 UTC) while GDACS
 // lists none: its forecast track map is read and shown all the same. The list holds the RSMC's bulletins of 06/11 at

@@ -8,7 +8,7 @@ import { cite } from "../src/tools/citer.js";
 import { cyclones } from "../src/tools/cyclones.js";
 import { basinMap, label, W } from "../src/web/cyclones-bassin.js";
 import { buildCyclones } from "../src/web/data.js";
-import { cyclonesPage } from "../src/web/domains.js";
+import { cyclonesPage } from "../src/web/cyclones.js";
 
 // An invented bulletin in the form of the RSMC's WTIO31 FMEE (system, name and positions made up), with forecasts
 // that must never be read. GDACS as in test/cyclones.test.ts: FYTIA active on 03/02/2026.

@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { accidentsSection } from "../src/web/domains.js";
+import { accidentsSection } from "../src/web/trafic.js";
 import { crechesSection } from "../src/web/enfants.js";
 import { pechePage } from "../src/web/peche.js";
 import { publierPage } from "../src/web/publier.js";

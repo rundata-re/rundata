@@ -16,3 +16,12 @@ updates:
     groups:
       actions:
         patterns: ["*"]
+  # The mobile app (mobile/): Gradle plugins, libraries and the wrapper.
+  - package-ecosystem: gradle
+    directory: /mobile
+    schedule:
+      interval: weekly
+    groups:
+      gradle:
+        patterns: ["*"]
+        update-types: [minor, patch]

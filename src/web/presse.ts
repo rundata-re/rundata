@@ -17,7 +17,7 @@ import { enLigne } from "./associations-drapeau.js";
 import { esc } from "./map.js";
 import icons from "./icons.json" with { type: "json" };
 import og from "./og.json" with { type: "json" };
-import { follow, icon, layout, lienAdresse, SITE } from "./pages.js";
+import { follow, icon, layout, lienAdresse, SITE, webPageLd } from "./pages.js";
 import visuals from "./presse.json" with { type: "json" };
 
 const CONTACT = "contact@rundata.re";
@@ -176,5 +176,5 @@ export function pressePage(origin: string, figures: Figure[], alerte?: Alerte): 
       { "@type": "ListItem", position: 2, name: "Presse", item: `${origin}/presse` },
     ],
   };
-  return layout(origin, { title, description, path: "/presse", jsonld: [crumbs], alerte }, band, `${keyFigures}\n${release}\n${gallery}`);
+  return layout(origin, { title, description, path: "/presse", jsonld: [crumbs, webPageLd(origin, "/presse", title, description)], alerte }, band, `${keyFigures}\n${release}\n${gallery}`);
 }

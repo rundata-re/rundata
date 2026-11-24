@@ -22,7 +22,7 @@ import { communeMap, esc, islandMap, type Spot } from "./map.js";
 import { COUNT_COLOR, legende } from "./carte-legende.js";
 import { PATH as ECOLES } from "./ecoles-annuaire.js";
 import { nombre } from "../tools/format.js";
-import { anchorId, ask, dayMonth, FOLD_ROWS, folded, icon, layout, type Live } from "./pages.js";
+import { anchorId, ask, cityLd, dayMonth, FOLD_ROWS, folded, icon, layout, type Live } from "./pages.js";
 import { script } from "./scripts-declares.js";
 
 // What a search engine shows of a title: the tab's title takes the first of its forms that fits.
@@ -444,5 +444,5 @@ export function enfantsCommunePage(origin: string, p: PlacePage, data: Cached<En
 <p class="note">${esc(CREDITS)}</p>
 </div>${script(MAP_SCRIPT)}${g.feuille}`;
 
-  return layout(origin, { title, description, path, jsonld: [crumbs(origin, c, path, { name: "Enfants", path: "/enfants" }), webPage(origin, path, title, description, data)], alerte }, band, g.ligne + body);
+  return layout(origin, { title, description, path, jsonld: [crumbs(origin, c, path, { name: "Enfants", path: "/enfants" }), webPage(origin, path, title, description, data, cityLd(p))], alerte }, band, g.ligne + body);
 }

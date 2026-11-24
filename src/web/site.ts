@@ -362,7 +362,10 @@ export const withoutCopy = (request: Request): number | undefined => (isReader(r
 // past 30 minutes (tools/resume.ts `METEO_MAX_MIN`); the vigilance banner is read apart, as for every view. A copy from
 // before midnight still waits for its refresh, as before; the fetchers that answer someone now, people and the daily
 // check of the sources keep theirs.
-const INDEXERS = /OAI-SearchBot|Googlebot|bingbot|Applebot|Claude-SearchBot/i;
+// Google-InspectionTool: the Search Console's URL inspection, read once when an indexing is asked, which indexes the page
+// too: it waited for the rebuild of a copy older than OLD_MINUTES, 12 of its 40 reads of /communes/<commune> past 2 s
+// from 21 to 24/11/2026 (Worker logs).
+const INDEXERS = /OAI-SearchBot|Googlebot|Google-InspectionTool|bingbot|Applebot|Claude-SearchBot/i;
 /** Whether `request` comes from a search engine's fetcher that indexes the page (`INDEXERS`). */
 export const indexeur = (request: Request) => {
   const ua = request.headers.get("user-agent") ?? "";

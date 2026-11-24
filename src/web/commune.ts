@@ -14,6 +14,7 @@ import * as mf from "../providers/vigilance.js";
 import * as sante from "../sante/etablissements.js";
 import * as ecoles from "../vie/ecoles.js";
 import * as medecins from "../vie/medecins.js";
+import * as bureauxVote from "../vie/bureaux-vote.js";
 import * as elections from "../vie/elections.js";
 import * as accidents from "../routes/accidents.js";
 import * as creches from "../vie/creches.js";
@@ -504,9 +505,28 @@ function votesSummary(p: PlacePage): string {
 }
 
 /** /communes/<commune>/elections: every scrutin of the commune in the file. Static: the file changes with a build. */
+/**
+ * The commune's polling stations, folded, under its results: the Insee's places, their address and their bureaux'
+ * numbers, the date of the list, and where an elector learns their own bureau (never said here: vie/bureaux-vote.ts).
+ */
+function pollingStations(p: PlacePage): string {
+  const lieux = bureauxVote.lieuxDe(p.nom);
+  if (!lieux.length) return "";
+  const li = (l: bureauxVote.Lieu) => `<li><span>${l.lieu ? `<b>${esc(l.lieu)}</b> · ` : ""}${esc(bureauxVote.numeros(l.bureaux))}<small>${esc(l.adresse)}</small></span></li>`;
+  return `<section id="bureaux" aria-labelledby="h-bureaux">
+  <div class="sec-h"><p class="eyebrow">Insee</p><h2 id="h-bureaux">${esc(`Bureaux de vote ${aCommune(p.nom)}`)}</h2></div>
+  <details class="plus"><summary>${esc(`${bureauxVote.nombreDe(lieux)} bureaux de vote dans ${lieux.length} lieux`)}</summary><ul class="rows lieux cols">${lieux.map(li).join("")}</ul></details>
+  <p class="note">${esc(bureauxVote.A_SAVOIR)}</p>
+  <p>${esc(bureauxVote.SON_BUREAU)} ${lienNom(bureauxVote.ISE, "Interroger sa situation électorale", ' rel="noopener"')}</p>
+  <p class="sources">Source\u00a0: ${credits([{ ...credit(bureauxVote.SOURCE), source: bureauxVote.SOURCE.attribution }])}.</p>
+</section>
+`;
+}
+
 export function electionsPage(origin: string, p: PlacePage, alerte?: Alerte): string | undefined {
-  const body = votes(p);
-  if (!body) return undefined;
+  const results = votes(p);
+  if (!results) return undefined;
+  const body = results + pollingStations(p);
   const depuis = elections.debut(p.nom);
   const ou = aCommune(p.nom);
   const path = electionsPath(p);

@@ -95,6 +95,43 @@ export function parType(commune: string): { type: Type; scrutins: Scrutin[] }[] 
   return (Object.keys(TYPES) as Type[]).map((type) => ({ type, scrutins: all.filter((s) => s.type === type) })).filter((x) => x.scrutins.length);
 }
 
+/** The path of a commune's elections page, from its slug. */
+export const chemin = (slug: string) => `/communes/${slug}/elections`;
+
+/** A round's name, on the page and in the tool. */
+export const TOURS = ["1er tour", "2nd tour"];
+
+/** The names of the file's scrutins, newest first. */
+export const NOMS: string[] = SCRUTINS.map((s) => s.nom);
+
+/** How the ballot lines are given, under every list of them (marketing, 20/11/2026): the page's note and the tool's. */
+export const ORDRE = "Les candidats et les listes sont dans l'ordre des panneaux (N°), celui du ministère, quel que soit le résultat, avec leurs voix et leur % des exprimés. Les nuances politiques ne sont pas reprises.";
+
+/** Under the cantonales, on the page and in the tool. */
+export const CANTONALES = "Aux cantonales, la moitié des cantons votait à chaque fois\u00a0: seuls les bureaux des cantons qui votaient sont comptés.";
+
+/**
+ * What must be said beside these scrutins of a commune, because the file does not hold it or holds it apart: lines
+ * without a panel, blancs counted with the nuls, a commune split between several races, a race the file does not name.
+ * The same sentences on the commune's page (all its scrutins) and in the tool (the one it answers).
+ */
+export function notes(all: Scrutin[]): string[] {
+  const sansPanneau = (s: Scrutin) => s.tours.some((b) => b.some((x) => x.lignes.some((l) => l.panneau === null)));
+  const anciens = [
+    ...(all.some(sansPanneau)
+      ? [`Sans panneaux dans le fichier (${all.filter((s) => s.tours[0]![0]!.lignes.some((l) => l.panneau === null)).sort((x, y) => y.annee - x.annee).map((s) => s.nom).join(", ")}), les listes sont dans l'ordre alphabétique.`]
+      : []),
+    ...(all.some((s) => s.tours.some((b) => b.some((x) => x.blancs === null))) ? ["Jusqu'en 2015, le fichier compte les blancs avec les nuls."] : []),
+  ];
+  const split = [...new Set((Object.keys(TYPES) as Type[])
+    .filter((t) => all.some((s) => s.type === t && s.tours.some((b) => b.length > 1)))
+    .map((t) => `La commune est partagée entre plusieurs ${TYPES[t].parties}\u00a0: les résultats sont donnés pour chacun${TYPES[t].parties === "circonscriptions" ? "e" : ""}.`))];
+  const anonymes = all.some((s) => s.tours.some((b) => b.length > 1 && b.some((x) => !x.lieu)))
+    ? ["Quand le fichier ne nomme pas la circonscription ou le canton, les bureaux sont regroupés par leurs candidats."]
+    : [];
+  return [...anciens, ...split, ...anonymes];
+}
+
 /** The year of the file's first scrutin. */
 export const DEBUT = Math.min(...SCRUTINS.map((s) => s.annee));
 

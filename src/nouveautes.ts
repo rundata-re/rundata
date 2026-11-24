@@ -22,6 +22,7 @@ export interface Outil {
 // Newest first: the index of the instructions reads them in this order. Except donner_avis, right after the newest tool, to
 // stay within the instructions' first 700 characters (test/serveur.test.ts); the `serveur` block sorts them by date.
 export const OUTILS: Outil[] = [
+  { nom: "elections", ligne: "résultats par commune", depuis: "2026-11-24T08:00:00+04:00" },
   { nom: "peche_loisir", ligne: "pêche\u00a0: bichiques, langouste", depuis: "2026-10-31T21:40:00+04:00" },
   { nom: "donner_avis", ligne: "donnée manquante ou fausse, souhait", depuis: "2026-10-24T14:15:00+04:00" },
   { nom: "emploi", ligne: "emploi public", depuis: "2026-10-29T13:05:00+04:00" },
@@ -33,13 +34,13 @@ export const OUTILS: Outil[] = [
   { nom: "historique_meteo", ligne: "météo mesurée passée, records", depuis: "2026-10-24T10:58:00+04:00" },
   { nom: "cyclones", ligne: "cyclones actifs, stade du CMRS", depuis: "2026-10-24T10:45:00+04:00" },
   { nom: "sport", ligne: "matchs, résultats, agendas, Grand Raid", depuis: "2026-10-24T10:43:00+04:00" },
-  { nom: "defibrillateurs", ligne: "défibrillateur le plus proche", depuis: "2026-10-24T10:22:00+04:00" },
+  { nom: "defibrillateurs", ligne: "le plus proche", depuis: "2026-10-24T10:22:00+04:00" },
   { nom: "coupures_eau", ligne: "coupures d'eau, eau non potable", depuis: "2026-10-24T10:20:00+04:00" },
   { nom: "restrictions_eau", ligne: "sécheresse, arrosage, piscine", depuis: "2026-10-24T10:17:00+04:00" },
   { nom: "sentiers_randonnee", ligne: "ouverts ou fermés, GPX", depuis: "2026-10-24T10:00:00+04:00" },
   { nom: "qualite_eau", ligne: "eau du robinet, baignade", depuis: "2026-10-24T09:24:00+04:00" },
-  { nom: "bornes_recharge", ligne: "bornes de recharge en direct", depuis: "2026-10-24T06:53:00+04:00" },
-  { nom: "crues_rivieres", ligne: "crues, niveau des rivières", depuis: "2026-10-24T04:32:00+04:00" },
+  { nom: "bornes_recharge", ligne: "libres en direct", depuis: "2026-10-24T06:53:00+04:00" },
+  { nom: "crues_rivieres", ligne: "crues, niveaux", depuis: "2026-10-24T04:32:00+04:00" },
   { nom: "maree", ligne: "marée mesurée et calculée", depuis: "2026-10-24T04:27:00+04:00" },
   { nom: "velos_libre_service", ligne: "vélos Altervélo (Sud)", depuis: "2026-10-24T00:49:00+04:00" },
   { nom: "transports", ligne: "prochains bus, retards", depuis: "2026-10-23T18:13:00+04:00" },
@@ -342,7 +343,7 @@ export function outilsRecents(now: Date): Record<string, string> | undefined {
  * an assistant picks (05/11/2026: « hier » sent to historique_meteo, #754), not for a rewording; a test checks it is
  * not in the future and that both places say it.
  */
-export const LISTE_DU = "2026-11-05";
+export const LISTE_DU = "2026-11-24";
 
 /** LISTE_DU as it is said: « 05/11 ». */
 export const listeDu = () => `${LISTE_DU.slice(8, 10)}/${LISTE_DU.slice(5, 7)}`;

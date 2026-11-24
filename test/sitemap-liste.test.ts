@@ -17,10 +17,12 @@ async function sitemap(): Promise<string[]> {
 const RETIREES = ["/aujourdhui/cilaos", "/enfants/les-avirons", "/communes/petite-ile/elections", "/bus/arret/saint-pierre/pierrefonds", "/bus/arret/les-avirons/gare-des-avirons", "/meteo/les-avirons"];
 
 describe("the sitemap from 24/11/2026, marketing's list of that day", () => {
-  it("holds the 231 pages kept, but for the one not served here, and nothing else", async () => {
+  it("holds the 230 pages kept, but for the one not served here, and nothing else", async () => {
     const urls = await sitemap();
-    // 231 kept, less /feux with no FIRMS key here. 893 before.
-    expect(NOMBRE).toBe(231);
+    // 231 kept, less /feux with no FIRMS key here. 893 before. 230 from 24/11/2026: a deviation the ONF took off its
+    // map, its page no longer a trail's state.
+    expect(NOMBRE).toBe(230);
+    expect(urls).not.toContain("/sentiers/sentier-du-trou-de-fer-deviation-par-rf-fleurs-jaunes");
     expect(urls).toHaveLength(NOMBRE - 1);
     expect(urls).not.toContain("/feux");
     expect(urls.filter((u) => !gardee(u))).toEqual([]);

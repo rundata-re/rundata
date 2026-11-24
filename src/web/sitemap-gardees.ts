@@ -1,13 +1,14 @@
 /**
  * The pages of the sitemap from 24/11/2026: marketing's list of that day, the pages with a content of their own that
  * people search. The sitemap named 893 pages: a young site with many pages of one model is judged as a whole, so it now
- * names 231 of them: the home page and the head pages, the 24 communes, a commune's water cuts where the page has
+ * names 230 of them: the home page and the head pages, the 24 communes, a commune's water cuts where the page has
  * something of its own to say, and the trails, hikes, weather, waste collection and children's pages people look for.
  * The 662 others stay online, linked and indexable: the bus stops, a commune's elections and day, the events' pages,
  * the past cyclones, and the other trails, hikes and places.
  *
  * A page that is not here is not in the sitemap, a new one included: it comes in by a line here (the page in English,
- * /en, added to the list on 24/11/2026). test/sitemap-liste.test.ts counts them.
+ * /en, added to the list on 24/11/2026). test/sitemap-liste.test.ts counts them. Left out the same day: the Trou de Fer's
+ * deviation by the RF Fleurs Jaunes, which the ONF took off its map (its page says so, without a state).
  */
 
 /** The home page and the head pages. */
@@ -89,7 +90,7 @@ const SENTIERS = [
   "sentier-du-cimetiere-de-cayenne", "sentier-du-contrefort-de-la-scierie", "sentier-du-cratere-dolomieu",
   "sentier-du-gite-de-bellecombe", "sentier-du-grand-bord", "sentier-du-malbar-mort-et-de-la-piece-jeanne",
   "sentier-du-pare-feu-1970", "sentier-du-petit-bras-bemale-bassin-la-noix", "sentier-du-piton-hyacinthe",
-  "sentier-du-quai-de-l-eglise", "sentier-du-trou-de-fer-deviation-par-rf-fleurs-jaunes", "sentier-farfouille",
+  "sentier-du-quai-de-l-eglise", "sentier-farfouille",
   "sentier-francoise-francia", "sentier-jacky-inard", "sentier-kapor", "sentier-littoral-de-saint-philippe",
   "sentier-mario", "sentier-mere-canal", "sentier-mollaret",
   "sentier-panoramique-de-bois-rouge-ancien-sentier-bassin-bleu", "sentier-pedestre-de-la-coulee-verte",

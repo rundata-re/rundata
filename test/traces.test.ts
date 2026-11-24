@@ -25,8 +25,11 @@ describe("traces GPS", () => {
   let weekend: boolean;
   // The same, by a notice with its last day (30/10/26), as the Sentier de Montplaisir's.
   let weekendFin: boolean;
+  // The ONF trails taken off the map of the day.
+  let gone: RegExp | undefined;
   const map = () => {
     const m = JSON.parse(fixture("onf/sentiers.json"));
+    if (gone) m.features = m.features.filter((f: { attributes: { WS_NomIti: string } }) => !gone!.test(f.attributes.WS_NomIti));
     for (const f of m.features) {
       if (shut?.test(String(f.attributes.WS_NomIti))) Object.assign(f.attributes, { WS_Statut: "Sentier fermé", WS_InfCaus: "Éboulement", WS_InfDate: "Réouverture prévue le 15/11/2026" });
     }
@@ -38,6 +41,7 @@ describe("traces GPS", () => {
     shut = undefined;
     weekend = false;
     weekendFin = false;
+    gone = undefined;
     vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
       asked.push(url);
       if (down?.test(url)) return new Response("", { status: 503 });
@@ -46,6 +50,7 @@ describe("traces GPS", () => {
         return new Response(fixture("traces/ign_le-bloc-piton-des-neiges.json"));
       }
       if (url.includes("/5/query") && url.includes("WS_NomIti+IN")) {
+        if (gone?.test(decodeURIComponent(url.replace(/\+/g, " ")))) return new Response(JSON.stringify({ features: [] }));
         const t = JSON.parse(fixture("traces/onf_le-bloc-piton-des-neiges.json"));
         for (const f of t.features) if (weekend) Object.assign(f.attributes, { WS_Statut: "Sentier fermé", WS_InfCaus: "Fermé du lundi au vendredi, ouvert le week-end", WS_InfDate: "02/01/27" });
         for (const f of t.features) if (weekendFin) Object.assign(f.attributes, { WS_Statut: "Sentier fermé", WS_InfCaus: "Travaux d'exploitation forestière", WS_InfDate: "Fermé jusqu'au 30/10/26 inclus - Sentier ouvert les samedis et dimanches durant cette période" });
@@ -165,6 +170,37 @@ describe("traces GPS", () => {
     expect(trail).toContain("Ouvert d'après l'ONF");
     expect(trail).toContain(`<a href="/randonnees/sentier-du-piton-des-neiges">Sentier du Piton des Neiges</a>`);
     expect((await handle(new Request("https://rundata.re/sentiers/nulle-part.gpx"), cache())).status).toBe(404);
+  });
+
+  it("never says « ouvert » a trail the ONF's map no longer lists: not on its map of the day, the official map, a deviation's main trail and its state, on the page, its copy and the tool", async () => {
+    // 24/11/2026: the Trou de Fer's deviation gone from the ONF's map, the Trou de Fer closed; its page still said
+    // « Ouvert d'après la carte de l'ONF du 23/11 » from the trace kept.
+    gone = /déviation par RF Fleurs Jaunes/;
+    shut = /^Sentier du Trou de Fer$/;
+    const t = sentier("sentier-du-trou-de-fer-deviation-par-rf-fleurs-jaunes")!;
+    const d = await buildTrail(cache(), t, NOW);
+    expect(d.etat).toMatch(/^Plus sur la carte de l'ONF du \d\d\/\d\d\u00a0: état non connu$/);
+    expect(d.ferme).toBe(false);
+    expect(d.troncons).toEqual([]);
+    expect(d.lignes.every((l) => l.etat === "inconnu")).toBe(true);
+    expect(d.hors_carte).toMatchObject({
+      texte: expect.stringMatching(/^Sentier du Trou de Fer - déviation par RF Fleurs Jaunes n'est plus sur la carte de l'ONF du \d\d\/\d\d\u00a0: son état n'est pas connu ici, ni ouvert ni fermé\. C'est une déviation du Sentier du Trou de Fer, fermé d'après la même carte\u00a0: Éboulement\. Voir la carte officielle de l'ONF avant de partir\.$/),
+      carte_officielle: expect.stringContaining("onf.fr"),
+      principal: { sentier: "Sentier du Trou de Fer", etat: "fermé", cause: "Éboulement", precision: "Réouverture prévue le 15/11/2026", page: "https://rundata.re/sentiers/sentier-du-trou-de-fer" },
+    });
+    const page = await (await handle(new Request("https://rundata.re/sentiers/sentier-du-trou-de-fer-deviation-par-rf-fleurs-jaunes", BOT), cache())).text();
+    expect(page).not.toMatch(/Ouvert d'après/);
+    expect(page).toContain("n&#39;est plus sur la carte de l&#39;ONF du");
+    expect(page).toContain(`<a href="/sentiers/sentier-du-trou-de-fer">Sentier du Trou de Fer</a>`);
+    expect(page).toMatch(/<a href="https:\/\/www\.onf\.fr\/[^"]+" rel="noopener">carte officielle de l(&#39;|')ONF<\/a>/);
+    // The tool, asked by the trail's name: the same sentence, never the trail as open.
+    const b = body(await sentiersRandonnee(cache(), "Sentier du Trou de Fer - déviation par RF Fleurs Jaunes", NOW));
+    expect(b.hors_carte).toEqual([{ sentier: t.nom, ...d.hors_carte }]);
+    expect(b.resume.startsWith(d.hors_carte!.texte)).toBe(true);
+    expect(JSON.stringify(b.autour?.sentiers_ouverts ?? [])).not.toContain("déviation");
+    // A trail on the map is as before.
+    gone = undefined;
+    expect((await buildTrail(cache(), t, NOW)).hors_carte).toBeUndefined();
   });
 
   it("says a trail closed on weekdays as the map classes it, its notice beside it, in its copy and its GPX the same on Sunday 23:59 and Monday 00:01", async () => {

@@ -2737,7 +2737,14 @@ export function tracePage(origin: string, kind: "sentier" | "randonnee", slug: s
     : loading("La trace");
 
   const etat = d?.etat === OUVERT_ONF ? `Ouvert d'après ${onfCarte(d.carte_mise_a_jour)}` : d?.etat;
-  const state = d ? `<p class="lead">${d.ferme ? "<b>" : ""}${esc(etat!)}${d.ferme ? "</b>" : ""}</p>` : "";
+  // Off the ONF's map of the day: its sentence, the main trail of a deviation and the official map linked.
+  const hc = d?.hors_carte;
+  const horsCarte = hc
+    ? `<p>${esc(hc.texte)
+      .replace(hc.principal ? `déviation du ${esc(hc.principal.sentier)}` : "\u0000", hc.principal ? `déviation du <a href="${esc(hc.principal.page.replace(/^https:\/\/rundata\.re/, ""))}">${esc(hc.principal.sentier)}</a>` : "")
+      .replace(`carte officielle de l${esc("'")}ONF`, `<a href="${esc(hc.carte_officielle)}" rel="noopener">carte officielle de l${esc("'")}ONF</a>`)}</p>`
+    : "";
+  const state = d ? `<p class="lead">${d.ferme || hc ? "<b>" : ""}${esc(etat!)}${d.ferme || hc ? "</b>" : ""}</p>${horsCarte}` : "";
   // A hike crossing a closed trail says so before anything else: above the map and the download.
   const alarm = d?.fermes.length
     ? `<div class="alarm-band" role="alert">${icon("alert")}<div><p><b>Attention : ${plural(d.fermes.length, "tronçon fermé", "tronçons fermés")} sur cet itinéraire.</b> S'y engager est interdit, même avec la trace : prendre une variante ouverte ou renoncer.</p>

@@ -59,6 +59,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded by marketing): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-24T07:33:00+04:00", texte: "Randonnée\u00a0: un sentier que l'ONF a retiré de sa carte n'est plus dit ouvert\u00a0; sa page renvoie à la carte officielle" },
   { date: "2026-11-24T07:16:00+04:00", texte: "Volcan\u00a0: un lien vers les caméras de l'OVPF. Défibrillateurs\u00a0: où se former aux premiers secours (PSC1)." },
   { date: "2026-11-24T07:06:00+04:00", texte: "Outils IA\u00a0: la liste des sources compte les producteurs par famille de licence, comme la page des chiffres" },
   { date: "2026-11-24T06:52:00+04:00", texte: "Outils IA\u00a0: dans une grande commune, les lieux pour enfants donnent les 15 plus proches, avec leur distance et le lien vers sa page." },

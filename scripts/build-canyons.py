@@ -14,6 +14,7 @@ import argparse
 import importlib.util
 import json
 import re
+import sys
 import time
 import unicodedata
 import urllib.request
@@ -146,6 +147,7 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--geojson", help="a local copy of the portal's GeoJSON export")
     p.add_argument("--cache", help="keep the ONF's answer in this folder")
+    p.add_argument("--verifier", type=int, metavar="ECART", help="write nothing: compare with src/vie/canyons.json, fail past ECART canyons added, gone or changed")
     a = p.parse_args()
     if a.cache:
         bt.CACHE = Path(a.cache)
@@ -205,6 +207,8 @@ def main():
     for name in SURNOMS.values():
         assert any(c["nom"] == name for c in canyons), name
     canyons.sort(key=lambda c: c["id"])
+    if a.verifier is not None:
+        sys.exit(verifier(canyons, a.verifier))
     dest = ROOT / "src/vie/canyons.json"
     dest.write_text(json.dumps({
         "construit": date.today().isoformat(),
@@ -213,6 +217,30 @@ def main():
         "canyons": canyons,
     }, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
     print(f"{len(canyons)} canyons, {sum('interdit' in c for c in canyons)} signalés interdits -> {dest.relative_to(ROOT)}, {dest.stat().st_size // 1024} Ko")
+
+
+def verifier(rows, ecart):
+    """The bundled list against the portal's of today, without writing: each entry by its id, all its fields (the ONF
+    trails it follows included), not the day it was built. The portal's date of change moves with no change of content
+    (16/11/2026). 1 (the job's failure, its alert) when more than `ecart` were added, are gone or changed."""
+    bundled = json.loads((ROOT / "src/vie/canyons.json").read_text(encoding="utf-8"))
+    before, now = {r["id"]: r for r in bundled["canyons"]}, {r["id"]: r for r in rows}
+    added, gone = [i for i in now if i not in before], [i for i in before if i not in now]
+    changed = {i: sorted(f for f in set(before[i]) | set(now[i]) if before[i].get(f) != now[i].get(f)) for i in now if i in before}
+    changed = {i: f for i, f in changed.items() if f}
+    print(f"liste du {bundled['construit']} : {len(before)} canyons ; le portail aujourd'hui : {len(now)}, "
+          f"{len(added)} nouveaux, {len(gone)} disparus, {len(changed)} changés")
+    for i in added[:20]:
+        print(f"  nouveau : {now[i]['nom']}")
+    for i in gone[:20]:
+        print(f"  disparu : {before[i]['nom']}")
+    for i, f in list(changed.items())[:20]:
+        print(f"  changé : {now[i]['nom']} ({', '.join(f)})")
+    n = len(added) + len(gone) + len(changed)
+    if n > ecart:
+        print(f"::error::La liste des canyons a {n} écarts avec l'inventaire des canyons du portail de la Région (seuil {ecart}) : lancer scripts/build-canyons.py et proposer la PR.")
+        return 1
+    return 0
 
 
 if __name__ == "__main__":

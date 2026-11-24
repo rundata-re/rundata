@@ -898,6 +898,9 @@ li .l2{grid-column:1/-1;display:flex;align-items:center;justify-content:space-be
 .filter{display:flex;flex-wrap:wrap;gap:.7rem 1rem;align-items:end;margin-bottom:1rem}
 .filter label{display:grid;gap:.25rem;font-size:.85rem;color:var(--muted);flex:1 1 9rem;min-width:0}.filter .q{flex:2 1 14rem}
 .filter input[type=search],.filter select{font:inherit;font-size:1rem;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:.55rem .7rem;width:100%;min-width:0}
+/* A select as tall as the field beside it (its line of 1.6, its padding and its border): the browser gives it a « normal »
+   line, 41 px against 45, under the 44 px of a finger on a phone, and its label 5 px lower in a row (/ecoles, 24/11/2026). */
+.filter select{min-height:calc(1.6em + 1.1rem + 2px)}
 .filter .chk{display:flex;align-items:center;gap:.45rem;color:var(--ink);font-size:.95rem;flex:0 1 auto;padding-bottom:.6rem}.filter p{flex-basis:100%;margin:0}
 form.filter[hidden],li[data-k][hidden],details.sect[hidden],.groupe[hidden],.voies li[hidden],.sans[hidden]{display:none}
 /* The column no wider than the card: a word longer than the line (« circonscription » at 200 %) is cut, not the page widened. */

@@ -257,14 +257,14 @@ document.getElementById("inst-later").addEventListener("click",()=>{try{localSto
  * engines; without a script it never showed.
  */
 export const INSTALL = `<template id="inst-t"><div class="card inst" id="inst" hidden>
-  <h3>rundata.re sur votre écran d'accueil</h3>
+  <h2>rundata.re sur votre écran d'accueil</h2>
   <p>Un geste pour la météo, la vigilance ou le volcan. Les pages déjà vues restent lisibles sans réseau, pratique en randonnée. Pas de store, pas de compte.</p>
   ${SECTIONS.filter((s) => s.kind && SHOWN.includes(s.kind)).map((s) => s.html!.replace(/^<(\w+)/, `<$1 data-inst="${s.kind}"`)).join("\n  ")}
   <p><a href="/application">Autre téléphone ou autre navigateur\u00a0: les étapes pour chacun →</a></p>
   <p class="instb"><button type="button" class="go" id="inst-go" data-inst="bouton">Installer</button><button type="button" class="later" id="inst-later">Plus tard</button></p>
 </div></template>`;
 
-export const PWA_CSS = `.inst{display:grid;gap:.6rem;max-width:44rem;margin-top:.8rem}.inst h3{font-size:1.05rem}.inst ol{padding-left:1.4rem;display:grid;gap:.2rem}
+export const PWA_CSS = `.inst{display:grid;gap:.6rem;max-width:44rem;margin-top:.8rem}.inst h2{font-size:1.05rem}.inst ol{padding-left:1.4rem;display:grid;gap:.2rem}
 .inst .partage{width:1.1em;height:1.1em;vertical-align:-.15em}
 .instb{display:flex;flex-wrap:wrap;gap:.4rem 1rem;align-items:center}.inst[hidden],.inst [hidden]{display:none}
 .inst .go,.app-go,.again{font:700 1rem system-ui,sans-serif;background:var(--accent);color:var(--accent-ink);border:0;border-radius:999px;padding:.6rem 1.2rem;cursor:pointer}

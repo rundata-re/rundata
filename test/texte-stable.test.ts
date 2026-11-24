@@ -56,7 +56,7 @@ describe("the stable text of the head pages", () => {
       const main = mainOf(html);
       expect(main, path).not.toContain('class="askbox"');
       expect(main, path).not.toMatch(/aria-labelledby="h-ia"/);
-      expect(main, path).toMatch(/<p class="ia-ligne">Demandez à votre IA[^<]*<a href="#ia">→<\/a><\/p>/);
+      expect(main, path).toMatch(/<p class="ia-ligne">Demandez à votre IA[^<]*<a href="#ia" aria-label="Demandez à votre IA : brancher rundata.re">→<\/a><\/p>/);
       const aside = html.slice(html.indexOf("</main>"));
       expect(aside, path).toMatch(/^<\/main>\n<aside class="wrap ia" id="ia" aria-label="Votre IA">/);
       expect(aside.slice(0, aside.indexOf("</aside>")), path).toMatch(/aria-labelledby="h-ia"/);

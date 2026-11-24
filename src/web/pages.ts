@@ -1880,7 +1880,7 @@ export function iaAside(band: string, main: string): [string, string, string] {
   const m = /<div data-l="fr"[^>]*>[\s\S]*?<p class="askq">« ([\s\S]*?) »<\/p>/.exec(box)?.[1];
   const fr = m === undefined ? undefined : sansBalises(m);
   const question = fr ? /^[^?]*\?/.exec(fr)?.[0] : undefined;
-  const line = `<p class="ia-ligne">${question ? `Demandez à votre IA : « ${question} »` : "Demandez à votre IA"} <a href="#ia">→</a></p>`;
+  const line = `<p class="ia-ligne">${question ? `Demandez à votre IA : « ${question} »` : "Demandez à votre IA"} <a href="#ia" aria-label="Demandez à votre IA : brancher rundata.re">→</a></p>`;
   return [band, `${main}\n${line}`, `<aside class="wrap ia" id="ia" aria-label="Votre IA">\n${box}\n${cta}\n</aside>`];
 }
 
@@ -1904,10 +1904,11 @@ export function layout(origin: string, head: Head, written: string, body: string
   const [top, text] = ownIds(withSigles([withHook(band, head.path, head.volcan, head.hook, head.texte), mentionLinks(main)]));
   // The contour lines of the decor (web/fonds.ts), in the footer of every page from 1200 px and in the band of a few.
   const decor = !head.shell && motif(head.alerte, !!urgent(head).volcan);
-  // On a page in English, what the site keeps in French around it, said so to a reader of the page aloud.
+  // On a page in English, what the site keeps in French around it, said so to a reader of the page aloud; not the skip
+  // link, in English like the page (WCAG 3.1.2).
+  const fr = head.en ? ' lang="fr"' : "";
   // The page in English (web/en.ts) is linked from the footer of every other page, in one word (marketing,
   // 24/11/2026): no page led to it.
-  const fr = head.en ? ' lang="fr"' : "";
   return `<!doctype html>
 <html lang="${head.en ? "en" : "fr"}">
 <head>
@@ -1942,7 +1943,7 @@ ${head.rss ? `<link rel="alternate" type="application/rss+xml" title="${esc(head
 ${head.jsonld.length ? `<script type="application/ld+json">${JSON.stringify(head.jsonld.length === 1 ? head.jsonld[0] : head.jsonld, frenchDescriptions).replace(/</g, "\\u003c")}</script>\n` : ""}<link rel="stylesheet" href="${STYLE_PATH}">
 </head>
 <body>
-<a class="evite" href="#contenu"${fr}>${head.en ? "Skip to content" : "Aller au contenu"}</a>
+<a class="evite" href="#contenu">${head.en ? "Skip to content" : "Aller au contenu"}</a>
 ${head.en ? header(head.path, origin, urgent(head)).replace("<header ", '<header lang="fr" ') : header(head.path, origin, urgent(head))}
 <main id="contenu" tabindex="-1">
 ${head.shell ? "" : `${head.en ? '<div lang="fr" style="display:contents">' : ""}${banner(head.alerte, head.path)}

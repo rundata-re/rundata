@@ -788,6 +788,7 @@ radial-gradient(1px 1px at 6% 92%,#fff,transparent),radial-gradient(1.2px 1.2px 
 .btn.sun,.band .btn.sun{background:var(--sun);color:var(--sun-ink);box-shadow:0 12px 30px -10px rgb(255 207 31/.7)}
 .clubs{border-left:4px solid var(--sun)}.clubs h2{font-size:clamp(1.15rem,3.2vw,1.4rem);line-height:1.2}.clubs p{margin:0}.clubs-go{display:flex;flex-wrap:wrap;align-items:center;gap:.7rem 1.2rem}.clubs-top a{color:var(--sun);font-weight:700}
 .btn.glass,.band .btn.glass{color:#fff;background:rgb(255 255 255/.12);border:1px solid rgb(255 255 255/.25);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.hero .btn.glass{background:rgb(6 20 36/.45)}.hero .hook{color:#fff}
 .hero-map{position:relative;display:grid;gap:.6rem;min-width:0;width:100%;max-width:30rem;justify-self:center}
 @media (min-width:66rem){.hero-map{max-width:36rem}}
 .hero-map .map{filter:drop-shadow(0 30px 40px rgb(0 0 0/.35))}
@@ -808,8 +809,8 @@ radial-gradient(1px 1px at 6% 92%,#fff,transparent),radial-gradient(1.2px 1.2px 
 .ile .map.defs{position:absolute;width:0;height:0;overflow:hidden}
 .ile .hm-large{display:none}
 @media (min-width:58rem){.ile .hm-tel{display:none}.ile .hm-large{display:block}}
-.ile figcaption{flex-direction:column;gap:.25rem}.ile figcaption .cap{display:flex;align-items:center;justify-content:center;gap:.5rem;flex-wrap:wrap}
-.ile figcaption small{font-size:.75rem;color:rgb(255 255 255/.62);max-width:34rem}
+.ile figcaption{flex-direction:column;gap:.25rem;color:#fff;background:rgb(6 20 36/.5);border-radius:14px;padding:.55rem .9rem;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}.ile figcaption .cap{display:flex;align-items:center;justify-content:center;gap:.5rem;flex-wrap:wrap}
+.ile figcaption small{font-size:.75rem;color:rgb(255 255 255/.9);max-width:34rem}
 .hm .coast{stroke:#99f6e4;stroke-width:10;opacity:.55}
 .hm .tr{fill:none;stroke-width:3.4;stroke-linejoin:round;stroke-linecap:round;opacity:.85}
 .hm .pu,.hm .gp{fill:none;stroke-linecap:round;opacity:0}

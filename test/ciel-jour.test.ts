@@ -38,3 +38,44 @@ describe("the daytime sky behind the home page's title", () => {
     expect(jour).toContain("--sky1:#0a5b9c;--sky2:#20a4c8;--glow:rgb(255 236 170/.35);");
   });
 });
+
+// The bottom of the home page's band, from 5:00 to 19:00 (accessibility audit of 24/11/2026): under the dawn, day and
+// evening skies, the map's caption, its sources and « Brancher mon IA » were at 2.3 to 3.4:1. The skies stay marketing's
+// drawing; a night-blue veil goes under the caption, the button turns to dark glass (marketing, 24/11/2026).
+describe("the bottom of the home page's band under the light skies", () => {
+  const hex = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const toHex = (c: number[]) => `#${c.map((v) => Math.round(v).toString(16).padStart(2, "0")).join("")}`;
+  const over = (top: number[], a: number, bottom: number[]) => top.map((t, i) => t * a + bottom[i] * (1 - a));
+  const rgba = (css: string) => { const m = css.match(/rgb\((\d+) (\d+) (\d+)\/(\.\d+)\)/)!; return { c: [+m[1], +m[2], +m[3]], a: +m[4] }; };
+  // The bottom of each light sky, lit by its glow at full strength: lighter than anywhere the caption sits.
+  const bottoms = ["aube", "jour", "soir"].map((s) => {
+    const r = rule(`.sky-${s}`);
+    const glow = rgba(r.match(/--glow:(rgb\([^)]*\))/)![1]);
+    return [s, over(glow.c, glow.a, hex(r.match(/--sky2:(#[0-9a-f]{6})/)![1]))] as const;
+  });
+  const white = [255, 255, 255];
+
+  it("puts the caption and its sources on a veil, over 4.5:1 under each sky", () => {
+    const veil = rgba(rule(".ile figcaption").match(/background:(rgb\([^)]*\))/)![1]);
+    expect(rule(".ile figcaption")).toContain("color:#fff");
+    const small = rgba(rule(".ile figcaption small").match(/color:(rgb\([^)]*\))/)![1]);
+    for (const [s, bottom] of bottoms) {
+      const bg = over(veil.c, veil.a, bottom);
+      expect(ratio("#ffffff", toHex(bg)), s).toBeGreaterThan(4.5);
+      expect(ratio(toHex(over(small.c, small.a, bg)), toHex(bg)), s).toBeGreaterThan(4.5);
+    }
+  });
+
+  it("gives « Brancher mon IA » a dark glass, over 4.5:1 under each sky", () => {
+    const glass = rgba(rule(".hero .btn.glass").match(/background:(rgb\([^)]*\))/)![1]);
+    for (const [s, bottom] of bottoms) expect(ratio("#ffffff", toHex(over(glass.c, glass.a, bottom))), s).toBeGreaterThan(4.5);
+  });
+
+  it("keeps the other bands' glass buttons as they were", () => {
+    expect(rule(".btn.glass,.band .btn.glass")).toContain("background:rgb(255 255 255/.12)");
+  });
+
+  it("writes the hook in white on the home page's band", () => {
+    expect(CSS).toContain(".hero .hook{color:#fff}");
+  });
+});

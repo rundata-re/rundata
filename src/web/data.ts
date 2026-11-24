@@ -86,6 +86,7 @@ import { type Entree, FICHES, FICHES_EVERY_MS, PASSE_JOURS, registre } from "./f
 import * as traces from "../providers/traces.js";
 import { coastal, PAGES, type PlacePage } from "./places.js";
 import { bloc as blocArretes, type BlocArretes } from "../providers/arretes-travaux.js";
+import { attendu } from "../attentes.js";
 
 export const FRESH_SECONDS = 5 * 60; // the stations publish every 6 minutes
 const KEEP_SECONDS = 24 * 3600;
@@ -2162,7 +2163,7 @@ export function vigilanceLue(at: Date, now: Date): string | undefined {
 export async function vigilanceNow(cache: Cache, background: Background, waitMs: number, now = new Date()): Promise<Cached<mf.Vigilance> | null> {
   if (!mf.enabled()) return null;
   const started = Date.now();
-  const work = mf.vigilance(cache);
+  const work = attendu("vigilance", mf.vigilance(cache));
   try {
     const got = await within(work, waitMs);
     if (got) return got;
@@ -2182,7 +2183,7 @@ export async function vigilanceNow(cache: Cache, background: Background, waitMs:
  */
 export async function cycloneDecisionNow(cache: Cache, background: Background, waitMs: number): Promise<Cyclone | null> {
   const started = Date.now();
-  const work = prefecture.cyclone(cache);
+  const work = attendu("alerte cyclonique", prefecture.cyclone(cache));
   try {
     const got = await within(work, waitMs);
     if (got) return got.value;
@@ -2325,7 +2326,12 @@ export interface OldCopy {
 /** The copies whose refresh this isolate runs after an answer, by key (`snapshot`): one at a time each. */
 const behind = new Set<string>();
 
-export async function snapshot<T>(
+/** As `snapshotOf`, noted for a slow view's line as « copie <key> » (attentes.ts). */
+export function snapshot<T>(...args: Parameters<typeof snapshotOf<T>>): Promise<Cached<T> | null> {
+  return attendu(`copie ${args[1]}`, snapshotOf<T>(...args));
+}
+
+async function snapshotOf<T>(
   cache: Cache,
   key: string,
   build: () => Promise<T>,

@@ -18,10 +18,10 @@ const PIEGE = `Fête <script>alert(1)</script><img src=x onerror=alert(2)> "du" 
 const ECHAPPE = "Fête &lt;script&gt;alert(1)&lt;/script&gt;&lt;img src=x onerror=alert(2)&gt; &quot;du&quot; l&#39;île &amp; co";
 
 /** `v` with the texts under the keys `cles` replaced by the trap, at every depth. */
-function piege<T>(v: T, cles: Set<string>): T {
-  if (Array.isArray(v)) return v.map((x) => piege(x, cles)) as T;
+function piege<T>(v: T, cles: Set<string>, valeur = PIEGE): T {
+  if (Array.isArray(v)) return v.map((x) => piege(x, cles, valeur)) as T;
   if (v && typeof v === "object")
-    return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, cles.has(k) && typeof x === "string" ? PIEGE : piege(x, cles)])) as T;
+    return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, cles.has(k) && typeof x === "string" ? valeur : piege(x, cles, valeur)])) as T;
   return v;
 }
 
@@ -57,6 +57,16 @@ describe("a text read elsewhere, trapped, never comes out as a tag", () => {
     const value = piege(copie<AgendaAnswer>("agenda"), new Set(["titre", "lieu", "prix", "publie_par", "description"]));
     sansInjection(agendaPage(O, { value, fetchedAt: now, stale: false }, now));
     sansInjection(weekendPage(O, { value, fetchedAt: now, stale: false }, now));
+  });
+
+  it("in the events' links, never one that runs a script (/evenements)", () => {
+    // An agenda's link is put in an href: escaped, « javascript:… » would still run on a tap. The page writes « # » instead.
+    const now = new Date("2026-10-24T04:00:00Z");
+    const value = piege(copie<AgendaAnswer>("agenda"), new Set(["lien", "billetterie"]), " JavaScript:alert(3)");
+    // The structured data keeps the source's address as its `url`, JSON that no browser runs (checked apart).
+    const page = horsJsonLd(agendaPage(O, { value, fetchedAt: now, stale: false }, now));
+    expect(page).not.toMatch(/javascript:/i);
+    expect(page).toContain('href="#"');
   });
 
   it("in the headlines (/actualites)", () => {

@@ -14,6 +14,7 @@
 import { resolvePlace } from "../places/resolve.js";
 import { occurrences, type EventRow } from "../tools/agenda.js";
 import { COUNT_COLOR, legende } from "./carte-legende.js";
+import { href as lienSur } from "./html.js";
 import { esc, fenetre, H, islandMap, laterMap, type Marker, project, W } from "./map.js";
 
 type Row = Pick<EventRow, "titre" | "date" | "quand" | "autres_dates" | "commune" | "lieu" | "lien" | "genres" | "position" | "source">;
@@ -109,7 +110,8 @@ export function pointsSvg(points: Point[], href: string, rounds: [number, number
     // An event's own link leads to its announcement, on the publisher's site; several events, to the list.
     const out = to.startsWith("http");
     // Out of the Tab order, as the rounds (islandMap's `listed`): the list under the map gives each event and its link.
-    return `<a class="mk evp" href="${esc(to)}"${out ? ` rel="noopener"${fenetre(to)}` : ""} aria-label="${esc(`${p.lieu} : ${what}, ${out ? "voir l'annonce" : "voir le détail"}`)}"${out ? ` data-pv="annonce"` : ""} data-pn="${esc(p.lieu)}" data-p2="${esc(what)}"${p.source ? ` data-p3="${esc(`Source\u00a0: ${p.source}`)}"` : ""} tabindex="-1">` +
+    // An agenda's link: lienSur() (html.ts href) writes « # » for one that would run a script (« javascript: »).
+    return `<a class="mk evp" href="${lienSur(to).texte}"${out ? ` rel="noopener"${fenetre(to)}` : ""} aria-label="${esc(`${p.lieu} : ${what}, ${out ? "voir l'annonce" : "voir le détail"}`)}"${out ? ` data-pv="annonce"` : ""} data-pn="${esc(p.lieu)}" data-p2="${esc(what)}"${p.source ? ` data-p3="${esc(`Source\u00a0: ${p.source}`)}"` : ""} tabindex="-1">` +
       `<circle class="hit" cx="${x}" cy="${y}" r="${hit}" style="fill:transparent;stroke:none"/><title>${esc(`${p.lieu} : ${what}`)}</title><circle class="sh" cx="${x}" cy="${y}" r="${POINT_R}"/></a>`;
   }).join("");
 }

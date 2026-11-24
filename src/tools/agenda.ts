@@ -145,7 +145,7 @@ export function when(s: src.Seance): string {
 }
 
 // A workshop, a meeting or a talk is not a show, whatever it is about (« Atelier théâtre », « PROJET TRAIN : Atelier »).
-const SHOWS = new Set(["concert", "théâtre", "danse", "humour", "cirque", "soirée"]);
+const SHOWS = new Set(["concert", "théâtre", "danse", "humour", "cirque", "conte", "magie", "marionnettes", "soirée"]);
 
 const STOP = new Set(["des", "les", "une", "pour", "avec", "quoi", "faire", "sortir", "evenement", "evenements", "sortie", "sorties", "agenda"]);
 

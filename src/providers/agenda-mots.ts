@@ -10,7 +10,7 @@ export const monthOf = (w: string) => MONTHS.find(([re]) => re.test(w))?.[1];
 
 /**
  * What `quoi` can ask, and the words of an event that answer it; the same themes are the genres a row is labelled with.
- * Accents matter on the event side: « marche » is a walk. « Spectacles » takes in théâtre, danse, humour and cirque.
+ * Accents matter on the event side: « marche » is a walk. « Spectacles » takes in théâtre, danse, humour, cirque, contes, magie and marionnettes.
  */
 // A word starts where letters do (« conte » is not in « post_content »); `END` closes those whose longer forms mean
 // something else (« pièce », « contemporain »).
@@ -23,7 +23,12 @@ export const THEMES: { nom: string; genre: string; demande: RegExp; texte: RegEx
   { nom: "théâtre", genre: "théâtre", demande: /theatre|piece|comedie|spectacle/, texte: W(`th[ée][âa]tre|com[ée]die|lecture${END}`) },
   { nom: "danse", genre: "danse", demande: /danse|ballet|choregraph|battle|spectacle/, texte: W(`danses?${END}|ballet|chor[ée]graph|battle`) },
   { nom: "humour", genre: "humour", demande: /humour|humoriste|stand ?up|comedy|one man|one woman|rire|spectacle/, texte: W(`humour|humoriste|stand.?up|comedy|one.(?:wo)?man|seul.en.sc[èe]ne`) },
-  { nom: "cirque, contes et magie", genre: "cirque", demande: /cirque|conte|magie|marionnette|spectacle/, texte: W(`cirque|circassien|contes?${END}|conteu(?:r|se)s?${END}|magie|magicien|marionnette|clown`) },
+  // Four genres, not one: a tale told at a library is not a circus show (« Contes avec Aïdée », catégorie « conte », said
+  // « cirque », 24/11/2026). « spectacle » asks every one of them.
+  { nom: "cirque", genre: "cirque", demande: /cirque|circassien|clown|spectacle/, texte: W(`cirque|circassien|clowns?${END}|clowneries?${END}`) },
+  { nom: "contes", genre: "conte", demande: /\bcontes?\b|conteu(?:r|se)|spectacle/, texte: W(`contes?${END}|conteu(?:r|se)s?${END}`) },
+  { nom: "magie", genre: "magie", demande: /magie|magicien|spectacle/, texte: W(`magie|magicien`) },
+  { nom: "marionnettes", genre: "marionnettes", demande: /marionnette|spectacle/, texte: W(`marionnettes?${END}`) },
   { nom: "soirées et clubbing", genre: "soirée", demande: /soiree|club|clubbing|\bdj\b|danser|boite|nightlife|fete ce soir/, texte: W(`clubbing|dj${END}|dj.set|club${END}|kizomba|salsa|bachata|sbk${END}|soir[ée]e (?:dansante|zouk|salsa|kizomba|clubbing|[ée]lectro|dj|sbk|ann[ée]es)|nuit du (?:zouk|s[ée]ga|maloya)|bal poussi[èe]re`) },
   { nom: "marchés", genre: "marché", demande: /marche|forain|brocante|vide grenier|braderie|foire|producteur/, texte: W(`march[ée]s? (?:de nuit|forain|artisanal|paysan|nocturne|cr[ée]ole|de no[ëe]l)|marchés?${END}|forains?${END}|brocante|vide.grenier|braderie|foire${END}|producteurs`) },
   { nom: "fêtes et festivals", genre: "festival", demande: /fete|fet\b|festival|kermesse|carnaval|feu d artifice|kabars?\b|dipavali|divali/, texte: W(`f[êe]tes?${END}|f[èe]t${END}|festival|kermesse|carnaval|feu d.artifice|som[èe]n${END}|semaine cr[ée]ole|zourn[ée]|kabar|temps fort|d[iî]p[aâ]vali|divali`) },

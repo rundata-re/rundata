@@ -47,7 +47,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // A copy older than its keeping, with a read that failed after it, said « dernière lecture sans succès » at that try,
   // so that the commune's site is said without answer on its day and its tile (24/11/2026).
   // Its coverage says the mairies whose sites were all read and announce nothing to come, dated (24/11/2026).
-  agenda: 49,
+  // Tales, magic and puppets each their own genre, no longer « cirque » (« Contes avec Aïdée », 24/11/2026).
+  agenda: 50,
   // The sensors of sensors.social besides Sensor.Community's: each value with its network, and its credit (09/11/2026).
   // Tomorrow's index by commune, when Atmo Réunion diffused it, under the day's (21/11/2026).
   // The communes at the worst « pour Le Port et Saint-Pierre », counted beyond 3; tomorrow « Pas une mesure : … » (21/11/2026).

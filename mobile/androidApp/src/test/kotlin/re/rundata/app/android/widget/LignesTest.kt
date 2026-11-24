@@ -150,4 +150,10 @@ class LignesTest {
         kotlin.test.assertEquals("mer, vue par satellite le 21/11", libelleMer("21/11"))
         kotlin.test.assertEquals("mer, vue par satellite", libelleMer(null))
     }
+
+    /** Une bouée mesure près de la commune : le widget dit la bouée et l'heure de sa mesure, pas le satellite. */
+    @Test
+    fun laMerDitLaBoueeQuandElleMesure() {
+        kotlin.test.assertEquals("mer, bouée Saint-Pierre à 09:40", libelleMer(null, bouee = "Saint-Pierre", heure = "09:40"))
+    }
 }

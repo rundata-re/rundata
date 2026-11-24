@@ -75,9 +75,21 @@ data class Volcan(val niveau: String?, val eruption: String?, val alerte: Boolea
 @Serializable
 data class Source(val nom: String, val licence: String?)
 
-/** La température de la mer au large de la commune, mesurée par satellite (le jour de la mesure). */
+/**
+ * La température de la mer au large de la commune : la bouée la plus proche quand elle mesure (son nom, l'heure de sa
+ * mesure), sinon le satellite (le jour de son passage), comme le résumé du jour la donne.
+ */
 @Serializable
-data class Mer(val temperature: String, val auLargeDe: String?, /** « 21/11 » : le jour du passage du satellite. */ val jour: String? = null)
+data class Mer(
+    val temperature: String,
+    val auLargeDe: String?,
+    /** « 21/11 » : le jour du passage du satellite. */
+    val jour: String? = null,
+    /** « Saint-Pierre » : la bouée du Cerema qui a mesuré l'eau, quand c'est elle. */
+    val bouee: String? = null,
+    /** « 09:40 » : l'heure de la mesure de la bouée. */
+    val heure: String? = null,
+)
 
 /**
  * Ce qui reste du jour d'après la PRÉVISION de modèle du résumé, jamais une mesure : « 24,1 °C », « 25,2 °C », « pas de
@@ -210,7 +222,15 @@ fun journeeDe(commune: Commune, resume: JsonObject, meteo: JsonObject?): Journee
             m.texte("temperature_eau")?.let {
                 // « 2026-11-21 » → « 21/11 » : la mer se dit avec le jour de sa mesure, comme l'air avec son heure.
                 val jour = m.texte("jour_mesure")?.let { d -> Regex("^\\d{4}-(\\d{2})-(\\d{2})").find(d)?.groupValues?.let { g -> "${g[2]}/${g[1]}" } }
-                Mer(it, (m["au_large_de"] as? JsonArray)?.firstOrNull()?.let { (it as? JsonPrimitive)?.contentOrNull }, jour)
+                val bouee = m.texte("bouee")
+                Mer(
+                    it,
+                    (m["au_large_de"] as? JsonArray)?.firstOrNull()?.let { (it as? JsonPrimitive)?.contentOrNull },
+                    jour,
+                    bouee = bouee,
+                    // « 24/11/2026 09:40 » → « 09:40 ».
+                    heure = bouee?.let { m.texte("mesuree_a")?.substringAfterLast(' ') },
+                )
             }
         },
         prevision = ((resume["meteo"] as? JsonObject)?.get("prevision") as? JsonObject)?.get("aujourd_hui")?.let { it as? JsonObject }?.let {

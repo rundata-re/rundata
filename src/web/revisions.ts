@@ -49,7 +49,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // The sensors of sensors.social besides Sensor.Community's: each value with its network, and its credit (09/11/2026).
   // Tomorrow's index by commune, when Atmo Réunion diffused it, under the day's (21/11/2026).
   // The communes at the worst « pour Le Port et Saint-Pierre », counted beyond 3; tomorrow « Pas une mesure : … » (21/11/2026).
-  air: 15,
+  // Atmo Réunion's site without « www. », which answers by a redirection (24/11/2026).
+  air: 16,
   bornes: 5,
   // Stop names, directions and lines' long names written all in capitals, or with a capital on every word, by their
   // network, as people read them (« Gare Saint-André », « Rue des Amphiboles »); an article between two hyphens stays
@@ -66,7 +67,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // The agendas of La Possession, Petite-Île and Saint-Benoît among the sources counted (20/11/2026).
   // The news of Cilaos, Saint-Joseph and Saint-Philippe among the sources counted (20/11/2026).
   // The linked associations' licence names rundata.re, never « nos données ouvertes » (23/11/2026).
-  chiffres: 29,
+  // Atmo Réunion's site without « www. », which answers by a redirection (24/11/2026).
+  chiffres: 30,
   // The commune's stops, named as on /bus (« Gare Saint-André », « St Gilles-les-Hauts », « Lastic-La Mare »).
   // Its bus alerts with two quoted stop names joined by a bare comma spaced, as on /bus.
   // The stations of MétéoR Océan Indien besides the others, each with its credit (09/11/2026).

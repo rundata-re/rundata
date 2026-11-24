@@ -41,7 +41,7 @@ describe("annuaire_services_publics asked for a school", () => {
   it("gives a commune's, the nearest the place first, with their services and the catchment's rule", () => {
     const r = body(ecolesAnswer("collège", "Cilaos"));
     expect(r.resume).toBe("1 établissement à Cilaos (1 collège). Le plus proche de Cilaos : Collège Alsace Corré, 14 rue des Écoles, 97413 Cilaos, à 0,2 km.");
-    expect(r.etablissements[0]).toMatchObject({ nom: "Collège Alsace Corré", type: "collège", telephone: "02 62 31 70 75", site: "https://etab.ac-reunion.fr/clg-alsace-corre", uai: "9740096L" });
+    expect(r.etablissements[0]).toMatchObject({ nom: "Collège Alsace Corré", type: "collège", telephone: "02 62 31 70 75", site: "https://etab.ac-reunion.fr/clg-alsace-corre/", uai: "9740096L" });
     expect(r.page).toBe("https://rundata.re/communes/cilaos#ecoles");
     expect(r.avertissements.join(" ")).toContain("la mairie fixe le secteur des écoles, le Département celui des collèges");
     expect(r.sources[0].licence).toContain("Licence Ouverte");
@@ -248,5 +248,21 @@ describe("the collège of an address's sector (annuaire_services_publics, adress
     const r = JSON.stringify(await ask("collège", "Le Port", "137 allée pablo neruda"));
     expect(r).not.toContain("137");
     expect(r).not.toContain("pablo neruda");
+  });
+});
+
+describe("the schools' sites linked from the pages (src/vie/ecoles.json)", () => {
+  it("links each where it answers now: moved sites followed, https where it is answered, the académie's pages with their final /", () => {
+    // 24/11/2026, the outgoing links read one by one: five sites moved or gone, three still given in http, and the
+    // académie's etab.ac-reunion.fr/<code> each answering by a redirection to /<code>/ (scripts/build-ecoles.py, web()).
+    const webs = ecoles.LIST.flatMap((e) => (e.web ? [e.web] : []));
+    for (const gone of ["college-alexandre-monnet.ac-reunion.fr", "lyc-amiral-bouvet", "lycee-lgeoffroy.ac-reunion.fr", "stmichel.re", "ecolemaritime.fr"]) {
+      expect(webs.filter((w) => w.includes(gone)), gone).toEqual([]);
+    }
+    expect(webs.filter((w) => /^http:\/\/(www\.)?(lasalle\.stcharles\.fr|lycee-mandela\.fr|martherobin\.re)/.test(w))).toEqual([]);
+    expect(webs.filter((w) => /^https?:\/\/etab\.ac-reunion\.fr\/[^/]+$/.test(w))).toEqual([]);
+    for (const now of ["https://etab.ac-reunion.fr/lyc-jean-claude-fruteau/", "https://lislet-geoffroy.re/", "https://colleges-st-michel-monnet.re/", "https://ecolemaritime.re/"]) {
+      expect(webs, now).toContain(now);
+    }
   });
 });

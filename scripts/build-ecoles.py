@@ -38,6 +38,36 @@ def phone(t):
     return " ".join(d[i:i + 2] for i in range(0, 10, 2)) if len(d) == 10 else (t or None)
 
 
+# A school's site as the directory gives it, where it is known to have moved (checked by hand, 24/11/2026: each followed
+# to where it now answers). None: the site is gone and nothing replaces it, the link is left out.
+WEB_DEPLACE = {
+    "college-alexandre-monnet.ac-reunion.fr": None,
+    "etab.ac-reunion.fr/lyc-amiral-bouvet": "https://etab.ac-reunion.fr/lyc-jean-claude-fruteau/",
+    "lycee-lgeoffroy.ac-reunion.fr": "https://lislet-geoffroy.re/",
+    "stmichel.re": "https://colleges-st-michel-monnet.re/",
+    "ecolemaritime.fr": "https://ecolemaritime.re/",
+}
+# Sites that answer in https, given in http by the directory.
+WEB_HTTPS = {"lasalle.stcharles.fr", "lycee-mandela.fr", "martherobin.re"}
+
+
+def web(src):
+    """The directory's link, moved or put in https where known; the académie's etab.ac-reunion.fr/<code> with its final /
+    (without, it answers by a redirection)."""
+    if not src:
+        return None
+    u = src.strip()
+    bare = u.split("://", 1)[-1].removeprefix("www.").rstrip("/")
+    if bare in WEB_DEPLACE:
+        return WEB_DEPLACE[bare]
+    host = bare.split("/", 1)[0]
+    if host in WEB_HTTPS and u.startswith("http://"):
+        u = "https://" + u[len("http://"):]
+    if host == "etab.ac-reunion.fr" and bare.count("/") == 1 and not u.endswith("/"):
+        u += "/"
+    return u
+
+
 def row(x):
     kind = TYPES[x["type_etablissement"]]
     nom = " ".join(x["nom_etablissement"].split())
@@ -54,7 +84,7 @@ def row(x):
     street = " ".join((x["adresse_1"] or x["adresse_2"] or "").split())
     e["adresse"] = f"{street}, {x['code_postal']} {e['commune']}" if street else f"{x['code_postal']} {e['commune']}"
     e["lon"], e["lat"] = round(x["longitude"], 5), round(x["latitude"], 5)
-    for key, src in (("tel", phone(x["telephone"])), ("web", x["web"]), ("onisep", x["fiche_onisep"])):
+    for key, src in (("tel", phone(x["telephone"])), ("web", web(x["web"])), ("onisep", x["fiche_onisep"])):
         if src:
             e[key] = src
     # 1 or 0 in the directory; a missing one (null) is left out, never read as « non ».

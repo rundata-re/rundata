@@ -236,7 +236,7 @@ function archive(h: StationHistory, now: Date): string {
   const lastMonth = next ? String(h.annee.mois[h.annee.mois.length - 1].mois).replace(/ \d{4}$/, "") : "";
   const annee = `<section aria-labelledby="h-an"><div class="sec-h"><p class="eyebrow">Historique</p><h2 id="h-an">Mois par mois en ${h.annee.annee}</h2>
   <p>Comparés à la normale 1991-2020 de la station.${since}</p></div>
-  <div class="card"><table class="sta-m"><caption class="sr">Mois par mois en ${h.annee.annee}</caption><thead><tr><th>Mois</th><th>Pluie</th><th>Maximales</th><th>Soleil par jour</th></tr></thead><tbody>${rows}</tbody></table>
+  <div class="card"><div class="table-wrap defile"><table class="sta-m"><caption class="sr">Mois par mois en ${h.annee.annee}</caption><thead><tr><th>Mois</th><th>Pluie</th><th>Maximales</th><th>Soleil par jour</th></tr></thead><tbody>${rows}</tbody></table></div>
   ${lastMonth ? `<p class="note">${esc(lastMonth.charAt(0).toUpperCase() + lastMonth.slice(1))} jusqu'au ${dated(au, now)}.</p>` : ""}</div></section>`;
 
   const rec = h.records;

@@ -100,6 +100,8 @@ describe("a station's page", () => {
     expect(html).toContain("Depuis janvier : 713 mm de pluie, 55 % de la normale.");
     expect(html).toContain("<tr><td>Janvier</td><td><b>140 mm</b><small>normale 270</small></td>");
     expect(html).toContain(`<p class="note">Octobre jusqu'au 23/10.</p>`);
+    // Its four columns are wider than a phone of 320 px: the table scrolls alone, never the whole page.
+    expect(html).toContain(`<div class="table-wrap defile"><table class="sta-m">`);
     expect(html).toContain(`<h2 id="h-rec">Les records de la station</h2>`);
     for (const k of ["Température la plus haute", "Température la plus basse", "Pluie en un jour", "Rafale la plus forte"]) expect(html).toMatch(new RegExp(`<span>${k}</span><b>[^<]+</b><small>le \\d\\d/\\d\\d/\\d{4}</small>`));
   });

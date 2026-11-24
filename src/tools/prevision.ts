@@ -1,12 +1,13 @@
 import { later, left } from "../budget.js";
 import type { Cache, Cached } from "../cache.js";
-import { compass, localTime, sinceMidnight } from "../geo.js";
+import { compass, distanceKm, localTime, sinceMidnight } from "../geo.js";
 import { normalize, resolvePlace, type Place } from "../places/resolve.js";
 import * as arome from "../providers/arome.js";
 import * as cal from "../providers/calendrier.js";
 import * as ensemble from "../providers/ensemble.js";
 import * as openmeteo from "../providers/openmeteo.js";
 import * as uv from "../providers/uv.js";
+import * as uvMesure from "../providers/uv-mesure.js";
 import { type Forecast, type ForecastDay, type ForecastHour, why } from "../types.js";
 import { credits, de, fourchette, le, fr, heure, nombre, notFound, paire, placeBlock, placeWarning, text, tranche } from "./format.js";
 import * as nuages from "./nuages.js";
@@ -563,6 +564,22 @@ function ensWarnings(e: ensemble.Ensemble | null): string[] {
   return [`Confiance : ${confianceExplication(localTime(new Date(e.runAt)).replace(" ", " à "))}`];
 }
 
+/**
+ * The UV index MEASURED at Moufia, for a place within its radius (providers/uv-mesure.ts): the block the place's page
+ * shows too. Nothing without the token, the state, or past the radius: then nothing is said of it.
+ */
+export async function uvMesureAt(cache: Cache, place: Place, now: Date): Promise<uvMesure.Bloc | undefined> {
+  if (!uvMesure.configured()) return undefined;
+  const km = distanceKm(place.lon, place.lat, uvMesure.STATION.lon, uvMesure.STATION.lat);
+  if (km > uvMesure.RAYON_KM) return undefined;
+  try {
+    return uvMesure.bloc((await uvMesure.etat(cache)).value, km, now);
+  } catch (err) {
+    console.error(`source ${uvMesure.SOURCE.id} indisponible:`, why(err));
+    return undefined;
+  }
+}
+
 /** Said whenever the answer gives a UV index. */
 export function uvWarnings(u: Cached<uv.UvCell[]> | null): string[] {
   if (!u) return [];
@@ -641,7 +658,10 @@ export async function previsionMeteo(cache: Cache, lieu: string | undefined, qua
   const nightDay = period.defaut ? undefined : evening;
   const starts = [...new Map([...shown, ...(hauts ? nuages.morningStarts(now, cloudDay) : []), ...(nightWanted ? nuages.nightStarts(now, nightDay) : [])]
     .map((t) => [t.getTime(), t])).values()].sort((a, b) => a.getTime() - b.getTime());
+  // The UV index measured: said for today only, asked beside the forecast.
+  const mesureP = period.defaut || period.slots.some((s) => s.jour === today) ? uvMesureAt(cache, r.lieu, now) : Promise.resolve(undefined);
   const { results, uv: u, ens, aromeDown, aromeLater } = await forecasts(cache, [r.lieu], starts, now, aromeWaitMs);
+  const uvMesure_ = await mesureP;
   const uvOf = uvAt(u, r.lieu, now);
   const confOf = confAt(ens, r.lieu, now);
   if (results[0].status === "rejected") {
@@ -706,13 +726,15 @@ export async function previsionMeteo(cache: Cache, lieu: string | undefined, qua
   const uvShown = jours.some((j) => j.indice_uv_max) ? u : null;
   const ensShown = jours.some((j) => j.confiance) ? ens : null;
   avertissements.push(...uvWarnings(uvShown), ...ensWarnings(ensShown));
+  if (uvMesure_) avertissements.push(`Indice UV mesuré : ${uvMesure_.incertitude} Citer : ${uvMesure_.citation}`);
   return text({
     nature: "prevision",
     lieu: placeBlock(lieu, r),
     periode: period.libelle,
-    // The cloud sea after the days, labelled: a forecast of the model's cell.
-    resume: `${first}${resume}${mer ? ` Mer de nuages, ${nuages.LABEL} : ${mer.resume}` : ""}${ciel ? ` Ciel de nuit, ${nuages.LABEL} : ${ciel.resume}` : ""}`,
+    // The cloud sea after the days, labelled: a forecast of the model's cell. The UV index measured last, a MEASUREMENT.
+    resume: `${first}${resume}${mer ? ` Mer de nuages, ${nuages.LABEL} : ${mer.resume}` : ""}${ciel ? ` Ciel de nuit, ${nuages.LABEL} : ${ciel.resume}` : ""}${uvMesure_ ? ` ${uvMesure_.resume}` : ""}`,
     jours,
+    ...(uvMesure_ ? { indice_uv_mesure: uvMesure_ } : {}),
     maximales_arome: maximalesArome(f, dates),
     pas_de_3h: pas,
     ...(mer ? { mer_de_nuages: mer } : {}),
@@ -720,6 +742,6 @@ export async function previsionMeteo(cache: Cache, lieu: string | undefined, qua
     modele: modelBlock(c),
     avertissements,
     couverture: coverage(),
-    sources: sourcesOf(f, uvShown, ensShown),
+    sources: [...sourcesOf(f, uvShown, ensShown), ...(uvMesure_ ? credits([uvMesure.SOURCE, uvMesure.SOURCE_OZONE]) : [])],
   });
 }

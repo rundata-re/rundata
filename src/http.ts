@@ -298,6 +298,22 @@ export async function getBytes(
 }
 
 /**
+ * The value of the cookie `name` that the answer sets: a session, after a login (SolarDB, providers/uv-mesure.ts). An
+ * answer that sets none is an error of the source.
+ */
+export async function getCookie(source: string, url: string, name: string, timeoutMs = 15_000): Promise<string> {
+  return get(source, url, timeoutMs, async (res) => {
+    await res.body?.cancel().catch(() => {});
+    const set = typeof res.headers.getSetCookie === "function" ? res.headers.getSetCookie() : [res.headers.get("set-cookie") ?? ""];
+    for (const c of set) {
+      const m = new RegExp(`^\\s*${name}=([^;]+)`).exec(c);
+      if (m) return m[1];
+    }
+    throw new UpstreamError(source, "pas de session");
+  });
+}
+
+/**
  * A text file read line by line as it comes, never whole: for a file of several Mo of which a few lines are kept (the
  * LCSQA's file of the air's measures, src/providers/air-mesures.ts). Each line is given to `line`, without its end.
  */

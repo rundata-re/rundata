@@ -33,6 +33,7 @@ import * as marchesPublics from "./providers/marches-publics.js";
 import * as ovpfOcr from "./providers/ovpf-ocr.js";
 import * as meteofrance from "./providers/meteofrance.js";
 import * as candhis from "./providers/candhis.js";
+import * as uvMesure from "./providers/uv-mesure.js";
 import * as ffck from "./providers/ffck.js";
 import * as radar from "./providers/radar.js";
 import * as vigilanceCarte from "./providers/vigilance-carte.js";
@@ -130,6 +131,8 @@ interface Env {
   FIRMS_MAP_KEY?: string;
   /** Optional: the Cerema's key to the Candhis buoys, asked by the scheduled event (src/providers/candhis.ts). */
   CANDHIS_API_KEY?: string;
+  /** Optional: the token SolarDB sent (ENERGY-Lab), as is: the UV index measured at Moufia, read by the scheduled event (src/providers/uv-mesure.ts). */
+  SOLARDB_JETON?: string;
   STORE?: KvNamespace;
   USAGE?: AnalyticsDataset;
   TRANSIT?: D1Database;
@@ -240,6 +243,12 @@ function setup(env: Env): Cache {
   candhis.configure(kv && env.CANDHIS_API_KEY, kv && (async () => {
     count();
     return (await kv.get(candhis.KEY, "json")) as candhis.Etat | null;
+  }));
+  // The UV index measured at Moufia, read by the scheduled event below and kept in KV (src/providers/uv-mesure.ts):
+  // without KV, the token is not used; without the token, nothing is read nor shown.
+  uvMesure.configure(kv && env.SOLARDB_JETON, kv && (async () => {
+    count();
+    return (await kv.get(uvMesure.KEY, "json")) as uvMesure.Etat | null;
   }));
   // The FFCK's calendar, read by the scheduled event below and kept in KV (src/providers/ffck.ts).
   ffck.configure(kv && (async () => {

@@ -13,6 +13,7 @@ import * as emploi from "./providers/emploi.js";
 import * as ffck from "./providers/ffck.js";
 import * as marchesPublics from "./providers/marches-publics.js";
 import * as sitesHs from "./providers/sites-hs.js";
+import * as uvMesure from "./providers/uv-mesure.js";
 
 /** The part of the KV namespace binding a pass uses. */
 export interface Kv {
@@ -41,6 +42,9 @@ export const COLLECTEURS: Collecteur[] = [
   // Every 30 minutes, at 25 and 55 past the hour: one page of the FFCK's calendar at most, a season's list once a day or
   // the page of an event of the island.
   collecteur<ffck.Etat>({ nom: "calendrier FFCK", due: ffck.refreshDue, cle: ffck.KEY, ttl: ffck.TTL_SECONDS, collect: ffck.refresh }),
+  // Every 10 minutes while the sun is up, at 2, 12, 22… past the hour: the UV index measured at Moufia, a login and one
+  // read of SolarDB (and OMI's ozone once a day). Nothing without the token.
+  collecteur<uvMesure.Etat>({ nom: "indice UV mesuré", due: (now) => uvMesure.configured() && uvMesure.refreshDue(now), cle: uvMesure.KEY, ttl: uvMesure.TTL_SECONDS, collect: uvMesure.refresh }),
   // Every hour, at 45 past: the measures at Atmo Réunion's stations, La Réunion's lines of the LCSQA's national file
   // (up to 12.5 Mo, read line by line), kept when the latest hour changed.
   collecteur<airMesures.Copie>({ nom: "mesures de l'air", due: airMesures.refreshDue, cle: airMesures.KV_KEY, ttl: airMesures.KV_TTL_SECONDS, collect: airMesures.collect }),

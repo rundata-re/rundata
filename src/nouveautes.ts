@@ -59,6 +59,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded by marketing): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-24T13:48:00+04:00", texte: "L'indice UV mesuré au Moufia (Saint-Denis), sur la page météo et pour les assistants IA, d'après ENERGY-Lab, erreur possible jusqu'à\u00a015\u00a0%." },
   { date: "2026-11-24T13:18:00+04:00", texte: "transports\u00a0: un trajet d'un lieu à un autre («\u00a0Trou d'Eau vers Saint-Pierre\u00a0») donne ses bus du jour, directs ou avec une correspondance" },
   { date: "2026-11-24T13:06:00+04:00", texte: "Bus\u00a0: une page par ligne Car Jaune, Alternéo et Estival, avec les départs du jour et ses arrêts dans l'ordre, depuis /bus." },
   { date: "2026-11-24T13:06:00+04:00", texte: "Assistants IA\u00a0: une route demandée (RN2, route des Tamarins, route de Cilaos…) donne les nouvelles des médias qui la nomment." },

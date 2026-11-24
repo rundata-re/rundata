@@ -28,6 +28,7 @@ import { toutesLesSources, VERSION } from "../server.js";
 import { compte } from "../producteurs.js";
 import { a, communeDite, de, enGrand, fourchette, fr } from "../tools/format.js";
 import * as candhis from "../providers/candhis.js";
+import { SOURCE as uvMesureSource, SOURCE_OZONE as uvMesureOzone } from "../providers/uv-mesure.js";
 import * as mf from "../providers/vigilance.js";
 import { carteHero, carteHtml } from "./vigilance-carte.js";
 import { current, cyclone, cycloneHead, cycloneLevel, cycloneOn, feminine, islandGreen, NONE_ISSUED, NONE_ISSUED_SAID, raised, spans } from "../tools/vigilance.js";
@@ -2825,6 +2826,15 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
   <figure class="card mapcard">${islandMap({ highlight: p.commune ? p.nom : place.commune, pin: { lon: place.lon, lat: place.lat, name: p.nom }, label: `Carte de La Réunion (974) situant ${p.nom}` })}</figure>
 </div>`;
 
+  // The UV index MEASURED at Moufia, near it: the tool's words (prevision_meteo), never the forecast's card. « mesuré » in
+  // small letters on the page, its label « Mesure » saying it, as for the waves measured (marketing, 23/11/2026).
+  const uvm = d?.prevision?.indice_uv_mesure;
+  const uvMeasured = uvm
+    ? `<section aria-labelledby="h-uv"><div class="hb"><h2 id="h-uv">L'indice UV mesuré au Moufia</h2><span class="badge m">Mesure</span></div>` +
+      `<div class="card"><p>${esc(uvm.resume.replace("UV MESURÉ", "UV mesuré"))}</p><p class="note">${esc(uvm.incertitude)} Source\u00a0: ${esc(uvm.citation).replace(esc(uvm.lien), `<a href="${esc(uvm.lien)}" rel="noopener">${esc(uvm.lien)}</a>`)}` +
+      `${uvm.citation.includes(uvMesureSource.licence) ? "" : ` Licence ${esc(uvMesureSource.licence)}.`} Ozone\u00a0: ${esc(uvMesureOzone.attribution)}.</p></div></section>`
+    : "";
+
   // « Dernière mesure », never « en ce moment » above the values: a copy kept by a search engine says it still, beside
   // the measure of another evening, which an AI gave as the weather of now (06/11/2026). Each card says its day and time.
   const body = `${data ? enChiffres(d?.chiffres, p.nom, p.slug) : ""}
@@ -2832,6 +2842,7 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
   <div class="hb"><h2 id="h-now">Dernière mesure près ${esc(de(p.nom))}</h2><span class="badge m">Mesure</span></div>
   ${measured}
 </section>
+${uvMeasured}
 ${cloudSea}
 ${nightCard}
 <section class="card cta" aria-labelledby="h-ia">

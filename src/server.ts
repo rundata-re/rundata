@@ -45,6 +45,7 @@ import * as viirs from "./providers/viirs.js";
 import * as houle from "./providers/houle.js";
 import * as openmeteo from "./providers/openmeteo.js";
 import * as uv from "./providers/uv.js";
+import * as uvMesure from "./providers/uv-mesure.js";
 import * as ensemble from "./providers/ensemble.js";
 import * as feux from "./providers/feux.js";
 import * as avis from "./avis.js";
@@ -136,7 +137,7 @@ import * as peche from "./tools/peche.js";
 import * as cetaces from "./tools/cetaces.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.912";
+export const VERSION = "1.0.913";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -280,7 +281,7 @@ const lieuAvecExemples = z
  * for the registry of producers and licences (producteurs.ts).
  */
 export const toutesLesSources = (inactives = false) =>
-  oncePerId([...weatherProviders().map((p) => p.source), ...(inactives ? [meteofranceStations.SOURCE] : []), ...(inactives || vigilance.enabled() ? [vigilance.SOURCE] : []), viirs.SOURCE, acspo.SOURCE, modis.SOURCE, coraux.SOURCE, houle.SOURCE, houle.SOURCE_MF, seismes.SOURCE, volcanSources.OVPF, volcanSources.PITONLIVE, edf.SOURCE, calendar.SCHOOL, calendar.HOLIDAYS, atmo.SOURCE, airMesures.SOURCE, capteurs.SOURCE, ...(inactives || autorisee(capteurs.SOCIAL_AUTORISATION) ? [capteurs.SOURCE_SOCIAL] : []), annuaire.SOURCE, ...Object.values(terrain.SOURCES), ...(inactives || transit.enabled() ? [transit.SOURCE, gtfsrt.SOURCE] : []), velos.SOURCE, maregraphes.SOURCE, vigicrues.SOURCE, irve.SOURCE, eauPotable.SOURCE, baignades.SOURCE, requin.SOURCE, onf.SOURCE, airesOnf.SOURCE, vigieau.SOURCE, avisEau.SOURCE, arretesVille.SOURCE, dae.SOURCE, ffck.SOURCE, ...Object.values(sportSources.SOURCES).filter((x) => inactives || (autorisee(`sport:${x.id}`) && autorisee(`agenda:${x.id}`))), gdacs.SOURCE, ...(inactives || cmrsTrace.enLigne() ? [cmrsTrace.SOURCE] : []), ...agendaSources.SOURCES_LUES.filter((s) => inactives || connecteursEnLigne() || s !== CONNECTEURS_SOURCE), ...Object.values(actuSources.SOURCES), raaPrefecture.SOURCE, ...Object.values(traceSources.SOURCES), ...(inactives || climat.enabled() ? [climat.SOURCE] : []), ...(inactives || climat.hourlyEnabled() ? [climat.SOURCE_HORAIRE] : []), ...(inactives || arome.enabled() ? [arome.SOURCE] : []), openmeteo.SOURCE, uv.SOURCE, ensemble.SOURCE, ...(inactives || feux.enabled() ? [feux.SOURCE] : []),
+  oncePerId([...weatherProviders().map((p) => p.source), ...(inactives ? [meteofranceStations.SOURCE] : []), ...(inactives || vigilance.enabled() ? [vigilance.SOURCE] : []), viirs.SOURCE, acspo.SOURCE, modis.SOURCE, coraux.SOURCE, houle.SOURCE, houle.SOURCE_MF, seismes.SOURCE, volcanSources.OVPF, volcanSources.PITONLIVE, edf.SOURCE, calendar.SCHOOL, calendar.HOLIDAYS, atmo.SOURCE, airMesures.SOURCE, capteurs.SOURCE, ...(inactives || autorisee(capteurs.SOCIAL_AUTORISATION) ? [capteurs.SOURCE_SOCIAL] : []), annuaire.SOURCE, ...Object.values(terrain.SOURCES), ...(inactives || transit.enabled() ? [transit.SOURCE, gtfsrt.SOURCE] : []), velos.SOURCE, maregraphes.SOURCE, vigicrues.SOURCE, irve.SOURCE, eauPotable.SOURCE, baignades.SOURCE, requin.SOURCE, onf.SOURCE, airesOnf.SOURCE, vigieau.SOURCE, avisEau.SOURCE, arretesVille.SOURCE, dae.SOURCE, ffck.SOURCE, ...Object.values(sportSources.SOURCES).filter((x) => inactives || (autorisee(`sport:${x.id}`) && autorisee(`agenda:${x.id}`))), gdacs.SOURCE, ...(inactives || cmrsTrace.enLigne() ? [cmrsTrace.SOURCE] : []), ...agendaSources.SOURCES_LUES.filter((s) => inactives || connecteursEnLigne() || s !== CONNECTEURS_SOURCE), ...Object.values(actuSources.SOURCES), raaPrefecture.SOURCE, ...Object.values(traceSources.SOURCES), ...(inactives || climat.enabled() ? [climat.SOURCE] : []), ...(inactives || climat.hourlyEnabled() ? [climat.SOURCE_HORAIRE] : []), ...(inactives || arome.enabled() ? [arome.SOURCE] : []), openmeteo.SOURCE, uv.SOURCE, ...(inactives || uvMesure.configured() ? [uvMesure.SOURCE, uvMesure.SOURCE_OZONE] : []), ensemble.SOURCE, ...(inactives || feux.enabled() ? [feux.SOURCE] : []),
     // The vie pratique's and the power cuts' (annuaire_services_publics, electricite).
     carburantsPrix.SOURCE, radarMf.SOURCE, radarsFixes.SOURCE, accidentsRoute.SOURCE, BDTOPO, PHOTOS, courantMairies.SOURCE, tcoDecheteries.SOURCE, decheteriesAdeme.ADEME, santeSources.FINESS, santeSources.ARS_GARDE, santeSources.SANTE_FR, gardeArs.PDSA, collecteTco.SOURCE, ...Object.values(lieuxEnfants.SOURCES), marchesOsm.OSM, ...Object.values(marchesOsm.MAIRIES), loyersAnil.SOURCE, ecolesAnnuaire.SOURCE, carteScolaire.SOURCE, parcoursupFormations.SOURCE, ipsDepp.SOURCE_IPS, ipsDepp.SOURCE_VA, medecinsAmeli.SOURCE, electionsCommunes.SOURCE, internetArcep.SOURCE, antennesAnfr.SOURCE_MOBILE, antennesAnfr.SOURCE_RADIO, sitesHs.SOURCE, monumentsMerimee.SOURCE, lieuxRemarquables.SOURCE, sentiersMarmailles.SOURCE, canyonsParc.SOURCE, mairiesAnnexesSd.SOURCE, accueilJeuneEnfant.SOURCE,
     // The bike lanes, the bike racks and the speeds of the routes nationales, of /carte only.
@@ -434,6 +435,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "pour « est-ce dégagé au Maïdo demain matin ? », « on sera au-dessus des nuages au Piton des Neiges ? ». " +
         "Partout, le ciel de la nuit, de 18 h à 6 h, dégagé ou couvert, et dans les Hauts au-dessus ou dans les nuages (bloc ciel_de_nuit), " +
         "pour « le ciel sera dégagé ce soir pour voir les étoiles au Maïdo ? ». " +
+        (uvMesure.configured() ? "Près de Saint-Denis, donne aussi l'indice UV MESURÉ au Moufia (bloc indice_uv_mesure), avec son heure et son erreur possible : le dire comme une mesure, distincte de la prévision. " : "") +
         "Chaque réponse est étiquetée « prévision » avec ses limites (le modèle ne voit pas les microclimats de l'île)\u00a0; " +
         "pour un cyclone, renvoie à la vigilance officielle de Météo-France. Pour le temps qu'il fait maintenant, utiliser meteo_actuelle. " +
         "/ Weather FORECAST (numerical model, not a measurement) for a place in Réunion Island, up to 7 days: " +

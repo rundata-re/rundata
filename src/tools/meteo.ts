@@ -146,7 +146,7 @@ async function collect(cache: Cache, now: Date, list: Provider[]) {
 // The commune of each INSEE code. A station of Météo-France has its commune's code first in its id (97422445, Bras-Sec,
 // is in Le Tampon, not in Cilaos with the îlet of that name); another, the commune of the nearest named place.
 const BY_INSEE = new Map(Object.entries(INSEE).map(([nom, code]) => [code, nom]));
-const stationCommune = (s: Observation["station"]) =>
+export const stationCommune = (s: Pick<Observation["station"], "source" | "id" | "lon" | "lat">) =>
   (s.source === "meteofrance" && BY_INSEE.get(s.id.slice(0, 5))) || communeAt(s.lon, s.lat);
 
 function stationBlock(o: Observation, stale: boolean, now: Date) {

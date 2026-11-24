@@ -39,7 +39,10 @@ export interface Hit {
   outcome?: string;
   /** Tool, as the server tells it: the JSON-RPC id of the call, for the transport's record of it (usage.ts). */
   id?: string | number;
-  /** MCP: the protocol error's message (JSON-RPC error or refused request). Never a tool's own answer. */
+  /**
+   * MCP: the protocol error's message (JSON-RPC error or refused request). Never a tool's own answer, but for
+   * resume_du_jour the names of the parts it left out (`non_inclus`, « météo mesurée et prévue, vigilance »).
+   */
   message?: string;
   /** MCP: the names of the arguments given, sorted (« lieu,quand »); never their values. */
   args?: string;
@@ -283,7 +286,7 @@ export interface Visit {
  * | blob9   | client version (initialize); the app's version | audience: humain, assistant, robot…, interne |
  * | blob10  | protocol version                           | HTTP status                            |
  * | blob11  | outcome: ok, vide, erreur, lieu inconnu, rpc …, http … | « app » in the installed app, else empty |
- * | blob12  | protocol error message                     | device: mobile, tablette, ordinateur; empty for a robot |
+ * | blob12  | protocol error message; resume_du_jour: parts left out | device: mobile, tablette, ordinateur; empty for a robot |
  * | blob13  | argument names                             | —                                      |
  * | blob14  | place: résolu, île, inconnu, coordonnées; « copie » for the app's copy | —                       |
  * | blob15  | commune of the place                       | —                                      |

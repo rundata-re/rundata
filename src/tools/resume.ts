@@ -13,7 +13,7 @@ import { deNom } from "../articles.js";
 import { distributeur, nomDit, partageLu, SITES_DISTRIBUTEURS } from "../eau/distributeurs.js";
 import { distanceKm, localTime } from "../geo.js";
 import { apart, noteLecture } from "../lectures.js";
-import { normalize, resolvePlace, wholeIsland } from "../places/resolve.js";
+import { normalize, type Place, resolvePlace, wholeIsland } from "../places/resolve.js";
 import * as atmo from "../providers/atmo.js";
 import * as cal from "../providers/calendrier.js";
 import { SOLEIL_NOTE } from "./calendrier.js";
@@ -30,7 +30,7 @@ import * as marches from "../vie/marches.js";
 import * as mf from "../providers/vigilance.js";
 import * as volcanSrc from "../providers/volcan.js";
 import { AGENDAS } from "../providers/agenda.js";
-import { why } from "../types.js";
+import { type Reading, why } from "../types.js";
 import {
   type ActualitesAnswer,
   type AgendaAnswer,
@@ -56,10 +56,14 @@ import {
   type DechetsAnswer,
   type ElectriciteAnswer,
   FRESH_SECONDS,
+  type HomeData,
+  ISLAND_PEEK_MS,
   joursDuJour,
   type PlaceData,
   type SeaData,
   snapshot,
+  type StationAnswer,
+  type StationNow,
   type TraficAnswer,
   type VolcanAnswer,
   withoutForecast,
@@ -75,12 +79,12 @@ import { aheadRows, type CourantAnswer, followed, injoignable, shortOf } from ".
 import { when } from "./injoignable.js";
 import { SITE_URL } from "./citer.js";
 import { PERIMEE_MIN, perimeeTexte } from "./electricite.js";
-import { a, ailleurs, credits, de, fourchette, le, notFound, placeBlock, placeWarning, text } from "./format.js";
+import { a, ailleurs, credits, de, fourchette, le, notFound, placeBlock, placeWarning, show, text, when as measuredAt } from "./format.js";
 import { coastText, cyclone, cycloneOn, forZone, zoneLevels, zoneShort, zoneText } from "./vigilance.js";
 import { instant, type InfoRow } from "./actualites.js";
 import { ENDS as LITTORAL_ENDS, forSummary, littoral, NONE as LITTORAL_NONE } from "./littoral.js";
-import { enTete } from "./representativeness.js";
-import { NETWORKS } from "./meteo.js";
+import { enTete, fit, mieux } from "./representativeness.js";
+import { amateur, natureStation, NETWORKS, OLD_MINUTES, stationCommune } from "./meteo.js";
 import { SEA_SOURCES } from "./mer.js";
 import { alerteVolcan, releaseDay } from "../web/volcan-alerte.js";
 
@@ -138,11 +142,13 @@ const H = 60;
 const SEA = "température de la mer";
 /** The weather's copy kept in the summary for this long at most, minutes: past it, left out (usable()). */
 const METEO_MAX_MIN = 30;
+/** The weather of the place's copy, measured and forecast, in `non_inclus` when it is left out. */
+export const METEO_NOM = "météo mesurée et prévue";
 
 /** The copies of the commune's summary, for a place with its own weather page or not. */
 function copiesOf(commune: PlacePage, place: PlacePage): Record<Part, Copy | undefined> {
   return {
-    meteo: { key: `web:lieu:${place.slug}`, build: (c, now) => buildPlace(c, place, now), max: METEO_MAX_MIN, nom: "météo mesurée et prévue", outil: "meteo_actuelle et prevision_meteo", page: meteoPath(place.slug) },
+    meteo: { key: `web:lieu:${place.slug}`, build: (c, now) => buildPlace(c, place, now), max: METEO_MAX_MIN, nom: METEO_NOM, outil: "meteo_actuelle et prevision_meteo", page: meteoPath(place.slug) },
     commune: { key: `web:commune:${commune.slug}`, build: (c, now) => buildCommune(c, commune, now), max: 24 * H, nom: "mairie et info trafic des bus", outil: "annuaire_services_publics et transports", page: `/communes/${commune.slug}` },
     air: { key: "web:air", build: buildAir, max: 12 * H, sameDay: true, nom: "qualité de l'air", outil: "qualite_air", page: "/air" },
     mer: coastal(commune) ? { key: "web:mer", build: buildSea, max: 36 * H, nom: SEA, outil: "temperature_mer", page: "/mer" } : undefined,
@@ -864,6 +870,75 @@ export function court(r: Resume) {
  */
 const VEILLE_REFUSEE = { afterMs: Infinity, waitMs: 0, uselessAfterMs: METEO_MAX_MIN * 60_000 };
 
+/** The copy of the island's stations, that of /meteo (web/data.ts buildHome): every station that measured. */
+export const STATIONS_KEY = "web:meteo";
+/** The forecast alone, said in `non_inclus` when the measure comes from the island's stations (`fromStations`). */
+export const PREVISION_NOM = "prévision météo";
+/** How many of the nearest stations `fromStations` ranks, of the 150 or so of the island (CPU: fit for each). */
+const NEAREST_STATIONS = 40;
+
+/** A station of the island's copy, as its observation (tools/meteo.ts): the units its network gives. */
+function readingsOf(s: StationNow): Reading[] {
+  const mf = s.source === "meteofrance";
+  const out: Reading[] = [];
+  const add = (variable: string, valeur: number | undefined, unite: string, nature: Reading["nature"] = "mesure") => {
+    if (valeur != null) out.push({ variable, valeur, unite, nature });
+  };
+  add("temperature", s.temperature, "°C");
+  // A METAR's humidity is computed from its dew point (providers/metar.ts).
+  add("humidite", s.humidite, "%", s.source === "metar" ? "derive" : "mesure");
+  add("vent_moyen", s.vent, "km/h");
+  add("vent_direction", s.direction, "° (d'où vient le vent)");
+  add("rafales", s.rafales, "km/h");
+  add("pluie_6min", s.pluie_6min, mf ? "mm en 6 min" : "mm");
+  add("pluie_1h", s.pluie_1h, mf ? "mm en 1 h" : "mm");
+  return out;
+}
+
+/**
+ * The weather measured at `at`, from the copy of the island's stations, when the place's copy is too old to give
+ * (24/11/2026, Saint-Philippe at 12:50: its copy of 11:20 left out, while meteo_actuelle gave Le Baril measured at
+ * 12:42). A read of that copy, never of a source: its stations ranked as meteo_actuelle ranks them (fit, mieux), an
+ * amateur one left out, as one whose measure is older than OLD_MINUTES; each said with its time, its distance and how
+ * well it speaks for the place. Null when that copy is too old as well, or the invocation has no subrequest left.
+ */
+export async function fromStations(cache: Cache, at: Place, now: Date): Promise<Cached<PlaceData> | null> {
+  if (left() < 1) return null;
+  const copy = await cache.peek<HomeData>(STATIONS_KEY, now.getTime() - FRESH_SECONDS * 1000, ISLAND_PEEK_MS).catch(() => undefined);
+  if (!copy || now.getTime() - copy.fetchedAt.getTime() > METEO_MAX_MIN * 60_000) return null;
+  const ranked = (copy.value.toutes ?? copy.value.stations)
+    .filter((s) => !s.amateur && !amateur(s.source) && now.getTime() - Date.parse(s.time) <= OLD_MINUTES * 60_000)
+    // The nearest NEAREST_STATIONS only, ranked: a station farther than they are does not come first (fit counts the km).
+    .map((s) => ({ s, km: distanceKm(at.lon, at.lat, s.lon, s.lat) }))
+    .sort((a, b) => a.km - b.km)
+    .slice(0, NEAREST_STATIONS)
+    .map(({ s }) => ({ s, f: fit(at, { source: s.source, id: s.id ?? s.nom, nom: s.nom, lon: s.lon, lat: s.lat, altitude_m: s.altitude_m, variables: [] }) }))
+    .sort((a, b) => mieux(a.f, b.f));
+  // The station the summary names (enTete: with a temperature, the first « bonne », else « moyenne »), alone: weather()
+  // gives that one only, and its commune (communeAt, about 0,3 ms off Météo-France's network) is looked up for it only.
+  const warm = ranked.filter(({ s }) => s.temperature != null);
+  const head = warm.find(({ f }) => f.pertinence === "bonne") ?? warm.find(({ f }) => f.pertinence !== "faible") ?? warm[0];
+  if (!head) return null;
+  const { s, f } = head;
+  const { avertissements, score: _score, versant: _versant, ecart_altitude_m: _ecart, ...rest } = f;
+  const t = measuredAt(new Date(s.time), now);
+  const station: StationAnswer = {
+    station: s.nom,
+    commune: stationCommune({ source: s.source, id: s.id ?? "", lon: s.lon, lat: s.lat }),
+    source: s.source,
+    nature: natureStation(s.source),
+    altitude_m: s.altitude_m,
+    heure_mesure: t.heure_mesure,
+    age_min: t.age_min,
+    mesures: Object.fromEntries(readingsOf(s).map((r) => [r.variable, show(r)])),
+    ...rest,
+    avertissements: [...avertissements, ...(s.stale ? ["Source momentanément injoignable : dernière valeur connue."] : [])],
+  };
+  const stations = [station];
+  noteLecture({ key: STATIONS_KEY, fetchedAt: copy.fetchedAt.getTime(), stale: false, freshSeconds: FRESH_SECONDS });
+  return { value: { meteo: { resume: "", stations, sources: copy.value.sources } }, fetchedAt: copy.fetchedAt, stale: false };
+}
+
 /**
  * How long the call waits for the refresh of a weather copy older than FRESH_SECONDS, ms: then the copy as it is, its
  * measure dated, its refresh going on after the answer. The wait of /aujourdhui/<commune> for an assistant that answers
@@ -878,6 +953,19 @@ export const RESUME_REFRESH_WAIT_MS = 800;
  * after the answer for the next call.
  */
 export const RESUME_BUILD_WAIT_MS = 1300;
+
+/**
+ * The parts an answer of resume_du_jour left out (`non_inclus`), for its point in Analytics Engine (blob12, server.ts):
+ * how often the weather is missing, read over days (24/11/2026). Their names only, never the place nor a value.
+ */
+export function partiesLaissees(r: { content?: { type: string; text?: string }[] }): string | undefined {
+  try {
+    const a = JSON.parse(r.content?.find((c) => c.type === "text")?.text ?? "") as { non_inclus?: { partie: string }[] };
+    return a.non_inclus?.length ? a.non_inclus.map((x) => x.partie).join(", ").slice(0, 200) : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 /** `detail` false (the tool's default): the short answer, court(); the page reads resume() whole. */
 export async function resumeDuJour(cache: Cache, lieu: string, now = new Date(), background?: Background, detail = true) {
@@ -904,10 +992,18 @@ export async function resumeDuJour(cache: Cache, lieu: string, now = new Date(),
     : { ...here, value: { ...here.value, prevision: centre.value.prevision } };
   const meteoDuLieu = !here?.value.meteo ? undefined : meteo === here ? "tout" as const : "mesure" as const;
   const { copies, leftOut } = await readCopies(cache, commune, place, now, background, vigilance, { meteo });
+  // The place's copy too old, or out of date by its revision: the measure from the island's stations, as meteo_actuelle
+  // gives it, and only the forecast left out.
+  const gone = copies.meteo ? -1 : leftOut.findIndex((x) => x.partie === METEO_NOM);
+  const stations = gone >= 0 ? await fromStations(cache, asked ?? place.place, now) : null;
+  if (stations) {
+    copies.meteo = stations;
+    leftOut[gone] = { ...leftOut[gone], partie: PREVISION_NOM, outil: "prevision_meteo" };
+  }
   // A place with a weather page of its own (Maïdo, Hell-Bourg): its weather is its own, named so, never the commune's
   // (20/11/2026: the Maïdo's 9 °C given as Saint-Paul's).
   const propre = place !== commune ? { nom: place.nom, lon: place.place.lon, lat: place.place.lat } : undefined;
-  const r = resume(commune, copies, now, leftOut, asked ?? propre, asked ? meteoDuLieu : propre && "tout");
+  const r = resume(commune, copies, now, leftOut, asked ?? propre, asked ? (stations ? "tout" : meteoDuLieu) : propre && "tout");
   // A place found on part of its name (« Maurice », Fond Maurice at Les Avirons) or one of several of that name: said
   // after the commune and the day, and after the water not to drink, never before an alert (20/11/2026).
   const said = placeWarning(lieu, res);

@@ -13,7 +13,7 @@ import { deNom } from "../articles.js";
 import { distributeur, nomDit, partageLu, SITES_DISTRIBUTEURS } from "../eau/distributeurs.js";
 import { distanceKm, localTime } from "../geo.js";
 import { apart, noteLecture } from "../lectures.js";
-import { normalize, resolvePlace } from "../places/resolve.js";
+import { normalize, resolvePlace, wholeIsland } from "../places/resolve.js";
 import * as atmo from "../providers/atmo.js";
 import * as cal from "../providers/calendrier.js";
 import { SOLEIL_NOTE } from "./calendrier.js";
@@ -715,6 +715,19 @@ export function placeOf(lieu: string): { commune: PlacePage; place: PlacePage; r
   return { commune, place: shown ?? commune, res };
 }
 
+/**
+ * « La Réunion » asked as the place of the day's summary, which is a commune's (24/11/2026: « Lieu introuvable à La
+ * Réunion : « La Réunion » » until then): the communes, each with its day's page, and the tools that answer for the whole
+ * island.
+ */
+export function dayOfTheIsland() {
+  return text({
+    resume: `Le résumé du jour se fait par commune\u00a0: donner l'une des ${COMMUNES.length} communes de La Réunion (Saint-Denis, Saint-Paul, Saint-Pierre, Le Tampon…), ou un lieu, rapporté à sa commune.`,
+    communes: COMMUNES.map((p) => ({ nom: p.nom, lien: `${SITE_URL}/aujourdhui/${p.slug}` })),
+    toute_l_ile: ["vigilance_meteo", "meteo_actuelle", "prevision_meteo", "actualites", "evenements", "electricite", "volcan_seismes"],
+  });
+}
+
 /** A copy a view may bring up to date after its answer. */
 export interface Stale {
   key: string;
@@ -853,6 +866,7 @@ const VEILLE_REFUSEE = { afterMs: Infinity, waitMs: 0, uselessAfterMs: METEO_MAX
 
 /** `detail` false (the tool's default): the short answer, court(); the page reads resume() whole. */
 export async function resumeDuJour(cache: Cache, lieu: string, now = new Date(), background?: Background, detail = true) {
+  if (wholeIsland(lieu)) return dayOfTheIsland();
   const found = placeOf(lieu);
   if (!found) return notFound(lieu);
   const { commune, place, res } = found;

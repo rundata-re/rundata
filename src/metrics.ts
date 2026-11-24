@@ -285,7 +285,7 @@ export interface Visit {
  * | blob11  | outcome: ok, vide, erreur, lieu inconnu, rpc …, http … | « app » in the installed app, else empty |
  * | blob12  | protocol error message                     | device: mobile, tablette, ordinateur; empty for a robot |
  * | blob13  | argument names                             | —                                      |
- * | blob14  | place: résolu, inconnu, coordonnées; « copie » for the app's copy | —                       |
+ * | blob14  | place: résolu, île, inconnu, coordonnées; « copie » for the app's copy | —                       |
  * | blob15  | commune of the place                       | —                                      |
  * | double1 | 1 if answered without error (« vide » too) | 1 if served without error              |
  * | double2 | milliseconds                               | milliseconds                           |

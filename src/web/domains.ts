@@ -144,10 +144,11 @@ const warnings = (list: string[]) =>
 
 /**
  * The notices of cuts the scheduled event has not read again for a while (tools/copie-ancienne.ts), said before the
- * rest: `voir`, the « Voir … » of the page, its links given (HTML).
+ * rest: `voir`, the « Voir … » of the page, its links given (HTML). The card has no title: its sign sits beside the
+ * sentence (« enligne », pages.ts), not alone on a line above it as over a title.
  */
 export const copieBandeau = (texte: string | undefined, voir = "") =>
-  texte ? `<div class="card warn">${icon("alert")}<p>${esc(texte)}${voir ? ` ${voir}` : ""}</p></div>` : "";
+  texte ? `<div class="card warn enligne">${icon("alert")}<p>${esc(texte)}${voir ? ` ${voir}` : ""}</p></div>` : "";
 
 /**
  * A tool's name or a layer's code, escaped, that may be cut after each « . » and « _ » on a narrow screen

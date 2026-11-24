@@ -4,6 +4,7 @@ import { Cache } from "../src/cache.js";
 import { LISTE_DU, OUTILS } from "../src/nouveautes.js";
 import { INSEE } from "../src/places/insee.js";
 import { electionsAnswer } from "../src/tools/elections.js";
+import { textOf } from "../src/providers/avis-eau.js";
 import * as elections from "../src/vie/elections.js";
 import { electionsPage, electionsPath } from "../src/web/commune.js";
 import { pageOf } from "../src/web/places.js";
@@ -12,8 +13,8 @@ const O = "https://rundata.re";
 /** A text without its no-break spaces: the tool writes ordinary ones (the server puts them), the page its own. */
 const plain = (s: string) => s.replace(/[  ]/g, " ");
 const answer = (r: { content: { text: string }[] }) => JSON.parse(plain(r.content[0].text));
-/** What a person reads of the commune's elections page: no tag, no entity, no no-break space. */
-const pageText = (slug: string) => plain(electionsPage(O, pageOf(slug)!)!.replace(/<[^>]+>/g, " ").replace(/&#39;/g, "'").replace(/&amp;/g, "&").replace(/&quot;/g, '"')).replace(/\s+/g, " ");
+/** What a person reads of the commune's elections page (textOf, the site's own reader of a page's text), a space between two cells. */
+const pageText = (slug: string) => plain(textOf(electionsPage(O, pageOf(slug)!)!.replace(/</g, " <"))).replace(/\s+/g, " ");
 const ask = (lieu?: string, scrutin?: string, annee?: number) => answer(electionsAnswer(lieu, scrutin, annee));
 
 const rpc = (method: string, params: unknown) =>

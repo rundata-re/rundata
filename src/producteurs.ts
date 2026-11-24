@@ -149,6 +149,7 @@ export const FICHES: Record<string, Fiche> = {
   annuaire_sante_ameli: { famille: "licence_ouverte", producteurs: ["Caisse nationale de l'Assurance Maladie"] },
   // The ministry's results, aggregated by data.gouv.fr (Etalab).
   elections_agregees: { famille: "licence_ouverte", producteurs: ["Ministère de l'Intérieur", "Etalab"] },
+  insee_bureaux_vote: { famille: "licence_ouverte", producteurs: ["Insee"] },
   repertoire_national_elus: { famille: "licence_ouverte", producteurs: ["Ministère de l'Intérieur"] },
   // The operators declare, the Arcep counts the premises and publishes.
   arcep_connexion: { famille: "licence_ouverte", producteurs: ["Arcep"] },

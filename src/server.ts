@@ -21,6 +21,7 @@ import * as ecolesAnnuaire from "./vie/ecoles.js";
 import * as carteScolaire from "./vie/carte-scolaire.js";
 import * as monumentsMerimee from "./vie/monuments.js";
 import * as canyonsParc from "./vie/canyons.js";
+import * as bureauxVote from "./vie/bureaux-vote.js";
 import * as elusRne from "./vie/elus.js";
 import * as mairiesAnnexesSd from "./vie/mairies-annexes.js";
 import * as accueilJeuneEnfant from "./vie/creches.js";
@@ -140,7 +141,7 @@ import * as peche from "./tools/peche.js";
 import * as cetaces from "./tools/cetaces.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.949";
+export const VERSION = "1.0.950";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -286,7 +287,7 @@ const lieuAvecExemples = z
 export const toutesLesSources = (inactives = false) =>
   oncePerId([...weatherProviders().map((p) => p.source), ...(inactives ? [meteofranceStations.SOURCE] : []), ...(inactives || vigilance.enabled() ? [vigilance.SOURCE] : []), viirs.SOURCE, acspo.SOURCE, modis.SOURCE, coraux.SOURCE, houle.SOURCE, houle.SOURCE_MF, seismes.SOURCE, volcanSources.OVPF, volcanSources.PITONLIVE, edf.SOURCE, calendar.SCHOOL, calendar.HOLIDAYS, atmo.SOURCE, airMesures.SOURCE, capteurs.SOURCE, ...(inactives || autorisee(capteurs.SOCIAL_AUTORISATION) ? [capteurs.SOURCE_SOCIAL] : []), annuaire.SOURCE, ...Object.values(terrain.SOURCES), ...(inactives || transit.enabled() ? [transit.SOURCE, gtfsrt.SOURCE] : []), velos.SOURCE, maregraphes.SOURCE, vigicrues.SOURCE, irve.SOURCE, eauPotable.SOURCE, baignades.SOURCE, requin.SOURCE, onf.SOURCE, airesOnf.SOURCE, vigieau.SOURCE, avisEau.SOURCE, arretesVille.SOURCE, dae.SOURCE, ffck.SOURCE, ...Object.values(sportSources.SOURCES).filter((x) => inactives || (autorisee(`sport:${x.id}`) && autorisee(`agenda:${x.id}`))), gdacs.SOURCE, ...(inactives || cmrsTrace.enLigne() ? [cmrsTrace.SOURCE] : []), ...agendaSources.SOURCES_LUES.filter((s) => inactives || connecteursEnLigne() || s !== CONNECTEURS_SOURCE), ...Object.values(actuSources.SOURCES), raaPrefecture.SOURCE, ...Object.values(traceSources.SOURCES), ...(inactives || climat.enabled() ? [climat.SOURCE] : []), ...(inactives || merHistorique.enabled() ? [merHistorique.SOURCE_CANDHIS, merHistorique.SOURCE_CRW] : []), ...(inactives || climat.hourlyEnabled() ? [climat.SOURCE_HORAIRE] : []), ...(inactives || arome.enabled() ? [arome.SOURCE] : []), openmeteo.SOURCE, uv.SOURCE, ...(inactives || uvMesure.configured() ? [uvMesure.SOURCE, uvMesure.SOURCE_OZONE] : []), ensemble.SOURCE, ...(inactives || feux.enabled() ? [feux.SOURCE] : []),
     // The vie pratique's and the power cuts' (annuaire_services_publics, electricite).
-    carburantsPrix.SOURCE, radarMf.SOURCE, radarsFixes.SOURCE, accidentsRoute.SOURCE, BDTOPO, PHOTOS, courantMairies.SOURCE, elusRne.SOURCE, tcoDecheteries.SOURCE, decheteriesAdeme.ADEME, santeSources.FINESS, santeSources.ARS_GARDE, santeSources.SANTE_FR, gardeArs.PDSA, collecteTco.SOURCE, ...Object.values(lieuxEnfants.SOURCES), marchesOsm.OSM, ...Object.values(marchesOsm.MAIRIES), loyersAnil.SOURCE, ecolesAnnuaire.SOURCE, carteScolaire.SOURCE, parcoursupFormations.SOURCE, ipsDepp.SOURCE_IPS, ipsDepp.SOURCE_VA, medecinsAmeli.SOURCE, electionsCommunes.SOURCE, internetArcep.SOURCE, antennesAnfr.SOURCE_MOBILE, antennesAnfr.SOURCE_RADIO, sitesHs.SOURCE, monumentsMerimee.SOURCE, lieuxRemarquables.SOURCE, sentiersMarmailles.SOURCE, canyonsParc.SOURCE, mairiesAnnexesSd.SOURCE, accueilJeuneEnfant.SOURCE,
+    carburantsPrix.SOURCE, radarMf.SOURCE, radarsFixes.SOURCE, accidentsRoute.SOURCE, BDTOPO, PHOTOS, courantMairies.SOURCE, elusRne.SOURCE, bureauxVote.SOURCE, tcoDecheteries.SOURCE, decheteriesAdeme.ADEME, santeSources.FINESS, santeSources.ARS_GARDE, santeSources.SANTE_FR, gardeArs.PDSA, collecteTco.SOURCE, ...Object.values(lieuxEnfants.SOURCES), marchesOsm.OSM, ...Object.values(marchesOsm.MAIRIES), loyersAnil.SOURCE, ecolesAnnuaire.SOURCE, carteScolaire.SOURCE, parcoursupFormations.SOURCE, ipsDepp.SOURCE_IPS, ipsDepp.SOURCE_VA, medecinsAmeli.SOURCE, electionsCommunes.SOURCE, internetArcep.SOURCE, antennesAnfr.SOURCE_MOBILE, antennesAnfr.SOURCE_RADIO, sitesHs.SOURCE, monumentsMerimee.SOURCE, lieuxRemarquables.SOURCE, sentiersMarmailles.SOURCE, canyonsParc.SOURCE, mairiesAnnexesSd.SOURCE, accueilJeuneEnfant.SOURCE,
     // The bike lanes, the bike racks and the speeds of the routes nationales, of /carte only.
     ...Object.values(velo.SOURCES), geovelo.SOURCE, vitessesRn.SOURCE,
     // The public sector's job offers and the formations eligible to the CPF (emploi), the public procurement notices (the
@@ -706,10 +707,10 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
       description:
         "Résultats des élections dans une commune de La Réunion (974) depuis 1999, d'après le ministère de l'Intérieur : inscrits, votants, blancs, nuls, exprimés, " +
         "voix de chaque candidat ou liste, participation. Les candidats sont dans l'ordre des panneaux, quel que soit le résultat : donner les voix telles quelles, sans nuance politique. " +
-        "Pour : « résultats des municipales à Saint-Paul ? », « participation à la présidentielle de 2022 à Cilaos ? ».",
+        "Pour : « résultats des municipales à Saint-Paul ? », « participation à la présidentielle de 2022 à Cilaos ? », « où voter à Saint-Denis ? ».",
       inputSchema: {
         lieu: z.string().max(TEXTE_MAX).optional().describe("Commune ou lieu (« Saint-Paul », « Cilaos »)."),
-        scrutin: z.string().max(TEXTE_MAX).optional().describe("Municipales, législatives, européennes, présidentielle, régionales, départementales, cantonales. Vide = le dernier."),
+        scrutin: z.string().max(TEXTE_MAX).optional().describe("Municipales, législatives, européennes, présidentielle, régionales, départementales, cantonales. Vide = le dernier. « bureaux de vote » : où voter."),
         annee: z.number().int().min(1999).max(2100).optional().describe("Année (2022)."),
       },
       annotations: { ...READ_ONLY },

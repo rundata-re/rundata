@@ -6,6 +6,7 @@
  * read at all, and the day of the file as the answer's date.
  */
 import { resolvePlace } from "../places/resolve.js";
+import * as bureauxVote from "../vie/bureaux-vote.js";
 import * as elections from "../vie/elections.js";
 import { slugify } from "../web/places.js";
 import { SITE_URL } from "./citer.js";
@@ -18,6 +19,24 @@ const DEMANDES: [RegExp, elections.Type][] = [
 ];
 const sansAccent = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 const typeAsked = (quoi: string) => DEMANDES.find(([re]) => re.test(sansAccent(quoi)))?.[1];
+/** A question about where to vote: « bureaux de vote », « où voter », « lieux de vote ». */
+const OU_VOTER = /\bbureaux? de vote|\bou voter|\blieux? de vote/;
+const NE_DIT_PAS = "rundata.re ne dit pas quel est le bureau d'une adresse ni d'un électeur : renvoyer à la carte électorale, à la mairie ou au service officiel (son_bureau).";
+
+/** The commune's polling stations, the answer to « où voter ? »: its places, never someone's bureau (vie/bureaux-vote.ts). */
+function pollingAnswer(asked: string, res: NonNullable<ReturnType<typeof resolvePlace>>, commune: string, page: string) {
+  const lieux = bureauxVote.lieuxDe(commune);
+  return text({
+    lieu: placeBlock(asked, res),
+    resume: `${bureauxVote.nombreDe(lieux)} bureaux de vote ${a(commune)}, dans ${lieux.length} lieux, d'après l'Insee (${bureauxVote.EXTRACTION}).`,
+    bureaux_de_vote: { lieux: lieux.map((l) => ({ lieu: l.lieu, adresse: l.adresse, bureaux: bureauxVote.numeros(l.bureaux) })) },
+    a_savoir: [bureauxVote.A_SAVOIR, bureauxVote.SON_BUREAU, NE_DIT_PAS],
+    son_bureau: bureauxVote.ISE,
+    page: `${page}#bureaux`,
+    mis_a_jour: bureauxVote.EXTRACTION,
+    sources: credits([bureauxVote.SOURCE]),
+  });
+}
 
 const ASK_AGAIN = "Pour un autre scrutin de la commune : le donner dans scrutin, avec son année (liste dans scrutins_disponibles).";
 
@@ -62,6 +81,9 @@ export function electionsAnswer(lieu?: string, scrutin?: string, annee?: number)
   const all = elections.ofCommune(commune);
   const page = `${SITE_URL}${elections.chemin(slugify(commune))}`;
   const disponibles = all.map((s) => s.nom);
+  if (scrutin && OU_VOTER.test(sansAccent(scrutin)) && bureauxVote.lieuxDe(commune).length) return pollingAnswer(asked, res, commune, page);
+  const bv = bureauxVote.lieuxDe(commune);
+  const bureaux_de_vote = bv.length ? `${bureauxVote.nombreDe(bv)} bureaux de vote dans ${bv.length} lieux : leur liste avec scrutin « bureaux de vote ».` : undefined;
   // The year, given apart or in the words (« municipales 2020 »).
   const quoi = scrutin?.trim() ?? "";
   const year = annee ?? (Number(/\b(19|20)\d\d\b/.exec(quoi)?.[0]) || undefined);
@@ -99,6 +121,7 @@ export function electionsAnswer(lieu?: string, scrutin?: string, annee?: number)
     resume,
     scrutin: { nom: s.nom, tours },
     meme_annee: sameYear.length ? sameYear : undefined,
+    bureaux_de_vote,
     a_savoir: [elections.ORDRE, ...elections.notes([s]), ...(s.type === "cant" ? [elections.CANTONALES] : []), ASK_AGAIN],
     scrutins_disponibles: disponibles,
     page,

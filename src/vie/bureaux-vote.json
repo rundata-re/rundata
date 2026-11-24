@@ -1,0 +1,3516 @@
+{
+ "construit": "2026-11-24",
+ "extraction": "2022-09",
+ "mis_a_jour": "2023-06-27",
+ "source": "Bureaux de vote et adresses de leurs électeurs, Insee, Licence Ouverte 2.0",
+ "page": "https://www.data.gouv.fr/datasets/bureaux-de-vote-et-adresses-de-leurs-electeurs/",
+ "communes": {
+  "97401": [
+   {
+    "lieu": "Mairie des avirons",
+    "adresse": "61 AV. DU GENERAL DE GAULLE, 97425 les avirons",
+    "bureaux": [
+     "1"
+    ]
+   },
+   {
+    "lieu": "Ecole paul hermann",
+    "adresse": "55 AV. DU GENERAL DE GAULLE, 97425 les avirons",
+    "bureaux": [
+     "2",
+     "3",
+     "4",
+     "5",
+     "6"
+    ]
+   },
+   {
+    "lieu": "Ecole du ruisseau",
+    "adresse": "3 CHEMIN SINCERE MAZEAU, 97425 les avirons",
+    "bureaux": [
+     "7",
+     "8"
+    ]
+   },
+   {
+    "lieu": "Ecole theresien cadet",
+    "adresse": "81 CHEMIN LA BRUNE, 97425 les avirons",
+    "bureaux": [
+     "9",
+     "10"
+    ]
+   },
+   {
+    "lieu": "Ecole marcel le guen le tevelave",
+    "adresse": "253 ROUTE DU TEVELAVE, 97425 les avirons",
+    "bureaux": [
+     "11",
+     "12",
+     "13"
+    ]
+   }
+  ],
+  "97402": [
+   {
+    "lieu": "Salle des fetes 1",
+    "adresse": "89 RN2 CENTRE VILLE, 97412",
+    "bureaux": [
+     "1",
+     "2",
+     "3",
+     "4",
+     "5"
+    ]
+   },
+   {
+    "lieu": "Ecole r d roches",
+    "adresse": "7 RUE VICTOR HUGO, 97412",
+    "bureaux": [
+     "6",
+     "7",
+     "8",
+     "9",
+     "10"
+    ]
+   },
+   {
+    "lieu": "Ecole bois de couleurs r d mat",
+    "adresse": "RUE DES FILAOS, 97412",
+    "bureaux": [
+     "11",
+     "12",
+     "13"
+    ]
+   }
+  ],
+  "97403": [
+   {
+    "lieu": "Hotel de ville",
+    "adresse": "2 RUE FORTUNE HOARAU, 97414 entre deux",
+    "bureaux": [
+     "1"
+    ]
+   },
+   {
+    "lieu": "Salle argamasse ec la mare",
+    "adresse": "16 RUE PAYET, 97414 entre deux",
+    "bureaux": [
+     "2"
+    ]
+   },
+   {
+    "lieu": "Ecole de ravine des citrons",
+    "adresse": "110 RUE DEFAUD, 97414 entre deux",
+    "bureaux": [
+     "3"
+    ]
+   },
+   {
+    "lieu": "Ecole du bras long",
+    "adresse": "163 RUE BRAS LONG, 97414 entre deux",
+    "bureaux": [
+     "4",
+     "7"
+    ]
+   },
+   {
+    "lieu": "Ecole amaryllis le serre",
+    "adresse": "38 CHEMIN EQUERRE, 97414 entre deux",
+    "bureaux": [
+     "5"
+    ]
+   },
+   {
+    "lieu": "Salle de quartier ravine des citrons",
+    "adresse": "14 RUE DEFAUD, 97414 entre deux",
+    "bureaux": [
+     "6"
+    ]
+   }
+  ],
+  "97404": [
+   {
+    "lieu": "Mairie de l etang sale",
+    "adresse": "AVENUE RAYMOND BARRE, 97427 l etang sale",
+    "bureaux": [
+     "1"
+    ]
+   },
+   {
+    "lieu": "Ecole francis riviere",
+    "adresse": "RUE LOUIS CHABRIER, 97427 l etang sale",
+    "bureaux": [
+     "2",
+     "3",
+     "4",
+     "14"
+    ]
+   },
+   {
+    "lieu": "Ecole pierre cadet",
+    "adresse": "ROUTE DES CANOTS, 97427 l etang sale",
+    "bureaux": [
+     "5",
+     "12"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire jeanne nativel",
+    "adresse": "RUELLE DE LA CITERNE, 97427 l etang sale",
+    "bureaux": [
+     "6"
+    ]
+   },
+   {
+    "lieu": "Ecole joseph leperlier",
+    "adresse": "CHEMIN DU MANIRON, 97427 l etang sale",
+    "bureaux": [
+     "7",
+     "18"
+    ]
+   },
+   {
+    "lieu": "Ecole olivier payet",
+    "adresse": "RUE D' AQUITAINE, 97427 l etang sale",
+    "bureaux": [
+     "8",
+     "13",
+     "15"
+    ]
+   },
+   {
+    "lieu": "C a s e du centre ville",
+    "adresse": "Place Fourcade, 97427 l etang sale",
+    "bureaux": [
+     "9"
+    ]
+   },
+   {
+    "lieu": "Ecole ravine sheunon",
+    "adresse": "CHEMIN CHARBONNIER, 97427 l etang sale",
+    "bureaux": [
+     "10"
+    ]
+   },
+   {
+    "lieu": "C a s e de la ravine seche",
+    "adresse": "Chemin Bois Blanc, 97427 l etang sale",
+    "bureaux": [
+     "11"
+    ]
+   },
+   {
+    "lieu": "C a s e des canots",
+    "adresse": "chemin de ligne, 97427 l etang sale",
+    "bureaux": [
+     "16"
+    ]
+   },
+   {
+    "lieu": "Ecole gabin dambreville",
+    "adresse": "RUE DU STADE, 97427 l etang sale",
+    "bureaux": [
+     "17",
+     "19"
+    ]
+   }
+  ],
+  "97405": [
+   {
+    "lieu": "Mairie",
+    "adresse": "192 rue Mahé de Labourdonnais, 97429 petite ile",
+    "bureaux": [
+     "1"
+    ]
+   },
+   {
+    "lieu": "Mairie",
+    "adresse": "192 Rue Mahé de Labourdonnais, 97429 petite ile",
+    "bureaux": [
+     "2"
+    ]
+   },
+   {
+    "lieu": "Ecole les alpinias",
+    "adresse": "24 Rue du General de Gaulle, 97429 petite ile",
+    "bureaux": [
+     "3",
+     "4",
+     "5",
+     "6",
+     "7"
+    ]
+   },
+   {
+    "lieu": "Ecole les floralies",
+    "adresse": "56 Rue de l'Anse, 97429 petite ile",
+    "bureaux": [
+     "8",
+     "9",
+     "10",
+     "11"
+    ]
+   },
+   {
+    "lieu": "Ecole les platanes",
+    "adresse": "3 rue Terrain Isautier, 97429 petite ile",
+    "bureaux": [
+     "12",
+     "13"
+    ]
+   },
+   {
+    "lieu": "Ecole le vetiver",
+    "adresse": "107 Rue de l'Ancienne Usine, 97429 petite ile",
+    "bureaux": [
+     "14"
+    ]
+   },
+   {
+    "lieu": "Ecole fleur de canne",
+    "adresse": "4 Allée Fleur de Canne, 97429 petite ile",
+    "bureaux": [
+     "15"
+    ]
+   }
+  ],
+  "97406": [
+   {
+    "lieu": "Centre ville mairie",
+    "adresse": "230 RUE DE LA RÉPUBLIQUE, 97431",
+    "bureaux": [
+     "1"
+    ]
+   },
+   {
+    "lieu": "Maison de quartier ritou",
+    "adresse": "3 , 97431 la plaine des palmistes",
+    "bureaux": [
+     "2"
+    ]
+   },
+   {
+    "lieu": "Centre espace culturel",
+    "adresse": "325 , 97431 la plaine des palmistes",
+    "bureaux": [
+     "3"
+    ]
+   },
+   {
+    "lieu": "Ecole de musique",
+    "adresse": "327 , 97431 la plaine des palmistes",
+    "bureaux": [
+     "4"
+    ]
+   },
+   {
+    "lieu": "Petit gite communal",
+    "adresse": "9 , 97431 la plaine des palmistes",
+    "bureaux": [
+     "5"
+    ]
+   },
+   {
+    "lieu": "Maison de quartier",
+    "adresse": "564 , 97431 la plaine des palmistes",
+    "bureaux": [
+     "6"
+    ]
+   }
+  ],
+  "97407": [
+   {
+    "adresse": "MAIRIE DE LE PORT, 97420 le port",
+    "bureaux": [
+     "1"
+    ]
+   },
+   {
+    "adresse": "ECOLE PRIMAIRE PAULE LEGROS, 97420 le port",
+    "bureaux": [
+     "2"
+    ]
+   },
+   {
+    "adresse": "ECOLE MATERNELLE RENE MICHEL, 97420 le port",
+    "bureaux": [
+     "3"
+    ]
+   },
+   {
+    "adresse": "ECOLE PRIMAIRE RAYMOND MONDON A, 97420 le port",
+    "bureaux": [
+     "4"
+    ]
+   },
+   {
+    "adresse": "ECOLE PRIMAIRE HENRI LAPIERRE, 97420 le port",
+    "bureaux": [
+     "5"
+    ]
+   },
+   {
+    "adresse": "ECOLE PRIMAIRE LEONIDE LE TOULLEC, 97420 le port",
+    "bureaux": [
+     "6"
+    ]
+   },
+   {
+    "adresse": "ECOLE MATERNELLE ANDRE HOARAU, 97420 le port",
+    "bureaux": [
+     "7"
+    ]
+   },
+   {
+    "adresse": "ECOLE PRIMAIRE CHARLES VENDOMELE, 97420 le port",
+    "bureaux": [
+     "8",
+     "9"
+    ]
+   },
+   {
+    "adresse": "ECOLE MATERNELLE ARISTE BOLON, 97420 le port",
+    "bureaux": [
+     "10",
+     "12"
+    ]
+   },
+   {
+    "adresse": "ECOLE PRIMAIRE ARISTE BOLON, 97420 le port",
+    "bureaux": [
+     "11",
+     "13"
+    ]
+   },
+   {
+    "adresse": "ECOLE MATERNELLE HENRI WALLON, 97420 le port",
+    "bureaux": [
+     "14",
+     "15"
+    ]
+   },
+   {
+    "adresse": "ECOLE PRIMAIRE CAMILLE MACARTY, 97420 le port",
+    "bureaux": [
+     "16"
+    ]
+   },
+   {
+    "adresse": "ECOLE MATERNELLE APPOLINA DELPHA, 97420 le port",
+    "bureaux": [
+     "17"
+    ]
+   },
+   {
+    "adresse": "ECOLE MATERNELLE RAOUL FRUTEAU, 97420 le port",
+    "bureaux": [
+     "18"
+    ]
+   },
+   {
+    "adresse": "ECOLE PRIMAIRE RAOUL FRUTEAU, 97420 le port",
+    "bureaux": [
+     "19"
+    ]
+   },
+   {
+    "adresse": "ECOLE PRIMAIRE FRANCIS RIVIERE, 97420 le port",
+    "bureaux": [
+     "20"
+    ]
+   },
+   {
+    "adresse": "ECOLE PRIMAIRE GERVAIS BARRET, 97420 le port",
+    "bureaux": [
+     "21"
+    ]
+   },
+   {
+    "adresse": "ECOLE MATERNELLE GERVAIS BARRET, 97420 le port",
+    "bureaux": [
+     "22",
+     "23"
+    ]
+   },
+   {
+    "adresse": "ECOLE PRIMAIRE GEORGES THIEBAUT, 97420 le port",
+    "bureaux": [
+     "24",
+     "26"
+    ]
+   },
+   {
+    "adresse": "ECOLE MATERNELLE GEORGES THIEBAUT, 97420 le port",
+    "bureaux": [
+     "25"
+    ]
+   },
+   {
+    "adresse": "ECOLE PRIMAIRE FRANCOISE DOLTO, 97420 le port",
+    "bureaux": [
+     "27",
+     "28",
+     "29"
+    ]
+   },
+   {
+    "adresse": "ECOLE PRIMAIRE BENJAMIN HOAREAU, 97420 le port",
+    "bureaux": [
+     "30"
+    ]
+   },
+   {
+    "adresse": "ECOLE PRIMAIRE LAURENT VERGES, 97420 le port",
+    "bureaux": [
+     "31",
+     "34"
+    ]
+   },
+   {
+    "adresse": "ECOLE MATERNELLE EUGENE DAYOT, 97420 le port",
+    "bureaux": [
+     "32"
+    ]
+   },
+   {
+    "adresse": "ECOLE MATERNELLE LAURENT VERGES, 97420 le port",
+    "bureaux": [
+     "33"
+    ]
+   },
+   {
+    "adresse": "ECOLE PRIMAIRE EUGENE DAYOT, 97420 le port",
+    "bureaux": [
+     "35"
+    ]
+   }
+  ],
+  "97408": [
+   {
+    "lieu": "Mairie ville",
+    "adresse": "Rue Waldeck Rochet, 97419 la possession",
+    "bureaux": [
+     "1"
+    ]
+   },
+   {
+    "lieu": "Ecole evariste de parny",
+    "adresse": "Rue Evariste de Parny, 97419 la possession",
+    "bureaux": [
+     "2",
+     "3"
+    ]
+   },
+   {
+    "lieu": "Ecole henri lapierre",
+    "adresse": "Avenue Raymond Verges, 97419 la possession",
+    "bureaux": [
+     "4",
+     "5",
+     "6"
+    ]
+   },
+   {
+    "lieu": "Ecole raymond mondon",
+    "adresse": "Rue des Cités Unies, 97419 la possession",
+    "bureaux": [
+     "7",
+     "8",
+     "9",
+     "10"
+    ]
+   },
+   {
+    "lieu": "Ecole joliot curie",
+    "adresse": "CD41, 97419 la possession",
+    "bureaux": [
+     "11",
+     "12",
+     "13"
+    ]
+   },
+   {
+    "lieu": "Ecole isnelle amelin",
+    "adresse": "88, rue Romain Rolland, 97419 la possession",
+    "bureaux": [
+     "14",
+     "15",
+     "16",
+     "17"
+    ]
+   },
+   {
+    "lieu": "Ecole auguste lacaussade",
+    "adresse": "10, rue Louise Michel, 97419 la possession",
+    "bureaux": [
+     "18",
+     "19",
+     "20"
+    ]
+   },
+   {
+    "lieu": "Ecole eloi julenon",
+    "adresse": "9, Avenue de la Palestine, 97419 la possession",
+    "bureaux": [
+     "21",
+     "22",
+     "23"
+    ]
+   },
+   {
+    "lieu": "Ecole alain lorraine",
+    "adresse": "106, chemin Boeuf Mort, 97419 la possession",
+    "bureaux": [
+     "24",
+     "25"
+    ]
+   },
+   {
+    "lieu": "Ecole andre malraux",
+    "adresse": "Rue Pablo Néruda, 97419 la possession",
+    "bureaux": [
+     "26",
+     "27"
+    ]
+   },
+   {
+    "lieu": "Foyer sainte therese",
+    "adresse": "Rue des Ecoles, 97419 la possession",
+    "bureaux": [
+     "28",
+     "29",
+     "30"
+    ]
+   },
+   {
+    "lieu": "Ecole victor hugo",
+    "adresse": "Rue Maurice Thorez, 97419 la possession",
+    "bureaux": [
+     "31",
+     "32",
+     "33"
+    ]
+   },
+   {
+    "lieu": "Mairie annexe du dos d ane",
+    "adresse": "Rue du Père Lucien Courteaud, 97419 la possession",
+    "bureaux": [
+     "34",
+     "35"
+    ]
+   },
+   {
+    "lieu": "Ecole ilet a malheur",
+    "adresse": "Cirque de Mafate - Ilet à Malheur, 97419 la possession",
+    "bureaux": [
+     "36"
+    ]
+   },
+   {
+    "lieu": "Ecole de grand place",
+    "adresse": "Cirque de Mafate - Grand Place, 97419 la possession",
+    "bureaux": [
+     "37"
+    ]
+   },
+   {
+    "lieu": "Ecole de la nouvelle",
+    "adresse": "Cirque de Mafate - Village de La Nouvell, 97419 la possession",
+    "bureaux": [
+     "38"
+    ]
+   }
+  ],
+  "97409": [
+   {
+    "lieu": "Mairie ville",
+    "adresse": "AVENUE DE L' ILE DE FRANCE, 97440",
+    "bureaux": [
+     "1"
+    ]
+   },
+   {
+    "lieu": "Ecole georges marie soba",
+    "adresse": "702 RUE DE LA COMMUNAUTE, 97440",
+    "bureaux": [
+     "2",
+     "33",
+     "34"
+    ]
+   },
+   {
+    "lieu": "Ecole felicienne jean",
+    "adresse": "74 RUE DU PERE BUSCHERE, 97440",
+    "bureaux": [
+     "3",
+     "4",
+     "5",
+     "9",
+     "35"
+    ]
+   },
+   {
+    "lieu": "Ecole raphael vidot",
+    "adresse": "589 ROCADE SUD, 97440",
+    "bureaux": [
+     "6",
+     "19",
+     "41"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire jean jacques eve",
+    "adresse": "116 RUE DU PERE TESTE, 97440",
+    "bureaux": [
+     "7",
+     "8",
+     "46"
+    ]
+   },
+   {
+    "lieu": "Ecole petit bazar",
+    "adresse": "96 RUELLE CLOVIS, 97440",
+    "bureaux": [
+     "10",
+     "36"
+    ]
+   },
+   {
+    "lieu": "Ecole mixte bras des chevrettes",
+    "adresse": "479 CHEMIN BRAS DES CHEVRETTES, 97440",
+    "bureaux": [
+     "11",
+     "12"
+    ]
+   },
+   {
+    "lieu": "Ecole elementaire saint clair agenor",
+    "adresse": "114 CHEMIN DE L' ECOLE, 97440",
+    "bureaux": [
+     "13",
+     "14",
+     "43",
+     "49"
+    ]
+   },
+   {
+    "lieu": "Ecole jean albany",
+    "adresse": "43 RUE DES DAHLIAS, 97440",
+    "bureaux": [
+     "15",
+     "16",
+     "17",
+     "37"
+    ]
+   },
+   {
+    "lieu": "Ecole de la cressonniere",
+    "adresse": "22BIS RUE GABRIEL VAYABOURY, 97440",
+    "bureaux": [
+     "18",
+     "20",
+     "21",
+     "38"
+    ]
+   },
+   {
+    "lieu": "Ecole elementaire zac fayard",
+    "adresse": "331 CHEMIN CENT GAULETTES, 97440",
+    "bureaux": [
+     "22",
+     "23",
+     "24",
+     "25",
+     "42",
+     "47"
+    ]
+   },
+   {
+    "lieu": "Ecole henri morange",
+    "adresse": "851 RUE DE CAMBUSTON, 97440",
+    "bureaux": [
+     "26",
+     "27",
+     "28",
+     "29",
+     "44",
+     "45",
+     "48"
+    ]
+   },
+   {
+    "lieu": "Ecole riviere du mat les bas",
+    "adresse": "69 CHEMIN LAZARRE, 97440",
+    "bureaux": [
+     "30",
+     "31",
+     "39",
+     "40"
+    ]
+   },
+   {
+    "lieu": "Ecole riviere du mat les bas",
+    "adresse": "63 CHEMIN LAZARRE, 97440",
+    "bureaux": [
+     "32"
+    ]
+   }
+  ],
+  "97410": [
+   {
+    "lieu": "Hotel de ville",
+    "adresse": "21BIS RUE GEORGES POMPIDOU, 97470",
+    "bureaux": [
+     "1"
+    ]
+   },
+   {
+    "lieu": "Ecole de beaulieu",
+    "adresse": "7 RUE RAYMOND BARRE, 97470",
+    "bureaux": [
+     "2"
+    ]
+   },
+   {
+    "lieu": "Ecole odile elie",
+    "adresse": "3 RUE FRERE SCUBILLION, 97470",
+    "bureaux": [
+     "3"
+    ]
+   },
+   {
+    "lieu": "Ecole maternelle bois joli",
+    "adresse": "4 RUE ANDRE DUCHEMANN, 97470",
+    "bureaux": [
+     "4",
+     "5"
+    ]
+   },
+   {
+    "lieu": "Ecole andre marimoutou",
+    "adresse": "CHEMIN BEAULIEU, 97470",
+    "bureaux": [
+     "6"
+    ]
+   },
+   {
+    "lieu": "Club du troisieme age",
+    "adresse": "8 RUE LUCIEN DUCHEMANN, 97470",
+    "bureaux": [
+     "7"
+    ]
+   },
+   {
+    "lieu": "Ecole maternelle la poussiniere",
+    "adresse": "9 RUE LUCIEN DUCHEMANN, 97470",
+    "bureaux": [
+     "8",
+     "9"
+    ]
+   },
+   {
+    "lieu": "Ecole des girofles",
+    "adresse": "20 RUE JEAN MOULIN, 97470",
+    "bureaux": [
+     "10",
+     "11"
+    ]
+   },
+   {
+    "lieu": "Ecole emilie moreau",
+    "adresse": "37 CHEMIN BEAUVALLON, 97470",
+    "bureaux": [
+     "12",
+     "13"
+    ]
+   },
+   {
+    "lieu": "Ecole reine pitou",
+    "adresse": "2 CHEMIN BELLIER, 97470",
+    "bureaux": [
+     "14",
+     "15"
+    ]
+   },
+   {
+    "lieu": "Ecole alexis de villeneuve",
+    "adresse": "131 CHEMIN DE L'''' ABONDANCE, 97470",
+    "bureaux": [
+     "16",
+     "17"
+    ]
+   },
+   {
+    "lieu": "Ecole denise salai",
+    "adresse": "2BIS CHEMIN PINGUET, 97470",
+    "bureaux": [
+     "18",
+     "19"
+    ]
+   },
+   {
+    "lieu": "Ecole lucie prudent",
+    "adresse": "19 CHEMIN CHATEL, 97470",
+    "bureaux": [
+     "20"
+    ]
+   },
+   {
+    "lieu": "Ecole de bras fusil",
+    "adresse": "3 CHEMIN DE BRAS FUSIL, 97470",
+    "bureaux": [
+     "21",
+     "22"
+    ]
+   },
+   {
+    "lieu": "Ecole maternelle les hibiscus",
+    "adresse": "1 AVENUE JEAN MONNET, 97470",
+    "bureaux": [
+     "23",
+     "24"
+    ]
+   },
+   {
+    "lieu": "Ecole andre duchemann",
+    "adresse": "39 ALLEE DES COCOS, 97470",
+    "bureaux": [
+     "25",
+     "26"
+    ]
+   },
+   {
+    "lieu": "Ecole maxime fontaine",
+    "adresse": "25 LOTISSEMENT S.M.A., 97470",
+    "bureaux": [
+     "27",
+     "28"
+    ]
+   },
+   {
+    "lieu": "Centre technique communal",
+    "adresse": "69 RUE AUGUSTE DE VILLELE, 97470",
+    "bureaux": [
+     "29",
+     "30"
+    ]
+   },
+   {
+    "lieu": "Ecole andre hoareau",
+    "adresse": "64 ROUTE NATIONALE 2 (BEAUFONDS), 97470",
+    "bureaux": [
+     "31",
+     "32"
+    ]
+   },
+   {
+    "lieu": "Ecole raphael elie",
+    "adresse": "3 CHEMIN DU CAP, 97437",
+    "bureaux": [
+     "33",
+     "34"
+    ]
+   },
+   {
+    "lieu": "Case chemin de roland",
+    "adresse": "2 CHEMIN DE ROLAND, 97437",
+    "bureaux": [
+     "35"
+    ]
+   },
+   {
+    "lieu": "Mairie annexe de sainte anne",
+    "adresse": "12 CHEMIN MORANGE, 97437",
+    "bureaux": [
+     "36"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire julie huet",
+    "adresse": "15 CHEMIN MORANGE, 97437",
+    "bureaux": [
+     "37"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire du petit saint pierre",
+    "adresse": "90 CHEMIN GAILLAS, 97437",
+    "bureaux": [
+     "38",
+     "39"
+    ]
+   },
+   {
+    "lieu": "Ecole maternelle les bougainvilliers",
+    "adresse": "93 CHEMIN GAILLAS, 97437",
+    "bureaux": [
+     "40"
+    ]
+   },
+   {
+    "lieu": "Ecole edmond albius",
+    "adresse": "2 CHEMIN BAPTISTE, 97437",
+    "bureaux": [
+     "41"
+    ]
+   },
+   {
+    "lieu": "Ecole les orangers",
+    "adresse": "385 ROUTE NATIONALE 2 (STE ANNE), 97437",
+    "bureaux": [
+     "42"
+    ]
+   }
+  ],
+  "97411": [
+   {
+    "lieu": "Hotel de ville",
+    "adresse": "1 RUE PASTEUR, 97400 saint denis",
+    "bureaux": [
+     "1",
+     "2",
+     "3",
+     "4",
+     "5",
+     "6"
+    ]
+   },
+   {
+    "lieu": "Ecole joinville",
+    "adresse": "132 RUE JULES AUBER, 97400 saint denis",
+    "bureaux": [
+     "7",
+     "8",
+     "9",
+     "10",
+     "11",
+     "12",
+     "13",
+     "14"
+    ]
+   },
+   {
+    "lieu": "Ecole jules reydellet",
+    "adresse": "101 RUE DE LA REPUBLIQUE, 97400 saint denis",
+    "bureaux": [
+     "15",
+     "16",
+     "17",
+     "18"
+    ]
+   },
+   {
+    "lieu": "Ecole elementaire philippe vinson",
+    "adresse": "34 ROUTE DES PALMIERS, 97417 la montagne",
+    "bureaux": [
+     "19",
+     "20",
+     "21",
+     "22",
+     "23",
+     "24",
+     "25",
+     "26",
+     "27"
+    ]
+   },
+   {
+    "lieu": "Ecole elementaire saint bernard",
+    "adresse": "71 CHEMIN DU PERE RAIMBAULT, 97417 la montagne",
+    "bureaux": [
+     "28",
+     "29",
+     "30",
+     "31"
+    ]
+   },
+   {
+    "lieu": "Gare de la grande chaloupe",
+    "adresse": "ROUTE DU LITTORAL - GRANDE CHALOUPE, 97400 saint denis",
+    "bureaux": [
+     "32"
+    ]
+   },
+   {
+    "lieu": "Ecole gabriel mace",
+    "adresse": "3 RUE DE LA SOURCE, 97400 saint denis",
+    "bureaux": [
+     "33",
+     "34",
+     "35",
+     "36",
+     "37",
+     "38",
+     "39"
+    ]
+   },
+   {
+    "lieu": "Ecole elementaire les topazes",
+    "adresse": "ALLEE DES TOPAZES, 97400 saint denis",
+    "bureaux": [
+     "40",
+     "41",
+     "42",
+     "43"
+    ]
+   },
+   {
+    "lieu": "Ecole elementaire du brule",
+    "adresse": "CHEMIN DES FRANGIPANIERS, 97400 saint denis",
+    "bureaux": [
+     "44",
+     "45"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire pk 7 saint francois",
+    "adresse": "CHEMIN ALFRED MAZERIEUX, 97400 saint denis",
+    "bureaux": [
+     "46",
+     "47",
+     "48"
+    ]
+   },
+   {
+    "lieu": "Ecole la chaumiere",
+    "adresse": "BOULEVARD DE SAINT FRANCOIS, 97400 saint denis",
+    "bureaux": [
+     "49",
+     "50"
+    ]
+   },
+   {
+    "lieu": "Ecole henri dunant",
+    "adresse": "99 BOULEVARD NOTRE DAME DE LA TRINITE, 97400 saint denis",
+    "bureaux": [
+     "51",
+     "52",
+     "53",
+     "54",
+     "55"
+    ]
+   },
+   {
+    "lieu": "Ecole francoise mollard",
+    "adresse": "56 RUE DE LA MATERNELLE, 97400 saint denis",
+    "bureaux": [
+     "56",
+     "57",
+     "58",
+     "59",
+     "60"
+    ]
+   },
+   {
+    "lieu": "Ecole candide azema",
+    "adresse": "28 BOULEVARD NOTRE DAME DE LA TRINITE, 97400 saint denis",
+    "bureaux": [
+     "61",
+     "62",
+     "63",
+     "64",
+     "65",
+     "66",
+     "67",
+     "68"
+    ]
+   },
+   {
+    "lieu": "Ecole des bancouliers",
+    "adresse": "32 BOULEVARD DU MAHATMA GANDHI, 97490 sainte clotilde",
+    "bureaux": [
+     "69",
+     "70",
+     "71",
+     "72",
+     "73",
+     "74"
+    ]
+   },
+   {
+    "lieu": "Ecole des baies roses",
+    "adresse": "7 RUE PIERRE DE COUBERTIN, 97490 sainte clotilde",
+    "bureaux": [
+     "75",
+     "76"
+    ]
+   },
+   {
+    "lieu": "Ecole les bringelliers",
+    "adresse": "18 BIS CHEMIN DES BRINGELLIERS, 97490 sainte clotilde",
+    "bureaux": [
+     "77"
+    ]
+   },
+   {
+    "lieu": "Ecole alain lorraine",
+    "adresse": "91 ALLEE DES TULIPES, 97490 sainte clotilde",
+    "bureaux": [
+     "78",
+     "79",
+     "80",
+     "81"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire bois de nefles",
+    "adresse": "151 ROUTE DES ANANAS, 97490 sainte clotilde",
+    "bureaux": [
+     "82",
+     "83",
+     "84",
+     "85",
+     "86"
+    ]
+   },
+   {
+    "lieu": "Ecole bory de saint vincent",
+    "adresse": "4 CHEMIN DE BOIS ROUGE, 97490 sainte clotilde",
+    "bureaux": [
+     "87",
+     "88",
+     "89",
+     "90",
+     "91",
+     "92",
+     "93"
+    ]
+   },
+   {
+    "lieu": "Ecole philibert commerson",
+    "adresse": "252 ROUTE GABRIEL MACE- LA BRETAGNE, 97490 sainte clotilde",
+    "bureaux": [
+     "94",
+     "95",
+     "96",
+     "97"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire de domenjod",
+    "adresse": "45 ROUTE DE DOMENJOD, 97490 sainte clotilde",
+    "bureaux": [
+     "98",
+     "99",
+     "100"
+    ]
+   },
+   {
+    "lieu": "Ecole maternelle vauban 1",
+    "adresse": "1 BOULEVARD VAUBAN, 97400 saint denis",
+    "bureaux": [
+     "101",
+     "102",
+     "103",
+     "104"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire de champ fleuri",
+    "adresse": "46 RUELLE MAGNAN, 97490 sainte clotilde",
+    "bureaux": [
+     "105",
+     "106"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire des lilas",
+    "adresse": "4 RUE DE LA CURE, 97490 sainte clotilde",
+    "bureaux": [
+     "107",
+     "108",
+     "109",
+     "110",
+     "111",
+     "112",
+     "113"
+    ]
+   },
+   {
+    "lieu": "Ecole elementaire les tamarins",
+    "adresse": "109 RUE LORY LES HAUTS, 97490 sainte clotilde",
+    "bureaux": [
+     "114",
+     "115",
+     "116",
+     "117"
+    ]
+   },
+   {
+    "lieu": "Ecole prim jean baptiste bossard",
+    "adresse": "9 RUE LACROIX, 97490 sainte clotilde",
+    "bureaux": [
+     "118",
+     "119"
+    ]
+   },
+   {
+    "lieu": "Ecole michel debre",
+    "adresse": "3 RUE BRIDET, 97490 sainte clotilde",
+    "bureaux": [
+     "120",
+     "121",
+     "122",
+     "123"
+    ]
+   },
+   {
+    "lieu": "Ecole damase legros",
+    "adresse": "16 RUE DE LA GARE, 97490 sainte clotilde",
+    "bureaux": [
+     "124",
+     "125",
+     "126",
+     "127",
+     "128"
+    ]
+   },
+   {
+    "lieu": "Ecole les badamiers",
+    "adresse": "28 D ROUTE DE MOUFIA, 97490 sainte clotilde",
+    "bureaux": [
+     "129",
+     "130",
+     "131"
+    ]
+   },
+   {
+    "lieu": "Ecole primat",
+    "adresse": "30 RUE DU STADE DE L'EST, 97490 sainte clotilde",
+    "bureaux": [
+     "132",
+     "133"
+    ]
+   }
+  ],
+  "97412": [
+   {
+    "lieu": "Mairie du centre",
+    "adresse": "277 RUE RAPHAËL BABET, 97480 saint joseph",
+    "bureaux": [
+     "1",
+     "3",
+     "52"
+    ]
+   },
+   {
+    "lieu": "Maison pour tous du centre ville",
+    "adresse": "27 RUE PAUL DEMANGE, 97480 saint joseph",
+    "bureaux": [
+     "2",
+     "34"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire bas de jean petit",
+    "adresse": "1 CHEMIN DES FLAMBOYANTS, 97480 saint joseph",
+    "bureaux": [
+     "4"
+    ]
+   },
+   {
+    "lieu": "Ecole maternelle des jacques",
+    "adresse": "45 RUE EUGÈNE MICHEL, 97480 saint joseph",
+    "bureaux": [
+     "5",
+     "30"
+    ]
+   },
+   {
+    "lieu": "Ecole elementaire des jacques",
+    "adresse": "3 RUE AMIRAL COURBET, 97480 saint joseph",
+    "bureaux": [
+     "6",
+     "37"
+    ]
+   },
+   {
+    "lieu": "Pole administratif communal",
+    "adresse": "240 RUE RAPHAËL BABET, 97480 saint joseph",
+    "bureaux": [
+     "7",
+     "32"
+    ]
+   },
+   {
+    "lieu": "Ecole maternelle du butor",
+    "adresse": "29 RUE ROLAND GARROS, 97480 saint joseph",
+    "bureaux": [
+     "8"
+    ]
+   },
+   {
+    "lieu": "Ecole elementaire lenepveu",
+    "adresse": "1 BOULEVARD LENEPVEU, 97480 saint joseph",
+    "bureaux": [
+     "9",
+     "10",
+     "38"
+    ]
+   },
+   {
+    "lieu": "Ecole elementaire du butor",
+    "adresse": "31 RUE ROLAND GARROS, 97480 saint joseph",
+    "bureaux": [
+     "11",
+     "33",
+     "39",
+     "40"
+    ]
+   },
+   {
+    "lieu": "Ecole maternelle de manapany",
+    "adresse": "4 RUE MARTIN LUTHER KING, 97480 saint joseph",
+    "bureaux": [
+     "12"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire des goyaves",
+    "adresse": "1 RUE DES CENT MARCHES, 97480 saint joseph",
+    "bureaux": [
+     "13",
+     "14",
+     "41"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire de carosse",
+    "adresse": "136 RUE DE LA CHAPELLE, 97480 saint joseph",
+    "bureaux": [
+     "15",
+     "44"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire de bezaves",
+    "adresse": "35 RUE HARRY TRUMAN, 97480 saint joseph",
+    "bureaux": [
+     "16"
+    ]
+   },
+   {
+    "lieu": "Mairie annexe des lianes",
+    "adresse": "90 RUE HUBERT DELISLE, 97480 saint joseph",
+    "bureaux": [
+     "17",
+     "18"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire de la plaine des gregues",
+    "adresse": "17 RUE DU ROND, 97480 saint joseph",
+    "bureaux": [
+     "19",
+     "42"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire de jean petit",
+    "adresse": "51 RUE AMÉLIE LEBON, 97480 saint joseph",
+    "bureaux": [
+     "20",
+     "21"
+    ]
+   },
+   {
+    "lieu": "Local communal de la passerelle",
+    "adresse": "1 CHEMIN BANCOULE, 97480 saint joseph",
+    "bureaux": [
+     "22"
+    ]
+   },
+   {
+    "lieu": "Ecole elementaire de langevin",
+    "adresse": "25 RUE GABRIEL MACE, 97480 saint joseph",
+    "bureaux": [
+     "23",
+     "24",
+     "46"
+    ]
+   },
+   {
+    "lieu": "Ecole elementaire de vincendo",
+    "adresse": "12 RUE GEORGES FOURCADE, 97480 saint joseph",
+    "bureaux": [
+     "25",
+     "27",
+     "31",
+     "50"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire de parc a moutons",
+    "adresse": "110 CH TERRAIN GALET, 97480 saint joseph",
+    "bureaux": [
+     "26",
+     "53"
+    ]
+   },
+   {
+    "lieu": "Mairie annexe de vincendo",
+    "adresse": "141 RUE MARCEL PAGNOL, 97480 saint joseph",
+    "bureaux": [
+     "28"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire de la crete 1er village",
+    "adresse": "23 Rue RABELAIS, 97480 saint joseph",
+    "bureaux": [
+     "29"
+    ]
+   },
+   {
+    "lieu": "Maison pour tous de jean petit",
+    "adresse": "58 RUE AMÉLIE LEBON, 97480 saint joseph",
+    "bureaux": [
+     "35"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire de grand coude",
+    "adresse": "15 RUE DE L'USINE À THÉ, 97480 saint joseph",
+    "bureaux": [
+     "36"
+    ]
+   },
+   {
+    "lieu": "Maison pour tous des lianes",
+    "adresse": "14 RUE DE LA CHAPELLE, 97480 saint joseph",
+    "bureaux": [
+     "43"
+    ]
+   },
+   {
+    "lieu": "Ecole de grand galet",
+    "adresse": "33 CHEMIN DE CAP BLANC, 97480 saint joseph",
+    "bureaux": [
+     "45"
+    ]
+   },
+   {
+    "lieu": "Ecole de la crete 2",
+    "adresse": "257 RUE CLAUDE MARION, 97480 saint joseph",
+    "bureaux": [
+     "47",
+     "48"
+    ]
+   },
+   {
+    "lieu": "Local communal",
+    "adresse": "181 RUE CLAUDE MARION, 97480 saint joseph",
+    "bureaux": [
+     "49"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire de matouta",
+    "adresse": "8 CHEMIN CASCAVELLES, 97480 saint joseph",
+    "bureaux": [
+     "51"
+    ]
+   }
+  ],
+  "97413": [
+   {
+    "lieu": "Hotel de ville ville 1",
+    "adresse": "58 RUE DU GENERAL LAMBERT, 97436",
+    "bureaux": [
+     "1"
+    ]
+   },
+   {
+    "lieu": "Batiment ancien hotel des postes ville 2",
+    "adresse": "PLACE RAYMOND VERGES, 97436",
+    "bureaux": [
+     "2",
+     "3",
+     "4",
+     "29"
+    ]
+   },
+   {
+    "lieu": "Ecole maternelle saint leu centre ville 7",
+    "adresse": "1 AVENUE DE CHATEAUVIEUX, 97436",
+    "bureaux": [
+     "5",
+     "30"
+    ]
+   },
+   {
+    "lieu": "Ecole mixte de l etang etang 3",
+    "adresse": "164 C D 13, 97436",
+    "bureaux": [
+     "6",
+     "7",
+     "31"
+    ]
+   },
+   {
+    "lieu": "Maison de quartier de la fontaine",
+    "adresse": "3 CHEMIN DES CALUMETS, 97436",
+    "bureaux": [
+     "8"
+    ]
+   },
+   {
+    "lieu": "Maison de quartier des colimacons",
+    "adresse": "26 RUE LON MON POY JOSEPH, 97436",
+    "bureaux": [
+     "9"
+    ]
+   },
+   {
+    "lieu": "Ecole mixte estella clain",
+    "adresse": "27 RUE ALEXANDRE BEGUE, 97416",
+    "bureaux": [
+     "10"
+    ]
+   },
+   {
+    "lieu": "Mairie annexe la chaloupe chaloupe 1",
+    "adresse": "216 RUE ALEXANDRE BEGUE, 97416",
+    "bureaux": [
+     "11"
+    ]
+   },
+   {
+    "lieu": "Ecole mixte des camelias chaloupe 2",
+    "adresse": "302 RUE ALEXANDRE BEGUE, 97416",
+    "bureaux": [
+     "12",
+     "13",
+     "14"
+    ]
+   },
+   {
+    "lieu": "Ecole maternelle grand fond gf 1",
+    "adresse": "8 CHEMIN RENAUD, 97424",
+    "bureaux": [
+     "15",
+     "16"
+    ]
+   },
+   {
+    "lieu": "Ecole mixte de stella stella 1",
+    "adresse": "1 RUE DE LA CAMBUSE, 97424",
+    "bureaux": [
+     "17",
+     "18",
+     "33"
+    ]
+   },
+   {
+    "lieu": "Ecole mixte piton a piton 1",
+    "adresse": "7 CHEMIN OULIA JOSEPH, 97424",
+    "bureaux": [
+     "19",
+     "20",
+     "21",
+     "22",
+     "23",
+     "24",
+     "25",
+     "34",
+     "35"
+    ]
+   },
+   {
+    "lieu": "Mairie annexe du piton",
+    "adresse": "24 RUE ADRIEN LAGOURGUE, 97424",
+    "bureaux": [
+     "26"
+    ]
+   },
+   {
+    "lieu": "Ecole maternelle plate plate 1",
+    "adresse": "3 CHEMIN DE LA DECOUVERTE, 97424",
+    "bureaux": [
+     "27",
+     "28",
+     "36"
+    ]
+   },
+   {
+    "lieu": "Maison de quartier bras mouton",
+    "adresse": "237 CHEMIN MUTEL, 97436",
+    "bureaux": [
+     "32"
+    ]
+   }
+  ],
+  "97414": [
+   {
+    "lieu": "Ecole henri lapierre",
+    "adresse": "AVENUE DR RAYMOND VERGES, 97450 saint louis",
+    "bureaux": [
+     "1",
+     "2",
+     "3"
+    ]
+   },
+   {
+    "lieu": "Ecole raphaele barquisseau",
+    "adresse": "ECOLE RAPHAËL BARQUISSEAU, 97450 saint louis",
+    "bureaux": [
+     "4"
+    ]
+   },
+   {
+    "lieu": "Ecole raphaele barquisseau",
+    "adresse": "ECOLE RAPHAEL BARQUISSEAU, 97450 saint louis",
+    "bureaux": [
+     "5"
+    ]
+   },
+   {
+    "lieu": "Ecole jean mace",
+    "adresse": "ECOLE JEAN MACE, 97450 saint louis",
+    "bureaux": [
+     "6"
+    ]
+   },
+   {
+    "lieu": "Ecole robert debre",
+    "adresse": "ECOLE MATERNELLE ROBERT DEBRE, 97450 saint louis",
+    "bureaux": [
+     "7"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire rene perianayagom",
+    "adresse": "ECOLE PRIMAIRE RENE PERIANAYAGOM, 97450 saint louis",
+    "bureaux": [
+     "8",
+     "9",
+     "10"
+    ]
+   },
+   {
+    "lieu": "Ecole pablo picasso",
+    "adresse": "ECOLE PABLO PICASSO, 97450 saint louis",
+    "bureaux": [
+     "11",
+     "13",
+     "14"
+    ]
+   },
+   {
+    "lieu": "Ecole sarda garriga",
+    "adresse": "ECOLE SARDA GARRIGA, 97450 saint louis",
+    "bureaux": [
+     "12"
+    ]
+   },
+   {
+    "lieu": "Ecole ravine piment",
+    "adresse": "1 Avenue Pasteur, 97450 saint louis",
+    "bureaux": [
+     "15"
+    ]
+   },
+   {
+    "lieu": "Ecole pablo picasso",
+    "adresse": "14 Avenue Pasteur, 97450 saint louis",
+    "bureaux": [
+     "16"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire plateau des goyaves",
+    "adresse": "ECOLE PLATEAU DES GOYAVES, 97450 saint louis",
+    "bureaux": [
+     "17",
+     "18",
+     "19"
+    ]
+   },
+   {
+    "lieu": "Ecole maternelle desforges boucher",
+    "adresse": "ECOLE DESFORGES BOUCHER, 97450 saint louis",
+    "bureaux": [
+     "20",
+     "21"
+    ]
+   },
+   {
+    "lieu": "Case pont neuf",
+    "adresse": "CASE DE PONT NEUF CITE BENGALIS, 97450 saint louis",
+    "bureaux": [
+     "22"
+    ]
+   },
+   {
+    "lieu": "Ecole paul eluard",
+    "adresse": "ECOLE PAUL ELUARD, 97450 saint louis",
+    "bureaux": [
+     "23",
+     "24",
+     "26",
+     "27",
+     "28",
+     "36"
+    ]
+   },
+   {
+    "lieu": "Case meroc",
+    "adresse": "CASE CITE MEROC, 97450 saint louis",
+    "bureaux": [
+     "25"
+    ]
+   },
+   {
+    "lieu": "Ecole albert camus",
+    "adresse": "ECOLE ALBERT CAMUS, 97450 saint louis",
+    "bureaux": [
+     "29"
+    ]
+   },
+   {
+    "lieu": "Ecole paul hermann",
+    "adresse": "ECOLE PAUL HERMANN, 97421 la riviere",
+    "bureaux": [
+     "30",
+     "31",
+     "32"
+    ]
+   },
+   {
+    "lieu": "Ecole paul salomon",
+    "adresse": "chemin Cannes Puresies, 97450 saint louis",
+    "bureaux": [
+     "33",
+     "34",
+     "35"
+    ]
+   },
+   {
+    "lieu": "Zone industrielle",
+    "adresse": "Bâtiments Services-Tecniques, 97450 saint louis",
+    "bureaux": [
+     "37"
+    ]
+   },
+   {
+    "lieu": "Zone industrielle",
+    "adresse": "Bâtiments Service Tecniques, 97450 saint louis",
+    "bureaux": [
+     "38"
+    ]
+   },
+   {
+    "lieu": "Ecole raphaele barquisseau",
+    "adresse": "18 rue Saint-Philippe, 97450 saint louis",
+    "bureaux": [
+     "39"
+    ]
+   },
+   {
+    "lieu": "Mairie annexe de la riviere",
+    "adresse": "MAIRIE ANNEXE DE LA RIVIERE, 97421 la riviere",
+    "bureaux": [
+     "40"
+    ]
+   },
+   {
+    "lieu": "Ecole hegesipe hoareau",
+    "adresse": "ECOLE HEGESIPPE HOAREAU, 97421 la riviere",
+    "bureaux": [
+     "41",
+     "42"
+    ]
+   },
+   {
+    "lieu": "Ecole hegesipe hoareau",
+    "adresse": "rue Georges Paulin, 97421 la riviere",
+    "bureaux": [
+     "43"
+    ]
+   },
+   {
+    "lieu": "Mairie annexe de la riviere",
+    "adresse": "rue du Père De Laporte, 97421 la riviere",
+    "bureaux": [
+     "44"
+    ]
+   },
+   {
+    "lieu": "Ecole adrienne lenormand",
+    "adresse": "chemin Fleuris, 97421 la riviere",
+    "bureaux": [
+     "45"
+    ]
+   },
+   {
+    "lieu": "Ancien site du centre artisanal",
+    "adresse": "Route de Cilaos, 97421 la riviere",
+    "bureaux": [
+     "46",
+     "64",
+     "66"
+    ]
+   },
+   {
+    "lieu": "Ecole anatole france",
+    "adresse": "RUE DU DOCTEUR SCHWEITZER, 97421 la riviere",
+    "bureaux": [
+     "47",
+     "48",
+     "49"
+    ]
+   },
+   {
+    "lieu": "Ecole ambroise vollard",
+    "adresse": "RUE DE CILAOS, 97421 la riviere",
+    "bureaux": [
+     "50",
+     "51",
+     "52"
+    ]
+   },
+   {
+    "lieu": "Ecole maternelle saint exupery",
+    "adresse": "RUE PLACE DE FÊTES, 97421 la riviere",
+    "bureaux": [
+     "53"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire jean hoarau",
+    "adresse": "RUE HUBERT DELISLE, 97421 la riviere",
+    "bureaux": [
+     "54",
+     "55",
+     "56"
+    ]
+   },
+   {
+    "lieu": "Ecole alcide baret",
+    "adresse": "RUE EVARISTE DE PARNY, 97421 la riviere",
+    "bureaux": [
+     "57",
+     "58"
+    ]
+   },
+   {
+    "lieu": "Ecole jules ferry",
+    "adresse": "CHEMIN DES CANAUX, 97421 la riviere",
+    "bureaux": [
+     "59"
+    ]
+   },
+   {
+    "lieu": "Ecole auguste lacaussade",
+    "adresse": "LIGNE MONTAIGU TAPAGE, 97421 la riviere",
+    "bureaux": [
+     "60",
+     "61"
+    ]
+   },
+   {
+    "lieu": "Ecole alphonse daudet",
+    "adresse": "PETIT SERRE-ROUTE DE CILAOS, 97421 la riviere",
+    "bureaux": [
+     "62",
+     "63"
+    ]
+   },
+   {
+    "lieu": "Ecole anatole france",
+    "adresse": "Rue du DR SCHWEITZER, 97421 la riviere",
+    "bureaux": [
+     "65"
+    ]
+   }
+  ],
+  "97415": [
+   {
+    "lieu": "Hotel de ville",
+    "adresse": "2 PLACE DU GENERAL DE GAULLE, 97460 saint paul",
+    "bureaux": [
+     "1"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire sarda garriga",
+    "adresse": "9 RUE SARDA GARRIGA, 97460 saint paul",
+    "bureaux": [
+     "2",
+     "3",
+     "4"
+    ]
+   },
+   {
+    "lieu": "Ecole elementaire eugene dayot",
+    "adresse": "11 RUE POTHIER, 97460 saint paul",
+    "bureaux": [
+     "5",
+     "6",
+     "7"
+    ]
+   },
+   {
+    "lieu": "Ecole elementaire j luc daly eraya",
+    "adresse": "175 CHEMIN DU TOUR DES ROCHES, 97460 saint paul",
+    "bureaux": [
+     "8",
+     "9",
+     "10"
+    ]
+   },
+   {
+    "lieu": "Ecole elementaire louise siarane",
+    "adresse": "169 BOULEVARD DU FRONT DE MER, 97460 saint paul",
+    "bureaux": [
+     "11",
+     "12",
+     "13"
+    ]
+   },
+   {
+    "lieu": "C a s e rue jacquot",
+    "adresse": "1 BIS RUE OLIVE LEMARCHAND, 97460 saint paul",
+    "bureaux": [
+     "14",
+     "15"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire emile hugot",
+    "adresse": "21 RUE COURBE, 97460 saint paul",
+    "bureaux": [
+     "16",
+     "17"
+    ]
+   },
+   {
+    "lieu": "Ecole elementaire chocas plaine",
+    "adresse": "20 CHEMIN NEUF, 97411 bois de nefles",
+    "bureaux": [
+     "18",
+     "19"
+    ]
+   },
+   {
+    "lieu": "Ecole elementaire combavas plaine",
+    "adresse": "50 RUE DES FLAMBOYANTS, 97411 bois de nefles",
+    "bureaux": [
+     "20",
+     "21",
+     "22",
+     "23",
+     "24",
+     "25",
+     "26"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire jasmin robert",
+    "adresse": "163 CHEMIN SANS SOUCI, 97411 bois de nefles",
+    "bureaux": [
+     "27",
+     "28"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire bois de nefles",
+    "adresse": "32 RUE DE L EGLISE, 97411 bois de nefles",
+    "bureaux": [
+     "29",
+     "30",
+     "31",
+     "32"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire l h hubert delisle",
+    "adresse": "211 CHEMIN COMBAVAS, 97411 bois de nefles",
+    "bureaux": [
+     "33",
+     "34"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire ruisseau",
+    "adresse": "6 CHEMIN POLPOST, 97411 bois de nefles",
+    "bureaux": [
+     "35",
+     "36",
+     "37"
+    ]
+   },
+   {
+    "lieu": "Case de bouillon",
+    "adresse": "4 CHEMIN DE L ERYTHRINE, 97460 saint paul",
+    "bureaux": [
+     "38"
+    ]
+   },
+   {
+    "lieu": "Ecole elementaire blanche pierson",
+    "adresse": "5 RUE CLAUDE DE SIGOYER, 97460 saint paul",
+    "bureaux": [
+     "39",
+     "40",
+     "41"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire jean monnet",
+    "adresse": "1 BIS RUE DES SAPHIRS, 97460 saint paul",
+    "bureaux": [
+     "42",
+     "43"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire adele ferrand",
+    "adresse": "102 LOT COMBAVAS, 97460 saint paul",
+    "bureaux": [
+     "44",
+     "45",
+     "46",
+     "47"
+    ]
+   },
+   {
+    "lieu": "Ecole elementaire fleurimont ii",
+    "adresse": "87 RUE DU CENDRAGON, 97460 saint paul",
+    "bureaux": [
+     "48",
+     "49",
+     "50",
+     "51"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire louise payet",
+    "adresse": "4 CHEMIN DE L ECOLE, 97460 saint paul",
+    "bureaux": [
+     "52",
+     "53",
+     "54"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire bellemene",
+    "adresse": "333 RUE MONTROUGE, 97460 saint paul",
+    "bureaux": [
+     "55",
+     "56",
+     "57",
+     "58"
+    ]
+   },
+   {
+    "lieu": "Ecole elementaire guillaume",
+    "adresse": "62 RUE LOUISE ET JOUAN, 97423 le guillaume",
+    "bureaux": [
+     "59",
+     "60",
+     "61"
+    ]
+   },
+   {
+    "lieu": "Ecole maternelle les fourmis",
+    "adresse": "145 RUE LOUISE ET JOUAN, 97423 le guillaume",
+    "bureaux": [
+     "62",
+     "63",
+     "64"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire bac rouge",
+    "adresse": "19 ROUTE DU MAIDO, 97423 le guillaume",
+    "bureaux": [
+     "65",
+     "66"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire ilet des orangers",
+    "adresse": "0 ROUTE DE MAFATE, 97423 saint paul",
+    "bureaux": [
+     "67"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire roche plate",
+    "adresse": "0 ROCHE PLATE, 00000 saint paul",
+    "bureaux": [
+     "68"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire de marla",
+    "adresse": "0 MARLA, 00000",
+    "bureaux": [
+     "69"
+    ]
+   },
+   {
+    "lieu": "Ecole elementaire leconte delisle",
+    "adresse": "40 RUE DES ECOLES, 97435 st gilles les hauts",
+    "bureaux": [
+     "70",
+     "71",
+     "72"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire bernica",
+    "adresse": "21 ROUTE DE FATIMA, 97435 st gilles les hauts",
+    "bureaux": [
+     "73",
+     "74",
+     "75"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire tan rouge",
+    "adresse": "212 CHEMIN TAN ROUGE, 97435 st gilles les hauts",
+    "bureaux": [
+     "76",
+     "77"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire bras canot",
+    "adresse": "104 CHEMIN BRAS CANOT, 97435 st gilles les hauts",
+    "bureaux": [
+     "78"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire paul j benard",
+    "adresse": "139 ROUTE HUBERT DELISLE, 97435 st gilles les hauts",
+    "bureaux": [
+     "79",
+     "80"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire evenor lucas",
+    "adresse": "11 RUE DU GRAND HOTEL, 97434 st gilles les bains",
+    "bureaux": [
+     "81",
+     "82"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire grand fond",
+    "adresse": "151 CHEMIN SUMMER N1, 97434 st gilles les bains",
+    "bureaux": [
+     "83",
+     "84",
+     "85"
+    ]
+   },
+   {
+    "lieu": "Maison de quartier de carrosse",
+    "adresse": "5 RUE DES ESPADONS, 97434 st gilles les bains",
+    "bureaux": [
+     "86"
+    ]
+   },
+   {
+    "lieu": "Ecole elementaire carrosse",
+    "adresse": "10 CHEMIN CAROSSE, 97434 st gilles les bains",
+    "bureaux": [
+     "87",
+     "88",
+     "89"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire de roquefeuil",
+    "adresse": "46 AVENUE DE LA GRANDE OURSE, 97434 st gilles les bains",
+    "bureaux": [
+     "90",
+     "91"
+    ]
+   },
+   {
+    "lieu": "Ecole elementaire ermitage les bains",
+    "adresse": "1 RUE DES MALDIVES, 97434 st gilles les bains",
+    "bureaux": [
+     "92",
+     "93"
+    ]
+   },
+   {
+    "lieu": "Ecole maternelle les bougainvilliers",
+    "adresse": "34 RUELLE DES AJONCS, 97434 st gilles les bains",
+    "bureaux": [
+     "94"
+    ]
+   },
+   {
+    "lieu": "Ecole elementaire saline les bains",
+    "adresse": "24 ROUTE DU TROU D'EAU, 97434 st gilles les bains",
+    "bureaux": [
+     "95",
+     "96",
+     "97",
+     "98",
+     "99"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire de l eperon",
+    "adresse": "369 CHEMIN SUMMER N2, 97435 st gilles les hauts",
+    "bureaux": [
+     "100",
+     "101"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire mathilde frappier de montbenoit",
+    "adresse": "2 CHEMIN JOLI COEUR, 97435 st gilles les hauts",
+    "bureaux": [
+     "102",
+     "103"
+    ]
+   },
+   {
+    "lieu": "Ecole elementaire villele",
+    "adresse": "13 RUE DU PETIT BOIS, 97435 st gilles les hauts",
+    "bureaux": [
+     "104",
+     "105",
+     "106"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire ermitage les hauts",
+    "adresse": "206 CHEMIN FOND DE PUITS, 97422 la saline",
+    "bureaux": [
+     "107",
+     "108"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire marcel lauret",
+    "adresse": "35 CHEMIN GROS EUCALYPTUS, 97422 la saline",
+    "bureaux": [
+     "109",
+     "110",
+     "111"
+    ]
+   },
+   {
+    "lieu": "Ecole maternelle corbeil",
+    "adresse": "15 CHEMIN CORBEIL, 97422 la saline",
+    "bureaux": [
+     "112"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire aliette hortense",
+    "adresse": "24 RUE CAZANOVE, 97422 la saline",
+    "bureaux": [
+     "113"
+    ]
+   },
+   {
+    "lieu": "Ecole elementaire j albany",
+    "adresse": "37 RUE DU RELAIS, 97422 la saline",
+    "bureaux": [
+     "114",
+     "115",
+     "116"
+    ]
+   },
+   {
+    "lieu": "Ecole maternelle barrage",
+    "adresse": "16 RUE WAN-HOI, 97422 la saline",
+    "bureaux": [
+     "117",
+     "118"
+    ]
+   },
+   {
+    "lieu": "Ecole maternelle ravine des trois bassins",
+    "adresse": "24 CD4, 97422 la saline",
+    "bureaux": [
+     "119"
+    ]
+   },
+   {
+    "lieu": "Ecole elementaire anne m soupapoulle",
+    "adresse": "67 ROUTE HUBERT DELISLE, 97422 la saline",
+    "bureaux": [
+     "120",
+     "121"
+    ]
+   }
+  ],
+  "97416": [
+   {
+    "adresse": "SALLE D'ACCUEIL DE L'HOTEL DE VILLE, 97410 saint pierre",
+    "bureaux": [
+     "1"
+    ]
+   },
+   {
+    "adresse": "ECOLE LISLET GEOFFROY, 97410 saint pierre",
+    "bureaux": [
+     "2",
+     "3",
+     "73",
+     "87"
+    ]
+   },
+   {
+    "adresse": "ECOLE LOUIS PASTEUR, 97410 saint pierre",
+    "bureaux": [
+     "4",
+     "5",
+     "79"
+    ]
+   },
+   {
+    "adresse": "ECOLE JEAN MOULIN, 97410 saint pierre",
+    "bureaux": [
+     "6",
+     "7",
+     "77"
+    ]
+   },
+   {
+    "adresse": "MAIRIE ANNEXE DE BASSE TERRE, 97410 saint pierre",
+    "bureaux": [
+     "8",
+     "9"
+    ]
+   },
+   {
+    "adresse": "MAIRIE ANNEXE DE TERRE SAINTE, 97410 saint pierre",
+    "bureaux": [
+     "10"
+    ]
+   },
+   {
+    "adresse": "ECOLE JACQUES PREVERT, 97410 saint pierre",
+    "bureaux": [
+     "11",
+     "12",
+     "13"
+    ]
+   },
+   {
+    "adresse": "ECOLE ALBERT CAMUS, 97410 saint pierre",
+    "bureaux": [
+     "14",
+     "15"
+    ]
+   },
+   {
+    "adresse": "CASE ASILE METEO, 97410 saint pierre",
+    "bureaux": [
+     "16"
+    ]
+   },
+   {
+    "adresse": "CASE DOMINIQUE, 97410 saint pierre",
+    "bureaux": [
+     "17"
+    ]
+   },
+   {
+    "adresse": "ECOLE JEAN ALBANY, 97410 saint pierre",
+    "bureaux": [
+     "18",
+     "90"
+    ]
+   },
+   {
+    "adresse": "ECOLE GEORGES BRASSENS, 97410 saint pierre",
+    "bureaux": [
+     "19",
+     "81"
+    ]
+   },
+   {
+    "adresse": "ECOLE RAYMOND MONDON, 97410 saint pierre",
+    "bureaux": [
+     "20",
+     "82"
+    ]
+   },
+   {
+    "adresse": "ECOLE INDIRA GANDHI, 97410 saint pierre",
+    "bureaux": [
+     "21",
+     "83"
+    ]
+   },
+   {
+    "adresse": "MAIRIE ANEXE DE GRANDS BOIS, 97410 saint pierre",
+    "bureaux": [
+     "22"
+    ]
+   },
+   {
+    "adresse": "MAIRIE ANNEXE DE MONT VERT LES BAS, 97410 saint pierre",
+    "bureaux": [
+     "23"
+    ]
+   },
+   {
+    "adresse": "ECOLE HENRI LAPIERRE, 97410 saint pierre",
+    "bureaux": [
+     "24"
+    ]
+   },
+   {
+    "adresse": "MAIRIE ANNEXE MONT VERT LES HAUTS, 97410 saint pierre",
+    "bureaux": [
+     "25"
+    ]
+   },
+   {
+    "adresse": "ECOLE CHARLES CROS, 97410 saint pierre",
+    "bureaux": [
+     "26"
+    ]
+   },
+   {
+    "adresse": "MAIRIE ANNEXE RAVINE DES CABRIS, 97432 ravine des cabris",
+    "bureaux": [
+     "27"
+    ]
+   },
+   {
+    "adresse": "MJC RAVINE DES CABRIS, 97432 ravine des cabris",
+    "bureaux": [
+     "28"
+    ]
+   },
+   {
+    "adresse": "ESPACE MOULIN A CAFE, 97432 ravine des cabris",
+    "bureaux": [
+     "29",
+     "30"
+    ]
+   },
+   {
+    "adresse": "ECOLE PABLO PICASSO, 97432 ravine des cabris",
+    "bureaux": [
+     "31",
+     "32",
+     "33",
+     "72"
+    ]
+   },
+   {
+    "adresse": "ECOLE CELIMENE, 97432 ravine des cabris",
+    "bureaux": [
+     "34",
+     "67",
+     "88"
+    ]
+   },
+   {
+    "adresse": "ECOLE GEORGES FOURCADE, 97410 saint pierre",
+    "bureaux": [
+     "35",
+     "36",
+     "65"
+    ]
+   },
+   {
+    "adresse": "ECOLE EDMOND ALBIUS, 97432 ravine des cabris",
+    "bureaux": [
+     "37",
+     "38",
+     "39",
+     "63"
+    ]
+   },
+   {
+    "adresse": "ECOLE BENJAMIN MOLOISE, 97410 saint pierre",
+    "bureaux": [
+     "40"
+    ]
+   },
+   {
+    "adresse": "ECOLE MARTIN LUTHER KING, 97410 saint pierre",
+    "bureaux": [
+     "41",
+     "85"
+    ]
+   },
+   {
+    "adresse": "ECOLE LOUIS ARAGON, 97410 saint pierre",
+    "bureaux": [
+     "42",
+     "52"
+    ]
+   },
+   {
+    "adresse": "ECOLE JEAN JAURES, 97410 saint pierre",
+    "bureaux": [
+     "43",
+     "44",
+     "45",
+     "53",
+     "54"
+    ]
+   },
+   {
+    "adresse": "ECOLE EUGENE DAYOT, 97410 saint pierre",
+    "bureaux": [
+     "46",
+     "47",
+     "55",
+     "56",
+     "57"
+    ]
+   },
+   {
+    "adresse": "MAIRIE ANNEXE LIGNE DES BAMBOUS, 97432 ravine des cabris",
+    "bureaux": [
+     "48",
+     "49"
+    ]
+   },
+   {
+    "adresse": "ECOLE AMBROISE VOLLARD, 97432 ravine des cabris",
+    "bureaux": [
+     "50",
+     "51",
+     "60",
+     "61"
+    ]
+   },
+   {
+    "adresse": "ECOLE LECONTE DELISLE, 97432 ravine des cabris",
+    "bureaux": [
+     "58",
+     "59"
+    ]
+   },
+   {
+    "adresse": "MAIRIE ANNEXE DE BOIS D'OLIVES, 97410 saint pierre",
+    "bureaux": [
+     "62"
+    ]
+   },
+   {
+    "adresse": "CASE DE BOIS D'OLIVES, 97432 ravine ds cabris",
+    "bureaux": [
+     "64"
+    ]
+   },
+   {
+    "adresse": "MAISON RIFOSTA BOIS D'OLIVES, 97432 ravine des cabris",
+    "bureaux": [
+     "66"
+    ]
+   },
+   {
+    "adresse": "ECOLE JEAN PAUL SARTRE, 97432 ravine des cabris",
+    "bureaux": [
+     "68",
+     "69",
+     "70",
+     "91"
+    ]
+   },
+   {
+    "adresse": "MAISON RIFOSTA BOIS D'OLIVES, 97410 saint pierre",
+    "bureaux": [
+     "71"
+    ]
+   },
+   {
+    "adresse": "CCAS, 97410 saint pierre",
+    "bureaux": [
+     "74"
+    ]
+   },
+   {
+    "adresse": "ECOLE MICHEL DEBRE, 97410 saint pierre",
+    "bureaux": [
+     "75",
+     "78"
+    ]
+   },
+   {
+    "adresse": "CASE DE BASSE TERRE, 97410 saint pierre",
+    "bureaux": [
+     "76"
+    ]
+   },
+   {
+    "adresse": "ECOLE EVARISTE DE PARNY, 97410 saint pierre",
+    "bureaux": [
+     "80",
+     "89"
+    ]
+   },
+   {
+    "adresse": "CASE MONT VERT LES BAS, 97410 saint pierre",
+    "bureaux": [
+     "84"
+    ]
+   },
+   {
+    "adresse": "CENTRE ADMINISTRATIF DE BOISSY, 97410 saint pierre",
+    "bureaux": [
+     "86"
+    ]
+   },
+   {
+    "adresse": "CASE DIGANAMASSO, 97410 saint pierre",
+    "bureaux": [
+     "92"
+    ]
+   }
+  ],
+  "97417": [
+   {
+    "lieu": "Mairie",
+    "adresse": "64 RUE LECONTE DE LISLE, 97442",
+    "bureaux": [
+     "1"
+    ]
+   },
+   {
+    "lieu": "Salle henri madore",
+    "adresse": "1 RUE DU STADE, 97442",
+    "bureaux": [
+     "2",
+     "3"
+    ]
+   },
+   {
+    "lieu": "Salle de la mer cassee",
+    "adresse": "4 CHEMIN MER CASSEE, 97442",
+    "bureaux": [
+     "4"
+    ]
+   },
+   {
+    "lieu": "Ecole du baril",
+    "adresse": "1 CHEMIN PAUL HOARAU, 97442",
+    "bureaux": [
+     "5",
+     "6"
+    ]
+   },
+   {
+    "lieu": "Ecole de basse vallee",
+    "adresse": "38 ROUTE LABOURDONNAIS, 97442",
+    "bureaux": [
+     "7"
+    ]
+   }
+  ],
+  "97418": [
+   {
+    "lieu": "1 mairie ville",
+    "adresse": "3 RUE DE LA REPUBLIQUE, 97438 sainte marie",
+    "bureaux": [
+     "1",
+     "4"
+    ]
+   },
+   {
+    "lieu": "2 mediatheque de sainte marie",
+    "adresse": "1 RUE DE LA REPUBLIQUE, 97438 sainte marie",
+    "bureaux": [
+     "2",
+     "3"
+    ]
+   },
+   {
+    "lieu": "5 ecole le verger",
+    "adresse": "11 ET 13 AVENUE DES JACQUIERS, 97438 sainte marie",
+    "bureaux": [
+     "5"
+    ]
+   },
+   {
+    "lieu": "6 ecole de gaspard",
+    "adresse": "30 RUE FRERE SCUBILION, 97438 sainte marie",
+    "bureaux": [
+     "6",
+     "7"
+    ]
+   },
+   {
+    "lieu": "8 ecole de terrain elisa",
+    "adresse": "93 RUE ELISA, 97438 sainte marie",
+    "bureaux": [
+     "8",
+     "9"
+    ]
+   },
+   {
+    "lieu": "10 maison de quartier de la convenance",
+    "adresse": "53 RUE DE LA CONVENANCE, 97438 sainte marie",
+    "bureaux": [
+     "10"
+    ]
+   },
+   {
+    "lieu": "11 pole administratif de la convenance",
+    "adresse": "10 RUE AMBRE, 97438 sainte marie",
+    "bureaux": [
+     "11"
+    ]
+   },
+   {
+    "lieu": "12 ecole de la ravine des chevres",
+    "adresse": "5 RUE LEON DIERX, 97438 sainte marie",
+    "bureaux": [
+     "12",
+     "13"
+    ]
+   },
+   {
+    "lieu": "14 centre reeducation de la ressource",
+    "adresse": "44 RUE DE L'ABBE PIERRE, 97438 sainte marie",
+    "bureaux": [
+     "14",
+     "15"
+    ]
+   },
+   {
+    "lieu": "16 ecole de beaumont",
+    "adresse": "137 ROUTE DE BEAUMONT, 97438 sainte marie",
+    "bureaux": [
+     "16"
+    ]
+   },
+   {
+    "lieu": "17 ecole de bois rouge",
+    "adresse": "173 RUE ROUTIER GRANDVAL, 97438 sainte marie",
+    "bureaux": [
+     "17",
+     "18"
+    ]
+   },
+   {
+    "lieu": "19 case de ravine cocos",
+    "adresse": "11 RUE DES CAMPHRIERS, 97438 sainte marie",
+    "bureaux": [
+     "19"
+    ]
+   },
+   {
+    "lieu": "20 ecole de ravine cocos",
+    "adresse": "52 ROUTE DE MONTEE SANO, 97438 sainte marie",
+    "bureaux": [
+     "20"
+    ]
+   },
+   {
+    "lieu": "21 ecole annexe yves barau",
+    "adresse": "113 RUE LUC DONAT, 97438 sainte marie",
+    "bureaux": [
+     "21",
+     "22",
+     "23",
+     "24"
+    ]
+   },
+   {
+    "lieu": "25 mairie annexe de la grande montee",
+    "adresse": "16 RUE DES DEUX FONTAINES, 97438 sainte marie",
+    "bureaux": [
+     "25",
+     "26"
+    ]
+   },
+   {
+    "lieu": "27 ecole de l esperance",
+    "adresse": "2 RUE JEAN XXIII, 97438 sainte marie",
+    "bureaux": [
+     "27"
+    ]
+   },
+   {
+    "lieu": "28 ecole de desbassyns",
+    "adresse": "39 RUE DESBASSYNS, 97438 sainte marie",
+    "bureaux": [
+     "28",
+     "29"
+    ]
+   },
+   {
+    "lieu": "30 centre social de la r pluies",
+    "adresse": "111 RUE ROGER PAYET, 97438 sainte marie",
+    "bureaux": [
+     "30"
+    ]
+   },
+   {
+    "lieu": "31 mairie annexe de riviere des pluies",
+    "adresse": "166 RUE ROGER PAYET, 97438 sainte marie",
+    "bureaux": [
+     "31",
+     "32"
+    ]
+   },
+   {
+    "lieu": "33 salle des fetes de la mare",
+    "adresse": "3 IMPASSE MERCURE, 97438 sainte marie",
+    "bureaux": [
+     "33"
+    ]
+   },
+   {
+    "lieu": "34 salle polyvalente de duparc",
+    "adresse": "14 RUE LOUIS DESCOTTES, 97438 sainte marie",
+    "bureaux": [
+     "34",
+     "35"
+    ]
+   },
+   {
+    "lieu": "36 maison de services au public beausejour",
+    "adresse": "225 RUE DU MARCHE, 97438 sainte marie",
+    "bureaux": [
+     "36"
+    ]
+   },
+   {
+    "lieu": "37 ecole elementaire vincent boyer de la giroday",
+    "adresse": "3 RUE EMERY TALVY, 97438 sainte marie",
+    "bureaux": [
+     "37"
+    ]
+   },
+   {
+    "lieu": "38 centre reeducation de la ressource",
+    "adresse": "44 RUE DE L'ABBE PIERRE, 97438 sainte marie de la reunion",
+    "bureaux": [
+     "38"
+    ]
+   }
+  ],
+  "97419": [
+   {
+    "lieu": "Espace citoyen du livre et des arts",
+    "adresse": "Nationale 2, 97439 sainte rose",
+    "bureaux": [
+     "1"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire de sainte rose 1",
+    "adresse": "97439 sainte rose",
+    "bureaux": [
+     "2",
+     "3",
+     "4",
+     "5",
+     "6",
+     "7",
+     "8"
+    ]
+   }
+  ],
+  "97420": [
+   {
+    "lieu": "Ancienne ecole mixte antoine bertin b1",
+    "adresse": "5 RUE DU GENERAL-DE-GAULLE, 97441 sainte suzanne",
+    "bureaux": [
+     "1",
+     "2",
+     "3"
+    ]
+   },
+   {
+    "lieu": "Ecole maternelle heva",
+    "adresse": "14 RUE ANTOINE ABEILARD, 97441 sainte suzanne",
+    "bureaux": [
+     "4"
+    ]
+   },
+   {
+    "lieu": "Ecole mixte jose barau",
+    "adresse": "9 AVENUE FRANCOIS MITTERRAND, 97441 sainte suzanne",
+    "bureaux": [
+     "5"
+    ]
+   },
+   {
+    "lieu": "Ancienne ecole maternelle les bauhinias b6",
+    "adresse": "69 BIS RUE JACQUES BEL'AIR I, 97441 sainte suzanne",
+    "bureaux": [
+     "6",
+     "7",
+     "8"
+    ]
+   },
+   {
+    "lieu": "Ecole maternelle marie aline wuathion b10",
+    "adresse": "75 Rue Héloise TIBERE, 97441 sainte suzanne",
+    "bureaux": [
+     "9",
+     "10",
+     "11"
+    ]
+   },
+   {
+    "lieu": "Ecole mixte sarda garriga b12",
+    "adresse": "241 RUE LOUIS HOARAU, 97441 sainte suzanne",
+    "bureaux": [
+     "12",
+     "13",
+     "14"
+    ]
+   },
+   {
+    "lieu": "Centre de quartier renaissance",
+    "adresse": "2 RUE MOUFIA, 97441 sainte suzanne",
+    "bureaux": [
+     "15"
+    ]
+   },
+   {
+    "lieu": "Ecole mixte de la marine b16",
+    "adresse": "14 RUE DE L'ASSOMPTION, 97441 sainte suzanne",
+    "bureaux": [
+     "16",
+     "17"
+    ]
+   },
+   {
+    "lieu": "Ecole mixte maya",
+    "adresse": "254 CHEMIN COMMUNE CARRON, 97441 sainte suzanne",
+    "bureaux": [
+     "18"
+    ]
+   },
+   {
+    "lieu": "Ecole mixte des hirondelles",
+    "adresse": "147 CHEMIN COMMUNE ANGO, 97441 sainte suzanne",
+    "bureaux": [
+     "19"
+    ]
+   },
+   {
+    "lieu": "Ecole mixte rene manglou b20",
+    "adresse": "41 AVENUE MAHATMA GANDHI, 97441 sainte suzanne",
+    "bureaux": [
+     "20",
+     "21",
+     "22",
+     "23"
+    ]
+   },
+   {
+    "lieu": "Ecole mixte victor hugo b24",
+    "adresse": "1 RUE LAURENT DAMOUR, 97441 sainte suzanne",
+    "bureaux": [
+     "24",
+     "25",
+     "26"
+    ]
+   },
+   {
+    "lieu": "Ecole mixte des goyaviers b27",
+    "adresse": "23 CHEMIN DES GOYAVIERS, 97441 sainte suzanne",
+    "bureaux": [
+     "27",
+     "28"
+    ]
+   }
+  ],
+  "97421": [
+   {
+    "lieu": "Mairie de salazie",
+    "adresse": "1 PLACE THEODORE SIMONETTE, 97433",
+    "bureaux": [
+     "1"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire de bois de pommes",
+    "adresse": "22 CHEMIN JEAN ALBANY, 97433",
+    "bureaux": [
+     "2"
+    ]
+   },
+   {
+    "lieu": "Annexe municipale de mare a vieille place",
+    "adresse": "16 CHEMIN DU BUTOR, 97433",
+    "bureaux": [
+     "3"
+    ]
+   },
+   {
+    "lieu": "Annexe municipale d hell bourg",
+    "adresse": "23 RUE DU GENERAL DE GAULLE, 97433",
+    "bureaux": [
+     "4"
+    ]
+   },
+   {
+    "lieu": "Case de mare a poule d eau",
+    "adresse": "67 ROUTE TELEPHERIQUE, 97433",
+    "bureaux": [
+     "5"
+    ]
+   },
+   {
+    "lieu": "Annexe municipale de grand ilet",
+    "adresse": "15 RUE DU PERE JOUANO, 97433",
+    "bureaux": [
+     "6"
+    ]
+   },
+   {
+    "lieu": "Annexe municipale de mare a martin",
+    "adresse": "221 CHEMIN DE MARE A MARTINS, 97433",
+    "bureaux": [
+     "7"
+    ]
+   },
+   {
+    "lieu": "Case ilet a vidot",
+    "adresse": "860 RD 48, 97433",
+    "bureaux": [
+     "8"
+    ]
+   },
+   {
+    "lieu": "Ecole de mare a citron",
+    "adresse": "101 RUE MICHEL DEBRE, 97433",
+    "bureaux": [
+     "9"
+    ]
+   },
+   {
+    "lieu": "Case de la mare a vieille place",
+    "adresse": "152 RUE DU PERE CASTAGNAN, 97433",
+    "bureaux": [
+     "10"
+    ]
+   }
+  ],
+  "97422": [
+   {
+    "lieu": "Mairie du tampon",
+    "adresse": "00000",
+    "bureaux": [
+     "1"
+    ]
+   },
+   {
+    "lieu": "Ecole louis fontaine",
+    "adresse": "74 RUE JULES BERTAUT, 97430",
+    "bureaux": [
+     "2",
+     "3"
+    ]
+   },
+   {
+    "lieu": "Ecole maternelle sidr 400",
+    "adresse": "RUE JULES BERTAUT, 97430",
+    "bureaux": [
+     "4",
+     "5"
+    ]
+   },
+   {
+    "lieu": "Ecole juste sauveur",
+    "adresse": "RUE D'''' ALLEMAGNE, 97430",
+    "bureaux": [
+     "6",
+     "7",
+     "8",
+     "9"
+    ]
+   },
+   {
+    "lieu": "Ecole jules ferry",
+    "adresse": "RUE JULES FERRY, 97430",
+    "bureaux": [
+     "10",
+     "11"
+    ]
+   },
+   {
+    "lieu": "Ecole aristide briand",
+    "adresse": "8 RUE ARISTIDE BRIAND, 97430",
+    "bureaux": [
+     "12",
+     "13"
+    ]
+   },
+   {
+    "lieu": "Ecole charles isautier",
+    "adresse": "RUE LUCIEN GASPARIN, 97430",
+    "bureaux": [
+     "14",
+     "15",
+     "16",
+     "50",
+     "51"
+    ]
+   },
+   {
+    "lieu": "Mairie de bras creux",
+    "adresse": "CHEMIN CHALET, 97430",
+    "bureaux": [
+     "17",
+     "18",
+     "19"
+    ]
+   },
+   {
+    "lieu": "Salle de la m jc",
+    "adresse": "18 RUE VICTOR LE VIGOUREUX, 97430",
+    "bureaux": [
+     "20",
+     "21"
+    ]
+   },
+   {
+    "lieu": "Ecole antoine lucas",
+    "adresse": "3 RUE DES ABEILLES, 97430",
+    "bureaux": [
+     "22",
+     "23",
+     "24",
+     "25",
+     "26",
+     "80"
+    ]
+   },
+   {
+    "lieu": "Mairie de berive",
+    "adresse": "3 CHEMIN DE L'''' ECOLE - BERIVE, 97430",
+    "bureaux": [
+     "27",
+     "28",
+     "84"
+    ]
+   },
+   {
+    "lieu": "Ecole du petit tampon",
+    "adresse": "133 CHEMIN JEAN BAPTISTE HUET, 97430",
+    "bureaux": [
+     "29",
+     "30",
+     "31"
+    ]
+   },
+   {
+    "lieu": "Ecole elementaire roland felix",
+    "adresse": "65 RUE ST VINCENT DE PAUL, 97430",
+    "bureaux": [
+     "32",
+     "33",
+     "34",
+     "35",
+     "36"
+    ]
+   },
+   {
+    "lieu": "Ecole du piton de la ravine blanche",
+    "adresse": "1 CHEMIN ROSEMONT, 97418",
+    "bureaux": [
+     "37"
+    ]
+   },
+   {
+    "lieu": "Ecole paul odilien picard",
+    "adresse": "12 CHEMIN DE LA GRANDE FERME, 97418",
+    "bureaux": [
+     "38"
+    ]
+   },
+   {
+    "lieu": "Ecole du bourg murat",
+    "adresse": "9 RUE JOSEMONT LAURET, 97418",
+    "bureaux": [
+     "39"
+    ]
+   },
+   {
+    "lieu": "Ecole primaire paul verges",
+    "adresse": "113 CHEMIN CHAMPCOURT, 97430",
+    "bureaux": [
+     "40",
+     "41",
+     "42",
+     "43"
+    ]
+   },
+   {
+    "lieu": "Ecole vincent sery",
+    "adresse": "105 CHEMIN STEPHANE, 97430",
+    "bureaux": [
+     "44",
+     "45",
+     "46",
+     "47"
+    ]
+   },
+   {
+    "lieu": "Ecole georges besson",
+    "adresse": "1 CHEMIN MAZEAU, 97430",
+    "bureaux": [
+     "48",
+     "49",
+     "81"
+    ]
+   },
+   {
+    "lieu": "Ecole du dassy",
+    "adresse": "CHEMIN DU DASSY, 97430",
+    "bureaux": [
+     "52",
+     "53"
+    ]
+   },
+   {
+    "lieu": "Ecole du bras de pontho",
+    "adresse": "1 RUE PIERRE LAROUSSE, 97430",
+    "bureaux": [
+     "54",
+     "55",
+     "56",
+     "57"
+    ]
+   },
+   {
+    "lieu": "Ecole du pont d yves chemin henri cabeu",
+    "adresse": "CHEMIN HENRI CABEU, 97430",
+    "bureaux": [
+     "58"
+    ]
+   },
+   {
+    "lieu": "Mairie de pont d yves",
+    "adresse": "2 CHEMIN DES LONGOSES, 97430",
+    "bureaux": [
+     "59"
+    ]
+   },
+   {
+    "lieu": "Ecole du 14eme km",
+    "adresse": "RUE GEORGES POMPIDOU, 97430",
+    "bureaux": [
+     "60",
+     "61",
+     "66"
+    ]
+   },
+   {
+    "lieu": "Ecole du 17eme km",
+    "adresse": "130 CHEMIN BARBOT, 97430",
+    "bureaux": [
+     "62",
+     "63"
+    ]
+   },
+   {
+    "lieu": "Ecole maternelle du 14 em km",
+    "adresse": "RUE DES BAMBINS, 97430",
+    "bureaux": [
+     "64",
+     "65"
+    ]
+   },
+   {
+    "lieu": "Ecole du17 em km",
+    "adresse": "CHEMIN BARBOT, 97430",
+    "bureaux": [
+     "67"
+    ]
+   },
+   {
+    "lieu": "Case du 17 em km",
+    "adresse": "ROUTE DES CAFEIERS, 97430",
+    "bureaux": [
+     "68"
+    ]
+   },
+   {
+    "lieu": "Ecole ernest velia",
+    "adresse": "RUE PIERRE RIVALS, 97418",
+    "bureaux": [
+     "69",
+     "71"
+    ]
+   },
+   {
+    "lieu": "Ecole du coin tranquille",
+    "adresse": "2 IMPASSE DES MARMAILLES, 97418",
+    "bureaux": [
+     "70"
+    ]
+   },
+   {
+    "lieu": "Ecole edgar avril",
+    "adresse": "22 RUE DES ECOLES, 97418",
+    "bureaux": [
+     "72",
+     "76"
+    ]
+   },
+   {
+    "lieu": "Batiment communal",
+    "adresse": "RUE MARIE POITEVIN, 97418",
+    "bureaux": [
+     "73",
+     "74"
+    ]
+   },
+   {
+    "lieu": "Ecole du piton hyacinthe",
+    "adresse": "57 CHEMIN DES ACACIAS, 97418",
+    "bureaux": [
+     "75"
+    ]
+   },
+   {
+    "lieu": "Mairie du 23 em km",
+    "adresse": "RUE RAPHAEL DOUYERE, 97418",
+    "bureaux": [
+     "77",
+     "79"
+    ]
+   },
+   {
+    "lieu": "Ecole edgard avril",
+    "adresse": "RUE DES ECOLES, 97418",
+    "bureaux": [
+     "78"
+    ]
+   },
+   {
+    "lieu": "Ecole de petite ferme",
+    "adresse": "45 CHEMIN NOTRE DAME DE LA PAIX, 97418",
+    "bureaux": [
+     "82"
+    ]
+   },
+   {
+    "lieu": "Ecole de bois court",
+    "adresse": "3 IMPASSE DES CAMPEURS, 97418",
+    "bureaux": [
+     "83"
+    ]
+   }
+  ],
+  "97423": [
+   {
+    "lieu": "Mairie des trois bassins",
+    "adresse": "2 RUE DU GENERAL DE GAULLE, 97426 les trois bassins",
+    "bureaux": [
+     "1"
+    ]
+   },
+   {
+    "lieu": "Ecole bois joli coeur",
+    "adresse": "2 PLACE DE L'EGLISE, 97426 les trois bassins",
+    "bureaux": [
+     "2"
+    ]
+   },
+   {
+    "lieu": "Ecole maternelle",
+    "adresse": "25 ALLEE DES ECOLIERS, 97426 les trois bassins",
+    "bureaux": [
+     "3"
+    ]
+   },
+   {
+    "lieu": "Ecole mixte de bois de nefles",
+    "adresse": "4 CHEMIN ECOLE BOIS DE NEFLES, 97426 les trois bassins",
+    "bureaux": [
+     "4"
+    ]
+   },
+   {
+    "lieu": "Batiment des services techniques municipaux",
+    "adresse": "84 CHEMIN DES BARRIERES, 97426 les trois bassins",
+    "bureaux": [
+     "5"
+    ]
+   },
+   {
+    "lieu": "Salle multi activites",
+    "adresse": "2 CHEMIN PIVETEAU, 97426 les trois bassins",
+    "bureaux": [
+     "6"
+    ]
+   },
+   {
+    "lieu": "Ecole mixte de la souris blanche",
+    "adresse": "25 ALLEE DES PALMIERS, 97426 les trois bassins",
+    "bureaux": [
+     "7"
+    ]
+   },
+   {
+    "lieu": "Ecole de montvert",
+    "adresse": "16 CHEMIN DES TAMARINS, 97426 les trois bassins",
+    "bureaux": [
+     "8"
+    ]
+   }
+  ],
+  "97424": [
+   {
+    "adresse": "MAIRIE DE CILAOS BUREAU CENTRALISATEUR, 97413 cilaos",
+    "bureaux": [
+     "1"
+    ]
+   },
+   {
+    "adresse": "ECOLE MATERNELLE DU CENTRE, 97413 cilaos",
+    "bureaux": [
+     "2"
+    ]
+   },
+   {
+    "adresse": "SALLE POLYVALENTE DE CILAOS, 97413 cilaos",
+    "bureaux": [
+     "3"
+    ]
+   },
+   {
+    "adresse": "ECOLE PRIMAIRE CENTRE, 97413 cilaos",
+    "bureaux": [
+     "4"
+    ]
+   },
+   {
+    "adresse": "SALLE POLYVALENTE DE MARE SECHE, 97413 cilaos",
+    "bureaux": [
+     "5"
+    ]
+   },
+   {
+    "adresse": "SALLE POLYVALENTE D'ILET A CORDES, 97413 cilaos",
+    "bureaux": [
+     "6"
+    ]
+   },
+   {
+    "adresse": "SALLE POLYVALENTE DE BRAS SEC, 97413 cilaos",
+    "bureaux": [
+     "7"
+    ]
+   },
+   {
+    "adresse": "SALLE POLYVALENTE DE PALMISTE ROUGE, 97413 cilaos",
+    "bureaux": [
+     "8"
+    ]
+   }
+  ]
+ }
+}

@@ -123,19 +123,20 @@ export const SENTIERS_TUILE = 3;
 
 /**
  * The trails the commune's hiking tile names: among those of the commune, the ones people look for (the sitemap's
- * list, web/sitemap-gardees.ts), the closed first, then in the list's order. Their state is the copy's, the one of
- * /randonnees and of each trail's page, said with the ONF map's date in the tile; a trail off the map is not in it.
+ * list, web/sitemap-gardees.ts) and with a state, the closed first, then in alphabetical order. Their state is the copy's,
+ * the one of /randonnees and of each trail's page, said with the ONF map's date in the tile; a trail off the map is not
+ * in it, and one without a state is never named: never said open.
  */
 export function communeTrails(trails: TrailItem[]): TrailItem[] {
   return trails
-    .filter((t) => t.slug && gardee(`/sentiers/${t.slug}`))
+    .filter((t) => t.slug && gardee(`/sentiers/${t.slug}`) && t.etat !== "inconnu")
     .sort((x, y) => Number(y.etat === "fermé") - Number(x.etat === "fermé") || x.slug!.localeCompare(y.slug!))
     .slice(0, SENTIERS_TUILE);
 }
 
 const trailRow = (t: TrailItem) =>
   `<li><span><a href="/sentiers/${esc(t.slug!)}">${esc(t.nom)}</a><small>${kmFr(t.km)} km${t.dplus != null ? ` · +${nombre(t.dplus)}\u00a0m` : ""}</small></span>` +
-  (t.etat === "fermé" ? `<span class="q-mauvaise">${t.partiel ? "fermé en partie" : "fermé"}</span>` : `<span class="q-bonne">ouvert</span>`) +
+  (t.etat === "fermé" ? `<span class="q-mauvaise">${t.partiel ? "fermé en partie" : "fermé"}</span>` : t.etat === "ouvert" ? `<span class="q-bonne">ouvert</span>` : "") +
   "</li>";
 
 /**

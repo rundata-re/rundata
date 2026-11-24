@@ -25,7 +25,7 @@ describe("the commune's hiking tile", () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  it("names up to three of the commune's trails of the sitemap, the closed first, with the state of the same copy", async () => {
+  it("names up to three of the commune's trails of the sitemap, the closed first then alphabetically, with the state of the same copy", async () => {
     const hikes = { value: await buildRandonnees(cache(), NOW), fetchedAt: NOW, stale: false };
     const all = hikes.value.secteurs.flatMap((z) => z.sentiers);
     let named = 0;
@@ -67,7 +67,7 @@ describe("the commune's hiking tile", () => {
     expect(withClosed).toBeGreaterThan(3);
   });
 
-  it("orders by the state then the sitemap's list, and leaves out a trail off the list or with no page", () => {
+  it("orders by the state then alphabetically, and leaves out a trail off the list, with no page or with no state", () => {
     const t = (slug: string | undefined, etat: string, partiel?: boolean) => ({ k: slug ?? "x", nom: slug ?? "Sans page", slug, commune: "Cilaos", communes: ["Cilaos"], km: 2, etat, ...(partiel ? { partiel } : {}), boucle: false, randonnees: [] }) as TrailItem;
     const picked = communeTrails([
       t("sentier-bassin-fouquet", "ouvert"),
@@ -76,6 +76,8 @@ describe("the commune's hiking tile", () => {
       t(undefined, "fermé"),
       t("cilaos-bras-sec-par-bras-de-benjoin", "fermé", true),
       t("parcours-sportif-du-plateau-des-chenes", "ouvert"),
+      // Of the list, but with no state (out of the ONF's hands): never named, never said open.
+      t("chemin-charrette", "inconnu"),
     ]);
     expect(picked.map((x) => x.slug)).toEqual(["cilaos-bras-sec-par-bras-de-benjoin", "le-bloc-piton-des-neiges", "parcours-sportif-du-plateau-des-chenes"]);
   });

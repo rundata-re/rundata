@@ -557,7 +557,8 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
         : `aucun événement trouvé aujourd'hui dans les agendas lus (incomplets)${sitesSaid}${eventsSaid ? `, ${eventsSaid}` : ""}`
       : "",
     roads.length ? `${roads.length} info${roads.length > 1 ? "s" : ""} sur les routes ou des blocages` : "",
-    power.length ? shortOf(power[0], now) : "",
+    // Every notice of today or later the mairie relays, each with every range of its day (tools/courant.ts, shortOf).
+    power.map((x) => shortOf(x, now)).join("\u00a0; "),
     markets.length ? `marché aujourd'hui : ${markets.map((m) => `${m.nom} ${m.horaires_aujourd_hui}`).join(", ")}` : "",
     prices && fuelShort(prices) ? `carburants (prix maximum) : ${fuelShort(prices)}` : "",
     fresh.length ? `déchets verts acceptés dans ${green} déchèterie${green > 1 ? "s" : ""} sur ${fresh.length}` : "",

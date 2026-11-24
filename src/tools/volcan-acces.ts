@@ -66,6 +66,8 @@ export interface Acces {
 
 // The trails of the Enclos itself (the plan's upper part), told by the Enclos' line: not « hors Enclos ».
 const ENCLOS_TRAILS = /enclos|dolomieu|kapor|rivals|caubet|formica/i;
+// The ONF's closures, shown on /sentiers: the source a trail's line names, its link saying where it leads.
+const ONF_SENTIERS = { source: "carte des sentiers de l'ONF", lien: "/sentiers" };
 const ROAD = /Route Forestière du Volcan \(RF0?5\)/i;
 /** « 24/10 », of a day « 2026-10-24 ». */
 const dayOf = (jour: string) => `${jour.slice(8, 10)}/${jour.slice(5, 7)}`;
@@ -102,7 +104,7 @@ export function acces(niveau: string | undefined, p: volcan.Phase | undefined, p
     // The level is the OVPF's, above any release read: closed at that level by the plan, no release yet to quote.
     lignes.push({ lieu: "Enclos", texte: `Enclos : accès interdit à ce niveau d'alerte (${DSO}). Le communiqué de la préfecture sur ce niveau n'est pas encore dans les textes lus par rundata.re : ${VERIFIER} avant de monter au volcan.` });
   } else if (/^Sauvegarde/i.test(niveau)) {
-    lignes.push({ lieu: "Enclos", texte: `Enclos : en phase de sauvegarde, « une réouverture partielle de l'enclos est possible » (${DSO}, p. 22). Ce qui est ouvert est dans le communiqué de la préfecture du ${dayOf(p.jour)}.`, lien: p.lien });
+    lignes.push({ lieu: "Enclos", texte: `Enclos : en phase de sauvegarde, « une réouverture partielle de l'enclos est possible » (${DSO}, p. 22). Ce qui est ouvert est dit dans le communiqué de la préfecture`, ...release });
   } else {
     const enclos = said.find((x) => /enclos/i.test(x) && /interdit|ferm|ouvert|accès/i.test(x));
     // The release's own words on the Enclos when its title has them (marketing), never a status put into words; closed,
@@ -163,8 +165,8 @@ export function acces(niveau: string | undefined, p: volcan.Phase | undefined, p
     const shut = [...new Set(sector.filter((t) => t.statut === "fermé").map((t) => t.nom))];
     const head = "Sentiers hors Enclos (Plaine des Sables, Piton Chisny, Nez Coupé de Sainte-Rose…)";
     lignes.push(shut.length
-      ? { lieu: "Sentiers hors Enclos", texte: `${head} : ${shut.join(", ")} ${shut.length > 1 ? "fermés" : "fermé"} selon l'ONF (${when}).`, lien: "/sentiers" }
-      : { lieu: "Sentiers hors Enclos", texte: `${head} : l'ONF ne signale pas de fermeture dans le secteur du volcan (${when}).`, lien: "/sentiers" });
+      ? { lieu: "Sentiers hors Enclos", texte: `${head} : ${shut.join(", ")} ${shut.length > 1 ? "fermés" : "fermé"} selon l'ONF (${when})`, ...ONF_SENTIERS }
+      : { lieu: "Sentiers hors Enclos", texte: `${head} : l'ONF ne signale pas de fermeture dans le secteur du volcan (${when})`, ...ONF_SENTIERS });
     if (niveau && /^Vigilance/i.test(niveau)) {
       const enclos = carte.value.sentiers.filter((t) => ENCLOS_TRAILS.test(t.nom));
       const open = [...new Set(enclos.filter((t) => t.statut === "ouvert").map((t) => t.nom))];
@@ -174,7 +176,7 @@ export function acces(niveau: string | undefined, p: volcan.Phase | undefined, p
         .map((t) => (t.cause ? `${t.nom} (${t.cause.replace(/\.$/, "")})` : t.nom));
       const lines: Ligne[] = [];
       if (open.length) lines.push({ lieu: "Sentiers de l'Enclos", texte: `Sentiers de l'Enclos ouverts selon l'ONF (${when}) : ${open.join(", ")}.` });
-      if (shut.length) lines.push({ lieu: "Sentiers de l'Enclos", texte: `Sentiers de l'Enclos fermés selon l'ONF (${when}) : ${shut.join("\u00a0; ")}.`, lien: "/sentiers" });
+      if (shut.length) lines.push({ lieu: "Sentiers de l'Enclos", texte: `Sentiers de l'Enclos fermés selon l'ONF (${when}) : ${shut.join("\u00a0; ")}`, ...ONF_SENTIERS });
       lignes.splice(1, 0, ...lines);
     }
   }

@@ -11,10 +11,11 @@ import { repris, luLe, silentOf } from "../tools/agenda.js";
 import { secteur } from "../tools/sentiers.js";
 import { de, nombre } from "../tools/format.js";
 import { secteurNamed } from "../traces/secteurs.js";
-import type { AgendaAnswer, RandonneesAnswer } from "./data.js";
+import type { AgendaAnswer, RandonneesAnswer, TrailItem } from "./data.js";
 import { esc } from "./map.js";
 import type { Live } from "./pages.js";
 import { PAGES, type PlacePage } from "./places.js";
+import { gardee } from "./sitemap-gardees.js";
 
 // Hikes farther than this from a place are not « around » it.
 const AROUND_KM = 12;
@@ -117,11 +118,33 @@ export function forecastLinks(communes: (string | undefined)[]): string {
   return pages.length ? `<p class="note">Prévision météo : ${pages.map((p) => `<a href="/meteo/${p.slug}">${esc(p.nom)}</a>`).join(", ")}.</p>` : "";
 }
 
+/** How many of the commune's trails its hiking tile names. */
+export const SENTIERS_TUILE = 3;
+
 /**
- * The commune's page's hiking tile: its ONF trails, those closed, and its sector's page, which names it (« Randonnée
- * dans le Sud »); first, the fires seen by satellite in the commune, with the emergency numbers (worded by marketing).
+ * The trails the commune's hiking tile names: among those of the commune, the ones people look for (the sitemap's
+ * list, web/sitemap-gardees.ts) and with a state, the closed first, then in alphabetical order. Their state is the copy's,
+ * the one of /randonnees and of each trail's page, said with the ONF map's date in the tile; a trail off the map is not
+ * in it, and one without a state is never named: never said open.
  */
-export function communeHikes(p: PlacePage, hikes: Cached<RandonneesAnswer> | null | undefined, now = new Date()): { nom: string; live?: Live; href: string; foot?: string } | undefined {
+export function communeTrails(trails: TrailItem[]): TrailItem[] {
+  return trails
+    .filter((t) => t.slug && gardee(`/sentiers/${t.slug}`) && t.etat !== "inconnu")
+    .sort((x, y) => Number(y.etat === "fermé") - Number(x.etat === "fermé") || x.slug!.localeCompare(y.slug!))
+    .slice(0, SENTIERS_TUILE);
+}
+
+const trailRow = (t: TrailItem) =>
+  `<li><span><a href="/sentiers/${esc(t.slug!)}">${esc(t.nom)}</a><small>${kmFr(t.km)} km${t.dplus != null ? ` · +${nombre(t.dplus)}\u00a0m` : ""}</small></span>` +
+  (t.etat === "fermé" ? `<span class="q-mauvaise">${t.partiel ? "fermé en partie" : "fermé"}</span>` : t.etat === "ouvert" ? `<span class="q-bonne">ouvert</span>` : "") +
+  "</li>";
+
+/**
+ * The commune's page's hiking tile: its ONF trails, those closed, a few of them by name, and its sector's page, which
+ * names it (« Randonnée dans le Sud »); first, the fires seen by satellite in the commune, with the emergency numbers
+ * (worded by marketing).
+ */
+export function communeHikes(p: PlacePage, hikes: Cached<RandonneesAnswer> | null | undefined, now = new Date()): { nom: string; live?: Live; href: string; foot?: string; more?: string } | undefined {
   const sector = secteurNamed(secteur(p.place.lon, p.place.lat).secteur);
   const href = sector ? `/randonnees/${sector.slug}` : "/randonnees";
   const nom = sector ? `Randonnée ${sector.dans}` : "Randonnée";
@@ -138,10 +161,12 @@ export function communeHikes(p: PlacePage, hikes: Cached<RandonneesAnswer> | nul
   // All open: their number, never a bare « Sentiers ouverts » above « sur 15 » (« 15 sentiers ouverts », « sur 15 dans la
   // commune »): the detail's « sur N » needs a number before it.
   const open = trails.length;
+  const named = communeTrails(trails);
   return {
     nom,
     href,
     foot,
+    ...(named.length ? { more: `<ul class="rows eau cols">${named.map(trailRow).join("")}</ul>` } : {}),
     live: {
       valeur: shut ? `${shut} sentier${shut > 1 ? "s" : ""} fermé${shut > 1 ? "s" : ""}` : `${open} sentier${open > 1 ? "s" : ""} ouvert${open > 1 ? "s" : ""}`,
       // The ONF's own date of its map, else when we read it: a copy never says the state of another day.

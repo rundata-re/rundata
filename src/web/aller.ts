@@ -119,7 +119,7 @@ export const route = (lat: number, lon: number, pied = false) =>
   `https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}${pied ? "&travelmode=walking" : ""}`;
 
 /**
- * The button of a place; nothing for one without a position. As small as it can be, for the 649 rows of /enfants: the
+ * The button of a place; nothing for one without a position. As small as it can be, for the 650 or so rows of /enfants: the
  * position is read from the link, the name from its label (from `data-n` when the label adds where it is), and the arrow
  * is drawn by the style sheet. On foot (`pied`): no Waze, the walking route elsewhere.
  */

@@ -56,7 +56,7 @@ export const milieu = (v: Voie) => {
 /** Its commune, where its middle is. */
 export const communeOf = (v: Voie) => communeAt(...milieu(v));
 
-/** Said with the layer, in its legend and its panel (data-run, 03/11). */
+/** Said with the layer, in its legend and its panel (03/11). */
 export const RECENSE =
   "Aménagements recensés par la Région (liste du 31/12/2025), la Ville de Saint-Denis (février 2023) et la CIVIS (sans date) : la carte ne dit pas leur état ce jour. Accroches vélo : la CIVIS seulement.";
 

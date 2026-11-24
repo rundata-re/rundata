@@ -57,10 +57,10 @@ describe("the located earthquakes per day under the volcano", () => {
     const r = body(await volcanSeismes(cacheWith(), NOW));
     const said = "Les séismes trop faibles pour être localisés ne sont pas comptés ici\u00a0: l'OVPF les compte dans son bulletin quotidien";
     expect(BULLETIN_QUOTIDIEN).toBe("https://www.ipgp.fr/volcanoweb/reunion/Bulletin_quotidien/bulletin.html");
-    // In the summary, the note once, the bulletin named in it with its address (data-run).
+    // In the summary, the note once, the bulletin named in it with its address.
     expect(r.resume).toContain(`L'OVPF ne localise qu'une partie des séismes qu'il enregistre\u00a0: son bulletin quotidien (${BULLETIN_QUOTIDIEN}) donne le nombre enregistré, les chiffres de rundata.re comptent ceux qu'il a localisés, d'après son catalogue.`);
     expect(r.resume.split(LOCALISES)).toHaveLength(2);
-    // The field `seismes.note` says the same sentence, the address after the bulletin's name (data-run).
+    // The field `seismes.note` says the same sentence, the address after the bulletin's name.
     expect(r.seismes.note).toContain(`son bulletin quotidien (${BULLETIN_QUOTIDIEN}) donne le nombre enregistré`);
     expect(JSON.stringify(r)).not.toContain("ses bulletins donnent");
     expect(r.resume).not.toContain("ne sont pas comptés ici");
@@ -78,7 +78,7 @@ describe("the located earthquakes per day under the volcano", () => {
     expect(html).toContain(`<li class="now" aria-label="23/10 (en cours) : `);
     expect(html).toContain(`<p class="axis"><span>24/09</span><span>23/10 (en cours)</span></p>`);
     expect(html).toContain(`<p class="note">L&#39;OVPF ne localise qu&#39;une partie des séismes qu&#39;il enregistre\u00a0: son <a href="${BULLETIN_QUOTIDIEN}">bulletin quotidien</a> donne le nombre enregistré, les chiffres de rundata.re comptent ceux qu&#39;il a localisés, d&#39;après son catalogue.</p>`);
-    // Said once on the page: the bulletin in the note, not a sentence more (data-run).
+    // Said once on the page: the bulletin in the note, not a sentence more.
     expect(html).not.toContain("ne sont pas comptés ici");
     expect(html).not.toContain(`(${BULLETIN_QUOTIDIEN})`);
     expect(html).toContain("Séismes localisés par l'OVPF sous le volcan : <b>");

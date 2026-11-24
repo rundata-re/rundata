@@ -1,7 +1,7 @@
 /**
  * The alerts of the volcano before this one: « combien de temps durent les alertes, et que s'est-il passé les dernières
  * fois ? ». Only the episodes since 2016 whose start and end are each written in a dated release of the prefecture we
- * read, quoted as written (data-run, marketing): not a complete history, and said so. Before the ORSEC plan of
+ * read, quoted as written (marketing): not a complete history, and said so. Before the ORSEC plan of
  * 08/11/2021, the levels of the plan then, word for word. No duration nor share computed from them.
  *
  * The releases as read on 24/10/2026 in their Wayback Machine copies, reunion.gouv.fr then not answering our reads
@@ -125,7 +125,7 @@ export const EPISODES: Episode[] = [
       { jour: "2022-09-19", quoi: "alerte 1", dit: "Piton de la Fournaise : passage en alerte 1, fermeture de l’enclos", communique: R.sept2022a1 },
       { jour: "2022-09-19", quoi: "alerte 2-1", dit: "Piton de la Fournaise : passage en alerte 2-1 Eruption dans l’enclos", communique: R.sept2022a21 },
     ],
-    // Not a reopening: the eruption stopped, the Enclos still closed, as written (data-run).
+    // Not a reopening: the eruption stopped, the Enclos still closed, as written.
     fin: { jour: "2022-10-05", quoi: "éruption arrêtée", dit: "Éruption arrêtée mais enclos toujours fermé", communique: R.oct2022 },
   },
   // Before the plan of 08/11/2021: the levels of the plan then (« alerte 2-2 », « phase de sauvegarde »), as the releases

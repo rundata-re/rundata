@@ -33,7 +33,7 @@ describe("the canyons of the Parc national (vie/canyons.ts)", () => {
   it("say a ban as the inventory gives it, never as a fact of today, and never a canyon allowed", () => {
     expect(canyons.CANYONS.filter((c) => c.interdit)).toHaveLength(29);
     expect(canyons.signalement(byName("La Rouille"))).toBe("Signalé interdit dans l'inventaire du Parc national (sans date) : arrêté préfectoral de 1997 (chutes de pierres sous la route d'Îlet à Cordes).");
-    // Marked forbidden in its observations only, which are never published (data-run, 03/11).
+    // Marked forbidden in its observations only, which are never published (03/11).
     expect(byName("Bras des Étangs les Hauts").interdit).toBe("arrêté de protection de biotope");
     expect(canyons.signalement(byName("Pseudotak"))).toBe("Soumis à autorisation d'après l'inventaire.");
     expect(canyons.signalement(byName("Bras Rouge amont"))).toBeUndefined();

@@ -45,7 +45,7 @@ const FRESH_SECONDS = 24 * 3600;
 // A view of /mer waits for it when no data center has it yet: ERDDAP answers in a second or two.
 const TIMEOUT_MS = 8_000;
 
-// NOAA's levels, 0 to 7 (methodology, updated in December 2023), in the words data-run validated on 07/11/2026.
+// NOAA's levels, 0 to 7 (methodology, updated in December 2023), in the words validated on 07/11/2026.
 export const NIVEAUX = [
   "Pas de stress thermique",
   "Veille",

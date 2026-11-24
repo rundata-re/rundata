@@ -138,7 +138,7 @@ export function bannerHtml(a: VolcanAlerte | undefined, path: string): string {
 
 /**
  * The tab's and the preview's title, its state with the day of the copy it was read in (« au 06/11 »): a title shared
- * stays in the message, a state without its day would be read as today's (05/11/2026, data-run).
+ * stays in the message, a state without its day would be read as today's (05/11/2026).
  * An alert's title passes the 60 characters a search engine shows (66 to 68): a crisis title, kept whole on purpose.
  * « éruption probable » is what the stage means to whoever gets the shared link; do not shorten it (07/11/2026).
  */

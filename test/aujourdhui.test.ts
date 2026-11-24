@@ -166,7 +166,7 @@ describe("the town hall in the page of a commune's day", () => {
   });
 });
 
-describe("a commune whose distributor's notices are not read (1284, 20/11/2026)", () => {
+describe("a commune whose distributor's notices are not read (20/11/2026)", () => {
   it("names the distributor and links its site, as /coupures-eau says it, never « voir la mairie » alone", () => {
     const p = pageOf("saint-joseph")!;
     const none = { ...full(p.nom), coupures: copy({ resume: "", couverture: "", a_savoir: "", sources: [], communes_suivies: [], avis: [] }) };
@@ -179,7 +179,7 @@ describe("a commune whose distributor's notices are not read (1284, 20/11/2026)"
   });
 });
 
-describe("a commune's day page, with its water notices not read (1599, 23/11/2026)", () => {
+describe("a commune's day page, with its water notices not read (23/11/2026)", () => {
   it("says where its distributor publishes them, never that they are not read, on every commune's page", async () => {
     // With the water's copy and no notice in it: the card a test rendering cold never sees. On each commune's page,
     // in the sitemap or not (none is since 24/11/2026, web/sitemap-gardees.ts): they stay online and indexable.
@@ -199,7 +199,7 @@ describe("a commune's day page, with its water notices not read (1599, 23/11/202
   });
 });
 
-describe("a cut whose notice writes no start hour (1312, 20/11/2026)", () => {
+describe("a cut whose notice writes no start hour (20/11/2026)", () => {
   it("says its end, never « undefined → … »", () => {
     const p = pageOf("saint-paul")!;
     const r = resume(p, full(p.nom) as never, NOW);

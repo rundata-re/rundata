@@ -18,7 +18,8 @@
  * phone asks for less motion: the rings are a layer of their own over the map, only its opacity moving, which the
  * browser does without drawing the map again.
  *
- * The words are marketing's (interne/ux/carte-mots-3110.md).
+ * The words are marketing's of 31/10/2026: the page's title, description, heading and lead, the layers' themes in the menu,
+ * « en direct » allowed where a layer is measured live, never « en temps réel ».
  */
 import island from "../places/island.json" with { type: "json" };
 import { MAX_ZOOM } from "./carte-zoom.js";

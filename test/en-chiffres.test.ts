@@ -247,7 +247,7 @@ describe("« <Lieu> en chiffres » (the user, 10/11/2026: « oui, supprime les v
 
   it("puts the curve's bubble under the hour axis up to 640 px, in place of the note, in a zone of fixed height", () => {
     const script = chiffresScript();
-    // ux at 390 px (12/11): the bubble took the whole width over the curve and hid the points around the one read.
+    // At 390 px (12/11): the bubble took the whole width over the curve and hid the points around the one read.
     expect(script).toContain('nar=matchMedia("(max-width:640px)")');
     // The zone under the axis is sized once for the longest bubble of the period, for the note and the bubble alike.
     expect(script).toContain('const lg=pts.reduce((a,p)=>p.html.length>a.length?p.html:a,"")');

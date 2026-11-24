@@ -94,7 +94,7 @@ describe("vigilance Météo-France", () => {
     expect(warnings.officiel).toBe("Consulter le site officiel de Météo-France : https://meteofrance.re/fr/cyclone");
   });
 
-  it("gives a point given by its coordinates the zone of its commune, said as the nearest known place's (ux, 20/11/2026)", async () => {
+  it("gives a point given by its coordinates the zone of its commune, said as the nearest known place's (20/11/2026)", async () => {
     const cache = cacheWith(await storm());
     const sb = gazetteer.places.find((p) => p.type === "commune" && p.nom === "Saint-Benoît")!;
     const est = body(await vigilanceMeteo(cache, `${sb.lat}, ${sb.lon}`, NOW));

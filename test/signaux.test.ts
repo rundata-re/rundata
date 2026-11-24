@@ -91,7 +91,7 @@ describe("POST /signal, as recorded", () => {
     configurerEquipe("secret-de-test-equipe");
     try {
       expect((await hitsOf(beacon("e=o&v=oui&p=%2F", { ...BROWSER, [JETON_EQUIPE]: "secret-de-test-equipe" }))).hits).toEqual([]);
-      expect((await hitsOf(beacon("e=o&v=oui&p=%2F", { ...BROWSER, "user-agent": "rundata-check/dev5" }))).hits).toHaveLength(1);
+      expect((await hitsOf(beacon("e=o&v=oui&p=%2F", { ...BROWSER, "user-agent": "rundata-check/essai" }))).hits).toHaveLength(1);
     } finally {
       configurerEquipe(undefined);
     }

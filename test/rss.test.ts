@@ -79,7 +79,7 @@ describe("a commune's RSS feed", () => {
     expect(cut.path).toBe("/coupures-eau/saint-paul");
     expect(rssItems(SAINT_PAUL, { coupures: coupures("terminée") }, NOW)).toEqual([]);
   });
-  it("says a cut whose notice writes no start hour « jusqu'au … », never « du undefined » (1312, 23/11/2026)", () => {
+  it("says a cut whose notice writes no start hour « jusqu'au … », never « du undefined » (23/11/2026)", () => {
     const c = coupures("en cours");
     c.value.avis[0].coupure = { a: "lundi 26/10 à 16:00", etat: "en cours" } as (typeof c.value.avis)[number]["coupure"];
     const [cut] = rssItems(SAINT_PAUL, { coupures: c }, NOW);

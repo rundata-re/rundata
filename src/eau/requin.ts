@@ -112,7 +112,7 @@ export const T = {
 
 /**
  * The rule in one sentence, marketing's words (20/11) for a place's page, said also in the résumé of temperature_mer and
- * at the top of /mer (revue ux du 24/11, item 1828): asked about the sea, one hears whether one may swim. While in force only.
+ * at the top of /mer (24/11/2026): asked about the sea, one hears whether one may swim. While in force only.
  */
 export const REGLE_COURTE = "Baignade, surf, bodyboard et paddle sont interdits dans la bande des 300 m de tout le littoral, sauf dans le lagon, " +
   `les espaces aménagés et surveillés, et les ZONEX ouvertes et surveillées (arrêté préfectoral n° ${ARRETE.numero}, jusqu'au ` +

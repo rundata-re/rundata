@@ -6,7 +6,7 @@
  * n° 2026-1319 of 17/08/2026 on the bichiques, read on its pages' images. Never a link to the decree on the bichiques
  * of 2021, repealed by the latter (art. 23), though the DMSOI's page still offers it.
  *
- * Words (data-run and marketing, 31/10/2026): « pas de fermeture aujourd'hui » where a decree only sets a closing time,
+ * Words (marketing, 31/10/2026): « pas de fermeture aujourd'hui » where a decree only sets a closing time,
  * « saison ouverte » where it sets the open season; never « autorisé ». The rules of a place (the marine reserve's
  * zones, the river mouths, Sainte-Rose) are named, not detailed: the decrees alone are authoritative.
  */
@@ -93,7 +93,7 @@ export const LAGONS =
   "L'arrêté n'y permet que la pêche du capucin nain et la pêche à pied à la ligne sans moulinet (la gaulette), de jour, sur les seuls fonds sableux, à 25\u00a0m au plus de la ligne des plus hautes eaux. La pêche depuis une embarcation y est interdite.";
 export const LAGONS_ARTICLE = "arrêté n° 1743, art. 17";
 
-/** What the page does not say, said plainly (data-run, 31/10/2026). */
+/** What the page does not say, said plainly (31/10/2026). */
 export const AILLEURS =
   "D'autres règles dépendent du lieu\u00a0: réserve naturelle marine (zones de protection intégrale, pêche de nuit interdite), zones de pêche des bichiques, réserve de pêche de Sainte-Rose. Elles ne sont pas toutes ici. rundata.re résume les arrêtés\u00a0: seul leur texte fait foi.";
 

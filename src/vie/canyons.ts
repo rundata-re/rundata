@@ -46,7 +46,7 @@ export const communeOf = (c: Canyon) => COMMUNES.get(c.id)!;
 /** « 1,4 km ». */
 export const longueur = (c: Canyon) => `${String(c.km).replace(".", ",")} km`;
 
-// Said with them, in the tool as on /carte (data-run, 03/11).
+// Said with them, in the tool as on /carte (03/11).
 export const RECENSE = "canyon recensé par le Parc national, inventaire sans date";
 export const SECURITE = "Jamais de canyon par temps de pluie ou de vigilance : l'eau monte vite.";
 export const AUTORISE = "L'inventaire ne dit pas si un canyon est autorisé : une interdiction a pu être levée, ou décidée depuis.";

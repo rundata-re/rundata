@@ -333,7 +333,7 @@ describe("a page's own copy too old to be told as the present (web/site.ts `oldC
   });
 
   it("leaves the daily check of the sources to wait for the refresh", async () => {
-    expect(oldCopy(new Request("https://rundata.re/", { headers: { "user-agent": "rundata-check/dev4" } }))).toBeUndefined();
+    expect(oldCopy(new Request("https://rundata.re/", { headers: { "user-agent": "rundata-check/essai" } }))).toBeUndefined();
     expect(await read("rundata-check/1.0", 1085)).toMatchObject({ value: 2, at: 3000 });
   });
 });

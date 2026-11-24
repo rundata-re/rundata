@@ -376,7 +376,7 @@ const jma = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice
 /**
  * The bike lanes of the Région and of the Ville de Saint-Denis, drawn, and the bike racks of the CIVIS, each with its
  * source and the date of its list (none for the CIVIS's). What a list gives is said as given, never a lane said usable:
- * the Région's « Requalification » does not say if it is done (data-run, 03/11).
+ * the Région's « Requalification » does not say if it is done (03/11).
  */
 export function veloCouche(voies: velo.Voie[], accroches: velo.Accroche[], lu: string): CoucheJson {
   const listes: Record<velo.Liste, string> = { region: `liste du ${jma(velo.REGION_DU)}`, "saint-denis": "février 2023", civis: "sans date" };

@@ -42,7 +42,7 @@ const live: HomeLive = {
     // Read the evening before.
     lus_le: "2026-11-09T19:45:00Z",
     evenements: [
-      // Le Tampon: at 390 px, an outing in the west bars the bikes' way to Saint-Pierre (ux's placement of 14/11).
+      // Le Tampon: at 390 px, an outing in the west bars the bikes' way to Saint-Pierre (the placement of 14/11).
       { titre: "Concert au kiosque du front de mer", date: "2026-11-10T19:00", commune: "Le Tampon" },
       { titre: "Lecture publique", date: "2026-11-10T19:30", commune: "Le Port", source: "site de la commune du Port (© www.ville-port.re), lu le mardi 10/11 à 00:00" },
       { titre: "Fête annulée", date: "2026-11-10T11:00", commune: "Le Port", statut: "annulé" },
@@ -127,7 +127,7 @@ describe("the home page's island", () => {
     const east = layout(accueilCarte(worse("Saint-André"), NOW)!, "tel");
     expect(east).not.toContain('<g class="hub cx" data-k="air">');
     expect(east).toMatch(/data-k="air"[^>]* data-tp="Saint-André\u00a0: dégradé \(ozone\) · ailleurs moyen"/);
-    // Le Port, which Air's label under the island now reaches at 390 px (ux, 14/11).
+    // Le Port, which Air's label under the island now reaches at 390 px (14/11).
     expect(layout(accueilCarte(worse("Le Port"), NOW)!, "tel")).toContain('<g class="hub cx" data-k="air">');
   });
 
@@ -271,7 +271,7 @@ describe("the home page's island", () => {
     };
     expect(problemes(h, NOW)).toEqual([]);
     const tel = layout(accueilCarte(h, NOW)!, "tel");
-    // Vélos' label has its port, where its track ends; the sea, in the top corner (ux, 14/11), takes its first beach.
+    // Vélos' label has its port, where its track ends; the sea, in the top corner (14/11), takes its first beach.
     const velos = tel.slice(tel.indexOf('<a class="mk lb cx" href="/velos"'));
     expect(velos.slice(0, velos.indexOf("</a>"))).toContain('class="po"');
     expect(tel).toMatch(/data-k="mer"[^>]* data-tp="Plage de Boucan-Canot"/);
@@ -371,7 +371,7 @@ describe("the home page's island", () => {
     for (const name of ["tel", "large"]) {
       const svg = layout(html, name);
       expect(svg).toContain(">ÉLECTRICITÉ · EDF<");
-      // Never cut (ux): 92 %, whole, on one line.
+      // Never cut: 92 %, whole, on one line.
       expect(svg).toContain(">92\u202f% renouvelable</text>");
       expect(svg).not.toContain('data-k="elec" style');
       expect(svg).not.toContain('<g class="hub cx" data-k="elec">');

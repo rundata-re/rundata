@@ -1567,7 +1567,7 @@ export const lapse = (t: number, was: number) => (was ? Math.min(t - was, 250) :
  */
 export const GRIDS_KEPT = 52;
 /**
- * A full play: 12 s (data-run, 29/10); 24 s over 24 hours and 7 days, whose images follow each other every quarter of an
+ * A full play: 12 s (29/10); 24 s over 24 hours and 7 days, whose images follow each other every quarter of an
  * hour and every hour (01/11/2026: in 12 s, a slow phone drew the rain's 8 and 14 new images a second at 11 and 6 frames).
  * The finer files, for a device that keeps up: 54 s for the 288 images of 24 hours or of a day (5 a second), 96 s for
  * the 672 of 7 days (7 a second); their images fade into each other the whole way, never held (SN 0): held 2 minutes

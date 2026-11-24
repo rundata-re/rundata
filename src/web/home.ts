@@ -219,7 +219,7 @@ export function sky(now: Date): "nuit" | "aube" | "jour" | "soir" {
 }
 
 /**
- * The field « Aller à une rubrique, une commune ou un lieu », above the tiles (ux's mock-up, marketing's words, approved
+ * The field « Aller à une rubrique, une commune ou un lieu », above the tiles (the mock-up, marketing's words, approved
  * by the user on 04/11/2026): it leads to a page, from the names alone, in the browser (menu.ts). Shown with the script
  * only: without it, the field would do nothing.
  */

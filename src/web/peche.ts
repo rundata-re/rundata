@@ -22,7 +22,7 @@ const LEAD = "Avant de partir pêcher\u00a0: ce qui est fermé aujourd'hui, les 
 
 /**
  * The home page's tile: what is closed today, from the same decrees as the page, computed at each view (nothing read).
- * A legal calendar, not a state seen: « d'après les arrêtés du préfet » always (data-run, 06/11/2026).
+ * A legal calendar, not a state seen: « d'après les arrêtés du préfet » always (06/11/2026).
  */
 export function pecheLive(now: Date): Live {
   const day = jourLocal(now);
@@ -32,7 +32,7 @@ export function pecheLive(now: Date): Live {
   const bichiques = especes.find((e) => e.cle === "bichiques" && !e.ferme && e.heures);
   return {
     valeur,
-    // In their season, the bichiques' hours first: the tile shows three lines of its detail (data-run, 06/11/2026).
+    // In their season, the bichiques' hours first: the tile shows three lines of its detail (06/11/2026).
     detail: `${bichiques ? `bichiques : pêche ouverte ${esc(bichiques.heures!)} ; ` : ""}aujourd'hui ${day.slice(8, 10)}/${day.slice(5, 7)}, d'après les arrêtés du préfet`,
   };
 }

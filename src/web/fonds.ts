@@ -165,7 +165,7 @@ export function fond(path: string, alerte: Alerte | undefined, volcan: boolean, 
 }
 
 /**
- * The contour lines of the island (marketing's kit, « Motif : les courbes de niveau »; ux's review of 04/11/2026), a
+ * The contour lines of the island (marketing's kit, « Motif : les courbes de niveau »; the review of 04/11/2026), a
  * file of public/ whose address changes with its content. Only from 1200 px, where there is room beside the text: on a
  * narrower screen nothing is downloaded, a background picture under a media query being fetched only when it applies.
  * Night in both themes, like the band and the footer. Not in the HTML (an SVG hidden on a phone is paid for anyway) nor
@@ -196,7 +196,7 @@ export function motif(alerte: Alerte | undefined, volcan: boolean): boolean {
 
 /**
  * From 75rem (1200 px) only. In the band: the island at full strength in a box at the right of the content's column,
- * faded in from its left, never under the text (ux measured the contrast of the 10 pages at 6 widths in both themes,
+ * faded in from its left, never under the text (the contrast measured on the 10 pages at 6 widths in both themes,
  * none lower than today's). In the footer: only the room left free under its right column, which shrinks if the
  * sources grow, so never under text either. Neither printed nor shown with forced colours.
  */

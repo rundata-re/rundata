@@ -80,7 +80,7 @@ function eventLi(r: Row, g: Porte): string {
 
 /**
  * A place's second line: its address, its age and today's hours on the left, « Y aller » on the right, so that the name
- * has the width of the first line (data-run, 29/10: under the name alone, the button nearly doubled the list's height).
+ * has the width of the first line (29/10: under the name alone, the button nearly doubled the list's height).
  */
 /** A pool's hours that no open source gives, and the commune's pages that announce them when known (vie/enfants.ts). */
 function poolHours(l: enfants.Lieu): string {

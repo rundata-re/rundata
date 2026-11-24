@@ -215,7 +215,7 @@ function resolve(text: string): Resolution | null {
     if (Math.abs(a) > 50) [a, b] = [b, a]; // "55.22, -21.05": longitude first
     if (!inReunion(b, a)) return null;
     // The commune of the nearest place, not none: the vigilance of its zone and its air index are said for it, where
-    // « zone inconnue » and « pas de vigilance » were (ux, 20/11/2026).
+    // « zone inconnue » and « pas de vigilance » were (20/11/2026).
     const near = placeAt(b, a);
     return {
       lieu: { nom: `${a.toFixed(4)}, ${b.toFixed(4)}`, type: "coordonnees", lon: b, lat: a, altitude_m: null, commune: near.commune },
@@ -259,7 +259,7 @@ function resolve(text: string): Resolution | null {
     const best = ranked[0];
     if (best.standIn) return { lieu: best.place, correspondance: "approchee", autres: [], tient_lieu: true };
     // The same name in other communes (« Bellevue », Salazie and Saint-Louis): the first is answered, the others said, so
-    // that a cut of water or a forecast is not taken for the wrong one. Seen by ux on 20/11/2026.
+    // that a cut of water or a forecast is not taken for the wrong one. Seen on 20/11/2026.
     // A commune's own name means the commune (« Saint-Joseph », not the lieu-dit of Sainte-Suzanne): nothing more said.
     if (best.place.type === "commune") return { lieu: best.place, correspondance: "exacte", autres: [] };
     const communes = new Set([best.place.commune]);

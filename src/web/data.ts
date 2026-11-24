@@ -474,7 +474,7 @@ function needed<T>(r: { content: { text: string }[]; isError?: boolean }, what: 
  * The Enclos as the official texts say it: the prefecture's release (`communique`), in its title's own words (`mots`),
  * or the level of an alert whose title says nothing of it (`niveau`), the ban the plan's; an alert of the OVPF's above a
  * release out of alert (`ovpf`), closed by the plan; in vigilance from a release that says nothing of it, the plan's
- * rule (`vigilance`). Never pitonlive's (data-run, 25/10/2026).
+ * rule (`vigilance`). Never pitonlive's (25/10/2026).
  */
 export interface Enclos {
   communique?: { mots?: string; niveau?: string; jour: string; lien: string };

@@ -278,7 +278,7 @@ describe("the map of every station on /meteo", () => {
     // A disc as a disc, not its square, and the name's own box less 1 px (a line of text is taller than its letters): a
     // name may stand by its side.
     expect(NOMS_SCRIPT).toContain("raw=(d)=>[B[0]+d[0]+u,B[1]+d[1]+u,B[2]+d[0]-u,B[3]+d[1]-u]");
-    expect(NOMS_SCRIPT).toContain('if(e.matches(".mk .sh"))hard.push(e.tagName==="circle"?[b.x+b.width/2,b.y+b.height/2,b.width/2]:box(b,0))');
+    expect(NOMS_SCRIPT).toContain('if(e.matches(".mk .sh,.kt"))hard.push(e.tagName==="circle"?[b.x+b.width/2,b.y+b.height/2,b.width/2]:box(b,0))');
     expect(NOMS_SCRIPT).toContain("ok=ds.filter((d)=>inn(at2(d))&&!hard.some((o)=>cut(raw(d),o))),go=ds.find((d)=>free(at2(d)))||(ok.length?");
     expect(NOMS_SCRIPT).toContain('if(!go){ts.forEach((t)=>t.style.display="none");return}');
     // The summits' names only: the names of communes and places (the maps of the roads, of electricity…) are placed

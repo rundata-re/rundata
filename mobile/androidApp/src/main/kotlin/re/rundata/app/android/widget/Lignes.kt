@@ -130,3 +130,13 @@ fun libelleMer(jour: String?, bouee: String? = null, heure: String? = null): Str
     jour != null -> "mer, vue par satellite le $jour"
     else -> "mer, vue par satellite"
 }
+
+/** Jusqu'où les grands nombres d'un widget suivent la taille du texte d'Android. */
+const val PLAFOND_CHIFFRES = 1.3f
+
+/**
+ * La taille à donner à un grand nombre (température, mer) de `sp` à l'échelle de texte `echelle` d'Android : il grossit
+ * avec elle jusqu'à PLAFOND_CHIFFRES, pas au-delà, pour rester entier dans sa colonne (à 200 %, « 25,1 °C » devenait
+ * « 25,… » dans le 4×1, 24/11/2026). Les petits textes suivent le réglage, sur plus de lignes.
+ */
+fun tailleChiffre(sp: Float, echelle: Float): Float = if (echelle > PLAFOND_CHIFFRES) sp * PLAFOND_CHIFFRES / echelle else sp

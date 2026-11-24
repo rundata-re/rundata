@@ -14,6 +14,7 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
+import androidx.glance.LocalContext
 import androidx.glance.LocalSize
 import androidx.glance.action.Action
 import androidx.glance.action.clickable
@@ -236,6 +237,10 @@ private fun T(texte: String, taille: TextUnit, couleur: Couleur = ENCRE, gras: B
     Text(texte, modifier = modifier, style = TextStyle(color = couleur, fontSize = taille, fontWeight = if (gras) FontWeight.Bold else FontWeight.Normal), maxLines = lignes)
 }
 
+/** Un grand nombre à `sp`, qui suit la taille du texte d'Android jusqu'à PLAFOND_CHIFFRES (tailleChiffre). */
+@Composable
+private fun chiffre(sp: Float): TextUnit = tailleChiffre(sp, LocalContext.current.resources.configuration.fontScale).sp
+
 @Composable
 private fun Puce(p: Pastille, action: Action, taille: TextUnit = 12.sp, lignes: Int = 2) {
     val (fondClair, encreClair) = p.couleur.teinte(CLAIR)
@@ -270,12 +275,12 @@ private fun ColumnScope.Temperature(commune: Commune?, d: Donnees?) {
                 T(d.commune, 13.sp, gras = true)
                 heure?.let { T(it, 11.sp, if (d.echecA != null) LAVE else ATTENUE) }
             }
-            T(d.temperature ?: "–", 26.sp, gras = true)
+            T(d.temperature ?: "–", chiffre(26f), gras = true)
         }
     } else {
         Column(meteo.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
             T(d.commune, 14.sp, gras = true)
-            T(d.temperature ?: "Pas de mesure récente", if (d.temperature != null) 34.sp else 13.sp, gras = d.temperature != null)
+            T(d.temperature ?: "Pas de mesure récente", if (d.temperature != null) chiffre(34f) else 13.sp, gras = d.temperature != null)
             d.heure?.let { T("mesurée " + Quand.a(it) + (d.station?.let { s -> ", $s" } ?: ""), 11.sp, ATTENUE, lignes = 2) }
             horsLigne(d)?.let { T(it, 11.sp, LAVE, lignes = 2) }
         }
@@ -298,13 +303,13 @@ private fun ColumnScope.Bandeau(commune: Commune?, d: Donnees?) {
     }
     Row(GlanceModifier.fillMaxWidth().defaultWeight(), verticalAlignment = Alignment.CenterVertically) {
         Column(GlanceModifier.defaultWeight().fillMaxHeight().clickable(ouvrir(commune.pageMeteo)), verticalAlignment = Alignment.CenterVertically) {
-            T(d.temperature ?: "–", if (haut) 22.sp else 20.sp, gras = true)
+            T(d.temperature ?: "–", chiffre(if (haut) 22f else 20f), gras = true)
             T(if (haut) "air, " + (d.heure?.let { h -> d.echecA?.let { "mesure " + Quand.du(h, d.lueA) } ?: Quand.a(h, d.lueA) } ?: "?") else (if (d.echecA != null) "mesure " + (d.heure?.let { Quand.du(it) } ?: "?") else d.commune), 11.sp, if (d.echecA != null) LAVE else ATTENUE)
         }
         if (avecMer) {
             Spacer(GlanceModifier.width(8.dp))
             Column(GlanceModifier.defaultWeight().fillMaxHeight().clickable(ouvrir(Pages.MER)), verticalAlignment = Alignment.CenterVertically) {
-                T(d.mer, if (haut) 22.sp else 20.sp, gras = true)
+                T(d.mer, chiffre(if (haut) 22f else 20f), gras = true)
                 // Deux lignes quand le widget est haut : « mer, vue par satellite le 21/11 » ne tient pas sur une à 411 dp.
                 T(if (haut) libelleMer(d.merJour, d.merBouee, d.merHeure) else "mer", 11.sp, ATTENUE, lignes = if (haut) 2 else 1)
             }
@@ -339,7 +344,7 @@ private fun ColumnScope.Journee(commune: Commune?, d: Donnees?) {
     }
     BandeauAlerte(d)
     Row(GlanceModifier.fillMaxWidth().clickable(ouvrir(commune.pageMeteo)), verticalAlignment = Alignment.CenterVertically) {
-        l.grande?.let { T(it, 34.sp, gras = true) }
+        l.grande?.let { T(it, chiffre(34f), gras = true) }
         Spacer(GlanceModifier.width(10.dp))
         l.detail?.let { T(it, 12.sp, ATTENUE, lignes = 2, modifier = GlanceModifier.defaultWeight()) }
     }

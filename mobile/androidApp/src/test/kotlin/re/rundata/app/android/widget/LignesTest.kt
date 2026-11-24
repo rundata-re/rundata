@@ -160,4 +160,17 @@ class LignesTest {
         kotlin.test.assertEquals("mer, bouée à 22:50", libelleMer(null, bouee = "Saint-Pierre (large)", heure = "22:50"))
         kotlin.test.assertTrue(libelleMer(null, bouee = "Saint-Pierre (large)", heure = "22:50").length <= "mer, vue par satellite".length)
     }
+
+    /**
+     * Les grands nombres (température, mer) grossissent avec la taille du texte d'Android jusqu'à 130 %, pas au-delà :
+     * à 200 %, le 4×1 coupait « 25,1 °C » en « 25,… » (émulateur, 24/11). Les petits textes, eux, suivent le réglage.
+     */
+    @Test
+    fun lesGrandsNombresRestentEntiersQuandLeTexteGrossit() {
+        kotlin.test.assertEquals(22f, tailleChiffre(22f, 1f))
+        kotlin.test.assertEquals(22f, tailleChiffre(22f, 1.3f))
+        // À 200 % : 22 × 1,3 = 28,6 à l'écran, donc 14,3 avant le réglage.
+        kotlin.test.assertEquals(28.6f, tailleChiffre(22f, 2f) * 2f, 0.01f)
+        kotlin.test.assertEquals(34f, tailleChiffre(34f, 0.85f))
+    }
 }

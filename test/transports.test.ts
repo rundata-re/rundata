@@ -84,27 +84,30 @@ describe("transports", () => {
     expect(body(await transports("plage de Boucan", undefined, NOW)).avertissement).toBeUndefined();
   });
 
-  it("gives a trip asked the page that searches it first, then the departures at its start", async () => {
-    // 07/11/2026: « Trou d'Eau vers Saint-Pierre » gave the stop Château d'Eau, at Saint-Pierre.
+  it("reads a trip asked as a trip, its start and its end, then the departures at its start when none is found", async () => {
+    // 07/11/2026: « Trou d'Eau vers Saint-Pierre » gave the stop Château d'Eau, at Saint-Pierre. The timetables of these
+    // tests hold no bus of Trou d'Eau: none is found, which is said first, with the page.
     const r = body(await transports("Trou d'Eau, La Saline vers Saint-Pierre", undefined, NOW));
     expect(Object.keys(r)[0]).toBe("trajet_en_bus");
-    expect(r.trajet_en_bus).toBe(
-      "Cet outil ne calcule pas de trajet. La page Trajet en bus de rundata.re le fait sur les horaires de tous les réseaux de l'île\u00a0: https://rundata.re/bus/itineraire?de=Trou%20d'Eau%2C%20La%20Saline&a=Saint-Pierre. Donner ce lien à l'utilisateur.",
-    );
+    expect(r.trajet_en_bus).toMatch(/^Trajets en bus de la plage du Trou d'Eau \(arrêts à pied autour\) à Saint-Pierre \(principaux arrêts\), aujourd'hui, à partir de 07:30\. /);
+    expect(r.trajet_en_bus).toContain("https://rundata.re/bus/itineraire?de=Trou%20d'Eau%2C%20La%20Saline&a=Saint-Pierre. Donner ce lien à l'utilisateur.");
     expect(r).not.toHaveProperty("avertissement");
     expect(body(await transports("Trou d'Eau, La Saline", undefined, NOW))).not.toHaveProperty("trajet_en_bus");
-    // The departures at its start (the timetables of the tests hold Saint-Pierre's stations).
     const sp = body(await transports("gare routière Saint-Pierre vers Le Tampon", undefined, NOW));
     expect(sp.trajet_en_bus).toContain("https://rundata.re/bus/itineraire?de=gare%20routi%C3%A8re%20Saint-Pierre&a=Le%20Tampon.");
     expect(sp.arrets[0]).toMatchObject({ nom: "Gare de St-Pierre", commune: "Saint-Pierre" });
     expect(sp.departs.length).toBeGreaterThan(5);
   });
 
-  it("reads a trip's start and end on « vers », « jusqu'à » or an arrow, never on « à »", () => {
+  it("reads a trip's start and end on « vers », « jusqu'à » or an arrow, and on « à » only after « de »", () => {
     expect(tripAsked("Trou d'Eau, La Saline vers Saint-Pierre")).toEqual({ de: "Trou d'Eau, La Saline", a: "Saint-Pierre" });
     expect(tripAsked("de Saint-Denis jusqu\u2019à l'aéroport")).toEqual({ de: "Saint-Denis", a: "l'aéroport" });
     expect(tripAsked("Gare de Saint-Pierre → Le Tampon")).toEqual({ de: "Gare de Saint-Pierre", a: "Le Tampon" });
     expect(tripAsked("arrêt Mairie à Saint-Pierre")).toBeUndefined();
+    // « de A à B »: a trip only if both ends are found (transports()); « au » keeps its article.
+    expect(tripAsked("de Saint-Denis à l'aéroport")).toEqual({ de: "Saint-Denis", a: "l'aéroport", loose: true });
+    expect(tripAsked("de Saint-Pierre au Tampon")).toEqual({ de: "Saint-Pierre", a: "Le Tampon", loose: true });
+    expect(tripAsked("de Trou d'Eau vers Saint-Pierre")).toEqual({ de: "Trou d'Eau", a: "Saint-Pierre" });
     expect(tripAsked("vers Saint-Pierre")).toBeUndefined();
     expect(tripAsked("Gare routière, Saint-Pierre")).toBeUndefined();
   });

@@ -934,7 +934,9 @@ const TOOLS: Record<string, { subrequests: number; cpuMs: number; what?: string;
   qualite_eau: { subrequests: 15, cpuMs: 90, file: "eau" },
   // 14, and 5 from the code for the corals' grid, as /mer.
   temperature_mer: { subrequests: 19, cpuMs: 50, file: "mer" },
-  transports: { subrequests: 13, cpuMs: 80, file: "transports", d1: BUS_D1 },
+  // A trip asked (« A vers B »): its journeys, as /bus/itineraire, three reads of the database and five when the next three
+  // hours have none, at most ROWS_MAX (tools/itineraire.ts) rows, then, when none is found, the departures at its start.
+  transports: { subrequests: 13, cpuMs: 80, file: "transports", d1: { d1Calls: 7, d1RowsRead: 2840 }, basis: "code" },
   // Measured 13; 1 more while a system is active, as /cyclones.
   cyclones: { subrequests: 14, cpuMs: 70, file: "cyclones" },
   actualites: { subrequests: 10, cpuMs: 180, file: "actualites" },

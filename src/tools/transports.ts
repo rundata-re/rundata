@@ -14,6 +14,7 @@ import { LINE_PATH, lineOfRoutes } from "../web/ligne.js";
 import { asksCrossing, T as FERRY } from "./ferries.js";
 import { a as aLieu, credits, de as deLieu, fr, heure, text } from "./format.js";
 import { rienTrouve } from "../vide.js";
+import { answer as tripSearch, ITINERAIRE_PATH, journeyRow, none, said as endSaid } from "./itineraire.js";
 
 // Words of a question that say nothing about which stop: « prochain bus à l'arrêt X pour Y ». « Routière » too:
 // each network names the same bus station « Gare de St-Pierre », « Gare De Saint Pierre » or « Gare Routière… ».
@@ -598,15 +599,23 @@ const networksOf = (nets: string[]) =>
 /** The words between a trip's start and its end (« Trou d'Eau vers Saint-Pierre »), the apostrophe written either way. */
 const TRIP_WORDS = new Set(["vers", "jusqu'à", "jusqu'au", "jusqu'a", "→", "->"]);
 
+/** « de Saint-Denis à l'aéroport »: a trip only when both ends are found, « à » also says a stop's commune. */
+const LOOSE_WORDS = new Set(["à", "a", "au", "aux"]);
+
 /**
- * A trip asked in place of a stop: its start and its end. The tool reads no journey, the page /bus/itineraire does;
- * « de A à B » is left aside, « à » also says a stop's commune (« arrêt Mairie à Saint-Pierre »).
+ * A trip asked in place of a stop: its start and its end, searched as the page /bus/itineraire does
+ * (tools/itineraire.ts). « de A à B » is `loose`: « à » also says a stop's commune (« de l'arrêt Mairie à Saint-Pierre »),
+ * so it is a trip only when both its ends are found.
  */
-export function tripAsked(asked: string): { de: string; a: string } | undefined {
+export function tripAsked(asked: string): { de: string; a: string; loose?: true } | undefined {
   const words = asked.replaceAll("\u2019", "'").trim().split(/\s+/);
-  const i = words.findIndex((w, k) => k > 0 && k < words.length - 1 && TRIP_WORDS.has(w.toLowerCase()));
+  let i = words.findIndex((w, k) => k > 0 && k < words.length - 1 && TRIP_WORDS.has(w.toLowerCase()));
+  const from = /^(de|depuis)$/i.test(words[0]);
+  // « au » and « aux » keep their article in the end: « au Tampon » is « Le Tampon ».
+  const loose = i < 0 && from ? words.findIndex((w, k) => k > 1 && k < words.length - 1 && LOOSE_WORDS.has(w.toLowerCase())) : -1;
+  if (i < 0) i = loose;
   if (i < 0) return undefined;
-  const start = /^(de|depuis)$/i.test(words[0]) && i > 1 ? 1 : 0;
+  const start = from && i > 1 ? 1 : 0;
   // The commas around a part (« Trou d'Eau, La Saline, vers… »), without a regular expression.
   const tidy = (x: string[]) => {
     let t = x.join(" ");
@@ -615,13 +624,42 @@ export function tripAsked(asked: string): { de: string; a: string } | undefined 
     return t;
   };
   const de = tidy(words.slice(start, i));
+  const article = { au: "Le ", aux: "Les " }[words[i].toLowerCase()] ?? "";
   const a = tidy(words.slice(i + 1));
-  return de && a ? { de, a } : undefined;
+  return de && a ? { de, a: article + a, ...(loose >= 0 ? { loose: true as const } : {}) } : undefined;
 }
 
-/** Said first for a trip asked: the page that searches it, with its start and end. */
-const tripLink = ({ de, a }: { de: string; a: string }) =>
-  `Cet outil ne calcule pas de trajet. La page Trajet en bus de rundata.re le fait sur les horaires de tous les réseaux de l'île\u00a0: https://rundata.re/bus/itineraire?de=${encodeURIComponent(de)}&a=${encodeURIComponent(a)}. Donner ce lien à l'utilisateur.`;
+const tripPage = ({ de, a }: { de: string; a: string }) => `${SITE_URL}${ITINERAIRE_PATH}?de=${encodeURIComponent(de)}&a=${encodeURIComponent(a)}`;
+
+/**
+ * A trip asked: the journeys of today from now, direct or with one change, from the timetables of every network (three
+ * reads of the database, five when the next three hours have none), or, when an end is not found or the search is too
+ * wide, or none is found, why, to say first before the departures at its start.
+ */
+async function tripAnswer(trip: { de: string; a: string }, now: Date): Promise<{ answer: ReturnType<typeof text> } | { why: string; missing?: true }> {
+  const r = await tripSearch({ de: trip.de, a: trip.a, jour: "", heure: "", arrivee: false }, now);
+  const page = tripPage(trip);
+  const link = `La page Trajet en bus de rundata.re cherche un trajet sur les horaires de tous les réseaux de l'île${NBSP}: ${page}. Donner ce lien à l'utilisateur.`;
+  const missing = [!r.de ? `Départ non trouvé${NBSP}: «${NBSP}${trip.de}${NBSP}».` : "", !r.a ? `Arrivée non trouvée${NBSP}: «${NBSP}${trip.a}${NBSP}».` : ""].filter(Boolean);
+  if (missing.length) return { why: `${missing.join(" ")} ${link}`, missing: true };
+  if (r.indisponible || !r.search) return { why: `Les horaires ne répondent pas pour chercher le trajet. ${link}` };
+  if (r.search.trop_large) return { why: `Trop d'arrêts et de lignes au départ ou à l'arrivée pour chercher le trajet${NBSP}: préciser l'arrêt ou le quartier. ${link}` };
+  const head = `Trajets en bus ${endSaid(r.de!, false)} ${endSaid(r.a!, true)}, ${r.quand}`;
+  // None direct or with one change: maybe with two, which the search does not look for; the departures at the start then.
+  if (!r.search.trajets.length) return { why: `${head}. ${none(false, r.search.fenetre, r.heure ?? "")} ${link}` };
+  const trajets = r.search.trajets.map(journeyRow);
+  const resume = `${head}, d'après les horaires prévus par les réseaux${NBSP}: ${trajets.length} trouvé${trajets.length > 1 ? "s" : ""}, le premier part à ${trajets[0].depart} et arrive à ${trajets[0].arrivee}.`;
+  return {
+    answer: text({
+      resume,
+      trajets,
+      page,
+      ...([r.de!, r.a!].some((e) => e.sorte === "commune") ? { note: "Une commune donnée seule vaut ses principaux arrêts : préciser l'arrêt pour un quartier." } : {}),
+      horaires: timetables([], new Map()),
+      sources: credits([transit.SOURCE]),
+    }),
+  };
+}
 
 export async function transports(asked: string | undefined, ligne: string | undefined, now = new Date(), cache?: Cache) {
   const q = asked?.trim() ?? "";
@@ -643,9 +681,14 @@ export async function transports(asked: string | undefined, ligne: string | unde
         return text({ resume: `Aucune ligne « ${ligne} » dans les horaires publiés des réseaux de La Réunion.`, conseil: "Donner le nom de la ligne comme le réseau l'écrit (« S1 », « O1X », « 2 ») et son réseau (« Car Jaune »).", sources: credits([transit.SOURCE]) });
       }
     }
-    // A trip: the departures at its start, after the page that searches it.
+    // A trip: its journeys; else the departures at its start, after why and the page that searches it.
     const trip = tripAsked(q);
-    if (trip) return await stopAnswer(trip.de, ligne?.trim() || undefined, now, cache, findStops(trip.de), undefined, tripLink(trip));
+    if (trip) {
+      const found = await tripAnswer(trip, now);
+      if ("answer" in found) return found.answer;
+      // « de A à B » with an end not found: a stop and its commune, as before.
+      if (!(trip.loose && found.missing)) return await stopAnswer(trip.de, ligne?.trim() || undefined, now, cache, findStops(trip.de), undefined, found.why);
+    }
     return await stopAnswer(q, ligne?.trim() || undefined, now, cache);
   } catch (err) {
     console.error(`source ${transit.SOURCE.id} indisponible:`, why(err));

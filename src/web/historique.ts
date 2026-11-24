@@ -4,6 +4,7 @@
  */
 import type { Cached } from "../cache.js";
 import { a, fr, nombre } from "../tools/format.js";
+import { TODAY } from "../tools/historique.js";
 import { type Alerte, type HistoriqueAnswer, type HourlyAnswer } from "./data.js";
 import { GRAPHES_SCRIPT, graphes } from "./historique-graphes.js";
 import { esc, islandMap } from "./map.js";
@@ -119,6 +120,18 @@ ${connectorCta("historique_meteo", "l'historique météo")}`;
   return layout(origin, { title, description, path: "/historique", jsonld: [crumbs(origin, "Historique météo", "/historique"), webPage(origin, "/historique", title, description, data)], alerte }, band, body);
 }
 
+/**
+ * The tool's summary as the page says it: without its « Heure par heure (stations…) — », which the eyebrow and the note
+ * say (a station's name in brackets, « Gillot (aéroport) », within), and with today sent to /meteo, not to the tool's
+ * meteo_actuelle written for an assistant (24/11/2026: shown to the visitors as is).
+ */
+export function hourlyLead(resume: string): string {
+  const text = resume.replace(/^.*?Heure par heure \((?:[^()]|\([^()]*\))*\) — /, "");
+  const today = text.includes(TODAY);
+  return soulignesCoupables(esc(text.replace(` ${TODAY}`, "").replace(TODAY, "").trim())) +
+    (today ? ` Aujourd'hui n'est pas encore dans cette archive\u00a0: la température la plus haute et la plus basse, et la pluie depuis minuit, sont sur <a href="/meteo">la page Météo</a>.` : "");
+}
+
 /** Yesterday and last night at Saint-Denis, hour by hour: one row per hour, newest first. */
 function hourlySection(h: HourlyAnswer): string {
   const rows = [...h.heure_par_heure.heures].reverse();
@@ -126,7 +139,7 @@ function hourlySection(h: HourlyAnswer): string {
   const cell = (v: number | undefined, unit = "") => (v == null ? "—" : `${fr(v)}${unit}`);
   return `<section aria-labelledby="h-heures">
   <div class="sec-h"><p class="eyebrow">Heure par heure</p><h2 id="h-heures">Hier et cette nuit à Saint-Denis</h2>
-  <p>${soulignesCoupables(esc(h.resume.replace(/^.*?Heure par heure \([^)]*\) — /, "")))}</p></div>
+  <p>${hourlyLead(h.resume)}</p></div>
   <details class="card table-wrap"><summary>Les ${rows.length} dernières heures publiées</summary>
   <table class="drought histo hours"><caption class="sr">Les ${rows.length} dernières heures publiées</caption><thead><tr><th>Heure</th><th>Pluie</th><th>Température</th><th>Vent</th><th>Rafale</th><th>Soleil</th></tr></thead><tbody>${rows.map((r) =>
     `<tr><th scope="row">${esc(r.heure)}</th><td>${cell(r.pluie_mm, " mm")}</td><td>${cell(r.temperature, " °C")}</td><td>${r.vent_kmh == null ? "—" : `${r.vent_kmh} km/h${r.vent_de ? ` ${esc(r.vent_de)}` : ""}`}</td><td>${cell(r.rafale_kmh, " km/h")}</td><td>${r.soleil_min == null ? "—" : `${r.soleil_min} min`}</td></tr>`).join("")}</tbody></table></details>

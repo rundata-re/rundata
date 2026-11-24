@@ -20,6 +20,7 @@ import { adresseTexte } from "./adresse.js";
 import { crumbBar, crumbs, webPage } from "./domains.js";
 import { esc } from "./map.js";
 import { layout } from "./pages.js";
+import { script } from "./scripts-declares.js";
 
 export { ASSOCIATIONS_EN_LIGNE, enLigne, ouvrir } from "./associations-drapeau.js";
 
@@ -85,7 +86,7 @@ export const widget = (action: FormAction) =>
  * compact one (150 px), chosen before Cloudflare's script reads the widgets.
  */
 export const TURNSTILE_SCRIPT = TURNSTILE_SITEKEY
-  ? `<script>if(innerWidth<360)for(const e of document.querySelectorAll(".cf-turnstile"))e.dataset.size="compact"</script>` +
+  ? script(`if(innerWidth<360)for(const e of document.querySelectorAll(".cf-turnstile"))e.dataset.size="compact"`) +
     `<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>`
   : "";
 
@@ -313,13 +314,13 @@ export const erreurAuChargement = (
   if (d.readyState === "loading") d.addEventListener("DOMContentLoaded", () => vue(d, later));
   else vue(d, later);
 };
-export const ERREUR_SCRIPT = `<script>(${erreurAuChargement})(document,(f)=>setTimeout(f,100),${erreurVue})</script>`;
+export const ERREUR_SCRIPT = script(`(${erreurAuChargement})(document,(f)=>setTimeout(f,100),${erreurVue})`);
 
 // « Jusqu'au » only for a repeated event, once the script runs; without it, the field stays.
-const REPETE_SCRIPT = `<script>{const r=document.getElementById("p-repete"),j=document.getElementById("p-jusqu");if(r&&j){const f=j.closest(".f"),s=()=>{f.hidden=!r.value};r.addEventListener("change",s);s()}}</script>`;
+const REPETE_SCRIPT = script(`{const r=document.getElementById("p-repete"),j=document.getElementById("p-jusqu");if(r&&j){const f=j.closest(".f"),s=()=>{f.hidden=!r.value};r.addEventListener("change",s);s()}}`);
 // An empty date or time field shows today's date or the current time, pale (WebKit, Safari on an iPhone), as if filled:
 // marked « vide » while it is, its text hidden by FORMS_CSS until it is touched.
-const VIDE_SCRIPT = `<script>{const s=e=>e.classList.toggle("vide",!e.value);for(const e of document.querySelectorAll(".fo input[type=date],.fo input[type=time]")){s(e);for(const t of["input","change","blur"])e.addEventListener(t,()=>s(e))}}</script>`;
+const VIDE_SCRIPT = script(`{const s=e=>e.classList.toggle("vide",!e.value);for(const e of document.querySelectorAll(".fo input[type=date],.fo input[type=time]")){s(e);for(const t of["input","change","blur"])e.addEventListener(t,()=>s(e))}}`);
 
 /** The page of the form, or of what happens once it is sent. */
 export function proposerPage(origin: string, e: Etat = { kind: "vide" }, now = new Date(), alerte?: Alerte): string {

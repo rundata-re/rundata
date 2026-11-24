@@ -18,6 +18,7 @@ import { crumbBar, crumbs, webPage } from "./domains.js";
 import { esc, islandMap, project, W, zoomIsland } from "./map.js";
 import { anchorId, credits, dayMonth, layout } from "./pages.js";
 import { PAGES } from "./places.js";
+import { script } from "./scripts-declares.js";
 
 export const PATH = "/ecoles";
 
@@ -123,7 +124,7 @@ function collegeSection(): string {
   <div id="cs-r" aria-live="polite"></div>
   <p class="note">${esc(T.primaire)} <a id="cs-m" href="#" hidden>${esc(T.mairie)} →</a></p>
   <p class="note">${esc(T.carteNote(CARTE.maj, CARTE.troncons))}</p>
-</section><script>${COLLEGE_SCRIPT}</script>`;
+</section>${script(COLLEGE_SCRIPT)}`;
 }
 
 /** « de Saint-Paul », « du Port », « de L'Étang-Salé »: the commune after « de ». */
@@ -282,7 +283,7 @@ ${list()}
 <p class="sources">Sources : ${credits([credit(ecoles.SOURCE), credit(SOURCE_CARTE)])}.</p>
 </section>
 ${profileSection()}
-${afterBacSection()}<script>${FILTER_SCRIPT}</script>`;
+${afterBacSection()}${script(FILTER_SCRIPT)}`;
   return { band, body };
 }
 

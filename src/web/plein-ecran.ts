@@ -14,6 +14,7 @@
  */
 
 import { inScript } from "./map.js";
+import { script } from "./scripts-declares.js";
 
 export const MOTS = {
   entrer: "Plein écran",
@@ -36,7 +37,7 @@ export interface PleinEcran {
 
 /** The script of a map's full screen, after its pieces in the page. Without a script, no button. */
 export function pleinEcran(o: PleinEcran): string {
-  return `<script>(()=>{const o=${inScript(o)},M=${inScript(MOTS)},box=document.querySelector(o.boite),map=box&&box.querySelector(o.carte),bar=box&&box.querySelector(o.barre);if(!map||!bar)return;
+  return script(`(()=>{const o=${inScript(o)},M=${inScript(MOTS)},box=document.querySelector(o.boite),map=box&&box.querySelector(o.carte),bar=box&&box.querySelector(o.barre);if(!map||!bar)return;
 const b=document.createElement("button");b.type="button";b.className="pe-b";b.setAttribute("aria-pressed","false");b.textContent=M.entrer;bar.append(b);
 const p=document.createElement("div");p.className="pe-p";const back=new Map(),root=document.documentElement,leg=o.legende&&box.querySelector(o.legende),large=matchMedia("(min-width:48rem) and (min-height:36rem)");let on=false,lc=null,y=0;
 // On a phone, the panel inside the map's block, under it (at its side when the phone lies on its side), the legend at
@@ -62,7 +63,7 @@ b.addEventListener("click",()=>on?leave():enter());box.addEventListener("change"
 box.addEventListener("click",(e)=>{const a=on&&!e.defaultPrevented&&e.target.closest&&e.target.closest('a[href^="#"]'),t=a&&document.getElementById(decodeURIComponent(a.getAttribute("href").slice(1)));if(t&&!box.contains(t))leave(true)});
 document.addEventListener("fullscreenchange",()=>{if(!document.fullscreenElement)leave();fit()});
 addEventListener("resize",(e)=>{if(on&&e.isTrusted)fit()});
-addEventListener("keydown",(e)=>{if(e.key==="Escape"&&on&&!document.fullscreenElement)leave()})})();</script>`;
+addEventListener("keydown",(e)=>{if(e.key==="Escape"&&on&&!document.fullscreenElement)leave()})})();`);
 }
 
 /**

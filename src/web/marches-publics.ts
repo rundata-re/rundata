@@ -13,6 +13,7 @@ import type { Alerte } from "./data.js";
 import { esc } from "./map.js";
 import { folded, hm, layout, type Live, readAt, leAt } from "./pages.js";
 import { PAGES, slugify } from "./places.js";
+import { script } from "./scripts-declares.js";
 
 export const PATH = "/marches-publics";
 export const NOM = "Marchés publics";
@@ -134,7 +135,7 @@ export function marchesPage(origin: string, data: Cached<MarchesAnswer> | null, 
   <div class="sec-h"><h2 id="h-couv">Ce qui est couvert</h2><p>${esc(COUVERTURE)}</p></div>
   ${d && data && !d.prochaine ? sourcesNote(d.sources, data) : ""}
 </section>
-<script>${SCRIPT}</script>`;
+${script(SCRIPT)}`;
 
   return layout(origin, { title, description, path: PATH, jsonld: [crumbs(origin, NOM, PATH), webPage(origin, PATH, title, description, data)], alerte }, band, body);
 }

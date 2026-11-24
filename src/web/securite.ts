@@ -6,8 +6,8 @@
  *   Cloudflare's check on the forms and Waze's map on /trafic, which are theirs.
  * - A Content-Security-Policy, blocking since a day of reports (26-27/10) named none of the site's own scripts: the
  *   browsers block what it does not allow and report it to POST /csp-rapport. Its scripts are this site's, Cloudflare's
- *   Turnstile, Cloudflare's Web Analytics beacon, and the inline ones of the page, each allowed by its SHA-256 (computed
- *   from the page itself, so that a new script is never forgotten). The beacon is inserted by Cloudflare into the pages
+ *   Turnstile, Cloudflare's Web Analytics beacon, and the inline ones of the page that the code declared (`script`,
+ *   scripts-declares.ts), each allowed by its SHA-256 (a `<script>` slipped into a text read elsewhere is not). The beacon is inserted by Cloudflare into the pages
  *   and is part of the site's figures, beside its own (Analytics Engine); it sends them to /cdn-cgi/rum, on this site
  *   (`connect-src 'self'`). Styles stay inline (the pages have `style` attributes); the frames are Turnstile's and
  *   Waze's. Not allowed, so blocked: what extensions or in-app browsers add to the page.
@@ -19,6 +19,7 @@
 import { cheminMasque } from "../chemin-secret.js";
 import { bodyText } from "../http.js";
 import { IGN_TUILES } from "./map.js";
+import { estDeclare } from "./scripts-declares.js";
 
 export const CSP_RAPPORT = "/csp-rapport";
 
@@ -89,7 +90,7 @@ export function scriptsEnLigne(html: string): string[] {
   return out;
 }
 
-// The inline scripts are the code's constants: each hashed once per isolate. Bounded, in case one ever carries data.
+// The declared scripts (scripts-declares.ts), each hashed once per isolate. Bounded, in case one ever carries data.
 const known = new Map<string, string>();
 const KNOWN_MAX = 200;
 
@@ -103,9 +104,12 @@ async function sha256(text: string): Promise<string> {
   return h;
 }
 
-/** The headers of a page, from its final HTML. */
+/**
+ * The headers of a page, from its final HTML: only its inline scripts declared by the code (`script`) are allowed. One
+ * found in the page but never declared, such as a `<script>` inside a text read elsewhere, is blocked by the browser.
+ */
 export async function enTetes(html: string): Promise<Record<string, string>> {
-  const hashes = [...new Set(await Promise.all(scriptsEnLigne(html).map(sha256)))];
+  const hashes = [...new Set(await Promise.all(scriptsEnLigne(html).filter(estDeclare).map(sha256)))];
   return { ...CADRE, "content-security-policy": politique(hashes) };
 }
 

@@ -13,6 +13,7 @@
  * A map that zooms in its full screen only (`data-zpe`, /meteo's: on the page, a finger scrolls the page and a click
  * opens at once) stays whole out of it, and is whole again when it leaves it.
  */
+import { script } from "./scripts-declares.js";
 export const MOTS = {
   zoomIn: "Rapprocher",
   zoomOut: "Éloigner",
@@ -97,7 +98,7 @@ export function zoomButtons(key: string, frame: keyof typeof MOTS.recadrerAria):
 }
 
 /** The zoom's script, after the map (and its buttons, wherever they are). */
-export const ZOOM_SCRIPT = `<script>${SCRIPT}</script>`;
+export const ZOOM_SCRIPT = `${script(SCRIPT)}`;
 
 /**
  * On the hikes' map, a tap beside a line takes the nearest one within a finger's reach. After the zoom's script, whose

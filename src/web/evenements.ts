@@ -12,6 +12,7 @@ import { esc } from "./map.js";
 import { holidays } from "../feries.js";
 import { marchesCount, marchesSection, SPORT_LIEN } from "./marches-agenda.js";
 import { adressesCoupables, ask, DESCRIPTION_MAX, layout, SITE } from "./pages.js";
+import { script } from "./scripts-declares.js";
 
 type Row = NonNullable<AgendaAnswer["evenements"]>[number];
 
@@ -89,7 +90,7 @@ function dayList(jours: Jour<Row>[], rows: Row[], heading: (day: string) => stri
     ? `<form id="ef" class="card filter" hidden role="search" aria-label="Filtrer les événements par genre"><label>Genre <select name="g"><option value="">tous</option>${GENRES.filter(([g]) => present.has(g)).map(([g, nom]) => `<option value="${esc(g)}">${esc(nom)}</option>`).join("")}</select></label><p class="note" id="ef-n" aria-live="polite"></p></form>`
     : "";
   return `${filter}<div id="jours"><ul class="zones">${jours.filter((j) => j.evenements.length).map((j) =>
-    `<li class="card"><h3>${esc(heading(j.jour))} <span class="note">${jourCompte(j)}</span></h3><ul class="rows eau" data-sortie>${j.evenements.map((x) => agendaRow({ ...x.r, quand: x.o.quand }, g)).join("")}</ul>${after(j.jour)}</li>`).join("")}${longs}</ul></div><script>${GENRE_SCRIPT}</script>`;
+    `<li class="card"><h3>${esc(heading(j.jour))} <span class="note">${jourCompte(j)}</span></h3><ul class="rows eau" data-sortie>${j.evenements.map((x) => agendaRow({ ...x.r, quand: x.o.quand }, g)).join("")}</ul>${after(j.jour)}</li>`).join("")}${longs}</ul></div>${script(GENRE_SCRIPT)}`;
 }
 
 /** The events of a page as schema.org `Event`s (domains.ts `agendaEvents`), when there are any. */

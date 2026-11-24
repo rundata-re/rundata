@@ -3,12 +3,16 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { failed, handle } from "../src/app.js";
 import { Cache } from "../src/cache.js";
 import { configurerDefiOpenai } from "../src/web/site.js";
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { CSP_RAPPORT, enTetes, PERMISSIONS, politique, rapport, scriptsEnLigne, SECURITY_EXPIRES } from "../src/web/securite.js";
+import { script } from "../src/web/scripts-declares.js";
 
 const sha = (s: string) => createHash("sha256").update(s, "utf8").digest("base64");
 
 describe("the pages' security headers", () => {
   it("hash exactly the inline scripts that run: not one with src, nor a JSON-LD block", async () => {
+    script(`const a="é";`), script("b()"), script("c()", "module");
     const html = `<head><script type="application/ld+json">{"a":"<b>"}</script><script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script></head>
 <body><script>const a="é";</script><SCRIPT type="text/javascript">b()</SCRIPT><script type="module">c()</script></body>`;
     expect(scriptsEnLigne(html)).toEqual([`const a="é";`, "b()", "c()"]);
@@ -20,6 +24,50 @@ describe("the pages' security headers", () => {
     expect(politique([])).toMatch(/frame-src https:\/\/challenges\.cloudflare\.com https:\/\/embed\.waze\.com; .*form-action 'self'; frame-ancestors 'none'; report-uri \/csp-rapport$/);
     // Cloudflare's Web Analytics beacon, part of the site's figures: allowed; it sends them to /cdn-cgi/rum, on this site.
     expect(politique([])).toMatch(/^default-src 'self'; script-src 'self' https:\/\/challenges\.cloudflare\.com https:\/\/static\.cloudflareinsights\.com; .*connect-src 'self';/);
+  });
+
+  it("allow only the inline scripts the code declared, never one slipped into a text read elsewhere", async () => {
+    const html = `<body><h3>Concert <script>alert(1)</script></h3>${script("go()")}<script>go()</script></body>`;
+    expect(scriptsEnLigne(html)).toEqual(["alert(1)", "go()", "go()"]);
+    const policy = (await enTetes(html))["content-security-policy"];
+    expect(policy).toContain(`'sha256-${sha("go()")}'`);
+    expect(policy).not.toContain(`'sha256-${sha("alert(1)")}'`);
+    expect(() => script("a()</SCRIPT><script>b()")).toThrow();
+  });
+
+  it("are written by `script` alone: no other source writes the tag of an inline script that runs", () => {
+    const files = (dir: string): string[] => readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? files(join(dir, e.name)) : e.name.endsWith(".ts") ? [join(dir, e.name)] : []));
+    const found = files("src").filter((f) => !f.endsWith("scripts-declares.ts")).flatMap((f) =>
+      readFileSync(f, "utf8").split("\n").flatMap((line, i) => {
+        if (/^\s*(?:\*|\/\*|\/\/)/.test(line)) return [];
+        return /<script(?:\s+type=\\?["']?(?:module|text\/javascript)\\?["']?)?\s*>/i.test(line) ? [`${f}:${i + 1}`] : [];
+      }),
+    );
+    expect(found).toEqual([]);
+  });
+
+  it("allow every inline script of every page of the sitemap", { timeout: 120_000 }, async () => {
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("hors ligne"));
+    for (const m of ["log", "warn", "error"] as const) vi.spyOn(console, m).mockImplementation(() => {});
+    const cache = new Cache();
+    const sitemap = await (await handle(new Request("https://rundata.re/sitemap.xml"), cache)).text();
+    const pages = [...sitemap.matchAll(/<loc>https:\/\/rundata\.re([^<]*)<\/loc>/g)].map((m) => m[1]);
+    // A floor, not the count: the sitemap lists 230 pages since its cleaning of 24/11/2026, and moves with them.
+    expect(pages.length).toBeGreaterThan(150);
+    const refused: string[] = [];
+    let seen = 0;
+    for (const path of pages) {
+      const r = await handle(new Request(`https://rundata.re${path}`, { headers: { accept: "text/html" } }), cache);
+      if (!(r.headers.get("content-type") ?? "").includes("html")) continue;
+      const policy = r.headers.get("content-security-policy") ?? "";
+      for (const s of scriptsEnLigne(await r.text())) {
+        seen++;
+        if (!policy.includes(`'sha256-${sha(s)}'`)) refused.push(`${path} : ${s.slice(0, 60)}`);
+      }
+    }
+    vi.restoreAllMocks();
+    expect(seen).toBeGreaterThan(150);
+    expect(refused).toEqual([]);
   });
 
   it("are on a page of the site, every inline script of it allowed by its hash, and on the error page", async () => {

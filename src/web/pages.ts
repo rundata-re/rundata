@@ -80,6 +80,7 @@ import * as meteorOi from "../providers/meteor-oi.js";
 import { PASSES } from "../historique/cyclones-passes.js";
 import { OLD_MINUTES, ditAmateur, reseauAmateur, stationKind } from "../tools/meteo.js";
 import { enTete } from "../tools/representativeness.js";
+import { script } from "./scripts-declares.js";
 
 // What a search engine shows of a title: the tab's title takes the first of its forms that fits.
 const TITLE_MAX = 60;
@@ -1961,7 +1962,7 @@ ${sources.length ? `<div class="wrap fin-sources" role="region" aria-label="Sour
     <p><a href="/publier">Votre organisation publie un agenda ou des données ? Le guide pour les publier en flux ouvert →</a></p>
   </div>
 </div></footer>
-<script>${SCRIPT}${hasZones(text) ? `\n${ZONES_SCRIPT}` : ""}</script>
+${script(SCRIPT + (hasZones(text) ? `\n${ZONES_SCRIPT}` : ""))}
 </body>
 </html>`;
 }
@@ -2515,8 +2516,8 @@ export function meteoPage(origin: string, data: Cached<HomeData> | null, now = n
   <p>La dernière mesure de chaque station, avec son heure ; sans autre date, c'est le ${localTime(now).split(" ")[0]}. Les stations de Météo-France publient toutes les 6 minutes.</p></div>
   ${stationsList(all, now)}
   <p class="sources">Sources : ${credits([...data!.value.sources, ALTITUDES_CREDIT, RADAR_CREDIT])}.</p>
-</section><script>${METEO_SCRIPT}</script>
-${cumulsSection()}<script>${CUMULS_LOADER}</script>
+</section>${script(METEO_SCRIPT)}
+${cumulsSection()}${script(CUMULS_LOADER)}
 ${sea(false) ? `<section id="mer" aria-labelledby="h-mer"><div class="sec-h"><p class="eyebrow">La mer</p><h2 id="h-mer">La mer au large</h2></div>${sea(false)}</section>` : ""}
 <section id="communes" aria-labelledby="h-communes">
   <div class="sec-h"><p class="eyebrow">Prévisions</p><h2 id="h-communes">Prévision par commune et par lieu</h2>
@@ -2858,7 +2859,7 @@ export function offlinePage(origin: string): string {
     shell: true,
   }, `<div class="wrap intro"><div class="pitch"><h1>Pas de réseau</h1><p class="lead">Cette page n'a pas encore été ouverte sur ce téléphone, il n'en existe pas de copie. Réessayez quand le réseau revient.</p><p><button type="button" class="again" id="again">Réessayer</button></p></div></div>`,
   `<section aria-labelledby="h-gardees"><h2 id="h-gardees">Pages gardées sur ce téléphone</h2><ul class="gardees" id="gardees"></ul><p id="rien-garde" hidden>Aucune page gardée pour l'instant : celles que vous ouvrez avec du réseau le seront.</p></section>
-<script>${OFFLINE_SCRIPT}</script>`);
+${script(OFFLINE_SCRIPT)}`);
 }
 
 /**

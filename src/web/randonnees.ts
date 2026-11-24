@@ -12,6 +12,7 @@ import { closedLi, connectorCta, etatOnf, describe, hikeCard, loading, plural, s
 import { esc, hikesMap } from "./map.js";
 import { ask, icon, layout, thin, leJour } from "./pages.js";
 import { pageOf } from "./places.js";
+import { script } from "./scripts-declares.js";
 
 const TITLE_MAX = 60;
 
@@ -121,6 +122,6 @@ ${trailList}
 ${access}
 ${others}
 ${connectorCta("sentiers_randonnee", "la randonnée")}
-<script>${MAP_SCRIPT}</script>`;
+${script(MAP_SCRIPT)}`;
   return layout(origin, { title, description, path, hook: randoHook(d?.carte_mise_a_jour), jsonld: [jsonld, webPage(origin, path, title, description, data), ...list], alerte }, band, etatOnf(body));
 }

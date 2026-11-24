@@ -20,6 +20,7 @@ import { hash } from "./pwa.js";
 import { PREMIER_JOUR } from "./radar-semaine.js";
 import { DUREES, FINS, jourPath, JOURS, joursOf, PATHS as REJEU_PATHS } from "./rejeu.js";
 import { VITESSE_JS, vitesseBouton } from "./vitesse.js";
+import { script } from "./scripts-declares.js";
 
 const COMMUNE_OF_INSEE = new Map(Object.entries(INSEE).map(([nom, code]) => [code, nom]));
 
@@ -513,8 +514,8 @@ export function stationsMap(every: StationNow[], altPath = ALT_PATH): string {
   const amLegend = amateurs.length ? `<span class="amlg">Contour pointillé\u00a0: station amateur.</span>` : "";
   return `<figure class="card mapcard airmap wxmap"><div class="wxbar">${tabs}<div class="wxchk">${values}${box}</div>${pluvio}${zoomButtons(FOND, "ile")}</div>` +
     // Before the map: the class set before its marks are read (set after, the page took 15 % longer to be ready).
-    `<script>${VALEURS_JS}</script>` +
-    map + ZOOM_SCRIPT + `<script>${MARQUES_JS}${FIN_SCRIPT}</script>` + bubble + `<figcaption class="note">${replay}${legend}${amLegend}<a class="wx-k" href="${CARTE_METEO}">${esc(TOUTES_LES_COUCHES)}</a></figcaption></figure>`;
+    `${script(VALEURS_JS)}` +
+    map + ZOOM_SCRIPT + script(MARQUES_JS + FIN_SCRIPT) + bubble + `<figcaption class="note">${replay}${legend}${amLegend}<a class="wx-k" href="${CARTE_METEO}">${esc(TOUTES_LES_COUCHES)}</a></figcaption></figure>`;
 }
 
 /** The key of /meteo's map for the zoom's buttons and its fine relief's layer (`rf-w`). */

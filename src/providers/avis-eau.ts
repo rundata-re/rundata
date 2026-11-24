@@ -31,7 +31,8 @@ import { casse } from "../tools/casse.js";
 
 export const SOURCE: SourceInfo = {
   id: "avis_eau",
-  nom: "Avis des distributeurs d'eau : coupures, travaux, eau non potable (Dionéo, runéo, Eaux de La Possession, La Créole, CIREST, villes de Sainte-Marie, Petite-Île, Cilaos et Trois-Bassins, communes de Saint-Leu et de Saint-Philippe)",
+  // Each distributor and commune is named in its terms (licence) and its credit (attribution): not a third time here.
+  nom: "Avis des distributeurs d'eau et des communes : coupures, travaux, eau non potable",
   organisme: "Distributeurs d'eau et intercommunalités de La Réunion",
   // Each one's terms, re-read on 26/10/2026. Dionéo, runéo and Eaux de La Possession forbid any reproduction not
   // expressly allowed: kept while they answer the request for their agreement (the user's choice of 26/10).

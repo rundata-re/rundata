@@ -16,7 +16,7 @@ import { type Alerte, type CoupuresAnswer, type DernierAvis, type EauAnswer, lus
 import { cycloneWater } from "./eau-cyclone.js";
 import { copieBandeau, afterCutNote, afterCutShort, connectorAsk, describe, droughtBadge, loading, nobreak, noticeCard, noticesHead, silentText, sourcesNote, tapCard, webPage } from "./domains.js";
 import { esc, islandMap } from "./map.js";
-import { ask, icon, layout, type Live, SITE, leAt } from "./pages.js";
+import { ask, cityLd, icon, layout, type Live, SITE, leAt } from "./pages.js";
 import { PAGES, type PlacePage } from "./places.js";
 import * as ARRETES from "../providers/arretes-travaux.js";
 import type { BlocArretes } from "../providers/arretes-travaux.js";
@@ -369,5 +369,5 @@ ${cyclone.lead ? "" : cyclone.html}
 ${d && w.coupures ? sourcesNote([...d.sources, ...(p.nom === ARRETES.COMMUNE && d.arretes_sainte_suzanne ? [{ source: ARRETES.SOURCE.nom, licence: ARRETES.SOURCE.licence, attribution: ARRETES.SOURCE.attribution }] : []), { source: DISTRIBUTEURS, licence: "Licence Ouverte Etalab 2.0", attribution: "ARS La Réunion" }], w.coupures) : ""}
 ${connectorAsk("les coupures d'eau", p.nom)}`;
 
-  return layout(origin, { title, description, path, jsonld: [trail, webPage(origin, path, title, description, w.coupures), ...(faq.length ? [faqPage(faq)] : [])], alerte, iaAside: true, ...(hook ? { hook } : {}), ...(indexable(p.nom) ? {} : { noindex: true }) }, band, body);
+  return layout(origin, { title, description, path, jsonld: [trail, webPage(origin, path, title, description, w.coupures, cityLd(p)), ...(faq.length ? [faqPage(faq)] : [])], alerte, iaAside: true, ...(hook ? { hook } : {}), ...(indexable(p.nom) ? {} : { noindex: true }) }, band, body);
 }

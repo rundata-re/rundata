@@ -43,7 +43,7 @@ import { T as FERRY } from "../tools/ferries.js";
 import { BUILT as DAE_BUILT, DAES } from "../providers/dae.js";
 import { SANS_FORMATION as DAE_SANS_FORMATION, SE_FORMER as DAE_SE_FORMER } from "../tools/dae.js";
 import DAE_LIST from "../dae/liste.json" with { type: "json" };
-import { adressesCoupables, anchorId, ask, credits, dayMonth, DESCRIPTION_MAX, empty, FOLD_ROWS, folded, icon, ISLAND, layout, type Live, leAt, duAt, leJour, readAt, SITE } from "./pages.js";
+import { adressesCoupables, anchorId, ask, credits, dayMonth, DESCRIPTION_MAX, empty, FOLD_ROWS, folded, icon, layout, type Live, leAt, duAt, leJour, readAt, SITE, webPageLd } from "./pages.js";
 import { pageOf, slugify } from "./places.js";
 import { cycloneWater, distributeursLus } from "./eau-cyclone.js";
 import { lues } from "../eau/distributeurs.js";
@@ -93,17 +93,9 @@ function crumbs(origin: string, name: string, path: string, parent?: { name: str
   };
 }
 
-function webPage(origin: string, path: string, title: string, description: string, data: Cached<unknown> | null) {
-  return {
-    "@context": "https://schema.org",
-    "@type": "WebPage",
-    name: title,
-    description,
-    inLanguage: "fr-FR",
-    url: `${origin}${path}`,
-    ...(data ? { dateModified: data.fetchedAt.toISOString() } : {}),
-    about: ISLAND,
-  };
+/** The page's WebPage (pages.ts webPageLd), dated by its copy; about the island unless `about` (a commune: cityLd). */
+function webPage(origin: string, path: string, title: string, description: string, data: Cached<unknown> | null | undefined, about?: object) {
+  return webPageLd(origin, path, title, description, data?.fetchedAt, about);
 }
 
 const crumbBar = (label: string, parent?: { name: string; path: string }) =>

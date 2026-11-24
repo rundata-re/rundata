@@ -2315,6 +2315,33 @@ export const ISLAND = {
   containedInPlace: { "@type": "Country", name: "France" },
 };
 
+/**
+ * A commune as what a page is about (JSON-LD `about`), with its place's own coordinates: the pages of one commune (its
+ * water cuts, its waste collection, its places for children), as its own page and its weather's say it. The island for
+ * the pages of the whole island (ISLAND).
+ */
+export const cityLd = (p: { nom: string; place: { lat: number; lon: number } }) => ({
+  "@type": "City",
+  name: `${p.nom} (La Réunion, 974)`,
+  geo: { "@type": "GeoCoordinates", latitude: p.place.lat, longitude: p.place.lon },
+  containedInPlace: ISLAND,
+});
+
+/**
+ * The page itself in its structured data (JSON-LD WebPage): its title, its description and its address, as the page
+ * gives them, the day its copy was read when it shows one, and what it is about. Nothing the page does not show.
+ */
+export const webPageLd = (origin: string, path: string, title: string, description: string, modified?: Date, about: object = ISLAND) => ({
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  name: title,
+  description,
+  inLanguage: "fr-FR",
+  url: `${origin}${path}`,
+  ...(modified ? { dateModified: modified.toISOString() } : {}),
+  about,
+});
+
 /** What a page shows about a category in a few words, for the tiles of the home page. */
 export interface Live {
   /** The figure or the state, HTML. */
@@ -3334,13 +3361,14 @@ ${enLigne() ? `<p id="evenements-proposes"><b>Événements proposés par les clu
   <p>rundata.re est édité à titre non professionnel par un particulier qui, comme le permet l'article 1-1, II de la loi n° 2004-575 du 21 juin 2004 pour la confiance dans l'économie numérique, a choisi de préserver son anonymat. Ses éléments d'identification ont été communiqués à l'hébergeur. Contact : <b>${adresseTexte("contact@rundata.re")}</b>. Hébergeur : Cloudflare, Inc., 101 Townsend Street, San Francisco, CA 94107, États-Unis (${adresseTexte("cloudflare.com")}). Nom de domaine enregistré auprès de l'AFNIC (.re).</p>
   <p style="color:var(--muted)">Mise à jour\u00a0: 25 octobre 2026.</p>
 </section>`;
+  const description = privacy
+    ? "Ce que rundata.re garde, et ce qu'il ne garde pas : aucun compte, aucun cookie, des statistiques anonymes."
+    : "Conditions d'utilisation de rundata.re, service gratuit de données publiques de La Réunion, et mentions légales.";
   return layout(origin, {
     title: `${title} · rundata.re`,
-    description: privacy
-      ? "Ce que rundata.re garde, et ce qu'il ne garde pas : aucun compte, aucun cookie, des statistiques anonymes."
-      : "Conditions d'utilisation de rundata.re, service gratuit de données publiques de La Réunion, et mentions légales.",
+    description,
     path: `/${kind}`,
-    jsonld: [crumbs(origin, title, `/${kind}`)],
+    jsonld: [crumbs(origin, title, `/${kind}`), webPageLd(origin, `/${kind}`, `${title} · rundata.re`, description)],
     alerte,
   }, `${crumbBar(title)}
 <div class="wrap intro"><div class="pitch"><h1>${title}</h1></div></div>`, body);

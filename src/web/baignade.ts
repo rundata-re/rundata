@@ -7,7 +7,7 @@ import type { Alerte } from "./data.js";
 import { porte, type Porte } from "./aller.js";
 import { lienNom } from "./domains.js";
 import { esc } from "./map.js";
-import { layout, SITE } from "./pages.js";
+import { layout, SITE, webPageLd } from "./pages.js";
 
 export const PATH = "/baignade";
 export const LINK = `<a href="${PATH}">${esc(T.lien)} →</a>`;
@@ -106,6 +106,7 @@ export function bathingPage(origin: string, now = new Date(), alerte?: Alerte): 
         { "@type": "ListItem", position: 2, name: "Baignade", item: `${origin}${PATH}` },
       ],
     },
+    webPageLd(origin, PATH, title, description),
   ];
   return layout(origin, { title, description, path: PATH, jsonld, alerte }, band, g.ligne + body + g.feuille);
 }

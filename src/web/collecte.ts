@@ -9,7 +9,8 @@ import { insecables } from "../typographie.js";
 import type { Alerte } from "./data.js";
 import { connectorCta, crumbBar, crumbs, lienNom, webPage } from "./domains.js";
 import { esc } from "./map.js";
-import { folded, layout } from "./pages.js";
+import { cityLd, folded, layout } from "./pages.js";
+import { PAGES } from "./places.js";
 import { script } from "./scripts-declares.js";
 
 // The texts of the pages, worded by marketing.
@@ -167,6 +168,8 @@ export function collectePage(origin: string, now: Date, commune?: string, alerte
   const path = commune ? `/collecte/${communeSlug(commune)}` : "/collecte";
   const title = commune ? titleOf(commune) : TITLE;
   const description = commune ? metaOf(commune) : META;
+  // A commune's page is about the commune (JSON-LD), by its place in the site's list of communes.
+  const place = commune ? PAGES.find((p) => p.commune && p.nom === commune) : undefined;
   const today = col.todayOf(now);
   const others = col.COMMUNES.filter((c) => c !== commune).map((c) => `<a href="/collecte/${communeSlug(c)}">${esc(c)}</a>`).join(" · ");
   const band = `${crumbBar(commune ? `Collecte ${a(commune)}` : "Collecte des déchets", commune ? COLLECTE : undefined)}
@@ -187,5 +190,5 @@ export function collectePage(origin: string, now: Date, commune?: string, alerte
 <p><a href="/decheteries">Les déchèteries de l'Ouest et leurs bennes en direct →</a></p></section>
 ${connectorCta("annuaire_services_publics", "les jours de collecte")}
 ${script(SCRIPT)}`;
-  return layout(origin, { title, description, path, jsonld: [crumbs(origin, commune ? `Collecte ${a(commune)}` : "Collecte des déchets", path, commune ? COLLECTE : undefined), webPage(origin, path, title, description, null)], alerte }, band, body);
+  return layout(origin, { title, description, path, jsonld: [crumbs(origin, commune ? `Collecte ${a(commune)}` : "Collecte des déchets", path, commune ? COLLECTE : undefined), webPage(origin, path, title, description, null, place ? cityLd(place) : undefined)], alerte }, band, body);
 }

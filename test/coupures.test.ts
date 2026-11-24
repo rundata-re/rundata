@@ -422,7 +422,7 @@ describe("coupures d'eau", () => {
     expect(salazie).toContain(`<div class="now"><span class="big">1</span><p>avis en cours à Salazie, lu le 30/10 à 08:00 : <b>eau à ne pas boire</b> dans les secteurs de l'avis.</p></div>`);
     expect(salazie).not.toContain("Aucun avis");
     expect(salazie).not.toContain("ni avis « ne pas boire l'eau »");
-    expect(waterLive(pageOf("salazie")!, { coupures })).toMatchObject({ valeur: "Eau à ne pas boire" });
+    expect(waterLive(pageOf("salazie")!, { coupures })).toMatchObject({ valeur: "Eau à ne pas boire dans les secteurs de l'avis" });
     // The island's page, and the commune's day (tool and page).
     const isle = coupuresPage("https://rundata.re", coupures, later);
     expect(isle).toContain("<h3>Ne pas boire l'eau · Salazie");
@@ -450,7 +450,28 @@ describe("coupures d'eau", () => {
     expect(day.coupures_eau!.avis).toEqual([expect.objectContaining({ ne_pas_boire: true })]);
     expect(aujourdhuiPage("https://rundata.re", pageOf("salazie")!, day, null)).toContain("<b>Eau à ne pas boire</b>");
     // The tool's count of recent notices is unchanged: the old notice is told, not called recent.
-    expect(body(await coupuresEau(cache(later), undefined, later)).resume).toMatch(/^Eau à ne pas boire en ce moment : La Plaine-des-Palmistes, Salazie\. /);
+    expect(body(await coupuresEau(cache(later), undefined, later)).resume).toMatch(/^Eau à ne pas boire en ce moment, dans les secteurs des avis : La Plaine-des-Palmistes, Salazie\. /);
+  });
+
+  it("says a notice not to drink the water for its sectors, never for the whole commune, wherever it is summed up", async () => {
+    // Saint-Benoît, 24/11/2026: the commune's tile and the description of its day said « eau à ne pas boire » alone.
+    const later = new Date("2026-10-30T04:00:00Z");
+    const coupures = { value: await buildCoupures(cache(later), later), fetchedAt: later };
+    const meta = (page: string) => (/<meta name="description" content="([^"]*)">/.exec(page)?.[1] ?? "").replace(/&#39;/g, "'").replace(/\u00a0/g, " ");
+    expect(waterLive(pageOf("salazie")!, { coupures })).toMatchObject({ valeur: "Eau à ne pas boire dans les secteurs de l'avis" });
+    expect(meta(coupuresCommunePage("https://rundata.re", pageOf("salazie")!, { coupures }, later))).toMatch(/^Salazie \(974\) : eau à ne pas boire dans les secteurs de l'avis ; /);
+    const day = resume(pageOf("salazie")!, { coupures } as never, later);
+    expect(meta(aujourdhuiPage("https://rundata.re", pageOf("salazie")!, day, null))).toMatch(/^Aujourd'hui à Salazie \(974\) : eau à ne pas boire dans les secteurs de l'avis[,.]/);
+    // The longest name keeps the sectors in its day's description too.
+    const pdpDay = resume(pageOf("la-plaine-des-palmistes")!, { coupures } as never, later);
+    expect(meta(aujourdhuiPage("https://rundata.re", pageOf("la-plaine-des-palmistes")!, pdpDay, null))).toContain("eau à ne pas boire dans les secteurs de l'avis");
+    expect(body(await coupuresEau(cache(later), undefined, later)).resume).toMatch(/^Eau à ne pas boire en ce moment, dans les secteurs des avis : La Plaine-des-Palmistes, Salazie\. /);
+    const isle = coupuresPage("https://rundata.re", coupures, later);
+    expect(mapLinks(isle).find((l) => l.href === "/coupures-eau/salazie")?.label).toBe("Salazie : eau à ne pas boire dans les secteurs de l&#39;avis, voir le détail");
+    // A silent feed whose last notice said not to drink: the sectors kept as well.
+    const cirest = { texte: "Le site de la CIREST n'a pas répondu à la dernière lecture (le 24/10 à 10:00) : rundata.re ne sait pas ce qu'il annonce en ce moment.", court: "sans réponse", de: "de la CIREST", site: "https://www.cirest.fr/" };
+    const mute = { ...coupures, value: { ...coupures.value, injoignable: [...(coupures.value.injoignable ?? []), cirest] } };
+    expect(meta(coupuresCommunePage("https://rundata.re", pageOf("salazie")!, { coupures: mute }, later))).toMatch(/^Salazie \(974\) : eau à ne pas boire dans les secteurs du dernier avis lu/);
   });
 
   it("counts the notices saying not to drink the water apart from the cuts, so that none is read as a cut", async () => {
@@ -484,8 +505,8 @@ describe("coupures d'eau", () => {
     // The description dated too, and at most 160 characters: a long name of distributors drops « avec les rues… », never the date.
     const meta = (slug: string) => page(slug).match(/<meta name="description" content="([^"]*)">/)![1];
     expect(meta("saint-denis")).toBe("Saint-Denis (974)\u00a0: 1 avis de Dionéo en cours ou à venir, lu le 24/10 à\u00a008:00, avec les rues, les heures et les consignes.");
-    expect(meta("la-plaine-des-palmistes")).toBe("La Plaine-des-Palmistes (974)\u00a0: eau à ne pas boire\u00a0; 5 avis de la CIREST / CISE Réunion en cours ou à venir, lus le 24/10 à\u00a008:00.");
-    for (const slug of ["saint-denis", "salazie", "la-plaine-des-palmistes", "saint-paul"]) expect(meta(slug).length).toBeLessThanOrEqual(160);
+    expect(meta("la-plaine-des-palmistes")).toBe("La Plaine-des-Palmistes (974)\u00a0: eau à ne pas boire dans les secteurs de l&#39;avis\u00a0; 5 avis de la CIREST / CISE Réunion en cours ou à venir, lus le 24/10 à\u00a008:00.");
+    for (const slug of ["saint-denis", "salazie", "la-plaine-des-palmistes", "saint-paul"]) expect(meta(slug).replace(/&#39;/g, "'").length).toBeLessThanOrEqual(160);
     const day = (slug: string) => resume(pageOf(slug)!, { coupures } as never, NOW).resume;
     expect(day("salazie")).toContain("\u00a0; 2 avis de coupure d'eau, et 1 avis d'eau à ne pas boire dans les secteurs de l'avis\u00a0;");
     expect(day("saint-denis")).toContain("\u00a0; 1 avis de coupure d'eau\u00a0;");
@@ -498,7 +519,7 @@ describe("coupures d'eau", () => {
     expect(said("saint-denis", "Saint-Denis", "Dionéo")).toContain("1 avis de Dionéo en cours");
     expect(coupuresCommunePage("https://rundata.re", pageOf("entre-deux")!, { coupures: null }, NOW)).toContain(`<meta name="description" content="Entre-Deux (974)\u00a0: les avis de coupure sont publiés par Sudéau, avec le lien vers sa page. Ici\u00a0: l&#39;eau du robinet`);
     // The page of the day: « eau à ne pas boire » first in its description, and a cut counted only as a cut.
-    expect(descriptionOf(pageOf("salazie")!, resume(pageOf("salazie")!, { coupures } as never, NOW)).replace(/[\u00a0\u202f]/g, " ")).toMatch(/^Aujourd'hui à Salazie \(974\) : eau à ne pas boire, 2 coupures d'eau\. /);
+    expect(descriptionOf(pageOf("salazie")!, resume(pageOf("salazie")!, { coupures } as never, NOW)).replace(/[\u00a0\u202f]/g, " ")).toMatch(/^Aujourd'hui à Salazie \(974\) : eau à ne pas boire dans les secteurs de l'avis, 2 coupures d'eau\./);
     // The home page's tile: the cuts only, beside the communes not to drink the water of.
     expect(coupuresLive(coupures)!.detail).toBe(`${coupures.value.avis.filter((n) => !n.ne_pas_boire).length} avis de coupure ou de travaux récents ou à venir`);
   });
@@ -843,7 +864,7 @@ describe("coupures d'eau", () => {
     expect(sd).toContain(`<li><a href="/coupures-eau">Coupures d'eau</a></li><li aria-current="page">Saint-Denis</li>`);
     const pdp = page("la-plaine-des-palmistes");
     expect(pdp).toContain("<b>eau à ne pas boire</b>");
-    expect(pdp).toMatch(/<meta name="description" content="La Plaine-des-Palmistes \(974\)\u00a0: eau à ne pas boire\u00a0; \d+ avis de /);
+    expect(pdp).toMatch(/<meta name="description" content="La Plaine-des-Palmistes \(974\)\u00a0: eau à ne pas boire dans les secteurs de l&#39;avis\u00a0; \d+ avis de /);
     expect(pdp).toContain("les avis de la CIREST");
     // runéo's feed is read, and has nothing for Saint-Pierre: said with the time of the copy.
     expect(page("saint-pierre")).toContain("Pas d'avis de coupure récent ou à venir publié par runéo à Saint-Pierre, lu le 24/10 à 08:00. Une coupure peut être annoncée ailleurs, par la mairie par exemple.");
@@ -879,7 +900,7 @@ describe("coupures d'eau", () => {
     expect(lt).toContain(`<p>Demandez aussi à votre IA, avec le <a href="/mcp">connecteur rundata.re</a>\u00a0: «\u00a0L'eau du robinet est-elle bonne au Tampon\u00a0?\u00a0»</p>`);
     expect(lt).not.toContain("coupures_eau");
     expect(page("le-port")).toContain("<h1>Coupures d'eau au Port <span class=\"n974\">974</span></h1>");
-    expect(waterLive(pageOf("salazie")!, { coupures })).toMatchObject({ valeur: "Eau à ne pas boire" });
+    expect(waterLive(pageOf("salazie")!, { coupures })).toMatchObject({ valeur: "Eau à ne pas boire dans les secteurs de l'avis" });
     expect(waterLive(pageOf("saint-paul")!, { coupures: night })).toMatchObject({ valeur: "1 avis de coupure" });
     // When its notices were read, never for a commune whose notices are not read.
     expect(waterLive(pageOf("saint-paul")!, { coupures: night })!.detail).toMatch(/^avis lus le \d\d\/\d\d à \d\d:\d\d · distributeur /);
@@ -971,7 +992,7 @@ describe("coupures d'eau", () => {
     // A silent feed whose last notice said not to drink the water: said, without the hour of a reading it was not part of.
     const cirest = { texte: "Le site de la CIREST n'a pas répondu à la dernière lecture (le 24/10 à 10:00) : rundata.re ne sait pas ce qu'il annonce en ce moment.", court: "sans réponse", de: "de la CIREST", site: "https://www.cirest.fr/" };
     const pdp = coupuresCommunePage("https://rundata.re", pageOf("la-plaine-des-palmistes")!, { coupures: { ...coupures, value: { ...coupures.value, injoignable: [...coupures.value.injoignable!, cirest] } } }, now);
-    expect(pdp).toContain('<meta name="description" content="La Plaine-des-Palmistes (974)\u00a0: eau à ne pas boire selon le dernier avis lu\u00a0; le site de la CIREST n&#39;a pas répondu à la dernière lecture de rundata.re.">');
+    expect(pdp).toContain('<meta name="description" content="La Plaine-des-Palmistes (974)\u00a0: eau à ne pas boire dans les secteurs du dernier avis lu.">');
     vi.restoreAllMocks();
   });
 
@@ -1054,7 +1075,7 @@ describe("coupures d'eau", () => {
     const links = mapLinks(page);
     expect(links).toHaveLength(24);
     expect(links.filter((l) => !pageOf(l.href.replace("/coupures-eau/", "")))).toEqual([]);
-    expect(links.find((l) => l.href === "/coupures-eau/saint-pierre")?.label).toBe("Saint-Pierre : eau à ne pas boire, voir le détail");
+    expect(links.find((l) => l.href === "/coupures-eau/saint-pierre")?.label).toBe("Saint-Pierre : eau à ne pas boire dans les secteurs de l&#39;avis, voir le détail");
     // The legend never says « aucun avis » where nothing is read, and tells what the others are: each colour drawn, never a
     // coloured word (marketing's charter of the maps), then when the notices were read.
     expect(page).toContain(`<rect x="-30" y="-30" width="60" height="60" rx="8" style="fill:#a5d8ff"/></svg>Aucun avis en cours (site lu)</span>`);

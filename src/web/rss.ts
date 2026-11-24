@@ -11,7 +11,7 @@ import type { Cached } from "../cache.js";
 import { localTime } from "../geo.js";
 import * as mf from "../providers/vigilance.js";
 import { sectorsSaid } from "../providers/avis-eau.js";
-import { periodeCoupure } from "../tools/coupures.js";
+import { DANS_LES_SECTEURS, periodeCoupure } from "../tools/coupures.js";
 import { cyclone, cycloneHead, cycloneLevel, highest, raised, spans } from "../tools/vigilance.js";
 import { deCommune } from "./aujourdhui.js";
 import type { CoupuresAnswer, RandonneesAnswer, VolcanAnswer } from "./data.js";
@@ -113,7 +113,7 @@ function waterItems(p: PlacePage, c: CoupuresAnswer): Item[] {
     .map((n) => ({
       title: `Eau : ${n.titre}`,
       description: [
-        n.ne_pas_boire ? "Ne pas boire l'eau du robinet." : "",
+        n.ne_pas_boire ? `Ne pas boire l'eau du robinet ${DANS_LES_SECTEURS()}.` : "",
         n.coupure && periodeCoupure(n.coupure) ? `Coupure ${n.coupure.de && n.coupure.a ? `du ${n.coupure.de} au ${n.coupure.a}` : periodeCoupure(n.coupure)}.` : "",
         n.secteurs_complets ? `Secteurs : ${sectorsSaid(n.secteurs)}.` : "",
         n.lien ? `Avis de ${n.distributeur} : ${n.lien}` : `Avis de ${n.distributeur}.`,

@@ -87,6 +87,13 @@ describe("a commune's RSS feed", () => {
     expect(cut.description).not.toContain("undefined");
   });
 
+  it("says a notice not to drink the water for the sectors of its notice, never for the whole commune", () => {
+    const c = coupures("en cours");
+    Object.assign(c.value.avis[0], { coupure: undefined, ne_pas_boire: true, secteurs: [], secteurs_complets: false });
+    const [dry] = rssItems(SAINT_PAUL, { coupures: c }, NOW);
+    expect(dry.description).toBe("Ne pas boire l'eau du robinet dans les secteurs de l'avis. Avis de CISE Réunion : https://example.re/avis/1");
+  });
+
   it("has the commune's closed trails, undated", () => {
     const items = rssItems(CILAOS, { randonnees }, NOW);
     expect(items).toEqual([{ title: "Sentier fermé : Bord Salazie", description: "Cause : Dangers majeurs, sentier dégradé. Précision de l'ONF : Réouverture 2026. D'après la carte des sentiers de l'ONF La Réunion.", path: "/sentiers/bord-salazie", guid: "sentier/Bord Salazie/Dangers majeurs, sentier dégradé" }]);

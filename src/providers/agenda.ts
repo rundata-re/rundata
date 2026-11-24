@@ -1777,6 +1777,68 @@ export const CIREST_EVENEMENTS: Agenda = {
     parseCirestEvenements(JSON.parse(await getText(CIREST_EVENEMENTS_SOURCE.id, CIREST_EVENEMENTS_POSTS, TIMEOUT_MS, HEADERS)), now)),
 };
 
+// ---------------------------------------------------------------- The TCO's « Agenda des manifestations » (tco.re)
+
+/**
+ * The agenda of the Territoire de l'Ouest (TCO), « L'Ouest i bouz » : the events it holds or supports in its five
+ * communes (Dann Ker lé O, Trokafèt, Sèm'La Vie), a few a month. Read like a commune's site (rule of 24/11/2026 for the
+ * five intercommunalities), slowly: its first page, every six hours. Credited « TCO, www.tco.re », its photos never taken.
+ */
+export const TCO_SOURCE: SourceInfo = {
+  id: "agenda_tco",
+  nom: "Agenda des manifestations de l'Ouest (TCO)",
+  organisme: "Territoire de l'Ouest (TCO)",
+  licence: "Information publique (agenda de l'intercommunalité)",
+  attribution: "TCO (www.tco.re)",
+  url: "https://www.tco.re/louest-i-bouz",
+};
+export const TCO_COMMUNES: readonly string[] = ["Le Port", "La Possession", "Saint-Paul", "Les Trois-Bassins", "Saint-Leu"];
+/** Le Port by its Creole name, as the TCO writes it in a title (« Dann Ker lé O : nou dsann Lo Port ! », 28/11/2026). */
+const TCO_KREOL: [RegExp, string][] = [[/\bLo Port\b/u, "Le Port"]];
+const MOIS_COURTS: Record<string, string> = { jan: "01", feb: "02", fev: "02", mar: "03", apr: "04", avr: "04", may: "05", mai: "05", jun: "06", jui: "07", jul: "07", aug: "08", aou: "08", sep: "09", oct: "10", nov: "11", dec: "12" };
+
+/**
+ * Each card of the page: its first day in small print (« 28 Nov 2026 »), its title and link, its days in a line of their
+ * own (« Le 28 novembre 2026 », « Du 16 novembre 2026 au 10 janvier 2027 ») and the start of its text. An event of today or
+ * later, in the one commune of the TCO its title or that text names (« Alon mont' Trois-Bassins »); naming none or
+ * several (« dans les 5 communes »), it is not placed, never guessed. A service's notice is never an event.
+ */
+export function parseTco(html: string, now: Date): Evenement[] {
+  const today = localDay(now);
+  return [...html.matchAll(/<article class="feature[^"]*">([\s\S]*?)<\/article>/g)].flatMap(([, card]) => {
+    const a = /<a class="h5[^"]*" href="([^"]+)">([\s\S]*?)<\/a>/.exec(card);
+    if (!a) return [];
+    const lien = a[1].replace(/&amp;/g, "&");
+    const titre = clean(a[2]);
+    const jours = clean(/<em[^>]*>([\s\S]*?)<\/em>/.exec(card)?.[1] ?? "");
+    const texte = clean(/<\/em>\s*<br\s*\/?>([\s\S]*?)<\/p>/.exec(card)?.[1] ?? "").replace(/\s*(?:\.\.\.|…)$/u, "");
+    const petit = /(\d{1,2}) ([A-Za-zéû]{3})[a-zéû]* (\d{4})/.exec(clean(/<span class="type--fine-print">([\s\S]*?)<\/span>/.exec(card)?.[1] ?? ""));
+    const mois = petit && MOIS_COURTS[normalize(petit[2]).slice(0, 3)];
+    const publie = petit && mois ? new Date(`${petit[3]}-${mois}-${petit[1].padStart(2, "0")}T00:00:00+04:00`) : now;
+    if (avisDeService(titre)) return [];
+    const nomme = `${titre} ${premiere(texte)}`;
+    const communes = new Set([...communesIn(nomme), ...TCO_KREOL.filter(([re]) => re.test(nomme)).map(([, c]) => c)]);
+    const dans = [...communes].filter((c) => TCO_COMMUNES.includes(c));
+    if (dans.length !== 1 || communes.size !== 1) return [];
+    const seances = datesIn(`${jours} ${titre}`, publie).filter((x) => (x.fin ?? x.debut).slice(0, 10) >= today);
+    if (!seances.length) return [];
+    const statut = statusOf(titre, texte);
+    return [{ ...(statut ? { statut } : {}), id: lien, titre, seances, commune: dans[0], categories: [], ...extrait(texte), lien, publie_par: "TCO" }];
+  });
+}
+
+/** Read by the scheduled event every six hours: one request, its first page (eight events, the newest first). */
+export const TCO: Agenda = {
+  id: "tco",
+  nom: "Agenda des manifestations de l'Ouest (TCO)",
+  source: TCO_SOURCE,
+  couvre: [...TCO_COMMUNES],
+  planifie: true,
+  relecture: 6 * 3600,
+  credit: "TCO, www.tco.re",
+  load: (cache, now) => cache.get("agenda:tco", 6 * 3600, async () => parseTco(await getText(TCO_SOURCE.id, TCO_SOURCE.url, TIMEOUT_MS, HEADERS), now)),
+};
+
 // ---------------------------------------------------------------- The Département's agenda (departement974.fr)
 
 /**
@@ -1926,6 +1988,7 @@ export const LISIBLES: Agenda[] = [
   otiEst,
   CIREST,
   CIREST_EVENEMENTS,
+  TCO,
   DEPARTEMENT_AGENDA,
   openAgenda("cinor", "CINOR", 50316469, NORD),
   openAgenda("oti_nord", "Office de tourisme du Nord", 32570974, NORD),

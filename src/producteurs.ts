@@ -234,6 +234,7 @@ export const FICHES: Record<string, Fiche> = {
   // Its texts reusable « pour tout usage » with the source: no licence named, not said open.
   agenda_cirest: { famille: "information_publique", producteurs: ["CIREST"] },
   agenda_cirest_evenements: { famille: "information_publique", producteurs: ["CIREST"] },
+  agenda_tco: { famille: "information_publique", producteurs: ["Territoire de l'Ouest (TCO)"] },
   agenda_departement: { famille: "information_publique", producteurs: ["Département de La Réunion"] },
   agenda_mairies: { famille: "information_publique", agendas: true },
   agenda_le_port: { famille: "information_publique", agendas: true },

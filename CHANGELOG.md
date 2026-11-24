@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Mardi 24 novembre 2026
 
+- Volcan : un lien vers les caméras de l'OVPF. Défibrillateurs : où se former aux premiers secours (PSC1).
 - Outils IA : la liste des sources compte les producteurs par famille de licence, comme la page des chiffres
 - Outils IA : dans une grande commune, les lieux pour enfants donnent les 15 plus proches, avec leur distance et le lien vers sa page.
 - Coupures d'eau : chaque avis dit le lieu qu'il nomme, et un site muet laisse lire ce que disait sa dernière lecture

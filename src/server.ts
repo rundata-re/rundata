@@ -2,6 +2,8 @@ import { chiffres, type Copie, KEY as CHIFFRES, resume as resumeChiffres } from 
 import { comptee, FAMILLES, FICHES, type Famille, producteursDe } from "./producteurs.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ListToolsRequestSchema, type ListToolsResult } from "@modelcontextprotocol/sdk/types.js";
+import { AjvJsonSchemaValidator } from "@modelcontextprotocol/sdk/validation/ajv";
+import type { jsonSchemaValidator } from "@modelcontextprotocol/sdk/validation";
 import * as courantMairies from "./providers/coupures-courant.js";
 import * as carburantsPrix from "./providers/carburants.js";
 import * as radarMf from "./providers/radar.js";
@@ -134,7 +136,7 @@ import * as peche from "./tools/peche.js";
 import * as cetaces from "./tools/cetaces.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.887";
+export const VERSION = "1.0.888";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -318,20 +320,55 @@ export function listeAllegee(liste: ListToolsResult): ListToolsResult {
   };
 }
 
+/*
+ * What every request to /mcp would otherwise build again, kept for the isolate's life. The Worker makes a server per
+ * request (stateless), and most of them are an initialize, a tools/list or a ping from a directory or a monitor: on
+ * 7 days to 24/11/2026, those handshakes took about half of /mcp's CPU, the tool calls under a tenth.
+ */
+/** Each text as said (insecables), worked out once: the instructions and the 30 descriptions, the same every time. */
+const ditUneFois = new Map<string, string>();
+const dit = (s: string) => {
+  let d = ditUneFois.get(s);
+  if (d === undefined) ditUneFois.set(s, (d = insecables(s)));
+  return d;
+};
+/**
+ * The JSON Schema validator of the SDK, which only an elicitation uses (never here): one for the isolate, made on its
+ * first use, rather than a new Ajv compiled for each request's server.
+ */
+let ajv: AjvJsonSchemaValidator | undefined;
+const VALIDATEUR: jsonSchemaValidator = { getValidator: (schema) => (ajv ??= new AjvJsonSchemaValidator()).getValidator(schema) };
+/**
+ * The tools/list answer, by the tools it lists: their JSON Schemas are converted from zod once, not at each request.
+ * The key is each tool's name, title and description, so that a server with other tools (vigilance or the timetables
+ * off, in a test or on Node) or a description that changed gets its own.
+ */
+const listesGardees = new Map<string, ListToolsResult>();
+
 export function createServer(cache: Cache, record: Recorder = () => {}, background?: Background): McpServer {
   const server = new McpServer(
     { name: "reunion-temps-reel", title: "rundata.re · La Réunion 974 en direct", version: VERSION, icons: SERVER_ICONS },
-    { instructions: insecables(INSTRUCTIONS) },
+    { instructions: dit(INSTRUCTIONS), jsonSchemaValidator: VALIDATEUR },
   );
   // The descriptions and the answers as said, with their no-break spaces (typographie.ts), like the pages.
   const register = server.registerTool.bind(server);
-  server.registerTool = ((name: string, config: { description?: string }, cb: never) =>
-    register(name, { ...config, description: config.description && insecables(config.description) }, cb)) as typeof server.registerTool;
+  const cle: string[] = [];
+  server.registerTool = ((name: string, config: { title?: string; description?: string }, cb: never) => {
+    const description = config.description && dit(config.description);
+    cle.push(name, config.title ?? "", description ?? "");
+    return register(name, { ...config, description }, cb);
+  }) as typeof server.registerTool;
   // The list of the tools without what the SDK adds to each tool for no client: about 2 500 characters of each conversation.
   type Handler = (request: unknown, extra: unknown) => unknown;
   const setHandler = server.server.setRequestHandler.bind(server.server) as (schema: unknown, handler: Handler) => void;
+  const liste = async (handler: Handler, request: unknown, extra: unknown) => {
+    const k = cle.join("\u0000");
+    let l = listesGardees.get(k);
+    if (!l) listesGardees.set(k, (l = listeAllegee((await handler(request, extra)) as ListToolsResult)));
+    return l;
+  };
   server.server.setRequestHandler = ((schema: unknown, handler: Handler) =>
-    setHandler(schema, schema === ListToolsRequestSchema ? async (request, extra) => listeAllegee((await handler(request, extra)) as ListToolsResult) : handler)) as typeof server.server.setRequestHandler;
+    setHandler(schema, schema === ListToolsRequestSchema ? (request, extra) => liste(handler, request, extra) : handler)) as typeof server.server.setRequestHandler;
   // Records the place asked (a commune, a beach…), never a street address: fiche_terrain's stays out of the metrics.
   // Ends each answer with its citation and the link to rundata.re.
   // Each answer also says how fresh it is, from the cache entries the call read, and which tools are new.

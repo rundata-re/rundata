@@ -112,12 +112,26 @@ ${d?.heures ? hourlySection(d.heures) : ""}
 <section aria-labelledby="h-archive">
   <div class="sec-h"><p class="eyebrow">Toute l'archive</p><h2 id="h-archive">N'importe quel jour depuis 1900</h2>
   <p>Avec le connecteur, votre IA lit les mesures quotidiennes de chacune des 249 stations Météo-France que l'île a connues, de la première année de chacune jusqu'à hier : « il a plu combien en janvier 2018 à Cilaos ? », « il faisait combien le jour de mes 20 ans au Tampon ? », « record de chaleur à Saint-Denis ? », « il fait plus chaud qu'avant ? ». Les normales sont les moyennes 1991-2020 de chaque station.</p></div>
-  ${d ? `<ul class="plain note">${d.a_savoir.map((x) => `<li>${soulignesCoupables(esc(x))}</li>`).join("")}</ul>` : ""}
+  ${d ? `<ul class="plain note">${d.a_savoir.map((x) => `<li>${pageNote(x)}</li>`).join("")}</ul>` : ""}
   ${d && data ? sourcesNote(d.sources, data) : ""}
 </section>
 ${connectorCta("historique_meteo", "l'historique météo")}`;
 
   return layout(origin, { title, description, path: "/historique", jsonld: [crumbs(origin, "Historique météo", "/historique"), webPage(origin, "/historique", title, description, data)], alerte }, band, body);
+}
+
+const METEO_LINK = "\u0000meteo\u0000";
+
+/**
+ * A note of the tool as the page says it: the tool's words for an assistant (meteo_actuelle, prevision_meteo,
+ * hier_provisoire, detail « heure ») become the page Météo and plain words (24/11/2026: shown to the visitors as is).
+ */
+export function pageNote(note: string): string {
+  const text = note
+    .replace(/voir meteo_actuelle\u00a0; pour les jours à venir, prevision_meteo\./, `et pour les jours à venir, voir ${METEO_LINK}.`)
+    .replace(/ dans hier_provisoire\u00a0:/, " à titre provisoire\u00a0:")
+    .replace(/, et jusqu'à \d+ jours avec detail « heure »/, "");
+  return soulignesCoupables(esc(text)).replace(METEO_LINK, `<a href="/meteo">la page Météo</a>`);
 }
 
 /**

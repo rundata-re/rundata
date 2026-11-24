@@ -47,11 +47,12 @@ describe("the days of /historique", () => {
     expect((await island()).stations.some((s) => s.jours || s.normale_jour)).toBe(false);
   });
 
-  it("cuts the tools' names of its notes after their « _ » only (Safari cut « meteo_actu|elle » at 160 px)", async () => {
+  it("says its notes without the tools' names, which an assistant reads, and sends today to /meteo", async () => {
+    // Safari cut « meteo_actu|elle » at 160 px; since 24/11/2026 the page no longer names the tools at all.
     plug();
     const notes = historiquePage("https://rundata.re", at(await island()), NOW).match(/<ul class="plain note">(.*?)<\/ul>/s)![1];
-    expect(notes).toContain('<span class="ident">meteo_<wbr>actuelle</span>');
-    expect(notes).toContain('<span class="ident">prevision_<wbr>meteo.</span>');
+    expect(notes).not.toMatch(/meteo_|prevision_|hier_provisoire|detail/);
+    expect(notes).toContain('<a href="/meteo">la page Météo</a>');
     expect(notes).not.toMatch(/\p{L}_\p{L}/u);
   });
 

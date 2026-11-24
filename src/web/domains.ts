@@ -1636,8 +1636,11 @@ export function cruesPage(origin: string, data: Cached<CruesAnswer> | null, now 
       place: where, say: line, href: `#${anchorId("s", s.station)}` }];
   });
 
-  const title = "Crues en direct : rivières et vigilance · La Réunion (974)";
-  const short = "Crues à La Réunion (974) : vigilance de Vigicrues Réunion rivière par rivière, hauteur et débit mesurés aux stations de la DEAL toutes les 5 minutes.";
+  // Its source named, which is what people search (« vigicrue reunion »; marketing, 24/11/2026), in the title, the
+  // description and the page's first line (pages.ts HOOKS): always « d'après Vigicrues », never first nor in the h1,
+  // where the page would read as the official service's.
+  const title = "Crues en direct à La Réunion, d'après Vigicrues · 974";
+  const short = "Les crues à La Réunion (974) d'après Vigicrues Réunion : la vigilance rivière par rivière, la hauteur et le débit mesurés aux stations de la DEAL.";
   const vigilanceSaid = !v ? undefined : !v.active ? "Pas de vigilance crues en cours d'après Vigicrues Réunion : toutes les rivières suivies sont au vert." : undefined;
   const description = vigilanceSaid ? describe(`${vigilanceSaid} ${short}`, short) : short;
 
@@ -2109,11 +2112,13 @@ export function sentiersPage(origin: string, data: Cached<SentiersAnswer> | null
   <p>Les ${d?.randonnees.length ?? ""} itinéraires complets (GR R1, R2, R3, sommets, boucles) et les sentiers de l'ONF, avec leur trace GPS, leur distance, leur dénivelé et leur état d'après la carte de l'ONF, sur une carte de l'île et filtrables : <a href="/randonnees">la page randonnée</a>.</p></div>
 </section>`;
 
-  const title = "Sentiers fermés : liste de l'ONF · La Réunion (974)";
-  const short = "Sentiers de randonnée fermés à La Réunion (974) : la liste de l'ONF commune par commune, avec la cause de chaque fermeture.";
-  const base = d
-    ? describe(`Sentiers fermés à La Réunion (974) : ${closed} sentiers fermés sur ${d.suivis} d'après la carte de l'ONF, commune par commune, avec la cause (éboulement, sentier dégradé, travaux).`, short)
-    : short;
+  // In the words people type (« onf sentiers fermés », « sentier fermé reunion »; marketing, 24/11/2026). « À jour » holds
+  // by the day the description gives, the one the ONF dates its map of; none before the list is here, nor from a map
+  // without a date. Never « ouvert »: a trail out of the list is not said open.
+  const title = "Sentiers fermés ONF : la liste à jour · La Réunion (974)";
+  const says = (carte: string) => `Sentier fermé ? La liste des sentiers fermés par l'ONF à La Réunion (974)${carte} : la commune, le sentier et la raison de chaque fermeture.`;
+  const short = says("");
+  const base = onfDay(d?.carte_mise_a_jour) ? describe(says(`, d'après sa carte du ${onfDay(d?.carte_mise_a_jour)}`), short) : short;
   // The fires, when there is room for them (marketing): else the description stays as it was.
   const withFires = `${base.replace(/\.$/, "")}, et les feux de végétation détectés par satellite.`;
   const description = d?.feux && withFires.length <= DESCRIPTION_MAX ? withFires : base;
@@ -2122,7 +2127,7 @@ export function sentiersPage(origin: string, data: Cached<SentiersAnswer> | null
 <div class="wrap intro">
   <div class="pitch">
     <p class="pill">${onfDot(d?.carte_mise_a_jour, now)}Carte de l'ONF</p>
-    <h1>Sentiers fermés <span class="n974">974</span></h1>
+    <h1>Sentiers fermés par l'ONF <span class="n974">974</span></h1>
     ${status}
     <p class="hero-cta"><a class="btn sun" href="/randonnees">${icon("mountain")}Randonnées et traces GPS</a></p>
     ${ask(`Lo santyé Roche Plate lé ouvèr ? Gèt si ${url} é di amwin si mi pé désann Mafate.`,

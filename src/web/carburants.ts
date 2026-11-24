@@ -20,9 +20,21 @@ const find = (p: carburants.Prix, re: RegExp) => p.produits.find((x) => re.test(
 const say = (s: string) => jourMois(keep(s));
 
 // The texts of the page, worded by marketing.
-export const TITLE = "Prix carburants : essence, gazole, gaz · La Réunion (974)";
+// The title in the words people type (« prix essence reunion », « prix gazole 974 »; marketing, 24/11/2026), with the
+// month of the prices the description gives; in fewer words when a long month would not fit. No GNR: the prefect does
+// not set its price, as the page says.
+const TITLE_MAX = 60;
+export function titleOf(p: carburants.Prix | undefined): string {
+  if (!p) return "Prix de l'essence et du gazole à La Réunion (974)";
+  const mois = carburants.monthOf(p.depuis);
+  return [`Prix de l'essence et du gazole à La Réunion · ${mois}`].find((t) => t.length <= TITLE_MAX) ?? `Prix essence et gazole à La Réunion · ${mois}`;
+}
 
-/** « Prix maximum en octobre 2026 à La Réunion (974) : sans plomb 2,00 €/L (+0,17 €), gazole 1,80 €/L (+0,12 €), bouteille de gaz 20,81 €. … » */
+/**
+ * « Prix de l'essence à La Réunion en octobre 2026 : sans plomb 2,00 €/L, gazole (gasoil) 1,80 €/L, gaz 20,81 € la
+ * bouteille. Prix maximum du préfet. » (marketing, 24/11/2026): « gasoil » as people type it, and no gap with last
+ * month's prices, which the page's first line gives.
+ */
 /**
  * The stable text (marketing, 14/11/2026), in place of the card « Des prix maximum, les mêmes dans toute l'île ». « Les
  * stations l'affichent en général tel quel » left out: nothing published says what the stations display.
@@ -46,10 +58,10 @@ export function descriptionOf(p: carburants.Prix | undefined): string {
   const sp = find(p, /^supercarburant$/i);
   const go = find(p, /^gazole$/i);
   const gaz = find(p, /^gaz$/i);
-  const litre = (x?: carburants.Produit) => (x ? `${eur(x.prix_eur)}/L${signed(x) ? ` (${signed(x)})` : ""}` : "");
-  const head = `Prix maximum en ${carburants.monthOf(p.depuis)} à La Réunion (974) : ${[sp && `sans plomb ${litre(sp)}`, go && `gazole ${litre(go)}`, gaz && `bouteille de gaz ${eur(gaz.prix_eur)}`].filter(Boolean).join(", ")}.`;
+  const litre = (x: carburants.Produit) => `${eur(x.prix_eur)}/L`;
+  const head = `Prix de l'essence à La Réunion en ${carburants.monthOf(p.depuis)} : ${[sp && `sans plomb ${litre(sp)}`, go && `gazole (gasoil) ${litre(go)}`, gaz && `gaz ${eur(gaz.prix_eur)} la bouteille`].filter(Boolean).join(", ")}.`;
   // What search engines show: the end goes first when it does not fit.
-  return [`${head} Fixés par le préfet, partout sur l'île.`, `${head} Fixés par le préfet.`].find((x) => x.length <= DESCRIPTION_MAX) ?? head;
+  return [`${head} Prix maximum du préfet.`].find((x) => x.length <= DESCRIPTION_MAX) ?? head;
 }
 
 export function carburantsPage(origin: string, data: Cached<carburants.Prix> | null, now = new Date(), alerte?: Alerte): string {
@@ -59,6 +71,7 @@ export function carburantsPage(origin: string, data: Cached<carburants.Prix> | n
   const pending = s?.attente ? `<p class="note">${say(s.attente)}</p>` : "";
   const path = "/carburants";
   const description = descriptionOf(p);
+  const title = titleOf(p);
   // The month in force: before the 1st, not the announced one.
   const h1 = s?.vigueur ? `Prix des carburants à La Réunion, ${carburants.monthOf(s.vigueur.depuis)}` : "Prix des carburants à La Réunion";
   // The prices unread (none in the store, the only place the Worker reads them): the tool's words, with the prefecture's link.
@@ -88,5 +101,5 @@ export function carburantsPage(origin: string, data: Cached<carburants.Prix> | n
 <section>${p && data ? `<p class="note">Source : ${credits([{ source: carburants.SOURCE.nom, licence: carburants.SOURCE.licence, attribution: carburants.SOURCE.attribution }])}.</p>` : ""}</section>
 ${texteStable(LIRE, FAQ)}
 ${connectorCta("annuaire_services_publics", "les prix des carburants")}`;
-  return layout(origin, { title: TITLE, description, path, jsonld: [crumbs(origin, "Prix des carburants", path), webPage(origin, path, TITLE, description, data), faqPage(FAQ)], alerte, iaAside: true }, band, body);
+  return layout(origin, { title, description, path, jsonld: [crumbs(origin, "Prix des carburants", path), webPage(origin, path, title, description, data), faqPage(FAQ)], alerte, iaAside: true }, band, body);
 }

@@ -26,6 +26,7 @@ import * as dech from "../vie/decheteries.js";
 import * as antennes from "../vie/antennes.js";
 import * as internet from "../vie/internet.js";
 import * as loyers from "../vie/loyers.js";
+import * as elus from "../vie/elus.js";
 import * as annexesSd from "../vie/mairies-annexes.js";
 import { anchorOf } from "./decheteries.js";
 import { hoursOn, openNow } from "../tools/annuaire.js";
@@ -651,6 +652,19 @@ function townHall(data: Cached<CommuneData> | null | undefined, now: Date, calen
   };
 }
 
+/**
+ * The mayor, then the deputy mayors folded, under the town hall: the RNE's, their name and their office only, with the
+ * day of the ministry's file (vie/elus.ts).
+ */
+function elusHtml(p: PlacePage): string {
+  const e = elus.elusDe(p.nom);
+  if (!e) return "";
+  const li = (a: elus.Adjoint) => `<li><span>${esc(`${elus.fonctionDe(a)} : ${elus.nomDe(a)}`)}</span></li>`;
+  return `<p>${esc(`Maire : ${elus.nomDe(e.maire)}`)}</p>` +
+    (e.adjoints.length ? `<details class="plus"><summary>Adjoints au maire <span class="note">${e.adjoints.length}</span></summary><ul class="rows">${e.adjoints.map(li).join("")}</ul></details>` : "") +
+    `<p class="note">${esc(`${elus.SOURCE.attribution}, ${elus.DONNEES_DU}`)}</p>`;
+}
+
 /** Saint-Denis's mairies annexes and centres municipaux, folded under its town hall: the Ville's list, without hours. */
 function annexes(p: PlacePage): string {
   if (p.nom !== annexesSd.COMMUNE) return "";
@@ -725,6 +739,7 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
   const o = l.commune?.value.mairie;
   const toHall = o && mairie ? g.aller({ nom: o.nom, lat: o.lat ?? NaN, lon: o.lon ?? NaN, adresse: o.adresse }, "mairie") : "";
   const quartiers = annexes(p);
+  const elu = elusHtml(p);
   const hikes = communeHikes(p, l.randonnees, now);
   const droit = justice(l.commune, g, now);
   const lieux = discover(p);
@@ -743,7 +758,7 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
       icon: "building",
       nom: "Mairie",
       live: mairie,
-      ...(toHall || quartiers ? { more: `${toHall ? `<p class="ya">${toHall}${notePosition(o!)}</p>` : ""}${quartiers}` } : {}),
+      ...(toHall || quartiers || elu ? { more: `${toHall ? `<p class="ya">${toHall}${notePosition(o!)}</p>` : ""}${elu}${quartiers}` } : {}),
       ...(quartiers ? { full: true } : {}),
       question: `La mairie ${de(p.nom)} est ouverte ?`,
       foot: fiche ? `${lienNom(fiche, "Fiche service-public.fr", ' rel="noopener"')}` : `<a href="/mcp">Demandez à votre IA →</a>`,
@@ -867,6 +882,7 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
     ...(hikes?.live ? (l.randonnees?.value.sources ?? []) : []),
     ...(children(p) ? enfants.sourcesOf(enfants.inCommune(p.nom)).map(credit) : []),
     ...(lieux ? [credit(decouvrir.SOURCE)] : []),
+    ...(elu ? [credit(elus.SOURCE)] : []),
     ...(quartiers ? [credit(annexesSd.SOURCE)] : []),
     ...(rents(p) ? [credit(loyers.SOURCE)] : []),
     ...(nursery(p) ? [credit(creches.SOURCE)] : []),

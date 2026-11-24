@@ -124,7 +124,7 @@ describe("resolvePlace", () => {
     expect(resolvePlace("Cilaos")!.autres).toEqual([]);
   });
 
-  it("takes Saint-Pierre's Mont Vert for « Montvert », as most write it, and says the locality of Les Trois-Bassins beside it (marketing, 18/11/2026)", () => {
+  it("takes Saint-Pierre's Mont Vert for « Montvert », as most write it, and says the locality of Les Trois-Bassins beside it (wording validated on 18/11/2026)", () => {
     for (const q of ["Montvert", "Mont Vert", "Montvert-les-Hauts", "Mont-Vert les Hauts"]) {
       const r = resolvePlace(q)!;
       expect([r.lieu.nom, r.lieu.commune], q).toEqual(["Mont Vert les Hauts", "Saint-Pierre"]);

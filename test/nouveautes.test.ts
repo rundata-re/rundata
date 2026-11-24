@@ -36,7 +36,7 @@ describe("the changes, said once", () => {
   it("make the page /nouveautes", () => {
     const page = nouveautesPage("https://rundata.re");
     expect(page).toContain("<h1>Les nouveautés de rundata.re</h1>");
-    // The day's number with its month (marketing), on one line: a span, nowrap in the style sheet but under 19.9 em, where
+    // The day's number with its month, on one line: a span, nowrap in the style sheet but under 19.9 em, where
     // « 4 novembre » can be wider than the title's line and the month goes whole to the next one (never « novembr/e »).
     const [jour, mois] = parJour()[0].titre.match(/(\d+(?:er)?) (\p{L}+)/u)!.slice(1);
     expect(page).toContain(`<time datetime="${parJour()[0].jour}">${parJour()[0].titre.replace(`${jour} ${mois}`, `<span class="jm">${jour} ${mois}</span>`)}</time>`);

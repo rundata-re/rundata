@@ -1,6 +1,6 @@
 /**
  * /marches-publics: the public procurement notices open at La Réunion, from the BOAMP, newest first, to filter by
- * commune or by words, each with its link to the notice on boamp.fr. In marketing's words (29/10/2026). The
+ * commune or by words, each with its link to the notice on boamp.fr. In the validated words (29/10/2026). The
  * assistants get a commune's notices from annuaire_services_publics (tools/marches-publics.ts, 23/11/2026).
  */
 import type { Cached } from "../cache.js";

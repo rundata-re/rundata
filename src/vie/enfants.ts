@@ -5,7 +5,7 @@
  * not be reused) and the private activities no open map has are missing, and the page and the tool say so.
  *
  * An age is a fact only when the source gives it (OpenStreetMap's min_age / max_age, the organiser's text for an
- * event); else an indication by kind of place, always marked as rundata.re's (marketing/enfants-textes.md §3).
+ * event); else an indication by kind of place, always marked as rundata.re's.
  */
 import { distanceKm } from "../geo.js";
 import { tranche } from "../tools/format.js";
@@ -176,7 +176,7 @@ export function nearest(lon: number, lat: number, list = LIEUX, max = 5) {
 }
 
 /**
- * The hours of the day of `now` OpenStreetMap gives, as every page writes a span (kit.md): « 9 h–18 h », « 10:00–12:00 et
+ * The hours of the day of `now` OpenStreetMap gives, as every page writes a span (the brand kit): « 9 h–18 h », « 10:00–12:00 et
  * 13:30–17:00 », with their minutes when one time of the place has some, any day. Undefined when it gives none for that day.
  */
 export function hoursToday(l: Lieu, now: Date): string | undefined {

@@ -7,7 +7,7 @@
  *   or to the list when several share the venue.
  * Each pair of a time and a genre is a layer of islandMap (`ly-<time>-<genre>`), or a line saying nothing was found:
  * the page's own CSS shows the one of the buttons checked. Nothing read: the agenda's copy, already there.
- * A map that filters (marketing's charter of the maps, 31/10/2026): in the content, the width of the page.
+ * A map that filters (the brand charter of the maps, 31/10/2026): in the content, the width of the page.
  * Put in the page only when it nears the screen (laterMap()), its room kept until then: on a phone it is two screens
  * under the top, and the first paint neither builds nor draws it. Its buttons stay in the page; the list says the same.
  */

@@ -211,13 +211,13 @@ export function monumentsCouche(list: monuments.Monument[], du: string): CoucheJ
   return { id: "monuments", nom: "Monuments historiques (base Mérimée)", nature: "fixe", precision: "lieu", source: monuments.SOURCE, heure: du, objets };
 }
 
-// The names of the files, read alone: what they show and their source (marketing).
+// The names of the files, read alone: what they show and their source.
 const NOMS_ENFANTS: Record<enfants.Lieu["source"], string> = {
   osm: "Aires de jeux, parcs, musées et médiathèques (OpenStreetMap)",
   data_es: "Piscines, skateparks, city-stades et escalade (Data ES)",
   basilic: "Médiathèques et bibliothèques (Basilic)",
 };
-// Their names in the page's list and legend (marketing).
+// Their names in the page's list and legend.
 const COURTS_ENFANTS: Record<enfants.Lieu["source"], string> = { osm: "Jeux, parcs et musées", data_es: "Piscines et sport en accès libre", basilic: "Médiathèques" };
 
 const fixe = (c: Omit<Couche, "nature" | "maxAge" | "forme">): Couche => ({ ...c, nature: "fixe", forme: "points", maxAge: FIXE_MAX_AGE });

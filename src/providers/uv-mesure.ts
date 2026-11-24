@@ -323,7 +323,7 @@ const dit = (uv: number) => {
 };
 const hhmm = (t: number) => new Date(t + 4 * 3_600_000).toISOString().slice(11, 16);
 
-// Marketing's words (23/11/2026). The ozone and angle correction is the one ENERGY-Lab advised, applied with the
+// The validated words (23/11/2026). The ozone and angle correction is the one ENERGY-Lab advised, applied with the
 // certificate's table; « le dernier connu », « estimation provisoire » are the words of our mail to ENERGY-Lab.
 export const INCERTITUDE =
   "Indice calculé par rundata.re à partir de la mesure du radiomètre UV d'ENERGY-Lab (Université de La Réunion), avec son certificat " +

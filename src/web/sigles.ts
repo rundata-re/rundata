@@ -1,5 +1,5 @@
 /**
- * The acronyms of the site, spelled out at their first occurrence on each page (marketing, UX review of 04/11/2026): a
+ * The acronyms of the site, spelled out at their first occurrence on each page (UX review of 04/11/2026): a
  * resident does not know that the TCO is the West's community of communes, nor what the CMRS is. The same list makes
  * the « Sigles » section of /a-propos. RECIL is not here: the ARS names it without spelling it out, so the text says
  * what it is instead (« RECIL, le distributeur d'eau de Cilaos »).

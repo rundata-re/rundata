@@ -1,5 +1,5 @@
 /**
- * The two forms of the clubs' and associations' space (marketing's spec, espace-associations.md §3 and §4), on plain
+ * The two forms of the clubs' and associations' space (the spec of the clubs' space §3 and §4), on plain
  * HTML, so they work without a script:
  * - « Nous donner votre lien », POST /associations/lien: once kept, the browser is sent back to its page, where
  *   #lien-merci says so by CSS alone, like the feedback form (web/avis.ts); refused, the form comes back on a page of

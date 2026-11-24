@@ -1,5 +1,5 @@
 /**
- * What the clubs and associations send through /associations (marketing's spec, espace-associations.md §3 and §4):
+ * What the clubs and associations send through /associations (the spec of the clubs' space §3 and §4):
  * the link of their agenda (« Nous donner votre lien ») and the events they propose themselves (« Proposer un
  * événement »). One row each in the D1 tables `liens` and `propositions` (scripts/propositions.sql), next to the
  * feedback (src/avis.ts), read with a script by whoever moderates.

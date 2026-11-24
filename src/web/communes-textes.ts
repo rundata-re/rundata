@@ -1,6 +1,6 @@
 /**
  * The own text of a commune's page (/communes/<slug>), under its title: what the commune is, then what the page gathers.
- * Fixed words, the same at every visit, written for the residents (marketing, validated on 20/11/2026): the page's
+ * Fixed words, the same at every visit, written for the residents (validated on 20/11/2026): the page's
  * tiles below say the moment. All 24 communes have one; a commune left out would open on its hook alone.
  *
  * Sources of the facts, read on 20/11/2026:

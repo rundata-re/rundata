@@ -47,7 +47,7 @@ describe("the cyclone alert's codes", () => {
 describe("the schools and the cyclone alert", () => {
   const SELON = ", selon le dispositif ORSEC Cyclones (arrêté 2026-182).";
 
-  it("says each state in marketing's words, with the plan as its source", () => {
+  it("says each state in the validated words, with the plan as its source", () => {
     expect(ecoles(map([]), NOW)).toMatchObject({ etat: "aucune", texte: "Pas d'alerte cyclonique en cours à La Réunion.", fermees: false });
     const pre = ecoles(map([[7, "2026-10-24T06:00:00"]]), NOW);
     expect(pre).toMatchObject({ etat: "pre_alerte", fermees: false });
@@ -116,7 +116,7 @@ describe("the schools' sentences quote the plan, page by page", () => {
   it("finds every quotation of the rule and of the states on the pages they give", () => {
     const sentences = [...REGLE, ...STATES.flatMap((s) => [ecoles(map(s), NOW).texte, ecoles(map(s), NOW).reouverture ?? ""])];
     for (const line of sentences) for (const { quote, pages } of cited(line)) expect(onPages(quote, pages), `p. ${pages.join("-")} : « ${quote} »`).toBe(true);
-    // The three sentences marketing rewrote quote the plan; the others say it in short, without quotation marks.
+    // The three sentences rewritten when validated quote the plan; the others say it in short, without quotation marks.
     for (const line of [REGLE[2], ecoles(map(STATES[1]), NOW).texte, ecoles(map(STATES[6]), NOW).texte]) expect(cited(line).length, line).toBeGreaterThan(0);
   });
 

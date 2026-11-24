@@ -31,7 +31,7 @@ PAGE = "https://data.regionreunion.com/explore/assets/bdcanyons-lareunion/"
 # An ONF trail is along a canyon when this much of it lies along the canyon's line, or most of a short one.
 ALONG_MIN_M = 100
 
-# The inventory's reasons for a ban, as said (data-run, 03/11): every one the source gives, so that a new one stops the build.
+# The inventory's reasons for a ban, as said (03/11): every one the source gives, so that a new one stops the build.
 APB = "arrêté de protection de biotope"
 AP97 = "arrêté préfectoral de 1997"
 DAF94 = "Direction de l'agriculture et de la forêt, 1994"
@@ -61,7 +61,7 @@ MOTIFS = {
 # Reasons given without the mark « interdit »: one is said, the others not at all (« RE » is not explained anywhere).
 AUTORISATION = "soumis à autorisation"
 TUS = {"RE", "? à vérifier"}
-# Marked forbidden in the observations only, which are never published: the ban, said as the others (data-run, 03/11).
+# Marked forbidden in the observations only, which are never published: the ban, said as the others (03/11).
 INTERDITS_EN_OBSERVATION = {"BRAS DES ETANGS LES HAUTS": APB}
 
 # « sup » and « inf » said « amont » and « aval », which agree with a ravine as with a bras.

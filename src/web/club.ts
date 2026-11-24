@@ -1,5 +1,5 @@
 /**
- * The clubs' own space (marketing/espace-club-verifie.md §3 and §6, words as written), on plain HTML like the other
+ * The clubs' own space (its spec, §3 and §6, words as written), on plain HTML like the other
  * forms of /associations, so it works without a script:
  * - GET /associations/club: screen 1, « Le nom de votre club ou association », and with ?q= the clubs found;
  * - GET /associations/club/demande?club=<id>: screen 2, the official address read now at its source, masked here;

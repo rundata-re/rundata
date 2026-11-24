@@ -10,11 +10,11 @@ import { adressesCoupables, connector, layout } from "./pages.js";
 
 export const PATH = "/mcp";
 const TITLE = "Ajouter rundata.re à votre IA · connecteur MCP gratuit";
-// The connector's one name on every link to it (marketing's review of 29/10, R4).
+// The connector's one name on every link to it (the validated review of 29/10, R4).
 const CRUMB = "Brancher mon IA";
 const DESCRIPTION = "Comment ajouter le connecteur rundata.re à ChatGPT, Claude ou Le Chat : votre IA lit les données de La Réunion en direct. Gratuit, sans compte.";
 
-// The plans and the menus, read in each assistant's help on that day (marketing's D9): to read again each month.
+// The plans and the menus, read in each assistant's help on that day (the validated D9): to read again each month.
 const VERIFIE = "2026-11-02";
 const VERIFIE_TEXTE = "2 novembre 2026";
 

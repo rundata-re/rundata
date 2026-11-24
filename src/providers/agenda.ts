@@ -74,7 +74,7 @@ const REPRISE_INFORMATION = "Reprise autorisée à des fins d'information, sans 
 
 /**
  * The licence of a commune's site that writes no condition of reuse (Sainte-Marie, Salazie, as read on 25/10/2026):
- * never said to allow it, only that it writes nothing (marketing, 25/10).
+ * never said to allow it, only that it writes nothing (wording validated on 25/10).
  */
 const SANS_CONDITION = "\u00a0; aucune condition de reprise écrite sur le site";
 
@@ -299,7 +299,7 @@ export interface Agenda {
   mention?: true;
   /**
    * Read with its written agreement, which asks each of its events to name it: « Théâtre Luc Donat », said as
-   * « Source : Théâtre Luc Donat (site lu le mardi 27/10 à 10:30) » (marketing; src/providers/autorisations.ts).
+   * « Source : Théâtre Luc Donat (site lu le mardi 27/10 à 10:30) » (src/providers/autorisations.ts).
    */
   credit?: string;
   /** Its site's terms ask for an authorisation to reproduce it: its events keep their facts, without their sentence. */
@@ -846,7 +846,7 @@ export const ACTUS_MAIRIES: Agenda[] = [
       site_commune: "site de la commune de La Plaine-des-Palmistes (©\u00a0https://www.ville-plainedespalmistes.fr)",
     };
   }),
-  // No condition written on their sites: their facts only all the same, as for the others (marketing, 25/10).
+  // No condition written on their sites: their facts only all the same, as for the others (wording validated on 25/10).
   { ...news("sainte_marie_actus", "Ville de Sainte-Marie", "https://www.ville-saintemarie.re/", `https://www.ville-saintemarie.re${WP_NEWS}`, "Sainte-Marie",
     (body, now) => parseWpNews(JSON.parse(body), "Ville de Sainte-Marie", "Sainte-Marie", now), `Information publique (actualités municipales)${SANS_CONDITION}`), site_commune: "site de la commune de Sainte-Marie", faits: true },
   { ...news("salazie_actus", "Ville de Salazie", `${SALAZIE}/`, `${SALAZIE}/category/actualites/`, "Salazie", parseSalazieNews, `Information publique (actualités municipales)${SANS_CONDITION}`),
@@ -1966,13 +1966,13 @@ export const HOTES_AGENDAS = Object.fromEntries(AGENDAS.filter((a) => a.source =
 ]));
 // The same for the halls: those read only.
 const sallesLues = AGENDAS.filter((a) => a.source === SALLES_SOURCE).map((a) => a.nom);
-// One hall: « Programme du Séchoir » (marketing).
+// One hall: « Programme du Séchoir ».
 SALLES_SOURCE.nom = sallesLues.length === 1 ? `Programme ${sallesLues[0].replace(/^Le /, "du ").replace(/^La /, "de la ").replace(/^(?!du |de la )/, "de ")}` : `Programmes des salles : ${sallesLues.join(", ")}`;
 SALLES_SOURCE.attribution = sallesLues.join(", ");
-// Those read with their written agreement, each with its day (marketing).
+// Those read with their written agreement, each with its day.
 SALLES_SOURCE.licence += AGENDAS.filter((a) => a.source === SALLES_SOURCE && NON_REPRISES[`agenda:${a.id}`]?.accordee_le)
   .map((a) => `\u00a0; ${a.nom} : repris avec son accord écrit du ${NON_REPRISES[`agenda:${a.id}`].accordee_le!.split("-").reverse().join("/")}`).join("");
-// The communes read with their written agreement, each with its day, as the halls' (marketing).
+// The communes read with their written agreement, each with its day, as the halls'.
 for (const a of AGENDAS) {
   const le = AUTORISATIONS[`agenda:${a.id}`]?.accordee_le;
   if (le && a.source !== SOURCES.mairies) a.source.licence += `\u00a0; repris avec son accord écrit du ${le.split("-").reverse().join("/")}`;

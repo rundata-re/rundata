@@ -114,7 +114,7 @@ describe("the text read, in the answers", () => {
     expect(r.resume).toMatch(/… »/);
     // The time of the post, never the one written in the image.
     expect(r.resume).not.toMatch(/08[:h]00/);
-    // « sans légende »: a text is quoted (marketing).
+    // « sans légende »: a text is quoted.
     expect(r.publications_ovpf[0]).toMatchObject({ date: "25/10 08:02 heure de La Réunion", texte: "Publication en 3 images, sans légende", lien, image: true, a_lire: A_LIRE_LU });
     expect(r.publications_ovpf[0].texte_lu_dans_l_image.split("\n\n")).toEqual((stored as { paragraphes: string[] }).paragraphes);
     // Read once: kept in the cache, KV is not asked again.

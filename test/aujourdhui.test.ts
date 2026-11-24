@@ -179,7 +179,7 @@ describe("the town hall in the page of a commune's day", () => {
   });
 
   // Before it opens, « fermée 8 h–16 h » read « fermée de 8 h à 16 h » (24/11/2026): when it opens, and until when, in
-  // marketing's words; one writing of the hours on the line, with minutes when one of the day's has some.
+  // the validated words; one writing of the hours on the line, with minutes when one of the day's has some.
   it("says when a closed town hall opens, reopens, or closed, never « fermée » before its hours", () => {
     // Monday 26/10 (07:30–12:00 and 13:00–16:00): 06:00, 12:30, then 17:00.
     expect(line("2026-10-26T02:00:00Z")).toMatch(/^<li>Mairie : <b>ouvre à 07:30<\/b> <span class="note">\(jusqu&#39;à 12:00, puis 13:00–16:00\)<\/span> · 0262/);

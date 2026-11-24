@@ -73,7 +73,7 @@ describe("the alerts before this one", () => {
       for (const part of parts) {
         const i = t.indexOf(part, at);
         expect(i, `${m.communique.copie} : ${part}`).toBeGreaterThanOrEqual(0);
-        // A cut leaves out the plan's name or an aside, never a negation, a condition or a restriction (marketing).
+        // A cut leaves out the plan's name or an aside, never a negation, a condition or a restriction.
         if (at) expect(t.slice(at, i), m.communique.copie).not.toMatch(/\b(ne|n’|n'|pas|sauf|si|uniquement|seulement|interdite?s?|jusqu|restreinte?|limitée?)\b/i);
         at = i + part.length;
       }
@@ -177,7 +177,7 @@ describe("the alerts before this one", () => {
     );
     const html = volcanPage("https://rundata.re", { value: { resume: "", sources: [], avertissements: [] } as unknown as VolcanAnswer, fetchedAt: NOW, stale: false }, NOW);
     expect(html).toContain(`<h2 id="h-alertes">Les alertes précédentes</h2><p>${CHAPEAU.replace(/'/g, "&#39;")}</p>`);
-    // Whose the end is: the prefecture's release, often weeks after the stop the OVPF announces (marketing).
+    // Whose the end is: the prefecture's release, often weeks after the stop the OVPF announces.
     expect(CHAPEAU).toContain("Les phrases sont citées telles quelles. Leur fin est celle de la préfecture, qui lève l'alerte par un communiqué, parfois des semaines après l'arrêt de l'éruption annoncé par l'OVPF. Ce n'est pas");
     expect(html).toContain(`<li><b>05/10/2022</b>, éruption arrêtée\u00a0: «\u00a0Éruption arrêtée mais enclos toujours fermé\u00a0» <a href="https://web.archive.org/web/20221005174746/https://www.reunion.gouv.fr/piton-de-la-fournaise-eruption-arretee-mais-enclos-a9951.html">communiqué du 05/10/2022 →</a></li>`);
     expect(html).toContain("communiqué mis à jour le 06/09/2023 →");
@@ -215,7 +215,7 @@ describe("a release newer than the list", () => {
 });
 
 describe("the last eruption, the OVPF's dates", () => {
-  it("says its days in words, the year on both when they differ, with the OVPF's post (marketing)", () => {
+  it("says its days in words, the year on both when they differ, with the OVPF's post", () => {
     expect(derniereEruptionText()).toBe("Dernière éruption : du 13 février au 12 avril 2026, selon l'OVPF (https://bsky.app/profile/ovpf.bsky.social/post/3mjdrynd4ns2g).");
     expect(derniereEruptionDates({ debut: "2026-12-28", fin: "2027-01-03" })).toBe("du 28 décembre 2026 au 3 janvier 2027");
     expect(derniereEruptionDates({ debut: "2026-04-03", fin: "2026-04-12" })).toBe("du 3 au 12 avril 2026");

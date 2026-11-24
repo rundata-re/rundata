@@ -71,7 +71,7 @@ describe("Altervélo", () => {
     // Each commune served leads to its stations.
     expect(mapLinks(html).map((l) => l.href)).toEqual(["#c-l-etang-sale", "#c-saint-louis", "#c-saint-pierre"]);
     expect(tabStops(html)).toBe(0);
-    // Each commune has its bubble (marketing's charter of the maps): those served, their bikes and their link; the others,
+    // Each commune has its bubble (the brand charter of the maps): those served, their bikes and their link; the others,
     // no station. The legend draws the colour, then when the stations were read.
     expect(html).toMatch(/<a class="zn" href="#c-saint-pierre" aria-label="Saint-Pierre : 7\u00a0vélos disponibles, voir le détail" data-pn="Saint-Pierre" data-p2="7\u00a0vélos disponibles" data-pv="commune" tabindex="-1">/);
     expect(html).toContain('<a class="zn" tabindex="-1" aria-hidden="true" data-pn="Le Tampon" data-p2="pas de station Altervélo">');
@@ -81,7 +81,7 @@ describe("Altervélo", () => {
     expect(doubleIds(html)).toEqual([]);
     expect(html).toContain("<li><span>ZAC Maxime Rivière</span> <span><b>6</b>\u00a0vélos · <b>1</b>\u00a0trottinette · 4\u00a0places</span></li>");
     expect(html).toContain("<li><span>Stade de Terre Sainte</span> <span>location impossible en ce moment</span></li>");
-    // A count stays with its word at the end of a line (marketing).
+    // A count stays with its word at the end of a line.
     expect(html).toContain('Saint-Pierre <span class="note">7\u00a0vélos, 4\u00a0stations</span>');
     const desc = html.match(/name="description" content="([^"]*)"/)![1];
     expect(desc.length).toBeLessThanOrEqual(DESCRIPTION_MAX);

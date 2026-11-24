@@ -98,7 +98,7 @@ function gaugeRow(s: CruesStation, read: string): string {
   return `<li class="tgt" id="${anchorId("s", s.station)}"><span>${esc(s.station)} · ${esc(s.commune)} <small>${value}</small>${marks}</span> <span></span></li>`;
 }
 
-// The fords (marketing): the préfecture's instruction in heavy rain, word for word with its communiqué, then the
+// The fords: the préfecture's instruction in heavy rain, word for word with its communiqué, then the
 // announcements that name a ford, each with its source and its time; their state is on infotrafic.re, of which only the
 // link is given.
 const FORD_RULE = "https://www.reunion.gouv.fr/Actualites/Communiques-de-presse/Vigilance-orange-fortes-pluies-orages-a-partir-de-12h";
@@ -170,7 +170,7 @@ export function cruesPage(origin: string, data: Cached<CruesAnswer> | null, now 
       place: where, say: line, href: `#${anchorId("s", s.station)}` }];
   });
 
-  // Its source named, which is what people search (« vigicrue reunion »; marketing, 24/11/2026), in the title, the
+  // Its source named, which is what people search (« vigicrue reunion »; wording validated on 24/11/2026), in the title, the
   // description and the page's first line (pages.ts HOOKS): always « d'après Vigicrues », never first nor in the h1,
   // where the page would read as the official service's.
   const title = "Crues en direct à La Réunion, d'après Vigicrues · 974";

@@ -5,7 +5,7 @@
 import gazetteer from "./places/gazetteer.js";
 
 // The commune whose name has no article but takes one in a sentence: « à l'Entre-Deux », as the island and the commune
-// say it; the name alone where no word comes before it (« Météo Entre-Deux », marketing).
+// say it; the name alone where no word comes before it (« Météo Entre-Deux »).
 const ENTRE_DEUX = "Entre-Deux";
 
 type Genre = "m" | "f" | "p";

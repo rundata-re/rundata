@@ -20,7 +20,7 @@ describe("the acronyms spelled out once per page", () => {
     expect(withSigles(['<p data-x="a>b">CMRS</p>'])[0]).toBe('<p data-x="a>b"><abbr title="Centre météorologique régional spécialisé (Météo-France La Réunion)">CMRS</abbr></p>');
   });
 
-  it("lists every acronym in the « Sigles » section of /a-propos, and RECIL in marketing's words", () => {
+  it("lists every acronym in the « Sigles » section of /a-propos, and RECIL in the validated words", () => {
     const page = aProposPage("https://rundata.re");
     expect(page).toContain('<h2 id="sigles">Sigles</h2>');
     for (const s of Object.keys(SIGLES)) expect(page).toContain(`>${s}</`);

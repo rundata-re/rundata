@@ -1,7 +1,7 @@
 /**
  * A post that calls stallholders or candidates to an outing (« Appel à exposants marché de noël au colosse ! », Ville de
  * Saint-André, 21/11/2026) reads as a notice for them, not as an outing. Shown by the outing's name, in the usual
- * capitals (« Marché de Noël au Colosse »), and said to come from that call, with the post's link (words by marketing,
+ * capitals (« Marché de Noël au Colosse »), and said to come from that call, with the post's link (words for the site,
  * 21/11/2026). Only when the post gives the public its days and hours: without them, the dates are most often the call's
  * own (« candidatures avant le 30/11 »), and the post is not given as an outing.
  */
@@ -89,7 +89,7 @@ export function appelAuPublic<E extends Pick<Evenement, "titre" | "seances" | "c
   return { ...e, titre: nomUsage(nom, e.commune, e.description), appel };
 }
 
-/** « annoncé par la Ville de Saint-André dans un appel à exposants » (marketing, 21/11/2026), the page and the tool alike. */
+/** « annoncé par la Ville de Saint-André dans un appel à exposants » (wording validated on 21/11/2026), the page and the tool alike. */
 export const annonceAppel = (publiePar: string, appel: Appel) => `annoncé par ${lePar(publiePar)} dans un appel à ${appel}`;
 
 /** « la Ville de Saint-André », « la Mairie de Saint-Paul », « la CINOR », « le TCO »: the publisher with its article. */

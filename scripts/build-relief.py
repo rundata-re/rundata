@@ -88,7 +88,7 @@ WARM, OCHRE = 0.9, 40
 # to HIGH_SHADE of its strength. Elsewhere the slopes shade at SHADE of their strength, and nowhere does a slope's
 # shadow take more than SHADOW_FLOOR off. No whitening: the photo's own light is raised, never mixed with white.
 SHADE, HIGH_FROM, HIGH_TO, HIGH_GAMMA, HIGH_SHADE, SHADOW_FLOOR = 0.6, 400, 1600, 0.38, 0.4, 0.2
-# Marketing's three limits (31/10/2026): the saturation is pushed on the greens only (hues GREENS, in degrees), the
+# The validated three limits (31/10/2026): the saturation is pushed on the greens only (hues GREENS, in degrees), the
 # yellows of the Plaines and of the west keep the photo's own, as E2's (BASE_SAT, its browns BASE_EARTH); nothing
 # greyer than GREY_S is pushed (the lava of the Grand Brûlé turned violet); and nothing that grey is lighter than GREY_V,
 # so that the white rings of the dots and the communes' outlines still read on the towns.
@@ -97,7 +97,7 @@ GREENS, BASE_SAT, BASE_EARTH, GREY_S, GREY_V = (100, 145), 1.25, 0.3, 0.15, 0.8
 # smoothly by its hue (over RAMP degrees at each end of GREENS) and its saturation (from GREY_S to twice), so that no
 # edge shows where a field turns from green to yellow.
 BASE_GAMMA, BASE_HIGH_GAMMA, RAMP = 1.15, 0.5, 15
-# Against an acid green (marketing, 31/10/2026): the yellow-greens of the photo (hues TURN, in degrees) turned by up to
+# Against an acid green (wording validated on 31/10/2026): the yellow-greens of the photo (hues TURN, in degrees) turned by up to
 # TURN_BY towards the forests' green; the weight of the push blurred over MASK_BLUR pixels, so that a field is pushed as
 # a whole and not one pixel in two; and no colour lit above LIT more saturated than MAX_S.
 TURN, TURN_BY, MASK_BLUR, LIT, MAX_S = (60, 150), 15, 2, 0.5, 0.55

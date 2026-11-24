@@ -56,7 +56,7 @@ export const OUTILS: Outil[] = [
   { nom: "sources_donnees", ligne: "sources, licences, outils, nouveautés", depuis: "2026-10-23T16:09:00+04:00" },
 ];
 
-// Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded by marketing): what
+// Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded for the site): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
   { date: "2026-11-24T20:37:00+04:00", texte: "Carte de la qualité de l'eau des plages\u00a0: moins de traits passent sous le rond d'une autre plage." },

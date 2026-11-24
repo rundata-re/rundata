@@ -16,7 +16,7 @@ import { injoignable } from "./injoignable.js";
 /** Whether `quoi` asks about public procurement: « marchés publics », « appel d'offres », « avis BOAMP ». */
 export const PROCUREMENT = /march[ée]s?\s+publics?|appels?\s+d.\s*offres?|\bboamp\b|avis\s+de\s+march[ée]|commande\s+publique/iu;
 
-/** What is covered, in marketing's words: the page's (web/marches-publics.ts) and the tool's. */
+/** What is covered, in the validated words: the page's (web/marches-publics.ts) and the tool's. */
 export const COUVERTURE = "Les avis de marché publiés au Bulletin officiel des annonces des marchés publics (BOAMP) pour La Réunion, lus chaque heure. Un avis reste ici jusqu'à sa date limite de réponse ; un rectificatif remplace l'avis qu'il corrige. La liste n'est pas complète : sous 90 000 € HT, l'acheteur choisit où il publie, et jusqu'aux seuils européens, il peut publier dans un journal d'annonces légales plutôt qu'au BOAMP. Le dossier de consultation se télécharge sur le profil d'acheteur, dont l'avis donne le lien : l'avis fait foi.";
 
 /** The commune of a notice: its place of work's, else its buyer's, as the page groups them. */

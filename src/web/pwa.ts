@@ -133,7 +133,7 @@ if(/Mobi/.test(ua))return "telephone";
 const v=/Version\/(\d+)[.\d]* Safari\//.exec(ua);
 return /Macintosh/.test(ua)&&v&&Number(v[1])>=17&&!/Chrome|Chromium|Edg|OPR/.test(ua)?"mac-safari":null};`;
 
-/** One browser's steps (marketing's words, the menus' names as checked on each browser), in the block and on /application. */
+/** One browser's steps (the validated words, the menus' names as checked on each browser), in the block and on /application. */
 export interface Section {
   /** Its anchor on /application. */
   id: string;
@@ -150,7 +150,7 @@ export interface Section {
   plus?: string;
 }
 
-/** The browsers in marketing's order (27/10); a menu is named only where the browser's own help names it, else the steps stay general. */
+/** The browsers in the validated order (27/10); a menu is named only where the browser's own help names it, else the steps stay general. */
 export const SECTIONS: Section[] = [
   {
     id: "iphone-safari",

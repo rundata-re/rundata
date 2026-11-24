@@ -55,22 +55,22 @@ export const AILLEURS: { nom: string; site: string; communes: string[] }[] = [
   { nom: "la CIVIS", site: "https://www.civis.re/", communes: ["Saint-Pierre", "Saint-Louis", "L'Étang-Salé", "Petite-Île", "Cilaos", "Les Avirons"] },
   { nom: "la CASUD", site: "https://www.casud.re/", communes: ["Le Tampon", "Saint-Joseph", "Entre-Deux", "Saint-Philippe"] },
 ];
-// Marketing's words (04/11/2026), for a commune outside the TCO: never a street to spell again.
+// The validated words (04/11/2026), for a commune outside the TCO: never a street to spell again.
 export const ailleurs = (commune: string, epci: { nom: string }) =>
   `${commune} : la collecte des déchets y est assurée par ${epci.nom}, dont les calendriers ne sont pas repris ici. rundata.re reprend ceux du TCO (Le Port, La Possession, Saint-Paul, Trois-Bassins, Saint-Leu). Voir le site de ${epci.nom}.`;
 
-// Marketing's words, said by the tool and the pages.
+// The validated words, said by the tool and the pages.
 export const NOT_FOUND = "Rue non trouvée dans les calendriers du TCO. Vérifiez l'orthographe, ou essayez le nom du quartier.";
 // A street the TCO lists without a calendar: nothing is inferred, its contact page is the link of the arrow.
 export const NO_CALENDAR = `les calendriers ${YEAR} du TCO ne donnent pas de jour de collecte pour cette voie, et rundata.re ne sait pas si elle est collectée au porte-à-porte. Renseignez-vous auprès du TCO →`;
-// The same above the list of such streets on a page (marketing).
+// The same above the list of such streets on a page.
 export const NO_CALENDAR_LIST = `Les calendriers ${YEAR} du TCO ne donnent pas de jour de collecte pour ces voies, et rundata.re ne sait pas si elles sont collectées au porte-à-porte. Renseignez-vous auprès du TCO →`;
 export const TCO_CONTACT = "https://www.tco.re/contact";
 /** Past the calendars' year, nothing of it is applied to the next. */
 export const notYet = () => `Les calendriers ${YEAR + 1} du TCO ne sont pas encore publiés : rundata.re ne peut pas encore donner les jours de collecte.`;
 /**
  * Near the year's end, above the days still given: they hold until the 31st of December. notYet() there read as if no
- * day were given, above the days (24/11/2026). Marketing's words, whole in the tool's answer too.
+ * day were given, above the days (24/11/2026). The validated words, whole in the tool's answer too.
  */
 export const untilYearEnd = () => `Jours de collecte valables jusqu'au 31 décembre ${YEAR} : les calendriers ${YEAR + 1} du TCO ne sont pas encore publiés.`;
 const YEAR_DAYS = (Date.UTC(YEAR + 1, 0, 1) - Date.UTC(YEAR, 0, 1)) / DAY_MS;
@@ -81,7 +81,7 @@ export const nearYearEnd = (today: number) => today + 56 > YEAR_DAYS;
 export const honesty = () =>
   `Seulement les 5 communes de l'Ouest (TCO) pour l'instant. Calendriers ${YEAR} publiés par le TCO (data.tco.re), mis à jour le ${UPDATED.split("-").reverse().join("/")}. En cas d'alerte cyclonique, la collecte peut être suspendue : suivez les annonces du TCO.`;
 
-// In the order marketing says them.
+// In the validated order.
 const KINDS: [Kind, string][] = [["OM", "ordures ménagères"], ["CS", "tri"], ["DV", "déchets verts"], ["EN", "encombrants"]];
 const WEEKDAYS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
 const NTH = ["1er", "2e", "3e", "4e", "5e"];
@@ -158,7 +158,7 @@ export function rhythmOf(c: Calendar, today: number): string | undefined {
   return rhythmParts(c, today).map((p) => p.texte).join("\u00a0; ");
 }
 
-/** Each collection's part of rhythmOf, in marketing's order: « tri le lundi, une semaine sur deux (prochain : 16/11) ». */
+/** Each collection's part of rhythmOf, in the validated order: « tri le lundi, une semaine sur deux (prochain : 16/11) ». */
 export function rhythmParts(c: Calendar, today: number): { kind: Kind; texte: string }[] {
   return KINDS.flatMap(([k, name]) => {
     const r = rhythm(c[k], today, c.F ?? []);
@@ -220,7 +220,7 @@ export function holidays(c: Calendar, today: number): { jour: number; reportee?:
     });
 }
 
-/** Marketing's holiday sentence, or its fallback when the calendar shows no day made up. */
+/** The validated holiday sentence, or its fallback when the calendar shows no day made up. */
 export function holidayLine(x: { jour: number; reportee?: number }): string {
   return x.reportee
     ? `Jour férié le ${dm(x.jour)} : collecte reportée au ${dayFr(x.reportee)}, selon le calendrier du TCO.`

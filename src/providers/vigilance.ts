@@ -22,7 +22,7 @@ export const SOURCE: SourceInfo = {
   id: "mf_vigilance",
   nom: "Vigilance météo et alerte cyclonique de La Réunion (Météo-France)",
   organisme: "Météo-France, direction interrégionale de l'océan Indien",
-  // The official map, with the written agreement of Météo-France La Réunion (vigilance-carte.ts); marketing's words.
+  // The official map, with the written agreement of Météo-France La Réunion (vigilance-carte.ts); the validated words.
   licence: "Licence Ouverte Etalab 2.0\u00a0; Météo-France La Réunion : bulletin de suivi vigilance affiché tel quel, avec son accord écrit du 27/10/2026",
   attribution: "Météo-France",
   url: "https://vigilance.meteofrance.fr/fr/la-reunion",

@@ -25,7 +25,7 @@ export const CYCLONE_STEPS: Record<number, string> = {
 };
 
 const day = (iso: string) => localTime(new Date(iso));
-/** A zone and phenomenon where Météo-France issued nothing, not even green (marketing). */
+/** A zone and phenomenon where Météo-France issued nothing, not even green. */
 export const NONE_ISSUED = "pas de vigilance émise";
 
 /** The colour in force at `now`: the first period when `now` is before them all, -1 when there is none. */
@@ -172,7 +172,7 @@ const FEMININE: Record<string, string> = { vert: "verte", violet: "violette", gr
 /** « vigilance verte »: the colours as Météo-France names them, agreed with the word. */
 export const feminine = (colour: string) => FEMININE[colour] ?? colour;
 
-/** « jaune fortes pluies / orages, orange vents forts », « verte », or « pas de vigilance émise » (marketing). */
+/** « jaune fortes pluies / orages, orange vents forts », « verte », or « pas de vigilance émise ». */
 export function zoneText(v: mf.Vigilance, zone: string | undefined, now: Date): string {
   const { above, issued } = zoneLevels(v, zone, now);
   return above.length ? above.map((x) => `${feminine(mf.colour(x.couleur))} ${x.phenomene.toLowerCase()}`).join(", ") : issued ? feminine(mf.colour(1)) : NONE_ISSUED;
@@ -186,7 +186,7 @@ export const zoneShort = (zone: string | undefined) => (zone ? mf.ZONES[zone] ??
 
 /**
  * The coasts above green, as Météo-France names them, never given to a commune: « Vagues-submersion : jaune, zone
- * côtière de … » for one, « Vagues-submersion : jaune sur 3 zones côtières » beyond (marketing).
+ * côtière de … » for one, « Vagues-submersion : jaune sur 3 zones côtières » beyond.
  */
 export function coastText(v: mf.Vigilance): string | undefined {
   const coast = raised(v).filter((x) => x.phenomene === mf.PHENOMENA[9]);

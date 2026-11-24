@@ -10,14 +10,14 @@ import { employeurs, intitule } from "./employeurs.js";
 import { injoignable } from "./injoignable.js";
 import { a, credits, fr, notFound, placeBlock, text } from "./format.js";
 
-/** The sites for the companies' offers, linked and never read (marketing, 29/10/2026). */
+/** The sites for the companies' offers, linked and never read (wording validated on 29/10/2026). */
 export const ENTREPRISES = [
   { nom: "France Travail", lien: "https://www.francetravail.fr/accueil/" },
   { nom: "Mon emploi la Réunion", lien: "https://monemploi-lareunion.francetravail.fr/" },
 ];
 /** The user's line, word for word, with no link to them. */
 export const NON_REPRIS = "Les sites qui n'autorisent pas la reprise de leurs données : HelloWork, Meteojob, Domtomjob, APEC, Indeed, LinkedIn, leboncoin, Jooble.";
-/** What is covered, in marketing's words; the second sentence while some offer has no closing date. */
+/** What is covered, in the validated words; the second sentence while some offer has no closing date. */
 // The site's own search counts more than the offers followed here (614 against 474 on 04/11/2026): its total is not said
 // as ours.
 export const COUVERTURE = "Les offres de La Réunion que rundata.re suit sur Choisir le service public, lues chaque heure dans le flux de ses 20 dernières offres\u00a0: le site peut en compter davantage, sa recherche fait foi pour le total. Une offre reste ici jusqu'à sa date limite de candidature. Elle peut être pourvue avant : la page de l'offre fait foi.";

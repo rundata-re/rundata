@@ -72,7 +72,7 @@ export function weatherForTrace(points: [number, number][]): string {
 
 // The summits whose cloud sea of the morning is told (tools/nuages.ts): on a place's page, or on /randonnees for the
 // Piton des Neiges, which has none. Most climbs to the Grand Bénare start at the Maïdo: its line is the Maïdo's, with
-// the height between the two (2 898 m, the Maïdo's 2 197 m). Worded by marketing.
+// the height between the two (2 898 m, the Maïdo's 2 197 m). Worded for the site.
 export interface Summit {
   lon: number;
   lat: number;
@@ -142,7 +142,7 @@ const trailRow = (t: TrailItem) =>
 /**
  * The commune's page's hiking tile: its ONF trails, those closed, a few of them by name, and its sector's page, which
  * names it (« Randonnée dans le Sud »); first, the fires seen by satellite in the commune, with the emergency numbers
- * (worded by marketing).
+ * (worded for the site).
  */
 export function communeHikes(p: PlacePage, hikes: Cached<RandonneesAnswer> | null | undefined, now = new Date()): { nom: string; live?: Live; href: string; foot?: string; more?: string } | undefined {
   const sector = secteurNamed(secteur(p.place.lon, p.place.lat).secteur);
@@ -186,7 +186,7 @@ export function communeEvents(p: PlacePage, agenda: Cached<AgendaAnswer> | null 
   if (!agenda) return undefined;
   const rows = (agenda.value.evenements ?? []).filter((r) => r.commune === p.nom && repris(r));
   // Its own agendas that did not answer this time: their site, in short, first in the detail, the whole of it in the
-  // title; the value follows the other sources, which answered (marketing; tools/injoignable.ts).
+  // title; the value follows the other sources, which answered (tools/injoignable.ts).
   const at = localTime(agenda.fetchedAt);
   // Those of the scheduled event too, whose last try failed, at the hour of that try (Saint-Denis, 20/11/2026).
   const silent = silentOf(agenda.value.indisponible, p.nom, at, now, agenda.value.non_lus);
@@ -195,7 +195,7 @@ export function communeEvents(p: PlacePage, agenda: Cached<AgendaAnswer> | null 
   const whole = silent.length ? silent.map((x) => x.texte).join(" ") : undefined;
   if (!rows.length && said) return { valeur: "Rien d'annoncé", detail: esc(said), title: whole };
   // Its own site read with nothing announced: said with the hour of the read, so that it is not taken for a commune not
-  // read (marketing, 23/11/2026: « d'ici quinze jours, d'après le site de la commune lu le 23/11 à 06:56 »).
+  // read (wording validated on 23/11/2026: « d'ici quinze jours, d'après le site de la commune lu le 23/11 à 06:56 »).
   const read = agenda.value.sites_lus?.[p.nom]?.[0];
   if (!rows.length && read) return { valeur: "Rien d'annoncé", detail: `d'ici quinze jours, d'après le site de la commune lu ${luLe(read.lu_le)}` };
   if (!rows.length) return { valeur: "Rien d'annoncé", detail: "d'ici quinze jours dans les agendas lus" };

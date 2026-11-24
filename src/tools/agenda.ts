@@ -570,7 +570,7 @@ export function order(p: Periode) {
     x.seances[0].debut.localeCompare(y.seances[0].debut) || x.e.titre.localeCompare(y.e.titre, "fr");
 }
 
-/** Its last good reading, and that the platform did not answer since, when so (marketing's words). */
+/** Its last good reading, and that the platform did not answer since, when so (the validated words). */
 const luVia = (v: NonNullable<src.Evenement["via"]>) => (v.sans_reponse ? `lu sur ${v.plateforme} le ${dayText(v.lu)}, pas de réponse depuis` : `lu le ${dayText(v.lu)}`);
 
 /**
@@ -594,7 +594,7 @@ function dates(seances: src.Seance[]) {
 }
 
 /**
- * What an announcement leaves out, said the same on the event's page and in the tool (words by marketing, 20/11/2026):
+ * What an announcement leaves out, said the same on the event's page and in the tool (words for the site, 20/11/2026):
  * « L'annonce ne donne pas l'heure ; le détail est peut-être sur sa source : X. », or « pas d'adresse », or « ni l'heure
  * ni l'adresse ». « l'adresse », not « le lieu »: an announcement may name its hall in its text without the field
  * (« à la médiathèque… »). `qui` is the source's name, without an article (the page gives it as a link). Undefined when
@@ -638,7 +638,7 @@ export function eventRow(e: src.Evenement, seances: src.Seance[], place = false,
     lu_le: e.lu_le && !e.propose && !e.via ? dayText(e.lu_le) : undefined,
     /**
      * « site de la commune du Tampon, lu le samedi 24/10 à 08:00 », when it comes from a commune's site; « Théâtre Luc
-     * Donat (site lu le mardi 27/10 à 10:30) », when its agreement asks to name it (marketing); « l'association X, via
+     * Donat (site lu le mardi 27/10 à 10:30) », when its agreement asks to name it; « l'association X, via
      * HelloAsso, lu le … », when read on the platform an association linked.
      */
     source: outil && !mentionDue(e)
@@ -756,7 +756,7 @@ export function siteOf(nom: string): string {
 }
 
 /**
- * The agendas of a commune that did not answer, in marketing's words (tools/injoignable.ts): its tile, its day's page
+ * The agendas of a commune that did not answer, in the validated words (tools/injoignable.ts): its tile, its day's page
  * and resume_du_jour then never say « rien d'annoncé » alone, nor count the other sources' events as the whole of it.
  * Those read at the question (`indisponible`, at `readAt`), and those of the scheduled event whose last try failed
  * (`nonLus`, the copy's `non_lus`: « Ville de Saint-Denis : dernière lecture sans succès (le 20/11 à 05:40) »), at the
@@ -810,7 +810,7 @@ export function sourcesServies<T extends { source: string }>(cs: T[] | undefined
 const halls = src.AGENDAS.filter((x) => x.source === SALLES_SOURCE);
 /** « du Séchoir », « de la Cité des Arts », « de Léspas ». */
 const ofHall = (nom: string) => nom.replace(/^Le /, "du ").replace(/^La /, "de la ").replace(/^Les /, "des ").replace(/^(?!du |de la |des )/, /^[AEIOUYÉÈÊÀÂ]/iu.test(nom) ? "de l'" : "de ");
-// The names whose article their own words do not give: a body known by its initials, a hall, the clubs (marketing, 26/10).
+// The names whose article their own words do not give: a body known by its initials, a hall, the clubs (wording validated on 26/10).
 const OF_AGENDA: Record<string, string> = {
   CINOR: "de la CINOR",
   "Ligue réunionnaise de volley-ball": "de la Ligue réunionnaise de volley-ball",
@@ -823,7 +823,7 @@ const OF_AGENDA: Record<string, string> = {
 };
 /** After « l'agenda »: « de la mairie de Saint-Paul », « de la Ville du Port », « du Séchoir », « de l'Office de tourisme de l'Est ». */
 export const ofAgenda = (nom: string) => OF_AGENDA[nom] ?? (/^Mairie /.test(nom) ? `de la m${nom.slice(1)}` : /^Ville /.test(nom) ? `de la ${nom}` : ofHall(nom));
-/** What a commune read only through its mairie's news has besides (marketing): its halls' programmes. */
+/** What a commune read only through its mairie's news has besides: its halls' programmes. */
 function besides(commune: string): string {
   const its = halls.filter((h) => h.commune === commune).map((h) => ofHall(h.nom));
   return its.length ? `\u00a0; s'y ajoutent ${its.length > 1 ? "les programmes" : "le programme"} ${enumeration(its)}` : "";
@@ -837,7 +837,7 @@ export const PROGRAMMES_SALLES = `${halls.length > 1 ? "les programmes" : "le pr
 export const MAIRIES_LUES = towns.filter((x) => x.commune && !x.couvre).map((x) => x.commune).join(", ");
 export const COUVERTURE =
   `Agendas lus : ${towns.map((x) => (x.couvre ? `${x.nom} (${x.couvre.join(", ")})` : x.nom)).join(", ")}. ` +
-  // One hall: « Programme du Séchoir » (marketing).
+  // One hall: « Programme du Séchoir ».
   (halls.length > 1 ? `Programmes des salles : ${halls.map((x) => x.nom).join(", ")}. ` : halls.length ? `Programme ${ofAgenda(halls[0].nom)}. ` : "") +
   (partial.length ? `Actualités des mairies, pour les seuls événements qu'elles annoncent avec leur date (pas un agenda complet) : ${[...new Set(partial.map((x) => x.commune))].join(", ")}. ` : "") +
   `Sans agenda lu : ${without.join(", ")}` +
@@ -1045,7 +1045,7 @@ export const luLe = (iso: string) => {
   return `le ${d} à ${h}`;
 };
 
-/** « le site de la commune de Saint-Louis, lu le 23/11 à 06:56, n'en annonce aucun » (marketing, 23/11/2026); "" without one. */
+/** « le site de la commune de Saint-Louis, lu le 23/11 à 06:56, n'en annonce aucun » (wording validated on 23/11/2026); "" without one. */
 export function rienAnnonce(sites: { site: string; lu_le: string }[]): string {
   if (!sites.length) return "";
   return `${sites.map((x) => `le ${x.site}, lu ${luLe(x.lu_le)},`).join(" et ")} n'en annonce${sites.length > 1 ? "nt" : ""} aucun`;

@@ -106,7 +106,7 @@ describe("the fiche of an address, /terrain (web/terrain.ts)", () => {
     const html = plain(terrainPage("https://rundata.re", "rue de l'Ancienne Mairie, Saint-Paul", { fiche }));
     const block = html.slice(html.indexOf('id="h-prix"'), html.indexOf('id="h-prix"') + 1500);
     expect(block).toContain("Rue de l'Ancienne Mairie\u00a0: 1 vente enregistrée dans DVF sur la voie depuis 2021, trop peu pour une médiane");
-    // Who did not answer and when, the day with the hour (marketing, 22/11/2026).
+    // Who did not answer and when, the day with the hour (wording validated on 22/11/2026).
     expect(block).toContain("Ventes du secteur alentour (environ 600\u00a0m sur 600\u00a0m) non lues\u00a0: ni le Cerema ni Etalab n'ont répondu le 22/11 à 05:46. Réessayez plus tard.");
     expect(block).not.toContain("<table");
     // No sale read: the same, for the whole block.

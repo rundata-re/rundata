@@ -113,7 +113,7 @@ describe("the ORSEC level of a cold copy, the prefecture not read in time", () =
     // Logged for us, never said (the user, 25/10).
     expect(logged).toHaveBeenCalledWith(expect.stringMatching(/^volcan : niveau officiel Alerte 1, pitonlive Vigilance/));
     // The Enclos as the release said it (closed in alert), never pitonlive's « partiellement ». The release's title says
-    // nothing of the Enclos: closed by its level, never « interdit » put in its mouth (marketing).
+    // nothing of the Enclos: closed by its level, never « interdit » put in its mouth.
     expect(v.resume).toContain("Niveau : alerte 1 selon le communiqué de la préfecture du 17/10. Accès à l'Enclos interdit à ce niveau du dispositif ORSEC Volcan.");
     expect(v.resume).not.toContain("interdit selon le communiqué");
     const html = volcanPage("https://rundata.re", { value: v, fetchedAt: NOW, stale: false }, NOW);

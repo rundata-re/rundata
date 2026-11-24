@@ -2,8 +2,8 @@
 """Build src/vie/elus.json: the mayor and the deputy mayors of each commune of La Réunion, from the ministry of the
 Interior's Répertoire national des élus (RNE), on data.gouv.fr (Licence Ouverte 2.0).
 
-Public persons in their office: for each, only the first name, the surname and the office, by commune (rundata-lead,
-24/11/2026). Never the date of birth, the sex, the nationality nor the profession the file also gives: they are not
+Public persons in their office: for each, only the first name, the surname and the office, by commune
+(24/11/2026). Never the date of birth, the sex, the nationality nor the profession the file also gives: they are not
 read into the output. No political nuance either (the user's decision, vie/elections.ts).
 From the files « elus-maires-mai.csv » and « elus-conseillers-municipaux-cm.csv », read through data.gouv.fr's tabular
 API, filtered on the département 974: one page for the mayors, two for the deputy mayors, a minute apart.

@@ -1,5 +1,5 @@
 /**
- * The stable text of a commune's page (marketing, 14/11/2026): how to read it, then 3 to 5 questions built from what the
+ * The stable text of a commune's page (wording validated on 14/11/2026): how to read it, then 3 to 5 questions built from what the
  * site already has, each asked only when its data exists. Its own figures for each commune, and durable; no person
  * named (no mayor, no elected official). The commune's portrait is for later.
  */
@@ -13,7 +13,7 @@ import * as elections from "../vie/elections.js";
 import { esc } from "./map.js";
 import type { Faq } from "./texte-stable.js";
 
-/** A cable car is not a bus network: after them, in lower case (« et le téléphérique Papang », marketing, 22/11/2026). */
+/** A cable car is not a bus network: after them, in lower case (« et le téléphérique Papang », wording validated on 22/11/2026). */
 export const cable = (nom: string) => /^Téléphérique\b/.test(nom);
 
 export const COMMUNE_LIRE = "<p>En haut, ce qui change dans la journée, chaque donnée avec son heure et sa source : météo mesurée, vigilance, mer, eau, bus, mairie ouverte ou non. Plus bas, ce qui change rarement : écoles, médecins, loyers, fibre, élections. Chaque bloc renvoie à la page de l'île pour son thème.</p>";
@@ -23,7 +23,7 @@ const liste = (xs: string[]) => (xs.length < 2 ? xs.join("") : `${xs.slice(0, -1
 
 /**
  * The questions of a commune, each only with its data. `slug`: the commune's, for the link to its water cuts.
- * `desservis`: its stops most served, linked after its networks (marketing, 22/11/2026).
+ * `desservis`: its stops most served, linked after its networks (wording validated on 22/11/2026).
  */
 export function communeFaq(commune: string, slug: string, desservis: { nom: string; page: string }[] = []): Faq[] {
   const faq: Faq[] = [];
@@ -46,7 +46,7 @@ export function communeFaq(commune: string, slug: string, desservis: { nom: stri
     const dits = [...locaux.filter((n) => !cable(n.nom)).map((n) => n.nom), ...(jaune ? ["le Car Jaune"] : [])];
     const cables = locaux.filter((n) => cable(n.nom)).map((n) => `le ${n.nom.replace(/^T/, "t")}`);
     // Counted as before, without the Car Jaune: « Le réseau Kar'Ouest et le Car Jaune », « Les réseaux Citalis et le Car
-    // Jaune, et le téléphérique Papang » (marketing's words).
+    // Jaune, et le téléphérique Papang » (the validated words).
     const own = dits.length - (jaune ? 1 : 0);
     const bus = !own ? (jaune ? "Le Car Jaune" : "") : `${locaux.length > 1 ? "Les réseaux" : "Le réseau"} ${liste(dits)}`;
     faq.push({

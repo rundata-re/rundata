@@ -1,6 +1,6 @@
 /**
  * An agenda's title written all in capitals (« ATELIER DE GESTION BUDGETAIRE »), shown in the case of a sentence
- * (marketing, /evenements): « Atelier de gestion budgetaire ». A title with one lowercase letter is left as written, and
+ * (/evenements): « Atelier de gestion budgetaire ». A title with one lowercase letter is left as written, and
  * so is one too short not to be a sigle. Kept in capitals: the sigles of the island's bodies (CCAS, CINOR…), a word
  * without a vowel (« LRGR »), a short one no French word starts like (« DKLO »), the roman numerals and the words with a
  * digit. A commune or a village the resolver knows gets its capitals back (« Le rallye Grand Est fait étape à

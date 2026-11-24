@@ -20,7 +20,7 @@ describe("the app's version, the page's and the tag's", () => {
   });
 });
 
-// /appli (22/11/2026): the Android app's trial version, marketing's words of 21/11/2026, never indexed nor linked.
+// /appli (22/11/2026): the Android app's trial version, the validated words of 21/11/2026, never indexed nor linked.
 describe("/appli, the Android app's trial version", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", async () => {
@@ -29,7 +29,7 @@ describe("/appli, the Android app's trial version", () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  it("says marketing's words, with the version and the file's fingerprint", async () => {
+  it("says the validated words, with the version and the file's fingerprint", async () => {
     const res = await handle(get("/appli"), new Cache());
     expect(res.status).toBe(200);
     const page = await res.text();

@@ -57,7 +57,7 @@ export const NIVEAUX = [
   "Alerte niveau 5\u00a0: risque de mortalité presque complète (plus de 80\u00a0% des coraux)",
 ];
 
-// Marketing's words (31/10/2026), the same on /mer and in temperature_mer.
+// The validated words (31/10/2026), the same on /mer and in temperature_mer.
 export const TITRE = "Coraux\u00a0: risque de blanchissement";
 export const CASE = "Chaque point est une case de 5\u00a0km de côté de la grille de NOAA, pas une mesure sur le récif.";
 export const PAS_OBSERVATION = "C'est un indice de chaleur de la mer, pas une observation des coraux\u00a0: le blanchissement se constate sur place.";

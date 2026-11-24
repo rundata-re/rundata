@@ -59,7 +59,7 @@ function publieLe(n: DernierAvis): string {
 
 /**
  * The commune's latest notices, past ones too, as their feeds still list them, without those shown above: each its
- * day, its publisher and its link. Never « terminé »: only what the notice says, behind its link (marketing).
+ * day, its publisher and its link. Never « terminé »: only what the notice says, behind its link.
  */
 export function derniersAvis(commune: string, w: WaterCopies, shown: { titre: string; publie_le?: string }[]): string {
   const list = (w.coupures?.value.derniers_avis?.[commune] ?? []).filter((n) => !shown.some((x) => x.titre === n.titre));
@@ -74,7 +74,7 @@ export function derniersAvis(commune: string, w: WaterCopies, shown: { titre: st
 
 /**
  * The networks of the commune's tap water, the districts the ARS gives for each, and its last sample: its day and the
- * ARS's conclusion, quoted, never « potable » nor « conforme » said by us (marketing); a day long past said as it is.
+ * ARS's conclusion, quoted, never « potable » nor « conforme » said by us; a day long past said as it is.
  */
 export function reseauxCommune(commune: string, c: EauAnswer["communes"][number]): string {
   const rows = c.reseaux_detail;
@@ -99,7 +99,7 @@ export function secheresseLigne(c: SecheresseAnswer["communes"][number] | undefi
 }
 
 /**
- * The two questions of the commune's water, each only with its data (marketing): who distributes it, from the ARS, and
+ * The two questions of the commune's water, each only with its data: who distributes it, from the ARS, and
  * its last sample with the ARS's conclusion, quoted. No number nor address of a distributor: the site has none.
  */
 export function eauFaq(commune: string, c: EauAnswer["communes"][number] | undefined): Faq[] {
@@ -148,7 +148,7 @@ export const indexable = (commune: string) => avisLus(commune) || !!GUIDES_AVIS[
 
 /**
  * Sainte-Suzanne's orders allowing runéo's works (providers/arretes-travaux.ts), under the notices: never counted as one,
- * worded by marketing (20/11/2026). Nothing for another commune, nor before the site was ever read.
+ * worded for the site (20/11/2026). Nothing for another commune, nor before the site was ever read.
  */
 export function arretesSection(commune: string, b: BlocArretes | undefined): string {
   if (commune !== ARRETES.COMMUNE || !b) return "";
@@ -189,7 +189,7 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
   // Its mairie's site read, which has posted nothing of late, and where its distributor publishes its own (Les Avirons):
   // said after « Pas d'avis », in place of « ailleurs ».
   const guideLu = dist?.avis ? GUIDES_AVIS[p.nom] : undefined;
-  // « Pas d'avis » with when its site was read, and that a cut may be told elsewhere (marketing, 22/11/2026), as the tool
+  // « Pas d'avis » with when its site was read, and that a cut may be told elsewhere (wording validated on 22/11/2026), as the tool
   // coupures_eau says it: never « aucun avis », which reads as « no cut ». The mairie is not that elsewhere when the
   // notices read are its own (Cilaos, Sainte-Marie…).
   const ailleurs = /^(?:la )?(?:ville|commune|mairie)\b/i.test(publisher ?? "") ? "Une coupure peut être annoncée ailleurs." : "Une coupure peut être annoncée ailleurs, par la mairie par exemple.";
@@ -200,11 +200,11 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
   const named = (who: string) => who.includes(p.nom.replace(/^(?:Les?|La) |^L'/, ""));
   const noNotice = (e = (t: string) => t) => `Pas d'avis de coupure récent ou à venir publié par ${e(publisher!)}${named(publisher!) ? "" : ` ${e(where)}`}, lu ${e(at)}.`;
   // Not read again for a while (tools/copie-ancienne.ts): said first, the publisher's site and the mairie's linked when
-  // known (marketing, 23/11/2026); the mairie alone when the notices read are its own.
+  // known (wording validated on 23/11/2026); the mairie alone when the notices read are its own.
   const ancienne = w.coupures && (dist?.avis || x.avis.length) ? copieAncienne("eau", new Date(lusLe(w.coupures)), now, "page") : undefined;
   const siteDe = (nom: string, href?: string) => (href ? `<a href="${esc(href)}" rel="noopener">${esc(nom)}</a>` : esc(nom));
   const pubSite = dist?.avis ? dist.site : siteDist ?? undefined;
-  // « de <a>La Créole</a> », the article out of the link (marketing: « Voir le site de runéo ou de la mairie »).
+  // « de <a>La Créole</a> », the article out of the link (validated wording: « Voir le site de runéo ou de la mairie »).
   const deLien = (nom: string, href?: string) => {
     const [, pre, reste] = /^(d'|du |des |de (?:la |l')?)(.*)$/.exec(deNom(nom)) ?? ["", "", deNom(nom)];
     return `${esc(pre)}${siteDe(reste, href)}`;
@@ -224,7 +224,7 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
       : x.avis.length
       ? noticesHead(x.avis, where, [], x.muet ? "" : at)
       : dist?.avis
-        // Worded with marketing: who publishes the notices read, without the commune when that name already says it.
+        // Validated wording: who publishes the notices read, without the commune when that name already says it.
         ? `<p class="lead">${noNotice(esc)} ${guideLu?.bandeau ?? ailleurs}</p>`
         : guide
         ? `<p class="lead">${guide.bandeau}</p>`
@@ -271,7 +271,7 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
       `<p class="note"><a href="/secheresse">L'arrêté sécheresse, commune par commune →</a></p></div>`
     : `<div class="card">${icon("sun")}<h3>Sécheresse</h3><p><a href="/secheresse">Les restrictions d'eau de l'arrêté en vigueur, commune par commune →</a></p></div>`;
 
-  // The portrait of the commune's water, at the top (marketing/seo-pages-tete-1411.md): its networks and its last
+  // The portrait of the commune's water, at the top: its networks and its last
   // samples from the ARS, its drought level from the order. Each part left out without its data: without Hub'Eau, the
   // drought line alone; without either, a link.
   const sec = secheresseLigne(x.secheresse, w.secheresse?.value.arrete);
@@ -353,7 +353,7 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
 </section>`;
   // A notice in progress or to come: the notices first, as the page says (« ils s'affichent en haut de cette page »);
   // at 390 px, two notices of Saint-Paul came 3 664 px down, under its 13 networks (24/11/2026).
-  // None: the portrait of the water at the top (marketing/seo-pages-tete-1411.md).
+  // None: the portrait of the water at the top.
   const body = `${x.avis.length ? `${notices}\n${tap}` : `${tap}\n${notices}`}
 ${arretesSection(p.nom, d?.arretes_sainte_suzanne)}
 ${cyclone.lead ? cyclone.html : ""}

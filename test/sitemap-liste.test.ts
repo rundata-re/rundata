@@ -12,11 +12,11 @@ async function sitemap(): Promise<string[]> {
   return [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1].slice(O.length) || "/");
 }
 
-// Pages left out of the sitemap by marketing's list of 24/11/2026: a commune's day, its children's page, its elections, a
+// Pages left out of the sitemap by the validated list of 24/11/2026: a commune's day, its children's page, its elections, a
 // stop of Saint-Pierre, a stop of the old sitemap, a place's weather.
 const RETIREES = ["/aujourdhui/cilaos", "/enfants/les-avirons", "/communes/petite-ile/elections", "/bus/arret/saint-pierre/pierrefonds", "/bus/arret/les-avirons/gare-des-avirons", "/meteo/les-avirons"];
 
-describe("the sitemap from 24/11/2026, marketing's list of that day", () => {
+describe("the sitemap from 24/11/2026, the validated list of that day", () => {
   it("holds the 232 pages kept, but for the one not served here, and nothing else", async () => {
     const urls = await sitemap();
     // 231 kept, less /feux with no FIRMS key here. 893 before. 230 from 24/11/2026: a deviation the ONF took off its

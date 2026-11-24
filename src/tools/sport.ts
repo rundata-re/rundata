@@ -104,7 +104,7 @@ export function duAu(debut: string, fin: string, at: (local: string, annee: bool
 }
 const span = (e: { debut: string; fin: string }) => (e.debut === e.fin ? quand(e.debut) : duAu(e.debut, e.fin));
 /**
- * A tournament of the volley league (marketing, 06/11/2026): the days of its matches as its title gives them, two days
+ * A tournament of the volley league (wording validated on 06/11/2026): the days of its matches as its title gives them, two days
  * running as « vendredi 06/11 et samedi 07/11 »; the span the league posted it over said as the league's.
  */
 const spanLigue = (e: { debut: string; fin: string; dates?: "titre" | "ligue" }) =>

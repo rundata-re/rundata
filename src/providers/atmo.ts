@@ -35,7 +35,7 @@ export const PROVENANCE = {
   site: "https://atmo-reunion.net",
 };
 
-/** The step the island's answer keeps (marketing, 30/10/2026): what changes what can be said by a busy road. */
+/** The step the island's answer keeps (wording validated on 30/10/2026): what changes what can be said by a busy road. */
 export const FOND = "Il décrit l'air « de fond », loin des sources de pollution comme les axes de trafic routier.";
 
 /** How the index is made, in the words of the guide (GUIDE), nothing it does not say. */

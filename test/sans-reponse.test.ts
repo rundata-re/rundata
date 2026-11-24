@@ -325,7 +325,7 @@ describe("what is shown", () => {
     expect(page).toContain(' rel="nofollow noopener" aria-label="le site de Sensor.Community">le site de Sensor.<wbr>Community</a>');
   });
 
-  it("says it on the page in marketing's words, never down, closed, empty or refusing", () => {
+  it("says it on the page in the validated words, never down, closed, empty or refusing", () => {
     const page = typo(sansReponsePage("https://rundata.re", rows, T));
     expect(page).toContain("<title>Sites publics sans réponse · La Réunion (974)</title>");
     expect(page).toContain("<h1>Sites publics sans réponse</h1>");

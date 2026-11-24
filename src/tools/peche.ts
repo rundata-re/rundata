@@ -1,12 +1,12 @@
 /**
  * peche_loisir and /peche: the rules of recreational fishing at La Réunion, day by day, from the prefect's two decrees:
  * what is closed today, the sizes and the quantities. The rules are bundled and dated (LUES_LE): no source is read, no
- * request is made. Every figure was read by researcher on the texts (31/10/2026): the decree n° 1743 of 15/07/2008 in
+ * request is made. Every figure was read on the texts (31/10/2026): the decree n° 1743 of 15/07/2008 in
  * the consolidated version of the DMSOI of 1 January 2023 (no signed copy of 2008 is online), and the signed decree
  * n° 2026-1319 of 17/08/2026 on the bichiques, read on its pages' images. Never a link to the decree on the bichiques
  * of 2021, repealed by the latter (art. 23), though the DMSOI's page still offers it.
  *
- * Words (marketing, 31/10/2026): « pas de fermeture aujourd'hui » where a decree only sets a closing time,
+ * Words (wording validated on 31/10/2026): « pas de fermeture aujourd'hui » where a decree only sets a closing time,
  * « saison ouverte » where it sets the open season; never « autorisé ». The rules of a place (the marine reserve's
  * zones, the river mouths, Sainte-Rose) are named, not detailed: the decrees alone are authoritative.
  */
@@ -65,7 +65,7 @@ export interface Regle {
   article: string;
 }
 
-/** Sizes and quantities (marketing's table: species, rule, article). */
+/** Sizes and quantities (the validated table: species, rule, article). */
 export const TAILLES: Regle[] = [
   { espece: "Poissons", regle: "au moins 10\u202fcm, du bout du museau à l'extrémité de la nageoire caudale, sauf les espèces qui restent plus petites à l'âge adulte", article: "arrêté n° 1743, art. 8" },
   { espece: "Langouste", regle: "au moins 23\u202fcm, de la pointe du rostre à l'extrémité de la queue\u00a0; jamais une femelle grainée", article: "arrêté n° 1743, art. 8" },
@@ -88,7 +88,7 @@ export const INTERDITS: Regle[] = [
   { espece: "Bichiques hors saison", regle: "ni pêche, ni détention, ni transport, ni vente, ni achat", article: "arrêté n° 2026-1319, art. 6" },
 ];
 
-/** The lagoons (art. 17, word for word as researcher read it, in marketing's sentence). */
+/** The lagoons (art. 17, word for word as read, in the validated sentence). */
 export const LAGONS =
   "L'arrêté n'y permet que la pêche du capucin nain et la pêche à pied à la ligne sans moulinet (la gaulette), de jour, sur les seuls fonds sableux, à 25\u00a0m au plus de la ligne des plus hautes eaux. La pêche depuis une embarcation y est interdite.";
 export const LAGONS_ARTICLE = "arrêté n° 1743, art. 17";
@@ -165,7 +165,7 @@ const addDay = (ymd: string) => new Date(Date.parse(`${ymd}T00:00:00Z`) + 86_400
  * « Fermeture dans 7 jours, le mardi 1er décembre. », « Fermeture demain, … »; asked about another day than today,
  * counted from that day: « Fermeture 7 jours plus tard, … », « Fermeture le lendemain, … ». `entier`: with its species
  * (« Fermeture de la pêche à la langouste dans 7 jours, … »), where it is not said under the species' name: in the tool,
- * whose species follow one another (marketing, 24/11/2026).
+ * whose species follow one another (wording validated on 24/11/2026).
  */
 export function fermetureDite(e: Pick<Espece, "ferme_le" | "de">, day: string, today = day, entier = false): string | undefined {
   if (!e.ferme_le) return undefined;

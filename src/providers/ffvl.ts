@@ -29,7 +29,7 @@ export const FRESH_SECONDS = 5 * 60;
 export const MAX_SILENCE_MS = 75 * 60_000;
 
 /**
- * The beacons of La Réunion in the network's list, its test beacons left out, named as marketing chose (30/10/2026):
+ * The beacons of La Réunion in the network's list, its test beacons left out, named as validated (30/10/2026):
  * Kélonia with its accent, as the IGN writes it; the Maïdo's without « Piton … 2000 », not on the summit. Bellemène,
  * stolen in 2019, and Piton Textor, not installed, send nothing.
  */

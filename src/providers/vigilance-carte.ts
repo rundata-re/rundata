@@ -87,7 +87,7 @@ export interface Etat {
 
 /**
  * What the vigilance's copy carries (vigilance.ts). The map is shown only when it is the newest bulletin's: an older
- * one could show another colour than the page's text, read from the newest (marketing, 27/10).
+ * one could show another colour than the page's text, read from the newest (wording validated on 27/10).
  */
 export interface Carte {
   /** The newest bulletin kept, issued at `emis` (ISO, La Réunion's offset), its PDF at `pdfPath(empreinte)`. */

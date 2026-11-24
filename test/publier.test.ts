@@ -10,7 +10,7 @@ import { AUTORISATIONS } from "../src/providers/autorisations.js";
 const html = () => publierPage("https://rundata.re");
 
 describe("the guide for those who publish (/publier)", () => {
-  it("has marketing's title, description and heading", () => {
+  it("has the validated title, description and heading", () => {
     const page = html();
     expect(page).toContain(`<title>${TITLE}</title>`);
     expect(page).toContain("<h1>Publiez votre agenda et vos données : le guide</h1>");

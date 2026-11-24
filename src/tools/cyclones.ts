@@ -174,7 +174,7 @@ export function passe(c: Passe) {
   });
 }
 
-/** The RSMC's forecast track map as an answer gives it: its address on rundata.re and its caption (marketing, 27/10). */
+/** The RSMC's forecast track map as an answer gives it: its address on rundata.re and its caption (wording validated on 27/10). */
 export function carteOfficielle(c: cmrs.Carte | undefined) {
   if (!c?.image) return undefined;
   return {

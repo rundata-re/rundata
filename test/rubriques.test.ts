@@ -8,7 +8,7 @@ import { esc } from "../src/web/map.js";
 import { marchesPage } from "../src/web/marches-publics.js";
 import { seaPage } from "../src/web/pages.js";
 
-// One name per section, shared by the menu, the breadcrumb and the start of the H1 (marketing's words, 04/11/2026).
+// One name per section, shared by the menu, the breadcrumb and the start of the H1 (the validated words, 04/11/2026).
 const O = "https://rundata.re";
 const NOW = new Date("2026-11-04T06:00:00Z");
 const between = (s: string, from: string, to: string) => {
@@ -35,7 +35,7 @@ describe("each section's name", () => {
     }
   });
 
-  // « Titre 974 » everywhere (marketing, 06/11/2026): the pages that had no « 974 » take it, none loses it. The others
+  // « Titre 974 » everywhere (wording validated on 06/11/2026): the pages that had no « 974 » take it, none loses it. The others
   // of the ten are checked in their own tests (peche, emploi, antennes, carburants, feux, requin, traces, coupures).
   it("ends the H1 with « 974 » on the pages that had none", () => {
     expect(between(decheteriesPage(O, null, NOW), "<h1>", "</h1>")).toBe(`<h1>Les déchèteries de l&#39;île, et les bennes en direct dans l&#39;Ouest <span class="n974">974</span></h1>`);

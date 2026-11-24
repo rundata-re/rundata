@@ -14,14 +14,14 @@ const walk = (km: number) => Math.max(1, Math.round((km * 1000 * 1.3) / 80));
 // pied » from Bellevue to Cilaos, through the Piton des Neiges).
 const WALK_KM = 1;
 
-/** A distance as the crow flies, in marketing's words (20/11/2026): « à 9,6\u00a0km à vol d'oiseau ». */
+/** A distance as the crow flies, in the validated words (20/11/2026): « à 9,6\u00a0km à vol d'oiseau ». */
 export const volOiseau = (km: number) => `à ${loin(km)} à vol d'oiseau`;
 
 /** The walk, only under a kilometre and with its condition: « environ 10\u00a0min à pied si le chemin est direct ». */
 export const aPiedDirect = (km: number) => (km < WALK_KM ? `environ ${aPied(walk(km))} à pied si le chemin est direct` : undefined);
 
 /**
- * The nearest point in another commune than the place asked (marketing, 20/11/2026): « À Cilaos, une autre commune\u00a0:
+ * The nearest point in another commune than the place asked (wording validated on 20/11/2026): « À Cilaos, une autre commune\u00a0:
  * par la route, le trajet peut être bien plus long que la distance à vol d'oiseau. ». Undefined in the same commune, or
  * for a point without one (coordinates).
  */

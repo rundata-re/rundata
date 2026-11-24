@@ -131,7 +131,7 @@ describe("the counts (chiffres.ts)", () => {
     expect(c.manque.sites_sans_reponse).toEqual({ nombre: 3, compte_le: "26/10 à 08:00", derniere_reverification: "26/10 à 06:00" });
   });
 
-  it("sum it up in marketing's words", () => {
+  it("sum it up in the validated words", () => {
     const c = chiffres(sources, copie, NOW, OUTILS_ICI);
     expect(resume(c)).toBe(`rundata.re lit ${c.sources} sources publiques, dont ${c.sous_licence_ouverte} sous licence ouverte, de ${c.producteurs} producteurs\u00a0; ` +
       `${c.outils} outils, une page du jour pour chacune des 24 communes\u00a0; 3 sites publics sans réponse en ce moment (voir sites_sans_reponse). Compté le 26/10 à 08:00 : https://rundata.re/chiffres`);
@@ -247,7 +247,7 @@ describe("the counts (chiffres.ts)", () => {
 describe("the page /chiffres", () => {
   const html = typo(chiffresPage("https://rundata.re", chiffres(sources, copie, NOW, OUTILS_ICI), inventaire(sources)));
 
-  it("says marketing's words, and each figure leads to its page", () => {
+  it("says the validated words, and each figure leads to its page", () => {
     expect(html).toContain("<h1>rundata.re en chiffres</h1>");
     expect(html).toContain("<title>rundata.re en chiffres\u00a0: sources, producteurs, licences</title>");
     for (const h of ["L'essentiel", "Par domaine", "Sur le terrain", "En ce moment", "Les licences", "Ce qui manque", "Depuis le début"]) expect(html).toContain(`>${h}</h2>`);
@@ -258,7 +258,7 @@ describe("the page /chiffres", () => {
     expect(html).toContain("Compté le 26/10 à\u00a008:00, à partir des sources que lit rundata.re. Une source manque\u00a0? Dites-le avec le formulaire en bas de page.");
   });
 
-  it("names the one or two agendas the events were counted without, or says the last whole count, in marketing's words", () => {
+  it("names the one or two agendas the events were counted without, or says the last whole count, in the validated words", () => {
     const page = (value: Copie) => typo(chiffresPage("https://rundata.re", chiffres(sources, { ...copie, value }, NOW, OUTILS_ICI), inventaire(sources)));
     const sans = (noms: string[]) => page({ ...COPIE, evenements: { ...COPIE.evenements!, sans: noms } });
     const fig = 'href="/evenements">214</a><span>événements dans les deux semaines qui viennent, ';

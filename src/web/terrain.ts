@@ -2,7 +2,7 @@
  * /terrain: the fiche of an address, for whoever buys, rents or builds (asked for in the real-estate groups). A form,
  * and with `?adresse=` the same fiche as the connector's fiche_terrain (tools/terrain.ts ficheDonnees): one object, so
  * that the page never says more nor less than the tool. Read at each view from the sources, through their cache; the
- * page itself is never kept (no-store): its address is what someone typed. In marketing's words (20/11/2026).
+ * page itself is never kept (no-store): its address is what someone typed. In the validated words (20/11/2026).
  * /fiche-terrain and /immobilier lead here (site.ts ALIASES). /terrain?commune=<slug>, from a commune's page, prefills
  * the commune: the address typed without one gets it.
  */
@@ -22,13 +22,13 @@ export const NOM = "Terrain";
 const N = " ";
 const q = (s: string) => `«${N}${s}${N}»`;
 
-// marketing's words (20/11/2026), the no-break spaces theirs.
+// the validated words (20/11/2026), the no-break spaces theirs.
 export const TITLE = `Fiche terrain${N}: PLU, risques, prix · La Réunion (974)`;
 const META = `Une adresse à La Réunion (974)${N}: parcelle, zone du PLU, risques, prix médians des ventes voisines, loyers, fibre et antennes, d'après les sources publiques.`;
 const H1 = "Fiche d'une adresse à La Réunion";
 const LEAD = `Avant d'acheter, de louer ou de construire${N}: ce que les données publiques disent d'une adresse, chacune avec sa source et sa date.`;
 const LABEL = "Adresse ou lieu-dit";
-// A public street, without a number: never someone's address (marketing).
+// A public street, without a number: never someone's address.
 const EXEMPLE = "Rue de Paris, Saint-Denis";
 const BOUTON = "Voir la fiche";
 // No sentence on what is kept: nothing personal is (the data center's cache keeps the fiche's entries 3 days at most,
@@ -46,7 +46,7 @@ const GARDES = {
 };
 const ARCEP = "https://maconnexioninternet.arcep.fr";
 const GEORISQUES = "https://www.georisques.gouv.fr/mes-risques/connaitre-les-risques-pres-de-chez-moi";
-// Never « sans risque » nor « zone sûre » (marketing).
+// Never « sans risque » nor « zone sûre ».
 const HORS_PPR = "hors des zones réglementées des plans de prévention des risques";
 const NON_LU = `Source momentanément indisponible${N}: rechargez la page dans un instant.`;
 // The area's sales alone not read, the street's shown above it.
@@ -54,13 +54,13 @@ const SECTEUR_MUET = `Ventes du secteur alentour (environ 600${N}m sur 600${N}m)
 
 /**
  * The tool's « ventes non lues : ni le Cerema ni Etalab n'ont répondu le 22/11 à 05:46, heure de La Réunion ; … »
- * (tools/terrain.ts nonLues): who did not answer and when, for the page's own sentence (marketing, 22/11/2026).
+ * (tools/terrain.ts nonLues): who did not answer and when, for the page's own sentence (wording validated on 22/11/2026).
  */
 function muet(x: unknown): string | undefined {
   return typeof x === "string" ? /^ventes non lues\u00a0: (.+), heure de La Réunion/u.exec(x)?.[1] : undefined;
 }
 
-/** The tool's precision, in marketing's words after « l'adresse a été placée »; undefined for a point that is sure. */
+/** The tool's precision, in the validated words after « l'adresse a été placée »; undefined for a point that is sure. */
 const PLACEE: Record<string, string> = {
   "milieu de la rue": "au milieu de la rue",
   "centre de la commune": "au centre de la commune",
@@ -143,7 +143,7 @@ function risques(fiche: O, vague: boolean): string {
     if (Array.isArray(ppr)) {
       for (const p of ppr.map(obj)) if (p) rows.push(li(String(p.plan).replace(/^./, (x) => x.toUpperCase()), `${esc(String(p.au_point))}${p.approuve_ou_revise_le ? `, approuvé ou révisé le ${esc(String(p.approuve_ou_revise_le))}` : ""}. <a href="${esc(String(p.voir_sur_la_carte))}" rel="noopener">La carte</a>`));
     } else if (typeof ppr === "string") {
-      // The tool's sentence for no zone at the point is the connector's; the page says it in marketing's words.
+      // The tool's sentence for no zone at the point is the connector's; the page says it in the validated words.
       rows.push(li("Plans de prévention", ppr.startsWith("le point n'est dans aucune") ? `le point est ${HORS_PPR} (la commune peut en avoir ailleurs)` : esc(ppr)));
     }
   }

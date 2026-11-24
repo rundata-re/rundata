@@ -2,10 +2,10 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-// marketing's rule: « en direct », never « en temps réel », in all that is said: pages, meta, the tools' answers and
+// the validated rule: « en direct », never « en temps réel », in all that is said: pages, meta, the tools' answers and
 // descriptions, the sources' names, the README. Names stay as they are: the package and the MCP server
 // (reunion-temps-reel, re.rundata/temps-reel), the JSON keys (temps_reel), a dataset's URL. Comments are not said, nor
-// what check-sources tells the team (marketing, 25/10).
+// what check-sources tells the team (wording validated on 25/10).
 const INTERNAL = ["src/bin/check-sources.ts"];
 const SAID = /temps[ -]r[ée]els?/i;
 const NAMES = /reunion-temps-reel|rundata\/temps-reel|temps_reel|horaires-temps-reel|reglementes\/temps-reel/g;

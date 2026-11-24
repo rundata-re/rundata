@@ -331,7 +331,7 @@ const shortDay = (day: string) => `${day.slice(8, 10)}/${day.slice(5, 7)}`;
 
 /**
  * What a measure is, for the reader: its pass, « passage de cette nuit à 01:39 », or the day's mean, « moyenne d'hier,
- * 06/11 », « moyenne du 04/11, il y a 3 jours » (marketing). A day is published the next morning at the earliest.
+ * 06/11 », « moyenne du 04/11, il y a 3 jours ». A day is published the next morning at the earliest.
  */
 function measuredOn(m: { jour_mesure: string; passage?: string }, now: Date): string {
   if (m.passage) return m.passage;
@@ -341,7 +341,7 @@ function measuredOn(m: { jour_mesure: string; passage?: string }, now: Date): st
 
 /**
  * What the measure means for the reader: a pass is an instant, not the day's; a day's mean is not today's, the clouds said
- * when it is older than yesterday's (marketing).
+ * when it is older than yesterday's.
  */
 function ageWarning(m: { jour_mesure: string; passage?: string }, now: Date): string {
   if (m.passage) {
@@ -540,7 +540,7 @@ function unavailable() {
 }
 
 /**
- * The risk of coral bleaching at the three points, in marketing's words; null when NOAA's grid could not be read. Near
+ * The risk of coral bleaching at the three points, in the validated words; null when NOAA's grid could not be read. Near
  * a place, its nearest point only: the other two are not about it.
  */
 export async function corauxBlock(cache: Cache, near?: { lon: number; lat: number }) {

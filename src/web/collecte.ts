@@ -1,6 +1,6 @@
 /**
  * /collecte and /collecte/<commune>: the day each street's bins are collected in the West (vie/collecte.ts), in
- * marketing's words. The streets are grouped by calendar, the rhythm said once per group; a search box shows the
+ * the validated words. The streets are grouped by calendar, the rhythm said once per group; a search box shows the
  * line of the streets typed. Built from the bundled calendars and the day: no source is read.
  */
 import * as col from "../vie/collecte.js";
@@ -13,9 +13,9 @@ import { cityLd, folded, layout } from "./pages.js";
 import { PAGES } from "./places.js";
 import { script } from "./scripts-declares.js";
 
-// The texts of the pages, worded by marketing.
+// The texts of the pages, worded for the site.
 // The titles and a commune's description say the year of the calendars read (vie/collecte.ts YEAR), never the year of
-// the day: people search « collecte des déchets saint-paul 2026 » and « calendrier tco » (marketing, 24/11/2026).
+// the day: people search « collecte des déchets saint-paul 2026 » and « calendrier tco » (wording validated on 24/11/2026).
 const TITLE_MAX = 60;
 export const TITLE = `Calendrier collecte TCO ${col.YEAR} : jours par rue · 974`;
 const H1 = "Quel jour passent les poubelles ?";
@@ -27,13 +27,13 @@ const COLLECTE = { name: "Collecte des déchets", path: "/collecte" };
 const metaOf = (c: string) => `Calendrier ${col.YEAR} de collecte des déchets ${a(c)} (974) : ordures ménagères, tri et déchets verts, le jour de passage de votre rue, d'après le TCO.`;
 const LEAD = `Tapez le nom de votre rue : le jour de passage pour les ordures ménagères, le tri et les déchets verts, d'après les calendriers ${col.YEAR} publiés par le TCO.`;
 const { honesty, communeSlug } = col;
-// With the list just below (marketing), and the tool's first words of `a_savoir` (honesty): only the West is read.
+// With the list just below, and the tool's first words of `a_savoir` (honesty): only the West is read.
 /** « Seulement les 5 communes de l'Ouest (TCO) pour l'instant. », the tool's words: under the field, and after a street not found. */
 const OUEST = honesty().split(" Calendriers")[0];
 const NOT_FOUND_HERE = `Rue non trouvée dans les calendriers du TCO. Vérifiez l'orthographe, essayez le nom du quartier, ou cherchez dans la liste ci-dessous. ${OUEST}`;
 /**
  * The communes of the other intercommunalities, for the search box: typed alone or ending what is typed (« rue de
- * Paris, Saint-Denis »), the same sentence as the tool's (vie/collecte.ts `ailleurs`, marketing's words of 04/11/2026),
+ * Paris, Saint-Denis »), the same sentence as the tool's (vie/collecte.ts `ailleurs`, the validated words of 04/11/2026),
  * its last words a link to the site of who collects there, rather than a street to spell again.
  */
 const ELSEWHERE = col.AILLEURS.flatMap((e) => e.communes.map((c) => {
@@ -90,7 +90,7 @@ function groups(today: number, commune?: string): string {
     } else groupsOf.push(g);
   }
   const list = (g: { noms: string[] }) => `<ul class="voies plain">${[...new Set(g.noms)].sort((x, y) => x.localeCompare(y, "fr")).map((n) => `<li>${esc(n)}</li>`).join("")}</ul>`;
-  // Each group folded under its rhythm's first part and its number of streets (marketing). Groups of a commune that
+  // Each group folded under its rhythm's first part and its number of streets. Groups of a commune that
   // share that line get, under it, what tells them apart: the next collection whose rhythm differs, then the one
   // after while two still share it, or the first day that parts calendars said alike. A search opens the groups it
   // finds (SCRIPT).

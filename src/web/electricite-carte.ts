@@ -1,5 +1,5 @@
 /**
- * /electricite's map and chart (marketing's charter of the maps, 31/10/2026: the « rond proportionnel », the filières'
+ * /electricite's map and chart (the brand charter of the maps, 31/10/2026: the « rond proportionnel », the filières'
  * colours in each theme):
  * - The map: the power installed in each commune, filière by filière, from the national register of the installations
  *   as EDF SEI publishes it (src/electricite/installations.json, scripts/build-installations.py). It stays still: EDF
@@ -140,7 +140,7 @@ export function installationsLegend(): string {
 /**
  * The map's replay, right under the map and before its legend, so that the map stays on a phone's screen while the bar
  * moves: its own bar on the chart's moment, then, once played, the words of the estimate
- * (marketing, 31/10/2026) and the way back to the MW installed. Hidden until the script shows it; none without the
+ * (wording validated on 31/10/2026) and the way back to the MW installed. Hidden until the script shows it; none without the
  * filières' production.
  */
 export function installationsReplay(j: Journee): string {
@@ -380,7 +380,7 @@ if(pa.length){dd.textContent=(pa.length>1?"7 et 30\\u00a0jours":DUREE[pa[0]])+"\
 if(h.j7||h.j30){du.hidden=false;if(h.depuis)note.querySelector(".ech-dp").textContent=dm(Date.parse(h.depuis))}if(h.annuel&&h.annuel.annees&&h.annuel.annees.length){if(an)year(h.annuel);fy(h.annuel)}})};
 if(window.IntersectionObserver){const o=new IntersectionObserver((e)=>{if(e.some((x)=>x.isIntersecting)){o.disconnect();ask()}},{rootMargin:"100% 0px"});o.observe(f)}else ask()};document.readyState==="loading"?addEventListener("DOMContentLoaded",go,{once:true}):go()})();`;
 
-/** Their style, in the page's sheet: the filières' and the areas' colours in each theme (marketing, 31/10/2026). */
+/** Their style, in the page's sheet: the filières' and the areas' colours in each theme (wording validated on 31/10/2026). */
 // `.ipm`: the map's room, kept while it waits to be put in the page (laterMap()).
 export const ELECTRICITE_CSS = `.ipm{aspect-ratio:${W}/${H}}` +
   `:root{--f-sol:#b97f00;--f-bio:#2b8a46;--f-hyd:#1c6fc2;--f-eol:#4fa3c7;--f-the:#5a6672;--f-sto:#7048e8;--a-ren:#2b8a46;--a-non:#5a6672}` +

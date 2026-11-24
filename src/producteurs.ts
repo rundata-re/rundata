@@ -1,6 +1,6 @@
 /**
  * Who produces each source and under which licence, as /chiffres and sources_donnees count them: the definitions are
- * marketing's (25 October 2026).
+ * the validated ones (25 October 2026).
  *
  * - A producer is the body that measures, decides or writes the information, not one that passes it on: Open-Meteo,
  *   NOAA relaying Météo-France, GDACS, Hub'Eau, transport.data.gouv.fr and the Géoportail de l'urbanisme do not count,

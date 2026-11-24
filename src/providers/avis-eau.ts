@@ -188,7 +188,7 @@ const ADJACENT = /^et (?:toutes )?les (?:voies|rues) adjacentes/i;
 const STREET_MAX = 60;
 
 /**
- * The streets after « secteurs suivants : », one per line, and whether the list was read whole. Worded with marketing:
+ * The streets after « secteurs suivants : », one per line, and whether the list was read whole. Validated wording:
  * whole only when the list ends at a known closing line (« Et toutes les voies adjacentes », « La remise en eau … »,
  * « Il est recommandé … »),
  * or at a blank line in a feed (`blankEnds`; WordPress posts put a blank line between the streets), and no line of it
@@ -225,7 +225,7 @@ export function sectorList(text: string, blankEnds: boolean, max = STREET_MAX): 
 
 /**
  * The list said in a sentence, the same on /coupures-eau, in the feed and in coupures_eau: « Chemin Pinguet et les voies
- * adjacentes », the notice's own closing words joined without a comma (marketing, 20/11/2026).
+ * adjacentes », the notice's own closing words joined without a comma (wording validated on 20/11/2026).
  */
 export const sectorsSaid = (secteurs: string[]) =>
   secteurs.map((s, i) => (i === 0 ? s : /^et /.test(s) ? ` ${s}` : `, ${s}`)).join("");
@@ -239,7 +239,7 @@ const RETURN = /(?:^|(?<=[.!?:]\s))(?:La\s+remise\s+en\s+(?:eau|service)|Le\s+r�
 export const returnSentence = (text: string) => RETURN.exec(text)?.[0].replace(/\s+/g, " ").trim();
 
 /**
- * The text said with a notice, cut once, here, so that the page and the tool say the same. Worded with marketing: it
+ * The text said with a notice, cut once, here, so that the page and the tool say the same. Validated wording: it
  * stops right after the colon that opens a list (« pour les secteurs suivants : […] »), never in the middle of the
  * list, else at the end of a word; a cut text ends with « […] ». The colon that opens a list ends its line, and the
  * line is a sentence: not a label such as « Objet : » or « Diffusion : », which would leave nothing of the notice.
@@ -479,7 +479,7 @@ const SAINT_LEU_WATER = /coupure d.eau|distribution d.eau|réseau d.eau|perturba
 const CUT_WORDS = /interruption|coupure|perturbation|manques? d.eau/i;
 
 /**
- * The sentence that says the cut (when, where), quoted, never the whole notice. Worded with marketing: it stops right
+ * The sentence that says the cut (when, where), quoted, never the whole notice. Validated wording: it stops right
  * after a colon (« sur les secteurs suivants : […] »), never in the middle of a list of streets, else at the end of a
  * word; a cut extract ends with « […] ».
  */

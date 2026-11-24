@@ -26,7 +26,7 @@ export const SEARCH_MAX = 20;
 
 const networksOf = (p: transit.StopPage) => [...new Set(p.groups.map((g) => transit.NETWORKS[g.reseau]?.nom ?? g.reseau))];
 const list = (names: string[]) => (names.length > 1 ? `${names.slice(0, -1).join(", ")} et ${names[names.length - 1]}` : names[0] ?? "");
-/** A line's terminus, one or the other: « Gare de St-Denis, Campus ou Gare de St-Pierre » (marketing, 22/11/2026). */
+/** A line's terminus, one or the other: « Gare de St-Denis, Campus ou Gare de St-Pierre » (wording validated on 22/11/2026). */
 const either = (names: string[]) => (names.length > 1 ? `${names.slice(0, -1).join(", ")} ou ${names[names.length - 1]}` : names[0] ?? "");
 
 /** « Arrêt Gare de St-Pierre, Saint-Pierre », without the commune when the name already says it (« Mairie Du Tampon »). */
@@ -56,13 +56,13 @@ function described(p: transit.StopPage, lignes: string[]): string {
   return [0, 1, 2, 3].map((cut) => say(cut, [], 0)).find((d) => d.length <= DESCRIPTION_MAX) ?? say(3, [], 0);
 }
 
-/** Lines a stop's text names one by one; the others counted (marketing, 22/11/2026). */
+/** Lines a stop's text names one by one; the others counted (wording validated on 22/11/2026). */
 export const LIGNES_DITES = 8;
 /** Stops near it that the text links to. */
 export const ARRETS_PROCHES = 5;
 
 /**
- * The stop's own lasting text, under its departures (marketing, 22/11/2026): its commune, its networks and lines with
+ * The stop's own lasting text, under its departures (wording validated on 22/11/2026): its commune, its networks and lines with
  * their terminus, how its times are known, the stops nearest it and the commune's day. Nothing in it changes in the day,
  * and it differs from one stop to the next, unlike the sentence of /bus that the 815 indexed pages shared.
  */

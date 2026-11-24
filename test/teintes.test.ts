@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { CSS } from "../src/web/pages.js";
 
-// The neutral grey of « pas de vigilance » and the orange of an average water quality (marketing, 06/11/2026): each read
+// The neutral grey of « pas de vigilance » and the orange of an average water quality (wording validated on 06/11/2026): each read
 // over 4.5:1, the grey under white text, the orange on the cards in both themes; the bars that used the grey keep their contrast.
 const lum = (hex: string) => {
   const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));

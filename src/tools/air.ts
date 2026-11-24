@@ -23,7 +23,7 @@ function sentence(x: atmo.Index, when: string): string {
 /**
  * « Qualité de l'air prévue aujourd'hui à La Réunion : au pire moyen (2/6) dans toutes les communes. », or « …, pour Le
  * Port et Saint-Pierre. », beyond 3 communes « …, dans 13 communes. », their names left to the cards a level each
- * (marketing, 21/11/2026: never « à Le Port », nor a long list).
+ * (wording validated on 21/11/2026: never « à Le Port », nor a long list).
  */
 function islandSummary(xs: atmo.Index[], when: string): string {
   const worst = Math.max(0, ...xs.map((x) => x.niveau));
@@ -177,7 +177,7 @@ async function stations(cache: Cache, now: Date, place?: { commune: string; lon:
 const sourcesOf = (mesures: unknown, amateur: unknown) =>
   credits([atmo.SOURCE, ...(mesures ? [airMesures.SOURCE] : []), ...(amateur ? [capteurs.SOURCE, capteurs.SOURCE_SOCIAL] : [])]);
 
-// Worded by marketing (29/10/2026).
+// Worded for the site (29/10/2026).
 export const CAPTEURS_AVERTISSEMENT = "Capteur amateur, non étalonné : à prendre avec précaution.";
 export const CAPTEURS_EXPLICATION =
   "Mesures de capteurs installés par des particuliers et partagés sur Sensor.Community ou sensors.social, ni étalonnés ni contrôlés par Atmo Réunion : " +
@@ -251,8 +251,8 @@ async function amateurs(cache: Cache, now: Date, page = false, commune?: string)
   // The same for a commune: « aucun capteur n'a émis » only when both networks were read, and others did.
   const elsewhere = none && !!commune && all.length > 0;
   return {
-    // No value, nothing to take with care: the tool leaves the warning out until a sensor measures (marketing,
-    // 30/10/2026). /air keeps it above its block.
+    // No value, nothing to take with care: the tool leaves the warning out until a sensor measures (wording
+    // validated on 30/10/2026). /air keeps it above its block.
     ...((page || !none) && { avertissement: CAPTEURS_AVERTISSEMENT, explication: CAPTEURS_EXPLICATION }),
     ...(copy.stale && { lecture_ancienne: capteursAncienne(v.lu, now, list.length > 0) }),
     ...(echecs.length && { lectures_impossibles: echecs }),
@@ -277,7 +277,7 @@ async function amateurs(cache: Cache, now: Date, page = false, commune?: string)
 
 export type Amateurs = NonNullable<Awaited<ReturnType<typeof amateurs>>>;
 
-/** How the index is made: every step, or for the island's answer only the one of the « air de fond » (marketing). */
+/** How the index is made: every step, or for the island's answer only the one of the « air de fond ». */
 const methode = (all: boolean) => ({
   etapes: all ? atmo.METHODE : [atmo.FOND],
   d_apres: "Guide de calcul de l'indice ATMO d'Atmo France (version du 14/12/2020)",

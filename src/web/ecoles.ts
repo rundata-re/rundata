@@ -11,7 +11,7 @@ import { connectorCta, crumbBar, crumbs, lienNom, webPage } from "./domains.js";
 import { esc } from "./map.js";
 import { ask, layout, officielHtml } from "./pages.js";
 
-// The texts of the page, worded by marketing.
+// The texts of the page, worded for the site.
 export const TITLE = "École fermée ? Cyclone et alerte orange · La Réunion (974)";
 const H1 = "Cyclone : les écoles sont-elles fermées ?";
 const LEAD = "Ce que prévoit le plan ORSEC Cyclones de la préfecture pour les crèches, les écoles, les collèges, les lycées et les universités, et l'alerte en vigueur à La Réunion en ce moment.";
@@ -33,7 +33,7 @@ function bulletinHtml(depuis: string, href: string | undefined): string {
   return `${esc(depuis.slice(0, m.index + 1))}<a href="${esc(href)}" rel="noopener">${esc(m[1])}</a>).`;
 }
 
-/** The releases a sentence cites, « « title » → », each linked on its title (marketing). */
+/** The releases a sentence cites, « « title » → », each linked on its title. */
 export function citesHtml(html: string, cites: { titre: string; lien: string }[] | undefined): string {
   let out = html;
   for (const c of cites ?? []) {

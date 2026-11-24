@@ -1,8 +1,8 @@
 /**
  * Météo-France's official map of the vigilance on /vigilance (providers/vigilance-carte.ts): the picture of page 1 of
  * its bulletin, whole, with Météo-France's caption and the link to its site; the bulletin in PDF as it was issued; and
- * the page that draws page 1 for Cloudflare's browser only. Marketing's words of 27/10/2026
- * (marketing/mf-cartes-officielles-mots.md); the picture is never in the og:image nor on the home page.
+ * the page that draws page 1 for Cloudflare's browser only. The validated words of 27/10/2026
+ * (the validated wording); the picture is never in the og:image nor on the home page.
  */
 import * as carte from "../providers/vigilance-carte.js";
 import * as mf from "../providers/vigilance.js";
@@ -25,7 +25,7 @@ const pdfLink = (b: NonNullable<carte.Carte["bulletin"]>) =>
 /**
  * The map on /vigilance: the newest bulletin's picture with its caption; else the line that says why there is none
  * (règle 3 ter), and the newest bulletin's PDF. When the newest bulletin's time of issue could not be read, no PDF: the
- * one kept before it has been replaced (marketing, 27/10). Nothing before the first bulletin is kept.
+ * one kept before it has been replaced (wording validated on 27/10). Nothing before the first bulletin is kept.
  * The picture itself is shown here on a phone only (`mf-bas`): on a wide screen, it is in the hero (carteHero()).
  */
 export function carteHtml(c: carte.Carte | undefined, now: Date): string {

@@ -30,7 +30,7 @@ describe("the order of the pages", () => {
     const page = meteoPage(O, null, NOW);
     expect(bar(page)).toEqual(["agenda", "sentiers", "meteo", "communes"]);
     expect(page).toContain('<a class="k-sentiers" href="/randonnees">');
-    // The menu: « Communes » first, then the five groups in marketing's order (04/11/2026).
+    // The menu: « Communes » first, then the five groups in the validated order (04/11/2026).
     expect(menu(page)[0]).toBe("communes");
     expect(groupes(page)).toEqual([
       ["Sécurité", ["/vigilance", "/cyclones", "/crues", "/volcan", "/feux", "/defibrillateurs"]],
@@ -147,7 +147,7 @@ describe("the order of the pages", () => {
 
   it("leads the bar's button to /mcp under its page's name, « Mon IA » below 430 px, and says « Menu » under the menu's icon", () => {
     const header = meteoPage(O, null, NOW).match(/<header class="top">(.*?)<\/header>/s)![1];
-    // The name of the home page's button and of /mcp's breadcrumb (marketing, 06/11/2026), whole in its aria-label.
+    // The name of the home page's button and of /mcp's breadcrumb (wording validated on 06/11/2026), whole in its aria-label.
     expect(header).toMatch(/<a class="cta-ia" href="\/mcp" aria-label="Brancher mon IA"><svg[^]*?<\/svg><span class="ia-l">Brancher mon IA<\/span><span class="ia-c">Mon IA<\/span><\/a>/);
     expect(header).not.toContain("#assistant");
     expect(CSS).toContain(".cta-ia .ia-l{display:none}@media (min-width:430px){.cta-ia .ia-l{display:inline}.cta-ia .ia-c{display:none}}");
@@ -191,7 +191,7 @@ describe("the alerts on a phone", () => {
     expect(CSS).toContain(".volcan-une[data-court]{padding:0;max-width:none}");
   });
 
-  it("say the vigilance's colour, two phenomena at most by their short names, and the zones named, counted or whole (marketing)", () => {
+  it("say the vigilance's colour, two phenomena at most by their short names, and the zones named, counted or whole", () => {
     expect(said(vigilance("jaune", ["Fortes pluies / orages"], ["Sud-Est : Saint-Joseph, Saint-Philippe"]))).toEqual(frags(["Météo-France : vigilance jaune pluies-orages · Sud-Est"]));
     expect(said(vigilance("orange", ["Vents forts"], LAND))).toEqual(frags(["Météo-France : vigilance orange vents forts · toute l'île"]));
     expect(said(vigilance("jaune", ["Fortes pluies / orages"], LAND.slice(2, 4)))).toEqual(frags(["Météo-France : vigilance jaune pluies-orages · Sud-Est, Sud"]));
@@ -202,7 +202,7 @@ describe("the alerts on a phone", () => {
     expect(said(vigilance("orange", ["Fortes pluies / orages", "Vents forts", "Vagues - submersion"], [LAND[1], ...coasts(2)]))).toEqual(frags(["Météo-France : vigilance orange pluies-orages, vents forts · Est, 2 zones côtières"]));
   });
 
-  it("give the cyclone alert to the prefect, with the schools closed on a line of their own (marketing)", () => {
+  it("give the cyclone alert to the prefect, with the schools closed on a line of their own", () => {
     const cyclone = (c: number, prevue = false, ecoles?: boolean): Alerte => ({ couleur: c, texte: "Météo-France : …", ecoles, court: { cyclone: c, prevue } });
     expect(said(cyclone(2))).toEqual(frags(["Pré-alerte cyclonique du préfet"]));
     expect(said(cyclone(3))).toEqual(frags(["Alerte cyclonique orange du préfet"]));

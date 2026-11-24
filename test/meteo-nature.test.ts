@@ -5,7 +5,7 @@ import { pageOf } from "../src/web/places.js";
 import { natureStation, stationKind } from "../src/tools/meteo.js";
 
 // Each measure says what made it, official or amateur, on the place's page as in meteo_actuelle (the user,
-// marketing's words of 20/11/2026).
+// the validated words of 20/11/2026).
 const NOW = new Date("2026-11-20T08:20:00Z"); // 12:20 in La Réunion
 const copy = <T>(value: T) => ({ value, fetchedAt: NOW, stale: false });
 const leport: StationAnswer = {

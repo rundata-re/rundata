@@ -1,7 +1,7 @@
 /**
  * What the cyclone alert in force means for the crèches, the schools and the universities, as the prefecture's
  * plan says it (dispositif spécifique ORSEC Cyclones, arrêté 2026-182: table §1.2 p. 9, établissements §4.3 p. 19),
- * in marketing's words. Only the alert Météo-France publishes is read: never « ouvertes », never one school.
+ * in the validated words. Only the alert Météo-France publishes is read: never « ouvertes », never one school.
  */
 import { localTime } from "../geo.js";
 import type { Cyclone } from "../providers/prefecture.js";
@@ -36,10 +36,10 @@ const STATES: Record<Exclude<Etat, "aucune" | "levee">, string> = {
   sauvegarde: "Phase de sauvegarde : les crèches, les écoles, les collèges, les lycées et les universités « restent fermés », et leur « réouverture est décidée quand les conditions d'accueil sont satisfaisantes » (p. 19-20)",
 };
 const NONE = "Pas d'alerte cyclonique en cours à La Réunion.";
-// Under the phase de sauvegarde's sentence, until a release of the prefecture says the reopening (marketing).
+// Under the phase de sauvegarde's sentence, until a release of the prefecture says the reopening.
 const REOPENING = "La réouverture est annoncée par la préfecture et le rectorat (ac-reunion.fr).";
 const LIFTED = "Alerte levée. La réouverture des écoles est annoncée par la préfecture et le rectorat (ac-reunion.fr) : elle n'est pas encore lue ici.";
-// Where the alert is read, said after its date (marketing): « (communiqué de la préfecture) » the day it is read there.
+// Where the alert is read, said after its date: « (communiqué de la préfecture) » the day it is read there.
 const BULLETIN = "bulletin de Météo-France";
 // The step's name in « … décidée par la préfecture … ».
 const NAMES: Record<number, string> = { 2: "Pré-alerte cyclonique", 3: "Alerte orange", 4: "Alerte rouge", 5: "Alerte violette", 6: "Phase de sauvegarde" };
@@ -59,7 +59,7 @@ const CLOSES = 17;
 
 export interface EcolesAnswer {
   etat: Etat;
-  /** Marketing's sentence for the state, its source in `selon` (all but « levée »). */
+  /** The validated sentence for the state, its source in `selon` (all but « levée »). */
   texte: string;
   selon?: { nom: string; lien: string };
   /**
@@ -71,7 +71,7 @@ export interface EcolesAnswer {
   lien_depuis?: string;
   /** In the phase de sauvegarde, who announces the reopening, or the prefecture's release that does. */
   reouverture?: string;
-  /** The prefecture's newest release about the alert, cited by its title (marketing's words). */
+  /** The prefecture's newest release about the alert, cited by its title (the validated words). */
   communique?: string;
   /** The prefecture's newest release and Météo-France's bulletin disagree: both said, with their dates, none chosen. */
   ecart?: string;
@@ -189,7 +189,7 @@ export function ecolesBlock(v: mf.Vigilance, now: Date, c?: Cyclone | null) {
   return { ...e, regle: REGLE, source: SOURCE_PHRASE, limite: LIMITE, page: "https://rundata.re/ecoles-cyclone", rectorat: RECTORAT };
 }
 
-/** The tool's line in an alert: the step in force, in marketing's words; nothing outside one. */
+/** The tool's line in an alert: the step in force, in the validated words; nothing outside one. */
 export function quotidienLine(v: mf.Vigilance, now: Date): string | undefined {
   const e = ecoles(v, now);
   const lines: Record<number, string> = {

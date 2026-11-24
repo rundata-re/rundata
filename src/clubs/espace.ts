@@ -1,5 +1,5 @@
 /**
- * The clubs' and associations' own space (marketing/espace-club-verifie.md): a club proves once that it is the club,
+ * The clubs' and associations' own space: a club proves once that it is the club,
  * through the address a public source gives for it, then comes back through a personal link. In the D1 tables of
  * scripts/clubs.sql, next to the proposals; the pages are web/club.ts.
  *
@@ -323,7 +323,7 @@ export async function purger(now = new Date()): Promise<number> {
   return n;
 }
 
-// ---------------------------------------------------------------- the e-mail (marketing's words, §6)
+// ---------------------------------------------------------------- the e-mail (the validated words, §6)
 
 /** The day « 12/11 » of a time, at La Réunion. */
 export const jourMois = (t: number) => new Date(t * 1000 + 4 * 3600_000).toISOString().slice(5, 10).split("-").reverse().join("/");

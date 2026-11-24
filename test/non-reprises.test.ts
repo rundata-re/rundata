@@ -14,7 +14,7 @@ const NOW = new Date("2026-10-24T04:00:00Z");
 const body = (r: { content: { text: string }[] }) => JSON.parse(r.content[0].text);
 const kept = (v: unknown) => ({ value: v, fetchedAt: NOW.getTime() - 60_000 });
 const event = (titre: string, commune: string, publie_par: string, lien = `https://example.re/${titre}`) => ({ id: titre, titre, seances: [{ debut: "2026-10-25" }], commune, categories: [], lien, publie_par });
-// Marketing's words, 26/10.
+// The validated words, 26/10.
 const SEPT = "Les mentions légales des sites de 7 salles interdisent d'en reprendre le contenu sans accord : le TÉAT (Champ Fleuri et Plein Air), la Cité des Arts, le Kabardock, Bisik, le Théâtre Luc Donat, le CDNOI et Léspas. rundata.re n'affiche donc pas leurs programmes.";
 const GOLF = "Les conditions d'utilisation du site de la ffgolf interdisent d'en reprendre le contenu sans son accord : rundata.re n'affiche donc pas les compétitions des golfs de La Réunion.";
 const VOILE = "Les mentions légales du site de la FFVoile interdisent d'en reprendre le contenu sans son accord : rundata.re n'affiche donc pas les régates de la Ligue de voile de La Réunion.";
@@ -67,7 +67,7 @@ describe("the halls and the sports sites whose terms forbid taking their informa
     expect(AGENDAS).not.toContain(SPORTSREGIONS);
     // The halls' source named after those read, and its link theirs.
     expect([SALLES.nom, SALLES.attribution, SALLES.url]).toEqual(["Programmes des salles : Le Séchoir, Kabardock, Théâtre Luc Donat", "Le Séchoir, Kabardock, Théâtre Luc Donat", "https://www.lesechoir.com"]);
-    // Its written agreement said in the halls' licence, with its day (marketing, 27/10).
+    // Its written agreement said in the halls' licence, with its day (wording validated on 27/10).
     expect(SALLES.licence).toBe("Le Séchoir\u00a0: site sans mentions légales, programme repris tel qu'il est publié\u00a0; les autres salles\u00a0: seulement avec leur accord écrit\u00a0; Kabardock : repris avec son accord écrit du 06/11/2026\u00a0; Théâtre Luc Donat : repris avec son accord écrit du 27/10/2026");
     expect(PROGRAMMES_SALLES).toBe("les programmes du Séchoir, du Kabardock et du Théâtre Luc Donat");
     expect(COUVERTURE).toContain("Programmes des salles : Le Séchoir, Kabardock, Théâtre Luc Donat.");
@@ -79,7 +79,7 @@ describe("the halls and the sports sites whose terms forbid taking their informa
     expect(mentionSalles("Saint-Denis")).toEqual(["Les mentions légales des sites de 3 salles interdisent d'en reprendre le contenu sans accord : le TÉAT (Champ Fleuri et Plein Air), la Cité des Arts et le CDNOI. rundata.re n'affiche donc pas leurs programmes."]);
     expect(mentionSalles("Le Port")).toEqual(["Les mentions légales du site du Kabardock interdisent d'en reprendre le contenu sans son accord : rundata.re n'affiche donc pas son programme."]);
     expect(mentionSalles("Saint-Leu")).toEqual([]);
-    // Bisik's terms speak of its authors' accord: said so (marketing).
+    // Bisik's terms speak of its authors' accord: said so.
     expect(mentionSalles("Saint-Benoît")).toEqual(["Les mentions légales du site de Bisik interdisent d'en reproduire les textes sans l'accord de leurs auteurs : rundata.re n'affiche donc pas son programme."]);
     for (const k of ["agenda:teat", "agenda:cite_des_arts", "agenda:cdnoi"]) set(k, { etat: "demandee", demandee_le: "2026-10-27" });
     expect(mentionSalles("Saint-Denis")[0]).toMatch(/leurs programmes\. rundata.re leur a demandé cet accord le 27\/10 et attend leur réponse\.$/);
@@ -101,7 +101,7 @@ describe("the halls and the sports sites whose terms forbid taking their informa
     expect(mentionSports([], true)).toEqual([`${CLUBS} rundata.re lui a demandé cet accord le 27/10 et attend sa réponse.`]);
   });
 
-  it("are said once each when only some were asked: those asked in one sentence after the block (marketing, 26/10)", () => {
+  it("are said once each when only some were asked: those asked in one sentence after the block (wording validated on 26/10)", () => {
     // The Théâtre Luc Donat, which agreed on 27/10, and the Kabardock, on 06/11, are no longer among them.
     expect(mentionSalles()).toEqual(["Les mentions légales des sites de 5 salles interdisent d'en reprendre le contenu sans accord : le TÉAT (Champ Fleuri et Plein Air), la Cité des Arts, Bisik, le CDNOI et Léspas. rundata.re n'affiche donc pas leurs programmes. rundata.re a demandé cet accord au TÉAT, à la Cité des Arts et au CDNOI le 26/10 et à Bisik et à Léspas le 08/11, et attend leur réponse."]);
     expect(mentionSalles("Saint-Paul")).toEqual(["Les mentions légales des sites de 2 salles interdisent d'en reprendre le contenu sans accord : le TÉAT (Champ Fleuri et Plein Air) et Léspas. rundata.re n'affiche donc pas leurs programmes. rundata.re a demandé cet accord au TÉAT le 26/10 et à Léspas le 08/11, et attend leur réponse."]);

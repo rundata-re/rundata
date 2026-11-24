@@ -118,7 +118,7 @@ export function recentRainBlock(rain: RecentRain, station: StationRain, lieu: st
     const k = hours.findIndex((v) => v != null && v > 0);
     if (k >= 0) {
       const e = end - k * HOUR_MS;
-      // Before hours not read: it may have rained since (marketing).
+      // Before hours not read: it may have rained since.
       const [g0, g1] = between(end, from);
       const gap = stuck ? ` (de ${g0} à ${g1}, non lue : il a pu pleuvoir pendant ce temps)` : "";
       const [x, y] = between(e - HOUR_MS, e);
@@ -127,7 +127,7 @@ export function recentRainBlock(rain: RecentRain, station: StationRain, lieu: st
   }
   const allRead = !stuck && hours.every((v) => v != null);
   const since = end - hours.length * HOUR_MS;
-  // The hours not read said, or an assistant would read a dry evening into it (marketing).
+  // The hours not read said, or an assistant would read a dry evening into it.
   const [u0, u1] = between(end, from);
   const unread = stuck ? ` (de ${u0} à ${u1}, non lue)` : "";
   derniere ??= allRead ? `pas de pluie mesurée depuis ${dayWord(since, t)} ${hm(since)}` : `pas de pluie mesurée dans les heures disponibles${unread}`;

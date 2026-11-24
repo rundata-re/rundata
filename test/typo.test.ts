@@ -13,7 +13,7 @@ import { unstyled } from "../src/typographie.js";
 const NOW = new Date("2026-10-24T04:00:00Z");
 const ORIGIN = "https://rundata.re";
 
-// The rule as marketing wrote it, the slow way: what is kept as written, then the prose between.
+// The rule as validated, the slow way: what is kept as written, then the prose between.
 const KEPT = /<(script|style|pre|code|textarea)\b(?:[^>"']|"[^"]*"|'[^']*')*>[\s\S]*?<\/\1\s*>|<!--[\s\S]*?-->|<(?:[^>"']|"[^"]*"|'[^']*')*>/g;
 // typographie.ts' units, and its thousands: 1 to 3 figures not starting with 0, not after a decimal, a date, an hour, a
 // « + », a letter or another figure (« 0 800 333 », « 2025 100 »).

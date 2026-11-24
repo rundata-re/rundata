@@ -1,6 +1,6 @@
 /**
  * /application, « rundata.re sur votre écran d'accueil »: the steps of every browser, the visitor's first and open
- * (web/pwa.ts tells the browsers apart), linked from the install block, the menu and the footer. Marketing's words of
+ * (web/pwa.ts tells the browsers apart), linked from the install block, the menu and the footer. The validated words of
  * 27/10/2026 (pwa.ts, SECTIONS).
  */
 import type { Alerte } from "./data.js";

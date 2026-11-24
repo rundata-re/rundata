@@ -1,6 +1,6 @@
 /**
  * French typography, one rule for all that is said, the pages (web/typo.ts) and the assistants' answers, instructions
- * and tool descriptions (server.ts): the ordinary space that a phone must not break becomes a no-break one (marketing's
+ * and tool descriptions (server.ts): the ordinary space that a phone must not break becomes a no-break one (the brand
  * kit). U+00A0 before « : ; ? ! » », after « « », after the word « à » before a figure (« à 08:00 », « à 3 km ») and
  * between a figure and its unit (« 39 % », « 16,8 mm », « 2,00 € »), after « n° » and « art. » before a figure
  * (« arrêté n° 180 », « art. 2 »); U+202F between the thousands of a quantity

@@ -1,7 +1,7 @@
 /**
  * « Puis-je monter au volcan ? »: what the official texts say, place by place, for the level in force. The prefecture's
  * release quoted as written (providers/volcan.ts `releaseText`), the ONF's map for the forest road and the trails, the
- * ORSEC plan for what it defines. Never « ouvert » by deduction: a place a text does not name is said so. Marketing's
+ * ORSEC plan for what it defines. Never « ouvert » by deduction: a place a text does not name is said so. The validated
  * words.
  *
  * The plan: « Disposition spécifique ORSEC Volcan Piton de la Fournaise », annexed to the prefect's order n° 2242 of
@@ -58,7 +58,7 @@ export interface Ligne {
 export interface Acces {
   titre: string;
   chapeau: string;
-  /** A sentence read before the lines: pitonlive higher than the release they quote (tools/volcan.ts, marketing). */
+  /** A sentence read before the lines: pitonlive higher than the release they quote (tools/volcan.ts). */
   avant?: string;
   lignes: Ligne[];
   pied: string;
@@ -74,7 +74,7 @@ const dayOf = (jour: string) => `${jour.slice(8, 10)}/${jour.slice(5, 7)}`;
 const day = (iso: string) => localTime(new Date(iso)).split(" ")[0];
 // A list's mark before a sentence (« → A ce stade, … »): not the release's words.
 const LEAD = /^[→•▪\-–]\s*/;
-// In an eruption, the bans a release may write, in this order (marketing): the Enclos, the slopes from the RN2, the
+// In an eruption, the bans a release may write, in this order: the Enclos, the slopes from the RN2, the
 // lava flows from the road, the stops on the RN2.
 const BANS = [/reste interdit jusqu.à nouvel ordre/i, /danger mortel/i, /interdit de s.écarter de la route/i, /arrêts intempestifs sur la RN ?2/i];
 const hour = (d: Date) => localTime(d).split(" ")[1];
@@ -107,7 +107,7 @@ export function acces(niveau: string | undefined, p: volcan.Phase | undefined, p
     lignes.push({ lieu: "Enclos", texte: `Enclos : en phase de sauvegarde, « une réouverture partielle de l'enclos est possible » (${DSO}, p. 22). Ce qui est ouvert est dit dans le communiqué de la préfecture`, ...release });
   } else {
     const enclos = said.find((x) => /enclos/i.test(x) && /interdit|ferm|ouvert|accès/i.test(x));
-    // The release's own words on the Enclos when its title has them (marketing), never a status put into words; closed,
+    // The release's own words on the Enclos when its title has them, never a status put into words; closed,
     // « interdit », by order.
     const mots = p.enclos === "ferme" ? undefined : volcan.enclosWordsOf(p);
     const etat = mots ? `« ${mots} » selon le communiqué du ${dayOf(p.jour)}` : SAID[p.enclos ?? "ferme"] ?? p.enclos;
@@ -118,14 +118,14 @@ export function acces(niveau: string | undefined, p: volcan.Phase | undefined, p
       ? { lieu: "RN 2", texte: `RN 2 (Grand Brûlé) : ${quote(rn2)}`, ...same }
       : { lieu: "RN 2", texte: `Le dernier communiqué ne dit rien de la RN 2 : ${VERIFIER}.` });
     // In an eruption, the bans of the release shown, quoted exactly with its day, nothing of ours around them; never a
-    // former release's (marketing). A sentence already quoted above is not said twice.
+    // former release's. A sentence already quoted above is not said twice.
     if (/^Alerte 2/i.test(niveau)) {
       const used = new Set([enclos, rn2]);
       for (const re of BANS) {
         const s = said.find((x) => re.test(x) && !used.has(x));
         if (!s) continue;
         used.add(s);
-        // Always the release of the lines above: « même communiqué », not a second text (marketing).
+        // Always the release of the lines above: « même communiqué », not a second text.
         lignes.push({ lieu: "Interdiction", texte: `« ${s.replace(LEAD, "")} »`, ...same });
       }
     }

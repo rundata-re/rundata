@@ -2,7 +2,7 @@
  * The past cyclones of /cyclones/<nom>-<année> and of the cyclones tool's `nom`: what Météo-France's stations measured
  * while each went by (cyclones-passes.json, built by scripts/build-cyclones-passes.py from the daily files), and the
  * one sentence of its date and passage, quoted from a document that was read and is named. A cyclone without such a
- * document has no page. No casualty, damage or outage figure: only what the stations measured. Worded by marketing.
+ * document has no page. No casualty, damage or outage figure: only what the stations measured. Worded for the site.
  */
 import data from "./cyclones-passes.json" with { type: "json" };
 import { stationName } from "../providers/climat.js";
@@ -34,7 +34,7 @@ export interface Passe {
   limite?: { ms: number; citation: string };
   /** What the document says beyond the daily measures (Gamède's world records): a line of ours, the quotations, the reference with the copy's date (a record holds only at its date), and what the daily files can and cannot show of it. */
   extraits?: { titre: string; intro: string; citations: string[]; reference: string; note: string };
-  /** A meta of its own, worded by marketing, instead of the template. */
+  /** A meta of its own, worded for the site, instead of the template. */
   meta?: string;
 }
 
@@ -211,7 +211,7 @@ export function mesures(p: Passe): { jours: string[]; stations: Mesure[] } {
   return { jours: c.jours, stations: c.stations.map(({ nom, ...s }) => ({ ...s, station: stationName(s.poste, nom) })) };
 }
 
-/** marketing's note under the rain. */
+/** the validated note under the rain. */
 export const RAIN_NOTE = "Pluie du jour : cumul mesuré de 10 h ce jour-là à 10 h le lendemain (heure de La Réunion), comme le compte Météo-France.";
 
 /** m/s as km/h, rounded (277 km/h for 77 m/s). */

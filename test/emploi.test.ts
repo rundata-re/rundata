@@ -374,7 +374,7 @@ describe("the tool emploi and the page /emploi", () => {
     expect(page).toContain("<option>Sainte-Marie</option>");
     expect(page).not.toMatch(/href="https?:\/\/[^"]*(hellowork|meteojob|domtomjob|apec|indeed|linkedin|leboncoin|jooble)/i);
     expect(page).toContain('<a href="https://monemploi-lareunion.francetravail.fr/" rel="noopener">Mon emploi la Réunion</a>');
-    // Empty: marketing's sentence, with the hour.
+    // Empty: the validated sentence, with the hour.
     const none = emploiPage("https://rundata.re", { value: { ...d, nombre: 0, offres: [] }, fetchedAt: NOW, stale: false }, NOW);
     expect(none).toContain("Aucune offre publiée sur Choisir le service public pour La Réunion le 29/10 à 12:45.");
   });
@@ -465,7 +465,7 @@ describe("the tool emploi and the page /emploi", () => {
     emploiSource.configure(async () => c);
     const d = await buildEmploi(cache(), NOW);
     const page = emploiPage("https://rundata.re", { value: d, fetchedAt: new Date(c.lu), stale: false }, NOW);
-    // In marketing's words: the title alone, « 4 offres : », a link per line with the whole reference.
+    // In the validated words: the title alone, « 4 offres : », a link per line with the whole reference.
     // Across the whole line, under the date, each reference never cut.
     expect(page).toContain('<li data-c="Sainte-Marie" data-n="4"><span><b>Gestionnaire finances*SG/<wbr class="adr">SIR/<wbr class="adr">OI/<wbr class="adr">FIN</b> <small>');
     expect(page).toContain('<span class="q-none">jusqu&#39;au 20/11</span> <span class="refs"><small>4 offres\u00a0:</small><a href="https://choisirleservicepublic.gouv.fr/offre-emploi/DGAC-AVE-128051-CAT-B/" rel="noopener">Réf. <span class="nw">DGAC-AVE-128051-CAT-B</span></a><a href=');

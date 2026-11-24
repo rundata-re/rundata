@@ -85,7 +85,7 @@ export const ZONES: Zone[] = [
 /** A beach this close to a zone is told about it. */
 export const NEAR_KM = 3;
 
-/** marketing's words, as given. */
+/** the validated words, as given. */
 export const T = {
   regle:
     "À La Réunion, la baignade et les activités de vague (surf, bodyboard, bodysurf, longboard, paddleboard) sont interdites dans la bande des 300 m " +
@@ -111,7 +111,7 @@ export const T = {
 };
 
 /**
- * The rule in one sentence, marketing's words (20/11) for a place's page, said also in the résumé of temperature_mer and
+ * The rule in one sentence, the validated words (20/11) for a place's page, said also in the résumé of temperature_mer and
  * at the top of /mer (24/11/2026): asked about the sea, one hears whether one may swim. While in force only.
  */
 export const REGLE_COURTE = "Baignade, surf, bodyboard et paddle sont interdits dans la bande des 300 m de tout le littoral, sauf dans le lagon, " +
@@ -153,7 +153,7 @@ export function zonesNear(lon: number, lat: number, commune?: string): (Zone & {
     .sort((a, b) => a.km - b.km);
 }
 
-/** Whether T.bsan goes under these zones: once one is said with the BSAN (marketing). */
+/** Whether T.bsan goes under these zones: once one is said with the BSAN. */
 export const saysBsan = (zones: Zone[], now: Date) => inForce(now) && zones.some((z) => z.par);
 
 /**

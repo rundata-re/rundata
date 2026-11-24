@@ -173,12 +173,12 @@ export function demos(h: HomeLive | null, now: Date): Demo[] {
     out.push({
       question: "Le volcan est en éruption ?",
       call: "volcan_seismes()",
-      // In alert, never « pas encore » on our word: what the texts read say, then the level in the plan's words (marketing).
+      // In alert, never « pas encore » on our word: what the texts read say, then the level in the plan's words.
       answer: (!e.eruption_en_cours && /^Alerte/.test(e.niveau_orsec)
         ? `${esc(NON_ANNONCEE)}${e.image_ovpf_plus_recente && p0?.lien ? ` ${esc((p0.texte_lu_dans_l_image ? enImagesLuesAilleurs : enImagesApres)(...(p0.date.split(" ") as [string, string])))} : ${imageLinks(p0.lien)}.` : ""} Le volcan est en ${esc(e.niveau_orsec.toLowerCase())}${libelle(e.niveau_orsec) ? ` : « ${esc(libelle(e.niveau_orsec)!)} » (dispositif ORSEC Volcan)` : ""}.`
         : e.eruption_en_cours
         ? `Oui, le Piton de la Fournaise est en éruption (niveau ORSEC : ${esc(e.niveau_orsec)}).`
-        // What the texts read say, with when, never « Non » on our word nor pitonlive's (marketing).
+        // What the texts read say, with when, never « Non » on our word nor pitonlive's.
         : `Pas d'éruption annoncée par l'OVPF ni par la préfecture dans les textes lus par rundata.re (${leAt(h!.volcan!.fetchedAt)}).${e.niveau_inconnu ? "" : ` Niveau ORSEC : ${esc(e.niveau_orsec)}.`}`) +
         (q ? ` L'observatoire a localisé ${q.sous_le_volcan["7_jours"]} séisme${q.sous_le_volcan["7_jours"] > 1 ? "s" : ""} sous le volcan en 7 jours${q.lus_jusqu_au ? `, ${esc(jusquALecture(q.lus_jusqu_au))}` : ""}.` : ""),
     });
@@ -228,7 +228,7 @@ export function sky(now: Date): "nuit" | "aube" | "jour" | "soir" {
 }
 
 /**
- * The field « Aller à une rubrique, une commune ou un lieu », above the tiles (the mock-up, marketing's words, approved
+ * The field « Aller à une rubrique, une commune ou un lieu », above the tiles (the mock-up, the validated words, approved
  * by the user on 04/11/2026): it leads to a page, from the names alone, in the browser (menu.ts). Shown with the script
  * only: without it, the field would do nothing.
  */

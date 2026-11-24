@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { fr } from "../src/tools/format.js";
 
-// Marketing's kit (« Nombres »): the thousands separated from 4 digits by a narrow no-break space (U+202F); « Heures »:
+// the brand kit (« Nombres »): the thousands separated from 4 digits by a narrow no-break space (U+202F); « Heures »:
 // « 8\u00a0h–18\u00a0h », or « 09:15–18:45 » when one of a place's hours has minutes, an en dash without spaces.
 describe("the thousands and the hours as the kit writes them", () => {
   it("separate the thousands in fr(), from 4 digits", () => {

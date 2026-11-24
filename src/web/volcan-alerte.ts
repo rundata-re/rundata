@@ -84,31 +84,31 @@ async function read(cache: Cache, now: Date): Promise<VolcanAlerte | undefined> 
   }
 }
 
-// --- The words, marketing's ---------------------------------------------------------------------------------------
+// --- The words, the validated ---------------------------------------------------------------------------------------
 
 // « 24 octobre », of a day « 2026-10-24 ».
 const day = (jour: string) => new Date(`${jour}T12:00:00Z`).toLocaleDateString("fr-FR", { day: "numeric", month: "long", timeZone: "UTC" });
 // The release dated, never « depuis le … »: we know what the last release read says, not that the alert still holds;
-// the day and its month never apart (marketing).
+// the day and its month never apart.
 const dated = (a: VolcanAlerte) => (a.communique ? `communiqué du ${day(a.communique.jour).replace(" ", "\u00a0")}` : "");
 // « 24/10 », of a day « 2026-10-24 ».
 const dm = (jour: string) => `${jour.slice(8, 10)}/${jour.slice(5, 7)}`;
 const released = (a: VolcanAlerte) => (a.communique ? ` (${dated(a)})` : "");
-// « Alerte 1 », the level never apart from its word, and the arrow never alone on its line (marketing).
+// « Alerte 1 », the level never apart from its word, and the arrow never alone on its line.
 const nb = (s: string) => s.replace(/^(alerte) /i, "$1\u00a0");
 const FOLLOW = "Suivre en direct\u00a0→";
-// Whose the level is: the prefect's, with the release's day, or the OVPF's, with its post's time (marketing, item 7).
+// Whose the level is: the prefect's, with the release's day, or the OVPF's, with its post's time.
 const by = (a: VolcanAlerte) => (a.ovpf ? ` selon l'OVPF (publication du ${postAt(a.ovpf.date)})` : ` du préfet${released(a)}`);
-// Draft, to marketing: the eruption stopped according to the OVPF, the level still an alert 2.
+// Draft, to validate: the eruption stopped according to the OVPF, the level still an alert 2.
 const arretSaid = (a: VolcanAlerte) => `L'OVPF a annoncé l'arrêt de l'éruption (publication du ${postAt(a.arret!.date)})`;
 const level = (a: VolcanAlerte) => a.niveau!.toLowerCase();
-// The level's words in the plan, true for any alert 1, never a release's of the day nor ours (marketing): « éruption
+// The level's words in the plan, true for any alert 1, never a release's of the day nor ours: « éruption
 // probable ou imminente ». Only what the level names: back in vigilance, no « éruption probable ».
 const plan = (a: VolcanAlerte) => libelle(a.niveau) ?? "";
 const planSaid = (a: VolcanAlerte) => (plan(a) ? ` : « ${plan(a)} », selon le dispositif ORSEC Volcan` : "");
 
 export const ENCLOS = "Accès à l'Enclos interdit.";
-// The head of « Les annonces officielles » on /volcan (marketing, 26/10/2026): who announces, then whose posts are read.
+// The head of « Les annonces officielles » on /volcan (wording validated on 26/10/2026): who announces, then whose posts are read.
 export const ANNONCERONT = "Seuls l'OVPF et la préfecture annonceront une éruption\u00a0: leurs textes s'affichent ici dès que rundata.re les a lus.";
 export const BLUESKY_SEUL = "L'OVPF publie aussi sur Facebook et X, qui ne sont pas lus ici\u00a0: ses messages ci-dessous viennent de Bluesky.";
 
@@ -118,7 +118,7 @@ export function bannerText(a: VolcanAlerte): string {
     : `🌋 Piton de la Fournaise : ${level(a)}${by(a)}${a.arret ? `. ${arretSaid(a)}` : plan(a) ? `, « ${plan(a)} » (dispositif ORSEC Volcan)` : ""}. ${ENCLOS}`;
 }
 
-// The banner's line on a phone and the home page's card there (pages.ts `ligne`), marketing's: the eruption or the
+// The banner's line on a phone and the home page's card there (pages.ts `ligne`), the validated ones: the eruption or the
 // level always with whose it is, « Enclos interdit » always, no date (the release is on /volcan, one touch away).
 export function volcanLigne(a: VolcanAlerte): string {
   const said = a.eruption
@@ -155,7 +155,7 @@ export const volcanMeta = (a: VolcanAlerte) =>
     ? `Éruption en cours (OVPF, préfecture)${a.niveau ? `, ${level(a)}` : ""}. ${ENCLOS} Communiqués, séismes et consignes en direct · 974`
     : alertMeta(a);
 
-// Worded by marketing, as the home page's card: the plan's words whole or not at all, within DESCRIPTION_MAX.
+// Worded for the site, as the home page's card: the plan's words whole or not at all, within DESCRIPTION_MAX.
 function alertMeta(a: VolcanAlerte): string {
   const tail = `. ${ENCLOS} Communiqués de l'OVPF en direct · 974`;
   const short = `${nb(a.niveau!)}${by(a)}${tail}`;
@@ -167,7 +167,7 @@ export const volcanLead = (a: VolcanAlerte) =>
     ? `${arretSaid(a)}. Seuls l'OVPF et la préfecture disent la suite\u00a0: leurs communiqués s'affichent ici dès que rundata.re les a lus.`
     : a.eruption
     ? "Où, quelle intensité, quelles routes : ce que publient l'OVPF et la préfecture, dans l'ordre, avec l'heure. Respectez les consignes et les fermetures de routes."
-    // Never « n'a pas commencé » on our word: the OVPF's newest post may be an image we do not read (marketing).
+    // Never « n'a pas commencé » on our word: the OVPF's newest post may be an image we do not read.
     : `${NON_ANNONCEE} Seuls l'OVPF et la préfecture l'annonceront\u00a0: leurs communiqués s'affichent ici dès qu'ils sont lus.`;
 
 /**
@@ -183,11 +183,11 @@ export function homeCard(a: VolcanAlerte): string {
 
 /** The home tile's figure and line during an alert. */
 export function tileLive(a: VolcanAlerte): { valeur: string; detail: string; source?: string } {
-  // Whose the level is, on the tile's line of its own (marketing).
+  // Whose the level is, on the tile's line of its own.
   const source = a.ovpf ? `OVPF, publication du ${a.ovpf.date.slice(0, 5)}` : a.communique ? `Préfecture, communiqué du ${dm(a.communique.jour)}` : undefined;
   return a.eruption
     ? { valeur: "Éruption en cours", detail: [a.niveau ? esc(level(a)) : "", "Enclos interdit"].filter(Boolean).join(" · "), source }
-    // No quotes, for room (marketing).
+    // No quotes, for room.
     : { valeur: esc(a.niveau!), detail: [esc(plan(a)), "Enclos interdit"].filter(Boolean).join(" · "), source };
 }
 
@@ -200,10 +200,10 @@ export const OVPF_LINKS = [
   { nom: "Bluesky", url: OVPF.url },
   { nom: "X", url: "https://x.com/obsfournaise" },
 ];
-/** « Suivre l'OVPF : Facebook ↗ · Bluesky ↗ · X ↗ », at the top of /volcan during an alert (marketing). */
+/** « Suivre l'OVPF : Facebook ↗ · Bluesky ↗ · X ↗ », at the top of /volcan during an alert. */
 export const followOvpf = () => `Suivre l'OVPF\u00a0: ${OVPF_LINKS.map((l) => `<a href="${esc(l.url)}">${esc(l.nom)} ↗</a>`).join(" · ")}`;
 
-/** Whose the level is, in the banner's words: « Alerte 1 du préfet, communiqué du 24 octobre. » (marketing). */
+/** Whose the level is, in the banner's words: « Alerte 1 du préfet, communiqué du 24 octobre. ». */
 export const levelSaid = (a: VolcanAlerte) =>
   a.niveau ? `${nb(a.niveau)}${a.ovpf ? ` selon l'OVPF, publication du ${postAt(a.ovpf.date)}` : ` du préfet${a.communique ? `, ${dated(a)}` : ""}`}.` : "";
 

@@ -93,7 +93,7 @@ export function hoursOn(o: annuaire.Office, now: Date): string | undefined {
 
 /**
  * A closed office's state at `now`, its hours with it, so that they never read as the span it is closed (« fermée
- * 8\u00a0h–16\u00a0h » read « fermée de 8\u00a0h à 16\u00a0h » before 8 h, 24/11/2026), in marketing's words: « ouvre à
+ * 8\u00a0h–16\u00a0h » read « fermée de 8\u00a0h à 16\u00a0h » before 8 h, 24/11/2026), in the validated words: « ouvre à
  * 8\u00a0h (jusqu'à 16\u00a0h) », « ouvre à 08:00 (jusqu'à 12:00, puis 12:45–16:30) », « rouvre à 12:45 (jusqu'à 16:30) »,
  * « fermée depuis 16:30 », its true closing. One writing of the hours for the whole line (withMinutes()). Undefined when
  * it is open, closed all day or without hours: said otherwise.
@@ -132,7 +132,7 @@ export function ofKind(list: annuaire.Office[], quoi: string): annuaire.Office[]
   return list.filter((o) => !o.types || words.every((w) => o.types!.some((t) => t.split("_").some((x) => x === w || x === `${w}s`))));
 }
 
-/** Said with « aucun service »: what the tool does answer, in marketing's words (04/11/2026). */
+/** Said with « aucun service »: what the tool does answer, in the validated words (04/11/2026). */
 export const COUVERT =
   "Cet outil donne\u00a0: les services de l'annuaire de l'administration (mairie, préfecture, CAF, CGSS, impôts, France Travail, tribunal, gendarmerie…)\u00a0; " +
   "les pharmacies et les hôpitaux les plus proches (pharmacie de garde\u00a0: 3237.fr ou le 32\u00a037\u00a0; urgence et garde médicale\u00a0: le 15)\u00a0; " +

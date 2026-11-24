@@ -22,7 +22,7 @@ export const ordinaux = (s: string) => s.replace(/(\d)ère(?=\s|$)/g, "$1re").re
 
 /**
  * The holidays the State's file names by their date alone, named as the others: one without its name beside named ones
- * read as forgotten (marketing, 24/11/2026). The 20 December, its name at La Réunion.
+ * read as forgotten (wording validated on 24/11/2026). The 20 December, its name at La Réunion.
  */
 const NOMS_FERIES: Record<string, string> = {
   "1er janvier": "Jour de l'an",
@@ -61,7 +61,7 @@ export function moonOf(day: string, now: Date, lon: number, lat: number, altitud
   const next = cal.nextPhases(new Date(Date.parse(`${day}T00:00:00+04:00`)), 4);
   const main = next.find((x) => localDay(x.at) === day);
   const phase = main ? `${main.phase} à ${hm(main.at)}` : cal.between(cal.moonLight(now).angle);
-  // « aujourd'hui » for the day of the view, else that day's date (marketing, 31/10); the year of a next phase only
+  // « aujourd'hui » for the day of the view, else that day's date (wording validated on 31/10); the year of a next phase only
   // when it is not the year of `day`.
   const that = day === today(now) ? "aujourd'hui" : `le ${longDate(day)}`;
   const events = [
@@ -89,7 +89,7 @@ export const SOLEIL_NOTE =
   "Calculé pour un horizon dégagé\u00a0; dans les cirques et les ravines, le relief cache le soleil plus longtemps\u00a0: " +
   "il s'y lève plus tard et s'y couche plus tôt.";
 
-/** Under the sky of the night (web/pages.ts, a place of the Hauts): what of it is computed, said as such (marketing, 04/11). */
+/** Under the sky of the night (web/pages.ts, a place of the Hauts): what of it is computed, said as such (wording validated on 04/11). */
 export const NUIT_NOTE =
   "Nuit noire et Lune\u00a0: calculées, pas mesurées, par les formules astronomiques usuelles, à quelques minutes près, pour " +
   "l'horizon dégagé\u00a0; dans les cirques et les ravines, le relief cache le ciel plus bas.";
@@ -121,7 +121,7 @@ export function nuitOf(evening: string, lon: number, lat: number, altitude_m: nu
   const main = cal.nextPhases(new Date(Date.parse(`${evening}T18:00:00+04:00`)), 1).find((x) => x.at.getTime() < midnight.getTime() + 6 * 3600_000);
   const phase = main ? `${main.phase.charAt(0).toUpperCase()}${main.phase.slice(1)} à ${hm(main.at)}` : cal.between(light.angle);
   const events = n.lune.map((x) => `${x.lever ? "lever" : "coucher"} à ${hm(x.at)}`);
-  // « à minuit » said, as /calendrier's card gives the part lit at the reading (marketing, 04/11); a main phase has its hour.
+  // « à minuit » said, as /calendrier's card gives the part lit at the reading (wording validated on 04/11); a main phase has its hour.
   return { nuit_noire, lune: `${phase}, éclairée à ${lit}${main ? "" : " à minuit"}${events.length ? `, ${events.join(", ")}` : ""} (calcul astronomique).` };
 }
 

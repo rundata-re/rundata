@@ -8,7 +8,7 @@ import { historiqueMeteo, reperesMois, type ReperesMois } from "../src/tools/his
 import { meteoPage, placePage, reperesBlock } from "../src/web/pages.js";
 import { pageOf } from "../src/web/places.js";
 
-// « Repères du mois » of a place's weather page (marketing, 14/11/2026; the records' sentence, 19/11/2026), from real
+// « Repères du mois » of a place's weather page (wording validated on 14/11/2026; the records' sentence, 19/11/2026), from real
 // rows of the archive (scripts/build-climat.py): records stored up to 2025, days of 2026 up to 23 October.
 const NOW = new Date("2026-10-24T08:00:00Z");
 const O = "https://rundata.re";
@@ -91,7 +91,7 @@ describe("the month's landmarks of a place", () => {
     expect(await reperesMois(new Cache(new MemoryStore()), pageOf("cilaos")!.place, NOW)).toBeUndefined();
   });
 
-  it("are said in marketing's words, with no-break spaces, the station named", () => {
+  it("are said in the validated words, with no-break spaces, the station named", () => {
     const b = reperesBlock(R, NOW);
     expect(b).toContain(`<h2 id="h-reperes">Repères\u00a0: station Cilaos, à 0,4\u00a0km</h2>`);
     expect(b).toContain("<p>En octobre, la normale est de 22,4 °C pour la maximale et 9,8 °C pour la minimale, avec 33 mm de pluie sur le mois (normales 1991-2020 de Météo-France).</p>");

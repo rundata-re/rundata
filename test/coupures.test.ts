@@ -208,7 +208,7 @@ describe("coupures d'eau", () => {
     expect(benoit.secteurs.slice(-2)).toEqual(["Chemin Pinguet", "et les voies adjacentes"]);
     expect(rose).toMatchObject({ communes: ["Sainte-Rose"], ne_pas_boire: true, secteurs: ["Chemin La Caisse", "Chemin Piton Galet", "Chemin Alfred"], secteurs_complets: true });
     expect(salazie).toMatchObject({ secteurs_complets: true });
-    // Said without a comma before « et », on the page, in the feed and in the tool (marketing, 20/11/2026).
+    // Said without a comma before « et », on the page, in the feed and in the tool (wording validated on 20/11/2026).
     expect(sectorsSaid(benoit.secteurs)).toMatch(/^Rivière des Roches, Centre-ville, .*, Chemin Pinguet et les voies adjacentes$/);
     expect(sectorsSaid(rose.secteurs)).toBe("Chemin La Caisse, Chemin Piton Galet, Chemin Alfred");
     expect(noticeRow(benoit, new Date("2026-11-20T10:00:00Z")).secteurs_dits).toBe(sectorsSaid(benoit.secteurs));
@@ -833,7 +833,7 @@ describe("coupures d'eau", () => {
       // « ARS » is spelled out at its first occurrence (web/sigles.ts): the words alone.
       hook: html.match(/<p class="hook">(.*?)<\/p>/)![1].split(/<[^>]*>/).join(""),
     });
-    // Marketing's words (24/11/2026): « coupures » stays in the title, which says who publishes the notices.
+    // The validated words (24/11/2026): « coupures » stays in the title, which says who publishes the notices.
     const ed = of(page("entre-deux"));
     expect(ed.title).toBe("Eau à l&#39;Entre-Deux : coupures chez Sudéau, eau du robinet");
     expect(ed.og).toBe(ed.title);
@@ -903,7 +903,7 @@ describe("coupures d'eau", () => {
     // Never said of a distributor that it does not publish (a notice may be on paper, at the mairie): only that rundata.re does not read it.
     expect(lt).not.toMatch(/ne publie pas/);
     expect(lt).not.toContain("Aucune coupure d&#39;eau annoncée");
-    // Not read: who has its notices, never « pas d'avis » (marketing, 06/11/2026); the mairie's site linked when known.
+    // Not read: who has its notices, never « pas d'avis » (wording validated on 06/11/2026); the mairie's site linked when known.
     expect(lt).toMatch(/<p class="card">rundata.re ne lit pas les avis de coupure de l&#39;Entre-Deux\u00a0: ils sont sur le site de la mairie ou du distributeur\.(?: <a href="[^"]+" rel="noopener"[^>]*>[^<]+ →<\/a>)?<\/p>/);
     expect(lt).not.toContain("Pas d&#39;avis en ligne lisible");
     // The connector asked a question, without the tool's name.
@@ -1083,13 +1083,13 @@ describe("coupures d'eau", () => {
     expect(page).not.toContain("aujourd&#39;hui : avis en cours");
     // Every site answered: no grey of a site without answer, nor its legend.
     expect(page).not.toContain("Site sans réponse");
-    // Each commune leads to its own page of notices: a followed one's notices, the others' where to ask (marketing's charter).
+    // Each commune leads to its own page of notices: a followed one's notices, the others' where to ask (the brand charter).
     const links = mapLinks(page);
     expect(links).toHaveLength(24);
     expect(links.filter((l) => !pageOf(l.href.replace("/coupures-eau/", "")))).toEqual([]);
     expect(links.find((l) => l.href === "/coupures-eau/saint-pierre")?.label).toBe("Saint-Pierre : eau à ne pas boire dans les secteurs de l&#39;avis, voir le détail");
     // The legend never says « aucun avis » where nothing is read, and tells what the others are: each colour drawn, never a
-    // coloured word (marketing's charter of the maps), then when the notices were read.
+    // coloured word (the brand charter of the maps), then when the notices were read.
     expect(page).toContain(`<rect x="-30" y="-30" width="60" height="60" rx="8" style="fill:#a5d8ff"/></svg>Aucun avis en cours (site lu)</span>`);
     expect(page).toContain(`<rect x="-30" y="-30" width="60" height="60" rx="8" style="fill:#adb5bd"/></svg>Site pas lu\u00a0: voir la mairie ou le distributeur</span>`);
     expect(page).toContain(`<span class="mls">Avis des distributeurs, lus le 24/10 à 08:00.</span>`);
@@ -1376,7 +1376,7 @@ describe("the orders allowing runéo's works at Sainte-Suzanne (providers/arrete
     expect(asked).toEqual([]);
   });
 
-  it("says none in marketing's words, never « pas de travaux » nor « pas de coupure »; nothing when the site never answered", async () => {
+  it("says none in the validated words, never « pas de travaux » nor « pas de coupure »; nothing when the site never answered", async () => {
     stub("<html></html>");
     const none = body(await coupuresEau(new Cache(new MemoryStore(), () => AT.getTime()), "Sainte-Suzanne", AT)).arretes_travaux_ville;
     expect(none.aucun).toBe("Pas d'arrêté de chantier de runéo en cours ou à venir sur le site de la ville, lu le vendredi 20/11 à 10:54.");

@@ -168,7 +168,7 @@ const dits = (reads: string[]) => {
 const quoted = (s: string) => `« ${s} »`;
 
 /**
- * Marketing's words: the sources that did not answer named, each with its last read; then those too slow for the
+ * The validated words: the sources that did not answer named, each with its last read; then those too slow for the
  * answer, each in a sentence of its own, a collector's copy not read again in time with its own words (06/11/2026:
  * « a tardé à répondre » would blame a source that was not slow); then each source only part of which is old, in a sentence of its own (it did
  * answer for the rest), or too slow for the answer for a part of it; then the parts whose read did not succeed, without
@@ -180,10 +180,10 @@ function avertissement(list: Copie[], rest: boolean): string {
   const partial = list.filter((c) => c.partielle);
   const restText = " Le reste de la réponse est à jour.";
   const out: string[] = [];
-  // rundata.re named once in the warning, in its first sentence (marketing, 22/11/2026): « la lecture » after.
+  // rundata.re named once in the warning, in its first sentence (wording validated on 22/11/2026): « la lecture » after.
   const de = () => (out.length ? "" : " de rundata.re");
   if (named.length === 1) out.push(`La source ${quoted(named[0].source!)} n'a pas répondu à la dernière lecture de rundata.re : ce qui vient d'elle date de la lecture ${dits([named[0].lue_le])}.`);
-  // Alone, « le reste » closes the sentence of the sources (marketing).
+  // Alone, « le reste » closes the sentence of the sources.
   const closed = named.length > 1 && !tardy.length && !partial.length && list.every((c) => c.source);
   if (named.length > 1) {
     const each = named.map((c) => `${quoted(c.source!)}, lue le ${c.lue_le.replace(" ", " à ")}`).join("\u00a0; ");

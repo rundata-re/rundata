@@ -543,7 +543,7 @@ const localDay = (d: string | Date) => new Date(new Date(d).getTime() + 4 * 3600
  * would not be.
  */
 function sitemap(origin: string, now: Date, fuelDay?: string): string {
-  // Only the pages of marketing's list of 24/11/2026 (web/sitemap-gardees.ts), and the companies' space once it is
+  // Only the pages of the validated list of 24/11/2026 (web/sitemap-gardees.ts), and the companies' space once it is
   // announced (siteUrls). The events' pages, the stops' and the others stay online, linked and indexable.
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
     siteUrls(now, fuelDay).filter(([u]) => (gardee(u) || u === ENTREPRISES) && !horsSitemap.has(u)).map(([u, day, freq]) => `<url><loc>${origin}${u}</loc>${day ? `<lastmod>${day}</lastmod>` : ""}<changefreq>${freq}</changefreq></url>`).join("\n") +
@@ -556,7 +556,7 @@ function sitemap(origin: string, now: Date, fuelDay?: string): string {
  *   a source is read, unless it has a text of its own on where they are published (web/coupures.ts indexable);
  * - the weather stations' pages (#523), while Google judges the site again after the fall of 30/10/2026: they come
  *   back once its November 2026 core update is over;
- * And, from 24/11/2026, every page that is not in marketing's list of that day (web/sitemap-gardees.ts): a page of
+ * And, from 24/11/2026, every page that is not in the validated list of that day (web/sitemap-gardees.ts): a page of
  * the list that is in noindex here stays out all the same.
  */
 const horsSitemap = new Set([

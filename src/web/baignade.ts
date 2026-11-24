@@ -42,7 +42,7 @@ function zonesHtml(zones: typeof ZONES, now: Date, g: Porte): string {
 }
 
 /**
- * The rule in one sentence on a place's page (/meteo/<lieu>), worded by marketing (20/11): the coastal places carried the
+ * The rule in one sentence on a place's page (/meteo/<lieu>), worded for the site (20/11): the coastal places carried the
  * order's 60 words each; /mer carries it in full. Only while the order is in force: after, the place says ruleText's own.
  */
 const RULE_SHORT = `${REGLE_COURTE} ${T.reduit}`;

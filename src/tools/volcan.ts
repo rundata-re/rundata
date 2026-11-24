@@ -17,33 +17,33 @@ const OFFICIAL =
   "En cas d'éruption ou d'alerte, seules comptent les consignes de la préfecture (reunion.gouv.fr) et de l'OVPF-IPGP. " +
   "L'accès à l'Enclos est réglementé par arrêté préfectoral : le vérifier avant de partir.";
 
-// Worded by marketing: what is said when the prefecture's phase could not be read, and none was kept.
+// Worded for the site: what is said when the prefecture's phase could not be read, and none was kept.
 const NIVEAU_INCONNU = "à vérifier sur reunion.gouv.fr";
 
 const day = (iso: string) => localTime(new Date(iso)).split(" ")[0];
 /** « 24/10 », of a day « 2026-10-24 ». */
 const dayOf = (jour: string) => `${jour.slice(8, 10)}/${jour.slice(5, 7)}`;
-// Worded by marketing: what the texts read say, never that the eruption has not begun.
+// Worded for the site: what the texts read say, never that the eruption has not begun.
 export const NON_ANNONCEE = "L'OVPF et la préfecture n'ont pas annoncé d'éruption dans les textes lus par rundata.re.";
 export const IMAGE_APRES = "La dernière publication de l'OVPF est une image, qui n'est pas lue\u00a0: l'état ci-dessus peut ne pas en tenir compte.";
 /**
  * After NON_ANNONCEE when the newest post is in images and newer than the release: « the texts we read » leaves it out,
- * and its time tells it is newer (marketing). Followed by « : la voir », the link. IMAGE_APRES is then not said.
+ * and its time tells it is newer. Followed by « : la voir », the link. IMAGE_APRES is then not said.
  */
 /** « La dernière publication de l'OVPF, le 25/10 à 08:02, est en images », on /volcan before the way to its text read. */
 export const enImages = (jour: string, heure: string) => `La dernière publication de l'OVPF, le ${jour} à ${heure}, est en images`;
 export const enImagesApres = (jour: string, heure: string) => `La dernière publication de l'OVPF, le ${jour} à ${heure}, est en images, qui ne sont pas lues`;
 /**
  * The same, the text of its first image read by rundata.re (providers/ovpf-ocr.ts) and quoted beside: read by a
- * machine, « sans analyse », not one of « les textes que nous avons lus » of NON_ANNONCEE (marketing).
+ * machine, « sans analyse », not one of « les textes que nous avons lus » of NON_ANNONCEE.
  */
 export const enImagesLuesApres = (jour: string, heure: string) => `La dernière publication de l'OVPF, le ${jour} à ${heure}, est en images\u00a0; le texte de la première est cité tel qu'il a été lu automatiquement, sans analyse`;
-/** The same where the text is not quoted (the home page's demo): where it is (marketing). */
+/** The same where the text is not quoted (the home page's demo): where it is. */
 export const enImagesLuesAilleurs = (jour: string, heure: string) => `La dernière publication de l'OVPF, le ${jour} à ${heure}, est en images\u00a0; le texte de la première, lu automatiquement, est cité sur la page Volcan`;
 export const IMAGE_LUE_APRES = "La dernière publication de l'OVPF est en images\u00a0: l'état ci-dessus peut ne pas en tenir compte. Le texte de la première image est cité tel qu'il a été lu automatiquement, sans analyse.";
-/** Before the text read in the first image, wherever it is quoted (marketing). */
+/** Before the text read in the first image, wherever it is quoted. */
 export const LU_DANS_L_IMAGE = "Texte de la première image, lu automatiquement par rundata.re (il peut contenir des erreurs)";
-/** For the AI, beside the text read in the first image (marketing). */
+/** For the AI, beside the text read in the first image. */
 export const A_LIRE_LU = "Ce texte a été lu automatiquement par rundata.re dans la première image de la publication\u00a0; les autres images ne sont pas lues. Il peut contenir des erreurs, surtout dans les chiffres et les heures. Citez-le comme tel, avec le lien de la publication, et renvoyez à celle-ci pour les chiffres et les heures. N'en déduisez ni le niveau d'alerte, ni le début ou la fin d'une éruption : l'état officiel est celui donné plus haut.";
 // The text read, in the summary: its first words.
 const EXTRAIT = 400;
@@ -51,7 +51,7 @@ const EXTRAIT = 400;
 export const A_LIRE = "Le contenu de cette publication est dans ses images, que rundata.re ne lit pas : donnez le lien à l'utilisateur, et ne dites rien de ce qu'elle contient sans l'avoir lue.";
 
 /**
- * The Enclos when it is the release's (marketing): in its title's own words, never one the release does not say; in an
+ * The Enclos when it is the release's: in its title's own words, never one the release does not say; in an
  * alert whose title says nothing of it, closed by the level.
  */
 export function enclosOfRelease(p: volcan.Phase): { mots?: string; niveau?: string } | undefined {
@@ -62,7 +62,7 @@ export function enclosOfRelease(p: volcan.Phase): { mots?: string; niveau?: stri
 
 /** « Accès à l'Enclos : « fermeture » selon le communiqué de la préfecture du 23/10 », `du` the words before the day. */
 export const enclosWordsSaid = (mots: string, du: string) => `Accès à l'Enclos : « ${mots} » selon le ${du}`;
-// An alert's ban when its release says nothing of the Enclos: the level the release's, the ban the plan's (marketing).
+// An alert's ban when its release says nothing of the Enclos: the level the release's, the ban the plan's.
 export const ORSEC_BAN = "accès à l'Enclos interdit à ce niveau (dispositif ORSEC Volcan)";
 
 async function settle<T>(source: string, p: Promise<Cached<T>>): Promise<Cached<T> | null> {
@@ -75,7 +75,7 @@ async function settle<T>(source: string, p: Promise<Cached<T>>): Promise<Cached<
 }
 
 /**
- * The OVPF-IPGP's site listed as silent (sans-reponse.ts, rechecked every morning), in marketing's words: since when,
+ * The OVPF-IPGP's site listed as silent (sans-reponse.ts, rechecked every morning), in the validated words: since when,
  * the last recheck, what may be missing here. What is still read is said only of the sources whose last read answered.
  * `lus.prefecture` as a time (« aujourd'hui à 15:30 »): the collector's copy of the releases was not renewed, said only
  * when it read the site (prefecture.ts `derniereLecture`).
@@ -106,8 +106,8 @@ export const BULLETIN_QUOTIDIEN = "https://www.ipgp.fr/volcanoweb/reunion/Bullet
  */
 export const CAMERAS_OVPF = { texte: "Les caméras de l'OVPF en direct", lien: "https://www.ipgp.fr/volcanoweb/reunion/html_static_webcam/cameras-ovpf.html" };
 /**
- * Worded by marketing, under the counts: the catalogue holds the located events only, far fewer in a seismic crisis.
- * What the counts are, never compared with a figure read in an image (marketing, 26/10/2026). Split around « bulletin
+ * Worded for the site, under the counts: the catalogue holds the located events only, far fewer in a seismic crisis.
+ * What the counts are, never compared with a figure read in an image (wording validated on 26/10/2026). Split around « bulletin
  * quotidien »: the note says it once, the bulletin linked on /volcan, its address after it in the answer.
  */
 export const LOCALISES_LIEN = [
@@ -116,7 +116,7 @@ export const LOCALISES_LIEN = [
 ] as const;
 export const LOCALISES = `${LOCALISES_LIEN[0]} bulletin quotidien (${BULLETIN_QUOTIDIEN}) ${LOCALISES_LIEN[1]}`;
 const BAR_DAYS = 30;
-// The catalogue silent: the counts end at its last read, the days after it are not read (marketing).
+// The catalogue silent: the counts end at its last read, the days after it are not read.
 /** « jusqu'à la lecture du 26/10 à 19:00 », of `lus_jusqu_au` « 26/10 à 19:00 ». */
 export const jusquALecture = (lu: string) => `jusqu'à la lecture du ${lu}`;
 /** After the counts of the last copy, so that an AI never takes the days after it for zeros. */
@@ -188,7 +188,7 @@ export function quakeSummary(list: seismes.Seisme[], now: Date, lu?: Date) {
     par_jour_sous_le_volcan: perDay(volcano, now, lu),
     ...(lu && { lus_jusqu_au: atTime(lu.toISOString()) }),
     derniers: list.slice(0, 8).map(one),
-    // Nothing of what the counts may announce: only the OVPF's or the prefecture's words say that (marketing).
+    // Nothing of what the counts may announce: only the OVPF's or the prefecture's words say that.
     note:
       "Séismes localisés par l'OVPF (magnitude de durée Md). La plupart sont trop faibles pour être ressentis " +
       `(en général pas avant magnitude 2,5 à 3). ${LOCALISES}`,
@@ -203,7 +203,7 @@ export function quakeSummary(list: seismes.Seisme[], now: Date, lu?: Date) {
 // volcan-acces.ts).
 const ORDER: Record<string, number> = { Vigilance: 0, "Vigilance renforcée": 1, Sauvegarde: 2, "Alerte 1": 3, "Alerte 2": 4, "Alerte 2-1": 4, "Alerte 2-2": 5, "Alerte 2-3": 6 };
 const rank = (niveau: string) => ORDER[volcan.levelOf(niveau) ?? ""] ?? -1;
-// The level as the release's title writes it, « alerte 1 » of « passage en alerte 1 » (marketing).
+// The level as the release's title writes it, « alerte 1 » of « passage en alerte 1 ».
 const WRITTEN: Record<string, RegExp> = {
   "Alerte 2-3": /alerte\s*2[\s.-]*3/i,
   "Alerte 2-2": /alerte\s*2[\s.-]*2/i,
@@ -267,7 +267,7 @@ export interface NonOfficiel {
   niveau?: string;
   /** It says an eruption the official texts do not. */
   eruption?: true;
-  /** When we read it, « 25/10 à 14:28 »: its own date is not one we can check (marketing). */
+  /** When we read it, « 25/10 à 14:28 »: its own date is not one we can check. */
   lu: string;
 }
 
@@ -289,7 +289,7 @@ export function nonOfficiel(s: volcan.PitonState | null, readAt: Date | undefine
   return said || eruption ? { ...(said && { niveau: said }), ...(eruption && { eruption }), lu: atTime(readAt.toISOString()) } : undefined;
 }
 
-// Worded by marketing: pitonlive after the official source, always « Selon pitonlive.com, site non
+// Worded for the site: pitonlive after the official source, always « Selon pitonlive.com, site non
 // officiel », with the time we read it.
 export const pitonNiveau = (n: NonOfficiel) =>
   `Selon pitonlive.com, site non officiel, lu le ${n.lu} : « ${n.niveau} ». Ce niveau n'apparaît pas dans les communiqués de la préfecture lus par rundata.re : vérifiez sur reunion.gouv.fr avant de monter au volcan.`;
@@ -300,15 +300,15 @@ export const pitonSeul = (n: NonOfficiel) => `Selon pitonlive.com, site non offi
 /** pitonlive's lines, in that order: the level alone when no official one, else a higher one; then the eruption. */
 export const pitonLines = (n: NonOfficiel, alone: boolean, ovpf: string) =>
   [n.niveau ? (alone ? pitonSeul(n) : pitonNiveau(n)) : "", n.eruption ? pitonEruption(n, ovpf) : ""].filter(Boolean);
-// A level from the OVPF's text, newer and higher than the release (marketing).
+// A level from the OVPF's text, newer and higher than the release.
 export const ovpfNiveau = (niveau: string, quand: string, lien: string) =>
   `${niveau}, selon l'OVPF (publication du ${quand}, ${lien}). Le communiqué de la préfecture sur ce niveau n'est pas encore dans les textes lus par rundata.re.`;
 /** « 25/10 à 08:00 », of a time the answer gives, « 25/10 08:00 heure de La Réunion ». */
 export const givenAt = (date: string) => date.replace(" heure de La Réunion", "").replace(" ", " à ");
-// Draft, to marketing: the eruption's start or end from the OVPF's text.
+// Draft, to validate: the eruption's start or end from the OVPF's text.
 export const ovpfDebut = (p: Publication) => `annoncée par l'OVPF (publication du ${atTime(p.date)}, ${p.lien})`;
 export const ovpfArret = (p: Publication) => `L'OVPF a annoncé l'arrêt de l'éruption (publication du ${atTime(p.date)}, ${p.lien}).`;
-// Out of an alert, the Enclos in vigilance from the prefecture, its release saying nothing of it (marketing).
+// Out of an alert, the Enclos in vigilance from the prefecture, its release saying nothing of it.
 export const VIGILANCE_ENCLOS = "En vigilance, « l'accès du public non-accompagné est restreint aux seuls sentiers balisés et ouverts » (dispositif ORSEC Volcan, p. 23).";
 
 /** The Enclos as the official texts say it, for the answer's `acces_enclos`; undefined when they say nothing. */
@@ -332,7 +332,7 @@ const COURT_SEISMES = 3;
 /** `detail` false (the tool's default): the short answer, COURT; the page /volcan reads the whole. */
 export async function volcanSeismes(cache: Cache, now = new Date(), detail = true) {
   const [piton, read, seen, given0, silent] = await Promise.all([
-    // With its time: pitonlive's line says when we read it (marketing).
+    // With its time: pitonlive's line says when we read it.
     volcan.state(cache).catch((err: unknown) => (console.error(`source ${volcan.PITONLIVE.id} indisponible:`, why(err)), null)),
     settle(volcan.OVPF.id, volcan.posts(cache)),
     settle(seismes.SOURCE.id, seismes.seismes(cache, now)),
@@ -362,7 +362,7 @@ export async function volcanSeismes(cache: Cache, now = new Date(), detail = tru
   const given = o.prefecture;
 
   // « Puis-je monter au volcan ? »: the release in force, quoted from its page (volcan-acces.ts). The OVPF's level higher
-  // than a release in alert: the release's lines at its own level, said so (marketing); above a release out of alert,
+  // than a release in alert: the release's lines at its own level, said so; above a release out of alert,
   // that release says nothing that stands.
   const atRelease = !!o.niveauOvpf && !!given && /^Alerte/.test(given.niveau);
   const release = o.niveauOvpf && !atRelease ? undefined : given;
@@ -385,14 +385,14 @@ export async function volcanSeismes(cache: Cache, now = new Date(), detail = tru
   const last = posts?.[0];
   const lu = last && lus.get(last.lien);
   // The observatory's newest post an image we do not read, newer than the texts the state comes from: it may announce
-  // what the state does not say (an eruption, its end). Said, and nothing drawn from it (marketing). The release counts
+  // what the state does not say (an eruption, its end). Said, and nothing drawn from it. The release counts
   // from its day's start: a post of the same day, before or after it, is said.
   const told = Math.max(given ? volcan.dayStart(given.jour) : 0, ...[o.niveauOvpf, o.eruptionOvpf].map((x) => (x ? Date.parse(x.date) : 0)));
   const imageAfter = !!last?.image && Date.parse(last.date) > told;
   const [jour, heure] = last ? localTime(new Date(last.date)).split(" ") : [];
   const alerte = /^Alerte/.test(niveau ?? "");
   const stopped = o.eruptionOvpf?.en_cours === false;
-  // Under an alert, said once, in the sentence on the texts read (marketing).
+  // Under an alert, said once, in the sentence on the texts read.
   const folded = imageAfter && !o.eruption && alerte && !stopped;
 
   const parts: string[] = [];
@@ -404,14 +404,14 @@ export async function volcanSeismes(cache: Cache, now = new Date(), detail = tru
         ? `${niveau} au Piton de la Fournaise. ${ovpfArret(o.eruptionOvpf!)}`
         : alerte
           ? `${niveau} au Piton de la Fournaise${libelle(niveau) ? ` : « ${libelle(niveau)} » (dispositif ORSEC Volcan)` : ""}. ${NON_ANNONCEE}${folded ? ` ${(lu ? enImagesLuesApres : enImagesApres)(jour, heure)} : la voir, ${last!.lien}.` : ""}`
-          // Never on our word: what the texts read say (marketing).
+          // Never on our word: what the texts read say.
           : NON_ANNONCEE,
   );
   if (ipgp) parts.push(ipgp);
   if (o.niveauOvpf) parts.push(ovpfNiveau(niveau!, atTime(o.niveauOvpf.date), o.niveauOvpf.lien));
   if (given) parts.push(`Communiqué de la préfecture du ${dayOf(given.jour)} : « ${given.titre} » (${given.lien}).`);
   parts.push(unknown ? NIVEAU_ILLISIBLE : `Niveau du dispositif ORSEC volcan : ${niveau}.`);
-  // pitonlive.com, after the official source, as its own (marketing).
+  // pitonlive.com, after the official source, as its own.
   if (piton2) parts.push(...pitonLines(piton2, unknown, volcan.OVPF.url));
   // The short answer (the tool's default): whether it erupts, the level, the access, the last eruption, the quakes of 7
   // days (06/11/2026: 2 740 characters with the ban's lines, the definition and every past alert). The rest is in its fields.
@@ -429,7 +429,7 @@ export async function volcanSeismes(cache: Cache, now = new Date(), detail = tru
   else if (enclos?.communique?.mots) parts.push(`${enclosWordsSaid(enclos.communique.mots, `communiqué de la préfecture du ${du}`)}.`);
   else if (enclos?.communique?.niveau) parts.push(`Niveau : ${enclos.communique.niveau.toLowerCase()} selon le communiqué de la préfecture du ${du}. Accès à l'Enclos interdit à ce niveau du dispositif ORSEC Volcan.`);
   else if (enclos?.vigilance) parts.push(VIGILANCE_ENCLOS);
-  // Under an alert, the post in images already named in the sentence on the texts read: not again (marketing). In the
+  // Under an alert, the post in images already named in the sentence on the texts read: not again. In the
   // short answer, only a post in images newer than the state, which the state may not account for.
   if (last && !folded && (!court || imageAfter)) {
     parts.push(last.image
@@ -459,7 +459,7 @@ export async function volcanSeismes(cache: Cache, now = new Date(), detail = tru
   const newer = historique.depuis(given, alertes);
   if (newer && !court) parts.push(newer);
 
-  // pitonlive.com credited only when a line of it is said, last (marketing).
+  // pitonlive.com credited only when a line of it is said, last.
   const pitonSaid = !!piton2;
   const sources = [...(given ? [volcan.PREFECTURE] : []), ...(posts ? [volcan.OVPF] : []), ...(quakes ? [seismes.SOURCE] : []), ...(pitonSaid ? [volcan.PITONLIVE] : [])];
   // Right after whether it erupts and the level: the question of the hikers, first in the answer's fields too.

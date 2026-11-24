@@ -1,5 +1,5 @@
 /**
- * /chiffres, « rundata.re en chiffres »: what rundata.re reads, counted (chiffres.ts), in marketing's words validated by
+ * /chiffres, « rundata.re en chiffres »: what rundata.re reads, counted (chiffres.ts), in the validated words validated by
  * the user on 25/10/2026. Each figure leads to its page; a count not made yet is left out, never shown as 0, and one
  * kept from an earlier copy says its hour.
  */
@@ -18,7 +18,7 @@ const H1 = "rundata.re en chiffres";
 // Without « · rundata.re »: the name is already its first word, and the preview names the site (og:site_name).
 const TITLE = "rundata.re en chiffres\u00a0: sources, producteurs, licences";
 const CHAPEAU = "Ce que rundata.re lit pour vous, compté en direct\u00a0: les sources publiques, leurs producteurs et leurs licences, ce qui est couvert sur l'île et ce qui manque encore. Chaque chiffre mène à sa page.";
-/** The search engines' shorter one, in their 160 signs (marketing, 24/11/2026). */
+/** The search engines' shorter one, in their 160 signs (wording validated on 24/11/2026). */
 const DESCRIPTION = "Ce que rundata.re lit pour vous, compté en direct\u00a0: les sources publiques, leurs producteurs et licences, ce qui est couvert sur l'île et ce qui manque encore.";
 
 const n = (x: number) => x.toLocaleString("fr-FR").replace(/\s/g, "\u00a0");

@@ -41,7 +41,7 @@ export function paire(de: number, a: number, minutes = de % 60 !== 0 || a % 60 !
 export const tranche = (de: number, a: number, minutes?: boolean) => paire(de, a, minutes).join("–");
 
 /**
- * Whether the hours of one place are all written with their minutes (kit.md): as soon as one of its times has some,
+ * Whether the hours of one place are all written with their minutes (the brand kit): as soon as one of its times has some,
  * « 06:00 à 18:30 ; le dimanche de 06:00 à 12:00 », never « de 6\u00a0h à 12\u00a0h » beside it.
  */
 export const minutees = (spans: [number, number][]) => spans.some(([de, a]) => de % 60 !== 0 || a % 60 !== 0);
@@ -49,7 +49,7 @@ export const minutees = (spans: [number, number][]) => spans.some(([de, a]) => d
 /** One reading as a short string a model can quote: "24 °C", "ESE (112°)", "65 % (calculée)". */
 /**
  * A number written the French way: « 24,6 », and its thousands from 4 digits with a narrow no-break space, « 2\u202f300 »,
- * « 10\u202f200 » (marketing's kit, « Nombres »), as nombre() does. Never for a year or a code, which are written as
+ * « 10\u202f200 » (the brand kit, « Nombres »), as nombre() does. Never for a year or a code, which are written as
  * they are.
  */
 export function fr(n: number): string {
@@ -66,7 +66,7 @@ export function fr(n: number): string {
 
 /**
  * A quantity with its thousands, as toLocaleString("fr-FR") writes them: « 3\u202f210 », from 4 digits, a narrow
- * no-break space that never cuts the number at a line's end (marketing's kit, « Nombres »). Never for a year, a
+ * no-break space that never cuts the number at a line's end (the brand kit, « Nombres »). Never for a year, a
  * postcode, an INSEE code, a parcel, a bus line or a phone number; a JSON number stays a number.
  */
 export function nombre(n: number): string {

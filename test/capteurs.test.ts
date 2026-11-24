@@ -160,7 +160,7 @@ describe("the sensors of private people (Sensor.Community)", () => {
     const c = body(await qualiteAir(cache(), undefined, NOW)).capteurs_amateurs;
     expect(c).not.toHaveProperty("valeurs");
     expect(c.aucun).toBe(CAPTEURS_AUCUN);
-    // No value to take with care: the tool leaves the warning out (marketing), the networks' maps, guides and licences stay.
+    // No value to take with care: the tool leaves the warning out, the networks' maps, guides and licences stay.
     expect(c).not.toHaveProperty("avertissement");
     expect(c).not.toHaveProperty("explication");
     expect(c.reseaux).toEqual([

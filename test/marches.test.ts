@@ -46,7 +46,7 @@ describe("a market's day", () => {
     expect(hoursOn(m("Fr 08:00-18:00;Sa 08:00-12:00"), SAT)).toBe("de 8\u00a0h à 12\u00a0h");
     expect(hoursOn(m("Fr 08:00-18:00;Sa 08:00-12:00"), SUN)).toBeUndefined();
     expect(hoursOn(m("Mo-Sa 06:00-18:30; Su 06:00-12:00"), SAT)).toBe("de 06:00 à 18:30");
-    // One market, one way (kit.md, 30/10/2026): its Sunday with minutes too, as its week in the tool.
+    // One market, one way (the brand kit, 30/10/2026): its Sunday with minutes too, as its week in the tool.
     expect(hoursOn(m("Mo-Sa 06:00-18:30; Su 06:00-12:00"), SUN)).toBe("de 06:00 à 12:00");
     expect(MARCHES().find((x) => x.nom === "Le Petit Marché")?.horaires).toBe("du lundi au samedi de 06:00 à 18:30\u00a0; le dimanche de 06:00 à 12:00");
     expect(hoursOn(m("We 06:00-13:00; Su 06:00-13:00"), SUN)).toBe("de 6\u00a0h à 13\u00a0h");

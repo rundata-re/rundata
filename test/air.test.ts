@@ -94,7 +94,7 @@ describe("air quality: what the index is and where it comes from", () => {
     });
     expect(r.comment_c_est_fait.lien).toBe(atmo.GUIDE);
     expect(r.comment_c_est_fait.d_apres).toBe("Guide de calcul de l'indice ATMO d'Atmo France (version du 14/12/2020)");
-    // The island's answer keeps the step of the « air de fond » (marketing); its nature says it is a forecast.
+    // The island's answer keeps the step of the « air de fond »; its nature says it is a forecast.
     expect(r.comment_c_est_fait.etapes).toEqual([atmo.FOND]);
     expect(r.nature).toMatch(/^PRÉVISION du jour par commune/);
     // A place's answer and /air give every step.

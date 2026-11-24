@@ -9,7 +9,7 @@
 - `noms`: the 24 communes at their chef-lieu (rank 0), then the inhabited places and quarters of importance 1 to 3
   (rank 1 to 3), at the centre of their area. The article that starts a name takes a capital (« la Saline » →
   « La Saline »), as French writes a place's name; the rest is the IGN's. No « Lotissement … »: it does not help to
-  tell where one is (marketing).
+  tell where one is.
 
 Coordinates are those of the map (src/places/island.json): same bounds, same projection.
 Source: IGN, BD TOPO (Licence Ouverte Etalab 2.0), from the Géoplateforme's WFS: tronçons de route and zones

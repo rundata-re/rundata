@@ -150,7 +150,7 @@ describe("« <Lieu> en chiffres » (the user, 10/11/2026: « oui, supprime les v
   });
 
   it("says the dates of its 7 days while the archive ends before yesterday, « en 7 jours » once yesterday is loaded", async () => {
-    // Read at 12:57 on 25/10, the archive up to 23/10: yesterday, 24/10, is loaded at 11:45 each day (marketing, 12/11/2026).
+    // Read at 12:57 on 25/10, the archive up to 23/10: yesterday, 24/10, is loaded at 11:45 each day (wording validated on 12/11/2026).
     const c = await figures();
     const pluie = (d: ReturnType<typeof draw>) => { const x = d.chips.slice(d.chips.indexOf('data-k="pluie"')); return x.slice(0, x.indexOf("</button>")); };
     const early = draw(c);

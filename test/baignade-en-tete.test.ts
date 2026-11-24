@@ -8,7 +8,7 @@ import { esc } from "../src/web/map.js";
 import { coastwatch, parseAscii } from "./sst.js";
 
 // The swimming rule said where one asks about the sea, not only in a field of its own (24/11/2026):
-// the résumé of temperature_mer and the top of /mer, the same words as a place's page (marketing, 20/11).
+// the résumé of temperature_mer and the top of /mer, the same words as a place's page (wording validated on 20/11).
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url));
 const NOW = new Date("2026-10-22T06:00:00Z");
 const AFTER = new Date("2027-02-17T06:00:00Z");

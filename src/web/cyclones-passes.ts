@@ -1,7 +1,7 @@
 /**
  * /cyclones/<nom>-<année>: what Météo-France's stations measured while a past cyclone went by, station by station,
  * under the one sentence of its passage a named document gives (historique/cyclones-passes.ts). Nothing else: no
- * casualty, damage or outage, no comparison. Worded by marketing.
+ * casualty, damage or outage, no comparison. Worded for the site.
  */
 import { jourFr, kmh, mesures, RAIN_NOTE, records, rafale, total, type Mesure, type Passe } from "../historique/cyclones-passes.js";
 import { SOURCE } from "../providers/climat.js";
@@ -43,7 +43,7 @@ export const metaOf = (p: Passe) =>
 /** 1385 → « 1 385 », 52.3 → « 52,3 ». */
 const num = (n: number) => n.toLocaleString("fr-FR", { maximumFractionDigits: 1 });
 const dm = (iso: string) => jourFr(iso).slice(0, 5);
-/** A non-breaking space between a number and its unit: « 187 km/h » is never cut at the end of a line (marketing). */
+/** A non-breaking space between a number and its unit: « 187 km/h » is never cut at the end of a line. */
 const nb = (text: string) => text.replace(/(\d) (?=(?:km\/h|m\/s|mm|km|m)(?![\p{L}\/]))/gu, "$1\u00a0");
 
 /** A station's wettest day of the passage. */

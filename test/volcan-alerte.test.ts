@@ -76,7 +76,7 @@ describe("the volcano put forward during an alert", () => {
     // The plan's words only, never a release's of the day nor ours.
     expect(page).not.toContain("très brève");
     // The top: no eruption announced (whose words), the Enclos and the way to the detail, whose the level is, the OVPF's
-    // accounts; each fact once (marketing, 26/10/2026). The hook is not said: the heading and these lines say it.
+    // accounts; each fact once (wording validated on 26/10/2026). The hook is not said: the heading and these lines say it.
     expect(page).toContain("<p class=\"lead\"><b>L&#39;OVPF et la préfecture n&#39;ont pas annoncé d&#39;éruption dans les textes lus par rundata.re jusqu&#39;au 24/10 à 18:00.</b></p>");
     expect(page).toContain("<p class=\"lead\"><b>Accès à l&#39;Enclos interdit.</b> <a href=\"#monter\">Routes et sentiers, lieu par lieu ↓</a></p>");
     expect(page).toContain("<p class=\"note\">Alerte\u00a01 du préfet, communiqué du 24\u00a0octobre.</p>");
@@ -111,7 +111,7 @@ describe("the volcano put forward during an alert", () => {
     for (const r of rows) expect(r).toMatch(/^<li>\d\d\/\d\d \d\d:\d\d · magnitude\u00a0<b>[\d,—]+<\/b> · [^<]+,[ \u00a0]−?[\d,]+\u00a0km<\/li>$/);
     expect(rows.some((r) => r.includes("−"))).toBe(true);
     expect(main).toContain("<p class=\"note\">Profondeur comptée depuis le niveau de la mer\u00a0; «\u00a0−\u00a0» : au-dessus, sous le sommet (vers 2,6\u00a0km d&#39;altitude).</p>");
-    // « sommet, 0 km » never broken inside: the line breaks before it, whole (marketing, seen at 390 px).
+    // « sommet, 0 km » never broken inside: the line breaks before it, whole (seen at 390 px).
     const summit = rows.filter((r) => r.includes("· sommet,"));
     expect(summit.length).toBeGreaterThan(0);
     for (const r of summit) expect(r).toMatch(/· sommet,\u00a0−?[\d,]+\u00a0km<\/li>$/);
@@ -221,7 +221,7 @@ describe("the volcano put forward during an alert", () => {
     }
   });
 
-  it("says on a phone's line whose the level or the eruption is, and « Enclos interdit », without a date (marketing)", () => {
+  it("says on a phone's line whose the level or the eruption is, and « Enclos interdit », without a date", () => {
     const said = (a: VolcanAlerte) => /<a class="ligne" href="\/volcan"><span aria-hidden="true">🌋<\/span><span class="txt">(.*?)<\/span><span aria-hidden="true">→/.exec(withVolcan(a, () => meteoPage("https://rundata.re", null, NOW)))![1];
     // Compared as HTML, never with the tags taken out: the last part in its own span, the apostrophe escaped.
     const line = (head: string) => `${esc(head)} <span class="nw">· Enclos interdit</span>`;

@@ -97,18 +97,18 @@ describe("the places to go with children", () => {
     expect(enfants.agesSaid({ min: 1 })).toBe(`dès 1${NBSP}an`);
   });
 
-  it("say a place's hours as kit.md writes a span: « 9 h–18 h », all with their minutes when one time of the place has some", () => {
+  it("say a place's hours as the brand kit writes a span: « 9 h–18 h », all with their minutes when one time of the place has some", () => {
     const at = (h: string) => enfants.hoursToday({ horaires_osm: h } as enfants.Lieu, NOW);
     // NOW is a Saturday in La Réunion.
     expect(at("Tu-Fr 10:00-17:00; Sa 10:00-12:00,13:30-17:00")).toBe("10:00–12:00 et 13:30–17:00");
-    // One place, one way (kit.md, 30/10/2026): minutes on Sunday only, Saturday's hours with theirs too.
+    // One place, one way (the brand kit, 30/10/2026): minutes on Sunday only, Saturday's hours with theirs too.
     expect(at("Sa 13:00-17:00; Su 09:30-17:00")).toBe("13:00–17:00");
     expect(at("Mo-Su 09:00-18:00")).toBe(`9${NBSP}h–18${NBSP}h`);
     expect(at("Mo-Su 09:30-17:00")).toBe("09:30–17:00");
     expect(at("Mo-Fr 09:00-18:00")).toBeUndefined();
   });
 
-  it("count a kind in marketing's words, one and several", () => {
+  it("count a kind in the validated words, one and several", () => {
     expect(enfants.counted("aire_de_jeux", 1)).toBe("1 aire de jeux");
     expect(enfants.counted("parc", 1)).toBe("1 parc ou jardin");
     expect(enfants.counted("parc", 2)).toBe("2 parcs et jardins");
@@ -197,7 +197,7 @@ describe("the children's page", () => {
     expect(tabStops(html)).toBe(0);
   });
 
-  it("says marketing's words, with French spacing", () => {
+  it("says the validated words, with French spacing", () => {
     expect(html).toContain(`<title>${TITLE}</title>`);
     expect(html).toContain("Avec les enfants à La Réunion <span class=\"n974\">974</span>");
     expect(html).toContain(esc(LEAD));
@@ -227,7 +227,7 @@ describe("the children's page", () => {
     expect(act.match(/Heure du conte/g)).toHaveLength(1);
   });
 
-  it("filters by marketing's bands and kinds, in their order", () => {
+  it("filters by the validated bands and kinds, in their order", () => {
     const form = html.slice(html.indexOf('<form id="kf"'), html.indexOf("</form>", html.indexOf('<form id="kf"')));
     const options = [...form.matchAll(/<option value="[^"]*">([^<]+)<\/option>/g)].map((m) => m[1]);
     expect(options.slice(0, 5)).toEqual(["Tous", "Tout-petits, 0–3 ans", "3–6 ans", "6–12 ans", "Ados, 12–17 ans"]);
@@ -343,7 +343,7 @@ describe("a commune's children's page", () => {
     expect(enfantsCommunePage(O, pageOf("les-avirons")!, null, NOW)).toContain("agenda des enfants se charge");
   });
 
-  it("says marketing's words, with French spacing", () => {
+  it("says the validated words, with French spacing", () => {
     const n = enfants.inCommune("Saint-Denis").length;
     expect(html).toContain(`<title>Avec les enfants à Saint-Denis${NBSP}: où aller · La Réunion (974)</title>`);
     expect(flat(html)).toContain(`Aires de jeux, parcs, piscines, médiathèques : les ${n} lieux où aller avec les enfants à Saint-Denis, sur une carte, et les activités du week-end.`);
@@ -351,7 +351,7 @@ describe("a commune's children's page", () => {
     expect(html).toContain('aria-label="Choisir un type de lieu"');
     expect(html).toMatch(/value="mediatheque"> <i class="ksw f-culture"><\/i>Médiathèques <span class="n">/);
     expect(html).toContain(`aria-label="Voir sur la carte${NBSP}: `);
-    // A colour is named with the filters of its kinds in the commune (marketing, 29/10).
+    // A colour is named with the filters of its kinds in the commune (wording validated on 29/10).
     expect(html).toContain("<span><i class=\"ksw f-culture\"></i>Médiathèques et musées</span>");
     const none = flat(enfantsCommunePage(O, pageOf("les-avirons")!, data, NOW));
     expect(none).toContain(`Les agendas lus par rundata.re n'annoncent pas d'activité pour les enfants aux Avirons dans les deux semaines qui viennent. Ils ne disent pas tout : voyez aussi <a href="/enfants">les activités dans toute l'île</a>.`);

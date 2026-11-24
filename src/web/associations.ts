@@ -1,5 +1,5 @@
 /**
- * /associations: the clubs' and associations' space (marketing's spec, espace-associations.md §1 to §8). First the
+ * /associations: the clubs' and associations' space (the spec of the clubs' space §1 to §8). First the
  * form to propose an event, for the 8 associations out of 10 without any tool; then the proof, counted from the
  * agendas' last copy, never written by hand; the tools a club may already use, one card each, saying whether
  * rundata.re reads it; the guide for those who want to do it properly; the rules; the text to pass on.

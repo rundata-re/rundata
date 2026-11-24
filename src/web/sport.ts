@@ -45,7 +45,7 @@ function sportRow(r: SportAnswer["resultats"] extends (infer T)[] | undefined ? 
   return `<li><span>${name} <small>${small}${withScore && r.detail ? ` · ${esc(r.detail)}` : ""}</small></span>${right}</li>`;
 }
 
-/** The link to a championship's page, inside it when it is folded (words from marketing). */
+/** The link to a championship's page, inside it when it is folded (validated words). */
 /** The federation's page of a championship; its name for screen readers, as several are one under the other. */
 const federation = (competition: string) => `Le classement sur le site de la fédération<span class="sr"> : ${esc(competition)}</span> ↗`;
 

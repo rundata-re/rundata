@@ -78,7 +78,7 @@ describe("the route du Littoral as the media announce it", () => {
     expect(littoral(fil([item("Route du Littoral fermée cette nuit", 30)]), NOW)).toBeDefined();
   });
 
-  it("words the state as marketing does", () => {
+  it("words the state as validated", () => {
     expect(etatText(one("Route du Littoral : basculement en 2x1")!)).toBe("Basculée sur 2×1 voies, côté montagne");
     expect(etatText(one("Fin du basculement sur la route du Littoral")!)).toBe("Circulation sur 4 voies (2×2)");
     expect(etatText(one("La route du Littoral fermée dans les deux sens")!)).toBe("Fermée dans les deux sens");

@@ -36,7 +36,7 @@
  * it marks it (`.tgt:target`).
  *
  * A commune of a map in colours (map.ts zoneLinks(): /secheresse, /coupures-eau, /velos, /communes) has the same
- * bubble (marketing's charter of the maps, 31/10/2026): its name, what the map shows of it, and « Voir la commune → ».
+ * bubble (the brand charter of the maps, 31/10/2026): its name, what the map shows of it, and « Voir la commune → ».
  * The mouse over it opens it, and outlines the commune (`.on`); a click follows its link. It opens below the commune,
  * its arrow up, when there is no room above it inside the map (Saint-Denis, Sainte-Marie, Sainte-Suzanne), and moves
  * in from the map's sides, its arrow still on the commune (Saint-Philippe, Saint-Paul). A finger's tap opens it, never

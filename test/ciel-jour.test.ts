@@ -40,8 +40,8 @@ describe("the daytime sky behind the home page's title", () => {
 });
 
 // The bottom of the home page's band, from 5:00 to 19:00 (accessibility audit of 24/11/2026): under the dawn, day and
-// evening skies, the map's caption, its sources and « Brancher mon IA » were at 2.3 to 3.4:1. The skies stay marketing's
-// drawing; a night-blue veil goes under the caption, the button turns to dark glass (marketing, 24/11/2026).
+// evening skies, the map's caption, its sources and « Brancher mon IA » were at 2.3 to 3.4:1. The skies stay the validated
+// drawing; a night-blue veil goes under the caption, the button turns to dark glass (wording validated on 24/11/2026).
 describe("the bottom of the home page's band under the light skies", () => {
   const hex = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
   const toHex = (c: number[]) => `#${c.map((v) => Math.round(v).toString(16).padStart(2, "0")).join("")}`;

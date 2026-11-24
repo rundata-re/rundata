@@ -34,7 +34,7 @@ describe("Réunion La 1ère, not read", () => {
     expect(asked.filter((h) => h.endsWith("franceinfo.fr"))).toEqual([]);
   });
 
-  it("is said in marketing's words: the tools, the pages, sources_donnees", () => {
+  it("is said in the validated words: the tools, the pages, sources_donnees", () => {
     expect(mentionLa1ere("actualites")).toBe(
       "Les conditions d'utilisation des sites de France Télévisions, lues le 26/10, interdisent d'en reprendre le contenu par un programme sans son accord écrit, titres compris : rundata.re n'affiche donc pas les informations de Réunion La 1ère. Elles restent sur son site, https://la1ere.franceinfo.fr/reunion/.",
     );

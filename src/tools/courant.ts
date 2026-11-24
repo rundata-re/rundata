@@ -1,6 +1,6 @@
 /**
  * The power cuts the mairies relay (providers/coupures-courant.ts), as the tool electricite, resume_du_jour and the
- * page /electricite say them: the facts and the link of each notice, in marketing's words; never « pas de coupure »,
+ * page /electricite say them: the facts and the link of each notice, in the validated words; never « pas de coupure »,
  * since most communes publish nothing that can be read.
  */
 import type { Cached } from "../cache.js";
@@ -88,7 +88,7 @@ export function liveCommunes(c: CourantAnswer, now: Date): string[] {
 }
 
 /**
- * Marketing's honesty line. EDF does publish its cuts for works on reunion.edf.fr, and its robots.txt lets the page be
+ * The validated honesty line. EDF does publish its cuts for works on reunion.edf.fr, and its robots.txt lets the page be
  * read: its legal notice forbids taking the content (« EDF interdit expressément toute réutilisation, reproduction ou
  * extraction d'éléments de ces bases de données », read on 03/11/2026), so the line says that, never that EDF publishes
  * nothing readable. It names every mairie read, with or without a recent notice, the same whether its site
@@ -131,17 +131,17 @@ const hours = (s: Pick<cc.Creneau, "de" | "a">) =>
 
 /**
  * « secteur 650 chemin Balance », « secteurs Rue Médard, Rue des Jésuites »: the singular before one street or address,
- * the plural when the notice gives several, counted on its commas and « et » (marketing, 21/11/2026).
+ * the plural when the notice gives several, counted on its commas and « et » (wording validated on 21/11/2026).
  */
 const sectors = (list: string[]) => {
-  // « Secteur Le Chrystel » as the notice writes it: the word said once, « secteur Le Chrystel » (marketing, 21/11/2026).
+  // « Secteur Le Chrystel » as the notice writes it: the word said once, « secteur Le Chrystel » (wording validated on 21/11/2026).
   const names = list.map((x) => x.replace(/^secteur\s+/iu, ""));
   // A place a house number starts is one place, its comma its own (« 65 Centre commercial, bâtiment B »): in a list the
-  // comma separates the places, so its own becomes a space (marketing, 21/11/2026).
+  // comma separates the places, so its own becomes a space (wording validated on 21/11/2026).
   const numbered = (x: string) => /^N?°?\s?\d/u.test(x);
   // « Chemin Balance, à proximité du terrain de football »: what follows the comma tells where the place is, no other
   // place (21/11/2026); alone it keeps its comma, in a list a space.
-  // « entre le n° 12 et le n° 40 », « jusqu'au carrefour » too (marketing, 21/11/2026): their « et » no other place either.
+  // « entre le n° 12 et le n° 40 », « jusqu'au carrefour » too (wording validated on 21/11/2026): their « et » no other place either.
   const WHERE = "(?:à proximité|à côté|près (?:de|du|des)|face (?:à|au|aux)|en face|devant|derrière|au niveau|aux abords|en bordure|le long|entre|vers|jusqu['’](?:à|au|aux)|après|avant)[\\s'’]";
   const own = (x: string) => (numbered(x) ? x.replace(/\s*,\s*/gu, " ") : x.replace(new RegExp(`\\s*,\\s*(?=${WHERE})`, "giu"), " "));
   const bare = (x: string) => (numbered(x) ? "" : x.replace(new RegExp(`\\s*,\\s*${WHERE}[^,]*`, "giu"), ""));
@@ -151,11 +151,11 @@ const sectors = (list: string[]) => {
 
 /**
  * « le lundi 19/10 de 09:00 à 15:00, secteurs Rue Médard, Rue des Jésuites ». `past`: its day is over, said right after
- * the hours, « (date passée) » (marketing, 20/11/2026): only the date is known to be past, never that the cut took place.
+ * the hours, « (date passée) » (wording validated on 20/11/2026): only the date is known to be past, never that the cut took place.
  */
 function slotText(s: cc.Creneau, now: Date, past = false): string {
   const when = (s.au ? `du ${dayFr(s.jour, now)} au ${dayFr(s.au, now)}` : `le ${dayFr(s.jour, now)}${hours(s)}`) + (past ? " (date passée)" : "");
-  // Other places the notice names, not read as streets: said so, the notice's link beside (marketing, 21/11/2026).
+  // Other places the notice names, not read as streets: said so, the notice's link beside (wording validated on 21/11/2026).
   const others = s.autres_lieux ? (s.secteurs.length ? " et d'autres lieux nommés dans l'avis" : ", aux lieux nommés dans l'avis") : "";
   return `${when}${s.secteurs.length ? `, ${sectors(s.secteurs)}` : ""}${others}`;
 }
@@ -168,7 +168,7 @@ const stale = (a: cc.AvisCourant, now: Date) =>
 const headOf = (a: cc.AvisCourant, now: Date, first: boolean) =>
   `${first ? "Dernier avis" : "Avis"} de coupure d'électricité publié par ${mairie(a.commune)} le ${ddmm(a.publie, now)}`;
 
-/** What one notice says, in marketing's words. `first`: the commune's latest notice, its « dernier avis ». */
+/** What one notice says, in the validated words. `first`: the commune's latest notice, its « dernier avis ». */
 export function sentence(a: cc.AvisCourant, now: Date, first = true): string {
   if (stale(a, now)) {
     return `Pas d'avis récent de ${mairie(a.commune)} : le dernier date du ${ddmm(a.publie, now)}. rundata.re ne sait pas si une coupure est prévue.`;
@@ -251,7 +251,7 @@ function brief(a: cc.AvisCourant, now: Date, first: boolean): CourantRow {
 
 /**
  * The mairies whose latest notice has nothing to come, in one sentence without their links, in the island's answer of
- * the tool, in marketing's words (22/11/2026: never « sans coupure », read as « no cut »): « Dernier avis sans date à
+ * the tool, in the validated words (22/11/2026: never « sans coupure », read as « no cut »): « Dernier avis sans date à
  * venir : Sainte-Marie (avis du 02/11), Cilaos (avis du 26/10). Une coupure peut y être prévue sans que rundata.re l'ait lue. »
  */
 function nothingAhead(latest: cc.AvisCourant[], now: Date): string | undefined {
@@ -281,7 +281,7 @@ export function nextSlot(a: Pick<CourantRow, "creneaux">, now: Date): { quand: s
   const coming = (a.creneaux ?? []).filter((s) => ends(s) >= localDay(now));
   const s = coming[0];
   if (!s) return undefined;
-  // « aujourd'hui de 09:00 à 12:30 » during its day (marketing, 21/11/2026).
+  // « aujourd'hui de 09:00 à 12:30 » during its day (wording validated on 21/11/2026).
   const day = (d: string) => (d === localDay(now) ? "aujourd'hui" : dayFr(d, now));
   const quand = s.au ? `du ${day(s.jour)} au ${dayFr(s.au, now)}` : `${day(s.jour)}${s.de && s.a ? ` de ${s.de} à ${s.a}` : ""}`;
   return { quand, autres: coming.length - 1 };
@@ -328,7 +328,7 @@ export function courantBlock(copy: Cached<CourantAnswer> | undefined, commune: s
   return {
     avertissement: ancienne && `${ancienne} ${commune ? `Voir le site de ${mairie(commune)}, qui relaie les avis d'EDF.` : VOIR_COURANT}`,
     avis,
-    // Marketing's words (22/11/2026).
+    // The validated words (22/11/2026).
     sans_date_a_venir: court && !commune ? nothingAhead(latest, now) : undefined,
     detail: court && !commune ? "Plages, secteurs et lien de chaque avis\u00a0: appeler electricite avec la commune." : undefined,
     note: commune && !avis.length && !silent.length ? none(commune) : undefined,

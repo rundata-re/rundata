@@ -251,7 +251,7 @@ describe("departures in real time", () => {
     expect(withText.info_trafic).toEqual([{ reseau: "Car Jaune", lignes: expect.any(Array), detail: texte }]);
     expect(r.horaires).toMatch(/^Car Jaune : heures annoncées en direct par le réseau \(flux de \d\d:\d\d\)/);
     expect(JSON.stringify(r.sources)).toMatch(/GTFS-RT/);
-    // Early or on time: the participle agrees with the noun before it (marketing).
+    // Early or on time: the participle agrees with the noun before it.
     // A bus due in 5 minutes at least: 2 minutes early is still to come.
     const e = list.find((x) => x.in >= 5 * 60)!;
     const at = async (late: number) => body(await transports("gare routière Saint-Pierre", undefined, NOW, withFeed({ ...feed, trips: { [e.trip]: { [gtfsStop(e.stop)]: T0 + e.in + late } } }))).resume;

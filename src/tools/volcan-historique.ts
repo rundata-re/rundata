@@ -1,7 +1,7 @@
 /**
  * The alerts of the volcano before this one: « combien de temps durent les alertes, et que s'est-il passé les dernières
  * fois ? ». Only the episodes since 2016 whose start and end are each written in a dated release of the prefecture we
- * read, quoted as written (marketing): not a complete history, and said so. Before the ORSEC plan of
+ * read, quoted as written: not a complete history, and said so. Before the ORSEC plan of
  * 08/11/2021, the levels of the plan then, word for word. No duration nor share computed from them.
  *
  * The releases as read on 24/10/2026 in their Wayback Machine copies, reunion.gouv.fr then not answering our reads
@@ -152,7 +152,7 @@ export const EPISODES: Episode[] = [
       { jour: "2019-02-18", quoi: "alerte 2-2", dit: "le Préfet a décidé la mise en œuvre de la phase d’alerte 2-2 […] ce lundi 18 février à 10h15", communique: R.fev2019a22 },
     ],
     fin: { jour: "2019-02-19", quoi: "passage en phase de sauvegarde", dit: "le préfet de La Réunion a décidé le passage en phase de sauvegarde […] à compter de 03h30 le mardi 19 février 2019", communique: R.fev2019s },
-    // No release of its end found (marketing).
+    // No release of its end found.
     puis: { jour: "2019-02-19", quoi: "alerte 2-2", dit: "le Préfet a décidé la mise en œuvre de la phase d’alerte 2-2 […] ce mardi 19 février à 18h30", communique: R.fev2019a22b },
   },
   {
@@ -203,7 +203,7 @@ export const EPISODES: Episode[] = [
 export const PLAN_2021 = "2021-11-08";
 export const avant2021 = (e: Episode) => e.debut[0].jour < PLAN_2021;
 
-// Worded by marketing.
+// Worded for the site.
 export const TITRE = "Les alertes précédentes";
 export const CHAPEAU =
   "Voici, depuis 2016, les épisodes dont le début et la fin sont chacun écrits dans un communiqué de la préfecture retrouvé par rundata.re. " +
@@ -352,7 +352,7 @@ const jour = (iso: string) => (iso.slice(8) === "01" ? "1er" : String(Number(iso
 const mois = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString("fr-FR", { month: "long", timeZone: "UTC" });
 /**
  * « du 13 février au 12 avril 2026 », « du 3 au 12 avril 2026 » within a month, « le 3 avril 2026 » on one day, the year
- * on both days when they differ (marketing).
+ * on both days when they differ.
  */
 export function derniereEruptionDates(e: { debut: string; fin: string } = DERNIERE_ERUPTION): string {
   const [d, f] = [e.debut, e.fin];
@@ -361,5 +361,5 @@ export function derniereEruptionDates(e: { debut: string; fin: string } = DERNIE
   if (d.slice(0, 7) === f.slice(0, 7)) return `du ${jour(d)} au ${fin}`;
   return `du ${jour(d)} ${mois(d)}${d.slice(0, 4) === f.slice(0, 4) ? "" : ` ${d.slice(0, 4)}`} au ${fin}`;
 }
-/** For the AI: « Dernière éruption : du 13 février au 12 avril 2026, selon l'OVPF (lien). » (marketing). */
+/** For the AI: « Dernière éruption : du 13 février au 12 avril 2026, selon l'OVPF (lien). ». */
 export const derniereEruptionText = (e = DERNIERE_ERUPTION) => `Dernière éruption : ${derniereEruptionDates(e)}, selon l'OVPF (${e.lien}).`;

@@ -332,7 +332,7 @@ describe("the vigilance's copy, built by the scheduled event", () => {
 });
 
 describe("the licence", () => {
-  it("says the agreement, in marketing's words", () => {
+  it("says the agreement, in the validated words", () => {
     expect(mf.SOURCE.licence).toBe("Licence Ouverte Etalab 2.0 ; Météo-France La Réunion : bulletin de suivi vigilance affiché tel quel, avec son accord écrit du 27/10/2026");
   });
 });

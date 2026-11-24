@@ -163,7 +163,7 @@ describe("calendar", () => {
     expect(r.resume).toContain("Prochain jour férié : Jour de l'an, vendredi 1er janvier 2027 (dans 6 jours).");
     const html = calendrierPage("https://rundata.re", { value: await buildCalendrier(cacheAt(now), now), fetchedAt: now }, now);
     expect(html).toContain("<b>Jour de l&#39;an</b> : vendredi 1er janvier 2027");
-    // Every holiday named, never by its date alone (marketing, 24/11/2026).
+    // Every holiday named, never by its date alone (wording validated on 24/11/2026).
     const names = Object.values(fixture("jours_feries.json") as Record<string, string>).map(nomFerie);
     expect(new Set(names)).toEqual(new Set(["Jour de l'an", "Lundi de Pâques", "Fête du Travail", "Victoire de 1945", "Ascension", "Lundi de Pentecôte",
       "Fête nationale", "Assomption", "Toussaint", "Armistice de 1918", "Fête de l'abolition de l'esclavage", "Jour de Noël"]));
@@ -175,7 +175,7 @@ describe("calendar", () => {
     expect(ordinaux("Vacances de Noël")).toBe("Vacances de Noël");
     expect(ferieDit("11 novembre", "mercredi 11 novembre 2026")).toBe("mercredi 11 novembre 2026");
     expect(ferieDit("Toussaint", "dimanche 1er novembre 2026")).toBe("Toussaint, dimanche 1er novembre 2026");
-    // The day after the Toussaint, the next holiday is the 11 novembre, named as the others (marketing, 24/11/2026).
+    // The day after the Toussaint, the next holiday is the 11 novembre, named as the others (wording validated on 24/11/2026).
     const now = new Date("2026-11-05T08:00:00Z");
     const r = body(await calendrier(cacheAt(now), "Saint-Denis", now));
     expect(r.resume).toContain("Prochain jour férié : Armistice de 1918, mercredi 11 novembre 2026 (dans 6 jours).");
@@ -197,7 +197,7 @@ describe("calendar", () => {
     expect(html).toContain(`content="Vacances scolaires 2026-2027 à La Réunion (974), calendrier austral\u00a0: vacances en cours du 10 octobre au 25 octobre. Jours fériés dont le 20 décembre.">`);
     expect(html).toMatch(/Vacances après 1re période <span class="badge m">en cours<\/span><\/th><td>samedi 10 octobre 2026<\/td><td>lundi 26 octobre 2026<\/td>/);
     expect(html).toContain("Vacances d&#39;Été austral");
-    // The sun as kit.md writes a time, « 06:12 », never « 6h12 »: in the lead, on its card and on the home page's tile.
+    // The sun as the brand kit writes a time, « 06:12 », never « 6h12 »: in the lead, on its card and on the home page's tile.
     const s = data.value.soleil!;
     expect([s.lever, s.coucher]).toEqual(["05:40", "18:24"]);
     expect(html).toContain(`lever du soleil à <b>${s.lever}</b>, coucher à <b>${s.coucher}</b>.</p>`);
@@ -265,7 +265,7 @@ describe("the dark night", () => {
     expect(n.fin.toISOString().slice(0, 10)).toBe("2026-11-05");
   });
 
-  it("says the dark night and the Moon of the night, each as a calculation (marketing's words of 04/11)", () => {
+  it("says the dark night and the Moon of the night, each as a calculation (the validated words of 04/11)", () => {
     // The Moon rises in the night.
     expect(nuitOf("2026-11-04", lon, lat, alt)).toEqual({
       nuit_noire: "Nuit noire de 19:48 à 02:42, sans Soleil ni Lune au-dessus de l'horizon (calcul astronomique).",

@@ -7,7 +7,7 @@
  */
 import { localTime } from "../geo.js";
 import * as candhis from "../providers/candhis.js";
-import { REFERENCE, type SerieMer } from "../providers/crw-serie.js";
+import { REFERENCE_OUTIL, type SerieMer } from "../providers/crw-serie.js";
 import type * as houle from "../providers/houle.js";
 import { fr } from "./format.js";
 
@@ -248,14 +248,14 @@ export function historiqueBlock(c: Courbes, near?: { lon: number; lat: number },
   const pts = near ? (nearest && close(nearest.p.lon, nearest.p.lat) ? [nearest] : []) : all;
   const satellite = pts.map(({ p, f, e }) => ({
     au_large_de: p.nom,
-    nature: "température de surface vue par le satellite\u00a0: analyse quotidienne de NOAA Coral Reef Watch (CoralTemp), qui comble les trous laissés par les nuages, une estimation au large, pas une mesure à la plage",
+    nature: "satellite, analyse quotidienne de NOAA (CoralTemp)\u00a0: estimation au large, pas une mesure à la plage",
     temperature_eau: chiffresBlock(f!, degres, "°C"),
     ...(e != null ? { ecart_a_la_reference_noaa: ecartDit(e, "°C") } : {}),
   }));
   if (!bouees.length && !satellite.length) return undefined;
   return {
     ...(bouees.length ? { bouees } : {}),
-    ...(satellite.length ? { satellite, reference_noaa: REFERENCE } : {}),
+    ...(satellite.length ? { satellite, reference_noaa: REFERENCE_OUTIL } : {}),
     page: "https://rundata.re/mer#h-courbes",
   };
 }

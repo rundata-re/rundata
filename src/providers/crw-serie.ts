@@ -23,6 +23,8 @@ export const JOURS = 30;
  */
 export const REFERENCE =
   "L'écart compare chaque jour à la moyenne de référence de NOAA Coral Reef Watch, tirée des années 1985 à 2012 et ramenée aux années 1985 à 1990 et 1993\u00a0: une référence ancienne, qui n'est pas la normale climatique 1991-2020.";
+/** The same for the tools, in the fewest words: a tool answer has a size cap (src/bin/check-sources.ts). */
+export const REFERENCE_OUTIL = "Écart à la moyenne de référence de NOAA (années 1985 à 1993), ancienne\u00a0: pas la normale climatique 1991-2020.";
 
 /**
  * The beaches, each with the cell of the grid that has a value nearest to it (the cells along the shore are masked):

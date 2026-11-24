@@ -279,7 +279,7 @@ describe("« En courbes » on /mer", () => {
     // Near Saint-Pierre, its beach only by satellite; the island, all four.
     expect(b.satellite!.map((s) => s.au_large_de)).toEqual(["Saint-Pierre"]);
     expect(b.satellite![0].ecart_a_la_reference_noaa).toBe("+1,5\u00a0°C");
-    expect(b.reference_noaa).toBe(crwSerie.REFERENCE);
+    expect(b.reference_noaa).toBe(crwSerie.REFERENCE_OUTIL);
     expect(historiqueBlock(c)!.satellite).toHaveLength(4);
     // Far from the buoy, no buoy.
     expect(historiqueBlock(c, { lon: 55.45, lat: -20.88 }, 25, distanceKm)!.bouees).toBeUndefined();

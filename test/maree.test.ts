@@ -108,8 +108,10 @@ describe("tide gauges", () => {
     const data = { value: { mer: { resume: "Eau de mer…", sources: [] } }, fetchedAt: NOW, stale: false };
     const html = placePage("https://rundata.re", place, data as never, NOW);
     expect(html).toMatch(/<p>Marée à Pointe des Galets \(Le Port\), calcul de rundata.re d&#39;après les mesures, pas la prédiction officielle du SHOM, à environ 15 min près : basse mer vers 06:00 \(0,\d+[ \u202f]m\)/);
-    // The SHOM's citation ends with its DOI, one word of 300 px: the note breaks it, never widening the page at 320 px.
-    expect(html).toMatch(/<p class="note">[^<]*(<a [^>]*>[^<]*<\/a>[^<]*)*http:\/\/dx\.doi\.org\/10\.17183\/REFMAR#RONIM/);
+    // The SHOM's citation ends with its DOI, one word of 300 px: said with the page's sources, at its end, where it may
+    // be cut after each « / » and « . », never widening the page at 320 px.
+    expect(html).toContain('REFMAR. <span class="adrweb">http://<wbr>dx.<wbr>doi.<wbr>org/<wbr>10.<wbr>17183/<wbr>REFMAR#RONIM</span>.</p>');
+    expect(html.slice(html.indexOf("<main"), html.indexOf("</main>"))).not.toContain("REFMAR");
     expect(CSS).toContain(".note{font-size:.86rem;color:var(--muted);overflow-wrap:anywhere}");
     const tile = communePage("https://rundata.re", place, { mer: { value: { plages: [{ nom: "Saint-Paul", commune: "Saint-Paul", lon: 55.27, lat: -21.0, valeur: 25, jour: "2026-10-22" }], sources: [] }, fetchedAt: NOW, stale: false } } as never, NOW);
     expect(tile).toContain(" · basse mer vers 06:00 (marée calculée, pas le SHOM)");

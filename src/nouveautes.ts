@@ -58,6 +58,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded by marketing): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-24T04:39:00+04:00", texte: "Météo d'un lieu\u00a0: les sources sont dites une seule fois, en fin de page, regroupées par licence." },
   { date: "2026-11-24T04:23:00+04:00", texte: "Coupures d'eau aux Avirons, au Tampon, à Saint-Joseph et à l'Entre-Deux\u00a0: le titre dit où sont publiés les avis du distributeur." },
   { date: "2026-11-24T04:02:00+04:00", texte: "Coupures d'eau\u00a0: sur la page d'une commune, les avis en cours passent en premier, avant la qualité de l'eau du robinet." },
   { date: "2026-11-24T04:02:00+04:00", texte: "Mer\u00a0: la règle de baignade dite en haut de la page et dans la réponse de l'outil temperature_mer." },

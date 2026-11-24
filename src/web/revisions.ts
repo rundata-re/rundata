@@ -113,7 +113,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // The communes whose notices are read, in the tap water's note, with those shared between distributors (L'Étang-Salé).
   // The distributors' « ne pas boire » notices in force, on their commune's line (`ne_pas_boire`, 23/11/2026).
   // Each bathing site's classification by the ARS, read in its own tag (« Excellent »), none when empty (24/11/2026).
-  eau: 6,
+  // Rebuilt from each site's entry read again (SOURCE_REVISION.baignade): the copy of 1.0.825 had no classification.
+  eau: 7,
   // EDF's line older than an hour said first (perimee, avertissement), its day when not today's, never « en ce moment ».
   // Saint-André's notices read again, with its written agreement of 16/11/2026 (`coupures_annoncees`, from web:courant).
   // A past notice in `coupures_annoncees`: its sentence, its commune and its link only (19/11/2026).
@@ -279,6 +280,13 @@ export const SOURCE_REVISION: Readonly<Record<string, number>> = {
   onf: 1,
   // CAMS's UV index: a day without its hours of 10 h to 14 h kept without an index, never « UV 0 » (10/11/2026).
   "uv:ile": 1,
+  // Each bathing site's results with its classification read in its own tag (« Excellent »): the entries read before,
+  // with an empty one, read again (24/11/2026).
+  baignade: 1,
+  // The tap water's analyses of a commune (Hub'Eau) and the island's water restrictions (VigiEau): declared so that a
+  // change of how they are read reads them again at the deploy (test/eau-revisions.test.ts).
+  eau: 1,
+  vigieau: 1,
 };
 
 /** The revision of the source whose entry is kept under `key`: its own, else its first part's; for a bundle's entry, its entry's. */

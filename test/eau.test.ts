@@ -5,7 +5,8 @@ import { parsePage, quality, season, SITES } from "../src/providers/baignades.js
 import { networkName } from "../src/providers/eaupotable.js";
 import { SOURCE } from "../src/eau/requin.js";
 import { CONSIGNE } from "../src/eau/cyclone.js";
-import { bathSentences, COMMON, noteBaignade, qualiteEau, sansPrelevement, siteNamed, sujetOf, tapNote, tapSentence } from "../src/tools/eau.js";
+import { sourceRevision } from "../src/web/revisions.js";
+import { bathSentences, COMMON, saisonSansPrelevement, noteBaignade, qualiteEau, sansPrelevement, siteNamed, sujetOf, tapNote, tapSentence } from "../src/tools/eau.js";
 import { distributeur } from "../src/eau/distributeurs.js";
 import { configure, gather } from "../src/eau/ile.js";
 import { withLectures } from "../src/lectures.js";
@@ -62,6 +63,9 @@ describe("qualité de l'eau", () => {
     const classed = "<td class=\"titre_depeche\">\n\t\tClassement de l'ann&eacute;e 2026 : \n\t\t<span class=\"clast1\">\n\t\t Excellent  </span> \n\t</td>";
     expect(parsePage(classed).classement).toEqual({ saison: 2026, texte: "Excellent" });
     expect(parsePage("<td>\n\t\tClassement de l'ann&eacute;e 2026 : \n\t</td>").classement).toBeNull();
+    // Each site's entry read by the code before, its classification empty, is read again: kept 12 h otherwise, and
+    // /eau's copy rebuilt from it without any (24/11/2026, 1.0.825: none on /eau, Roches Noires without one).
+    expect(sourceRevision("baignade:974000709")).toBe(1);
   });
 
   it("grades a sample by the ministry's thresholds, and names the season by the year it ends", () => {
@@ -171,9 +175,12 @@ describe("qualité de l'eau", () => {
     expect(b.resume).toMatch(/^Eau du robinet à Saint-Pierre : 13 réseaux/);
     expect(b.eau_du_robinet).not.toHaveProperty("resume");
     expect(b.baignade).not.toHaveProperty("resume");
-    // The gap of each site is in its row; the resume says it once for the five.
-    expect(b.resume.split("Aucun prélèvement publié").length + b.resume.split("aucun prélèvement publié").length - 2).toBe(1);
-    expect(b.resume).toMatch(/Pour les 5 sites\u00a0: aucun prélèvement publié par l'ARS depuis le \d\d\/\d\d\/2026 \(\d+ semaines\), ni aucun pour la saison commencée le 01\/10\/2026\.$/);
+    // The gap of each site is in its row; the resume says it once for the five: a month into a season without any
+    // sample, by the season's sentence, first (the gap's own sentence then not said: the same thing twice).
+    expect(b.resume.split("Aucun prélèvement").length + b.resume.split("aucun prélèvement").length - 2).toBe(1);
+    expect(b.resume).toContain("Aucun prélèvement de baignade publié par l'ARS pour la saison commencée le 01/10/2026\u00a0: les derniers résultats sont ceux de la saison passée, jusqu'au 15/09/2026, et ne disent pas la qualité de l'eau aujourd'hui. Plage du centre-ville de Saint-Pierre : ");
+    expect(b.resume).not.toContain("Pour les 5 sites");
+    expect(b.resume.match(/au dernier prélèvement/g)).toHaveLength(5);
     expect(b.baignade.sites.every((s: { prelevements_en_retard?: string }) => s.prelevements_en_retard)).toBe(true);
   });
 
@@ -181,6 +188,8 @@ describe("qualité de l'eau", () => {
     const b = body(await qualiteEau(cache(), "eau du robinet à Saint-Pierre", undefined, NOW));
     expect(b.eau_du_robinet.reseaux).toHaveLength(13);
     expect(b.eau_du_robinet.reseaux[0]).toMatchObject({ reseau: "Usine Dassy Conde", non_conformes_6_mois: 6 });
+    // The ARS's site, by the name it answers to (« www.reunion.ars.sante.fr » has no DNS, 24/11/2026).
+    expect(b.consulter).toEqual(["https://www.lareunion.ars.sante.fr"]);
     expect(b.resume).toMatch(/^Eau du robinet à Saint-Pierre : 13 réseaux, 75 analyses en 6 mois\u00a0; non-conformités sur Usine Dassy Conde \(6\)\./);
   });
 
@@ -350,6 +359,30 @@ describe("qualité de l'eau", () => {
     const soon = eauPage("https://rundata.re", data, new Date("2026-09-29T04:00:00Z"));
     expect(soon).not.toContain("Aucun prélèvement publié");
     expect(soon).toContain(`<p class="note">${esc(COMMON.eau_de_baignade)}</p>`);
+  });
+
+  it("says first, on /eau and in qualite_eau, that the ARS published nothing for the season, with its dates, and concludes nothing on the water", async () => {
+    // 24/11/2026: no sample of the season begun on 01/10 anywhere (the ministry's site, the ARS's, no Hub'Eau API).
+    const late = new Date("2026-11-24T04:00:00Z");
+    const ile = await gather(cache(), late);
+    const data = { value: { ...ile, a_savoir: COMMON, sources: [] }, fetchedAt: late, stale: false };
+    const page = eauPage("https://rundata.re", data, late);
+    const saison = saisonSansPrelevement(ile.baignades.map((s: { dernier_prelevement: string }) => s.dernier_prelevement), late)!;
+    expect(saison).toMatch(/^Aucun prélèvement de baignade publié par l'ARS pour la saison commencée le 01\/10\/2026\u00a0: (le dernier résultat est celui de la saison passée, du|les derniers résultats sont ceux de la saison passée, jusqu'au) \d\d\/\d\d\/2026, et ne (dit|disent) pas la qualité de l'eau aujourd'hui\.$/);
+    expect(page).toContain(`<p><b>${esc(saison)}</b></p>`);
+    expect(page.indexOf(esc(saison))).toBeLessThan(page.indexOf('<div class="now">'));
+    expect(page).toContain("en bonne qualité au dernier prélèvement de la saison passée");
+    expect(page).not.toContain("ni aucun pour la saison commencée");
+    // The tool: the same sentence first, the sites' own sentences after, the gap not said again.
+    const b = body(await qualiteEau(cache(), "plage de l'Hermitage", "baignade", late));
+    expect(b.baignade.resume.startsWith(`${saisonSansPrelevement([b.baignade.sites[0].dernier_prelevement], late)} ${b.baignade.sites[0].site} : `)).toBe(true);
+    expect(b.baignade.sites[0].prelevements_en_retard).toMatch(/^Aucun prélèvement publié par l'ARS depuis/);
+    expect(b.baignade.resume).not.toContain("ni aucun pour la saison commencée");
+    // A month after the season began, not before: on 24/10, the gap as before.
+    expect(saisonSansPrelevement(["15/09/2026"], NOW)).toBeUndefined();
+    expect(saisonSansPrelevement(["15/09/2026"], late)).toBe("Aucun prélèvement de baignade publié par l'ARS pour la saison commencée le 01/10/2026\u00a0: le dernier résultat est celui de la saison passée, du 15/09/2026, et ne dit pas la qualité de l'eau aujourd'hui.");
+    // A sample of the season: nothing.
+    expect(saisonSansPrelevement(["15/09/2026", "03/11/2026"], late)).toBeUndefined();
   });
 
   it("dates a commune's tap water by its newest analysis, of any network", async () => {

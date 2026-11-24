@@ -77,7 +77,7 @@ import { PASSES } from "../historique/cyclones-passes.js";
 import { cycloneWater, distributeursLus } from "./eau-cyclone.js";
 import { lues } from "../eau/distributeurs.js";
 import { faqPage, texteStable, type Faq } from "./texte-stable.js";
-import { noteBaignade, sansPrelevement, tapNote } from "../tools/eau.js";
+import { noteBaignade, saisonSansPrelevement, sansPrelevement, tapNote } from "../tools/eau.js";
 import { bathRead, keptBath, keptTap, silentBath, silentTap, tapRead, tooOld } from "../eau/ile.js";
 import { aller, MOTS as ALLER_MOTS, permis, porte, type Porte, retire, SHEET as ALLER } from "./aller.js";
 import { mentionSports, noteLa1ere, noteReunionFr } from "../tools/non-repris.js";
@@ -1876,15 +1876,19 @@ export function eauPage(origin: string, data: Cached<EauAnswer> | null, now = ne
   const lastSample = samples.at(-1);
   const tapBad = d && !tapOld ? d.communes.filter((c) => c.non_conformes_6_mois) : [];
   const gap = sansPrelevement(lastSample, now);
+  // Nothing of the season, a month after it began: said first, with its dates (tools/eau.ts saisonSansPrelevement).
+  const saison = saisonSansPrelevement(bains.map((s) => s.dernier_prelevement), now);
 
   const status = !d
     ? loading("La qualité de l'eau")
     : bathOld
     ? `<p>${esc(silentBath(bathRead(d)))}</p>`
-    : `<div class="now"><span class="big">${good}</span><p>plage${good > 1 ? "s" : ""} et bassin${good > 1 ? "s" : ""} sur <b>${d.baignades.length}</b> contrôlés par l'ARS en bonne qualité au dernier prélèvement` +
+    : (saison ? `<p><b>${esc(saison)}</b></p>` : "") +
+      `<div class="now"><span class="big">${good}</span><p>plage${good > 1 ? "s" : ""} et bassin${good > 1 ? "s" : ""} sur <b>${d.baignades.length}</b> contrôlés par l'ARS en bonne qualité au dernier prélèvement${saison ? " de la saison passée" : ""}` +
       `${lastSample ? ` (${esc(dayFr(lastSample))})` : ""}${notGood.length ? ` ; à surveiller : ${esc(notGood.map((s) => s.site).join(", "))}` : ""}.</p></div>` +
-      // No sample published for weeks (04/11/2026: none since 22/09): said under the count, never left to the dates alone.
-      (gap ? `<p class="note">${esc(gap)}</p>` : "");
+      // No sample published for weeks (04/11/2026: none since 22/09): said under the count, never left to the dates alone;
+      // the season's sentence above says it already.
+      (gap && !saison ? `<p class="note">${esc(gap)}</p>` : "");
 
   const rank = (q?: string) => ["bonne", "moyenne", "mauvaise"].indexOf(q ?? "");
   // The worse last, drawn over the good ones next to them.

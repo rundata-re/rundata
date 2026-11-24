@@ -15,9 +15,11 @@ import hashlib
 import io
 import math
 import json
+from collections import Counter
 from datetime import date
 import re
 import subprocess
+import sys
 import urllib.request
 from pathlib import Path
 
@@ -81,6 +83,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--csv", help="the national file, already downloaded")
     ap.add_argument("--from-bundle", action="store_true", help="only the compact list, from src/dae/dae.json as it is")
+    ap.add_argument("--verifier", type=int, metavar="ECART", help="write nothing: compare with src/dae/dae.json, fail past ECART devices added or gone")
     args = ap.parse_args()
     if args.from_bundle:
         compact(json.loads((ROOT / "src/dae/dae.json").read_text())["defibrillateurs"])
@@ -123,6 +126,8 @@ def main():
             d["exploitant"] = tidy(r["c_expt_rais"])
         out.append(d)
     out.sort(key=lambda d: (d["commune"], d["nom"]))
+    if args.verifier is not None:
+        sys.exit(verifier(out, args.verifier))
     target = ROOT / "src/dae/dae.json"
     target.parent.mkdir(exist_ok=True)
     target.write_text(json.dumps({
@@ -132,6 +137,25 @@ def main():
     }, ensure_ascii=False, separators=(",", ":")) + "\n")
     print(f"{target.relative_to(ROOT)} : {len(out)} défibrillateurs, {target.stat().st_size // 1024} Ko")
     compact(out)
+
+
+def verifier(out, ecart):
+    """The bundled list against the national base of today, without writing: each device by its name and place. 1 (the
+    job's failure, its alert) when more than `ecart` were added or are gone."""
+    key = lambda d: (d["nom"], round(d["lon"], 4), round(d["lat"], 4))
+    bundled = json.loads((ROOT / "src/dae/dae.json").read_text())
+    before, now = Counter(map(key, bundled["defibrillateurs"])), Counter(map(key, out))
+    added, gone = now - before, before - now
+    print(f"liste du {bundled['construit']} : {sum(before.values())} défibrillateurs ; Géo'DAE aujourd'hui : {sum(now.values())}, "
+          f"{sum(added.values())} nouveaux, {sum(gone.values())} disparus")
+    for k in list(added)[:20]:
+        print(f"  nouveau : {k[0]} ({k[1]}, {k[2]})")
+    for k in list(gone)[:20]:
+        print(f"  disparu : {k[0]} ({k[1]}, {k[2]})")
+    if sum(added.values()) + sum(gone.values()) > ecart:
+        print(f"::error::La liste des défibrillateurs a {sum(added.values()) + sum(gone.values())} écarts avec Géo'DAE (seuil {ecart}) : lancer scripts/build-dae.py et proposer la PR.")
+        return 1
+    return 0
 
 
 def reach(d):

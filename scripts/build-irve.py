@@ -16,6 +16,7 @@ from datetime import date
 import io
 import json
 import re
+import sys
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -97,6 +98,7 @@ def place_name(r):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--csv", help="the consolidated file, already downloaded")
+    ap.add_argument("--verifier", type=int, metavar="ECART", help="write nothing: compare with src/irve/stations.json, fail past ECART points added or gone")
     args = ap.parse_args()
     src = open(args.csv, encoding="utf-8") if args.csv else io.TextIOWrapper(opened(STATIC), encoding="utf-8")
     rows = []
@@ -104,6 +106,12 @@ def main():
         try:
             lon, lat = float(r["consolidated_longitude"]), float(r["consolidated_latitude"])
         except ValueError:
+            continue
+        # An operator's longitude and latitude given the other way round (EZDrive, Le Tampon, 24/11/2026): put back.
+        if LAT0 < lon < LAT1 and LON0 < lat < LON1:
+            lon, lat = lat, lon
+        if r["code_insee_commune"].startswith("974") and not (LON0 < lon < LON1 and LAT0 < lat < LAT1):
+            print(f"hors de l'île, laissé de côté : {r['id_pdc_itinerance']} ({lon}, {lat})", file=sys.stderr)
             continue
         if r["code_insee_commune"].startswith("974") or (LON0 < lon < LON1 and LAT0 < lat < LAT1):
             rows.append((r, lon, lat))
@@ -140,6 +148,8 @@ def main():
         if not ITINERANCE.match(s["id"]):
             s["id"] = s["points"][0]["id"]
     out = sorted(stations.values(), key=lambda s: s["id"])
+    if args.verifier is not None:
+        sys.exit(verifier(out, args.verifier))
     for s in out:
         found = json.load(opened(COMMUNE_AT + urllib.parse.urlencode({"lon": s["lon"], "lat": s["lat"]})))
         s["commune"] = found[0]["nom"] if found else ""
@@ -151,6 +161,25 @@ def main():
         "stations": out,
     }, ensure_ascii=False, separators=(",", ":")) + "\n")
     print(f"{target.relative_to(ROOT)} : {len(out)} stations, {sum(len(s['points']) for s in out)} points de charge")
+
+
+def verifier(out, ecart):
+    """The bundled list against the national base of today, without writing (nor asking geo.api.gouv.fr anything): its
+    points by their id. 1 (the job's failure, its alert) when more than `ecart` were added or are gone: a point gone is
+    said « sans information » by the tool and /bornes, a point added is not shown at all."""
+    bundled = json.loads((ROOT / "src/irve/stations.json").read_text())
+    before = {p["id"]: s["nom"] for s in bundled["stations"] for p in s["points"]}
+    now = {p["id"]: f'{s["nom"]}, {s["adresse"]}' for s in out for p in s["points"]}
+    added, gone = sorted(set(now) - set(before)), sorted(set(before) - set(now))
+    print(f"liste du {bundled['construit']} : {len(before)} points ; base nationale aujourd'hui : {len(now)}, {len(added)} nouveaux, {len(gone)} disparus")
+    for i in added[:20]:
+        print(f"  nouveau : {i} ({now[i]})")
+    for i in gone[:20]:
+        print(f"  disparu : {i} ({before[i]})")
+    if len(added) + len(gone) > ecart:
+        print(f"::error::La liste des bornes de recharge a {len(added) + len(gone)} écarts avec la base nationale (seuil {ecart}) : lancer scripts/build-irve.py et proposer la PR.")
+        return 1
+    return 0
 
 
 if __name__ == "__main__":

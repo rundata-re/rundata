@@ -68,6 +68,11 @@ export const NO_CALENDAR_LIST = `Les calendriers ${YEAR} du TCO ne donnent pas d
 export const TCO_CONTACT = "https://www.tco.re/contact";
 /** Past the calendars' year, nothing of it is applied to the next. */
 export const notYet = () => `Les calendriers ${YEAR + 1} du TCO ne sont pas encore publiés : rundata.re ne peut pas encore donner les jours de collecte.`;
+/**
+ * Near the year's end, above the days still given: they hold until the 31st of December. notYet() there read as if no
+ * day were given, above the days (24/11/2026). Marketing's words, whole in the tool's answer too.
+ */
+export const untilYearEnd = () => `Jours de collecte valables jusqu'au 31 décembre ${YEAR} : les calendriers ${YEAR + 1} du TCO ne sont pas encore publiés.`;
 const YEAR_DAYS = (Date.UTC(YEAR + 1, 0, 1) - Date.UTC(YEAR, 0, 1)) / DAY_MS;
 /** Whether `today` is past the calendars' year. */
 export const pastYear = (today: number) => today > YEAR_DAYS;
@@ -229,7 +234,7 @@ export function streetLine(s: Street, today: number): string {
   if (!cal) return head + NO_CALENDAR;
   const r = rhythmOf(cal, today);
   if (r === undefined) return notYet();
-  return `${head}${r}.${nearYearEnd(today) ? ` ${notYet()}` : ""}`;
+  return `${head}${r}.${nearYearEnd(today) ? ` ${untilYearEnd()}` : ""}`;
 }
 
 /** Its name without the commune the TCO adds in brackets. */

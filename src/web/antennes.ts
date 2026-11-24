@@ -240,9 +240,12 @@ export function coupe(s: sitesHs.Site): string {
   return parts.length ? parts.join(", ") : "service coupé en partie";
 }
 
-/** « Saint-Philippe : Free, voix, SMS et internet mobile coupés (panne), depuis le 28/10, fin prévue par Free le 04/11. » */
-export const ligneSite = (s: sitesHs.Site) =>
-  `${s.commune} : ${s.operateur}, ${coupe(s)}${s.raison ? ` (${s.raison})` : ""}${s.debut ? `, depuis le ${jm(s.debut)}` : ""}${s.fin ? `, fin prévue par ${s.operateur} le ${jm(s.fin)}` : ", fin non précisée"}.`;
+/**
+ * « Saint-Philippe : Free, voix, SMS et internet mobile coupés (panne), depuis le 28/10, fin prévue par Free le 04/11. »
+ * Several sites of the same line, `n`: « Saint-Leu : 3 sites Free, … » (marketing, 24/11/2026).
+ */
+export const ligneSite = (s: sitesHs.Site, n = 1) =>
+  `${s.commune} : ${n > 1 ? `${nombre(n)} sites ` : ""}${s.operateur}, ${coupe(s)}${s.raison ? ` (${s.raison})` : ""}${s.debut ? `, depuis le ${jm(s.debut)}` : ""}${s.fin ? `, fin prévue par ${s.operateur} le ${jm(s.fin)}` : ", fin non précisée"}.`;
 
 const sitesMot = (n: number) => (n > 1 ? `${nombre(n)} sites mobiles` : `${nombre(n)} site mobile`);
 
@@ -257,7 +260,14 @@ export function horsService(c: Cached<sitesHs.Copie> | null, now: Date): string 
     // Before the day's file is read (each morning), or when its read failed: the file before, said as the last one.
     const du = `Fichier de l'Arcep du ${dateLongue(fichier_du)}${fichier_du === now.toISOString().slice(0, 10) ? "" : ", le dernier lu"}`;
     head = sites.length ? `${du} : ${sitesMot(sites.length)} hors service à La Réunion.` : `${du} : aucun site mobile déclaré hors service à La Réunion.`;
-    if (sites.length) list = `<ul class="hs">${sites.map((s) => `<li>${esc(ligneSite(s))}</li>`).join("")}</ul>`;
+    // Sites cut the same way in the same commune, told apart by their place only, said once with their number: three
+    // identical lines read as a repeat (24/11/2026).
+    const lignes = new Map<string, [sitesHs.Site, number]>();
+    for (const s of sites) {
+      const k = ligneSite(s);
+      lignes.set(k, [s, (lignes.get(k)?.[1] ?? 0) + 1]);
+    }
+    if (sites.length) list = `<ul class="hs">${[...lignes.values()].map(([s, n]) => `<li>${esc(ligneSite(s, n))}</li>`).join("")}</ul>`;
     note = absents(sites);
   }
   return `<section aria-labelledby="h-hs"><h2 id="h-hs">Sites mobiles hors service</h2>

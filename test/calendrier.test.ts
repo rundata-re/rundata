@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { astronomicalNight, breaks, darkNight, horizonDe, moon, moonLight, nextPhases, parisDate, schoolBreaks, sun } from "../src/providers/calendrier.js";
 import { resolvePlace } from "../src/places/resolve.js";
-import { calendrier, ferieDit, longDate, moonOf, nuitOf, ordinaux } from "../src/tools/calendrier.js";
+import { calendrier, ferieDit, nomFerie, longDate, moonOf, nuitOf, ordinaux } from "../src/tools/calendrier.js";
 import { buildCalendrier } from "../src/web/data.js";
 import { calendrierLive, calendrierPage } from "../src/web/domains.js";
 
@@ -154,7 +154,19 @@ describe("calendar", () => {
     expect(r.resume).toContain("Prochain jour férié : Toussaint, dimanche 1er novembre 2026 (dans 9 jours).");
     expect(r.resume).toContain("Vacances scolaires en cours (Vacances après 1re période) : reprise des cours le lundi 26 octobre 2026.");
     expect(r.soleil.lieu).toMatch(/Maïdo/);
-    expect(r.jours_feries.prochains.map((x: { nom: string }) => x.nom)).toContain("Abolition de l'esclavage");
+    expect(r.jours_feries.prochains.map((x: { nom: string }) => x.nom)).toContain("Fête de l'abolition de l'esclavage");
+  });
+
+  it("names the 1st of January « Jour de l'an », in the tool and on the page, as the other holidays (24/11/2026)", async () => {
+    const now = new Date("2026-12-26T08:00:00Z");
+    const r = body(await calendrier(cacheAt(now), "Saint-Denis", now));
+    expect(r.resume).toContain("Prochain jour férié : Jour de l'an, vendredi 1er janvier 2027 (dans 6 jours).");
+    const html = calendrierPage("https://rundata.re", { value: await buildCalendrier(cacheAt(now), now), fetchedAt: now }, now);
+    expect(html).toContain("<b>Jour de l&#39;an</b> : vendredi 1er janvier 2027");
+    // Every holiday named, never by its date alone (marketing, 24/11/2026).
+    const names = Object.values(fixture("jours_feries.json") as Record<string, string>).map(nomFerie);
+    expect(new Set(names)).toEqual(new Set(["Jour de l'an", "Lundi de Pâques", "Fête du Travail", "Victoire de 1945", "Ascension", "Lundi de Pentecôte",
+      "Fête nationale", "Assomption", "Toussaint", "Armistice de 1918", "Fête de l'abolition de l'esclavage", "Jour de Noël"]));
   });
 
   it("writes ordinals as the kit does, and a holiday named by its date once", async () => {
@@ -163,13 +175,13 @@ describe("calendar", () => {
     expect(ordinaux("Vacances de Noël")).toBe("Vacances de Noël");
     expect(ferieDit("11 novembre", "mercredi 11 novembre 2026")).toBe("mercredi 11 novembre 2026");
     expect(ferieDit("Toussaint", "dimanche 1er novembre 2026")).toBe("Toussaint, dimanche 1er novembre 2026");
-    // The day after the Toussaint, the next holiday is the 11 novembre: said once in the tool and on the page.
+    // The day after the Toussaint, the next holiday is the 11 novembre, named as the others (marketing, 24/11/2026).
     const now = new Date("2026-11-05T08:00:00Z");
     const r = body(await calendrier(cacheAt(now), "Saint-Denis", now));
-    expect(r.resume).toContain("Prochain jour férié : mercredi 11 novembre 2026 (dans 6 jours).");
+    expect(r.resume).toContain("Prochain jour férié : Armistice de 1918, mercredi 11 novembre 2026 (dans 6 jours).");
     const html = calendrierPage("https://rundata.re", { value: await buildCalendrier(cacheAt(now), now), fetchedAt: now }, now);
-    expect(html).toContain("Prochain jour férié : <b>mercredi 11 novembre 2026</b> (dans 6 jours).");
-    expect(html).toContain("<li><b>mercredi 11 novembre 2026</b> <span");
+    expect(html).toContain("Prochain jour férié : <b>Armistice de 1918</b>, mercredi 11 novembre 2026 (dans 6 jours).");
+    expect(html).toContain("<li><b>Armistice de 1918</b> : mercredi 11 novembre 2026 <span");
     expect(html).not.toMatch(/\dème|\dère/);
     expect(html).toContain("Vacances après 3e période");
   });

@@ -14,6 +14,27 @@ const answer = (r: { content: { text: string }[] }) => JSON.parse(r.content[0].t
 const state = (day: string, cle: string) => especesDuJour(day).find((e) => e.cle === cle)!;
 
 describe("the rules of recreational fishing, day by day", () => {
+  it("says a closing within 14 days, in days, under « pas de fermeture » or « saison ouverte » (24/11/2026)", () => {
+    expect(state("2026-11-24", "langouste")).toMatchObject({ ferme: false, etat: "Pas de fermeture aujourd'hui", bientot: "Fermeture dans 7 jours, le mardi 1er décembre." });
+    expect(state("2026-11-30", "langouste").bientot).toBe("Fermeture demain, le mardi 1er décembre.");
+    expect(state("2026-11-16", "langouste").bientot).toBeUndefined();
+    expect(state("2026-12-01", "langouste").bientot).toBeUndefined();
+    expect(state("2027-01-25", "anguille").bientot).toBe("Fermeture dans 7 jours, le lundi 1er février.");
+    const fin = SAISONS_BICHIQUES.find(([a, b]) => "2026-11-24" >= a && "2026-11-24" <= b)![1];
+    const veille = new Date(Date.parse(`${fin}T00:00:00Z`) - 6 * 86_400_000).toISOString().slice(0, 10);
+    expect(state(veille, "bichiques").bientot).toMatch(/^Fermeture dans 7 jours, le \w+ \d+/);
+    expect(state("2026-11-24", "bichiques").bientot).toBeUndefined();
+    // The page and the tool say it; asked about another day, the tool counts from that day.
+    const now = new Date("2026-11-24T04:00:00Z");
+    expect(pechePage(O, undefined, now)).toContain("Fermeture dans 7 jours, le mardi 1er décembre.");
+    // In the tool, where species follow one another, the sentence names its species (marketing, 24/11/2026).
+    expect(JSON.stringify(answer(pecheLoisir("langouste", undefined, now)))).toContain("Fermeture de la pêche à la langouste dans 7 jours, le mardi 1er décembre.");
+    expect(answer(pecheLoisir(undefined, undefined, now)).resume).toContain("langouste, pas de fermeture aujourd'hui (fermeture de la pêche à la langouste dans 7 jours, le mardi 1er décembre)");
+    expect(JSON.stringify(answer(pecheLoisir("anguille", "2027-01-31", now)))).toContain("Fermeture de la pêche à l'anguille marbrée le lendemain, le lundi 1er février.");
+    expect(JSON.stringify(answer(pecheLoisir("langouste", "2026-11-28", now)))).toContain("Fermeture de la pêche à la langouste 3 jours plus tard, le mardi 1er décembre.");
+    expect(JSON.stringify(answer(pecheLoisir("langouste", "2026-11-30", now)))).toContain("Fermeture de la pêche à la langouste le lendemain, le mardi 1er décembre.");
+  });
+
   it("closes the spiny lobster from the 1st of December to the 31st of March, both included, and says only that otherwise", () => {
     expect(state("2026-11-30", "langouste")).toMatchObject({ ferme: false, etat: "Pas de fermeture aujourd'hui" });
     expect(state("2026-12-01", "langouste")).toMatchObject({ ferme: true, etat: "Fermée aujourd'hui" });

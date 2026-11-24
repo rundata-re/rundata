@@ -73,7 +73,9 @@ describe("the bins' calendars of the West", () => {
   it("never says a year's days of the next one", () => {
     const victoria = col.findStreets("rue victoria", "La Possession")[0];
     expect(col.streetLine(victoria, day("2027-01-04"))).toBe("Les calendriers 2027 du TCO ne sont pas encore publiés : rundata.re ne peut pas encore donner les jours de collecte.");
-    expect(col.streetLine(victoria, day("2026-12-20"))).toMatch(/\. Les calendriers 2027 du TCO ne sont pas encore publiés : rundata.re ne peut pas encore donner les jours de collecte\.$/);
+    // Before the 1st of January the days are given: they hold until the 31st of December (24/11/2026).
+    expect(col.streetLine(victoria, day("2026-12-20"))).toMatch(/\. Jours de collecte valables jusqu'au 31 décembre 2026 : les calendriers 2027 du TCO ne sont pas encore publiés\.$/);
+    expect(col.streetLine(victoria, day("2026-12-20"))).not.toContain("ne peut pas encore donner");
     expect(body(collecteAnswer("rue Victoria, La Possession", new Date("2027-01-04T08:00:00Z"))).resume).toBe(col.notYet());
   });
 
@@ -199,6 +201,20 @@ describe("the tool and the pages", () => {
       expect(page).toContain(`<p class="card">${col.notYet()}</p>`);
       expect(page).not.toContain('class="card groupe"');
     }
+  });
+
+  it("says in late November that the days shown hold until the 31st of December, never that it cannot give them", () => {
+    const now = new Date("2026-11-24T08:00:00Z");
+    for (const commune of [undefined, "Saint-Paul"]) {
+      const page = collectePage("https://rundata.re", now, commune);
+      expect(page).toContain(`<p class="card">${col.untilYearEnd().replaceAll("'", "&#39;")}</p>`);
+      expect(page).not.toContain(col.notYet());
+      expect(page).toContain('class="card groupe"');
+    }
+    expect(col.untilYearEnd()).toBe("Jours de collecte valables jusqu'au 31 décembre 2026 : les calendriers 2027 du TCO ne sont pas encore publiés.");
+    const r = body(collecteAnswer("rue Victoria, La Possession", now));
+    expect(JSON.stringify(r)).toContain(col.untilYearEnd());
+    expect(JSON.stringify(r)).not.toContain("ne peut pas encore donner");
   });
 
   it("gives a group's PDFs in a row up to three calendars, folded under their number past that", () => {

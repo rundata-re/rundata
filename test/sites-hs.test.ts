@@ -21,6 +21,18 @@ afterEach(() => {
 });
 
 describe("the mobile sites out of service (Arcep, sites indisponibles)", () => {
+  it("says sites cut the same way in the same commune once, with their number, never the same line twice (24/11/2026)", () => {
+    const leu = (lon: number): sitesHs.Site => ({ operateur: "Free", commune: "Saint-Leu", insee: "97413", lon, lat: -21.17, voix: true, data: true, raison: "panne", debut: "2026-11-23", fin: "2026-11-30" });
+    const other: sitesHs.Site = { ...leu(55.3), voix: false, data: true };
+    const html = horsService(at({ fichier_du: "2026-11-23", lu: NOW.toISOString(), sites: [leu(55.28), leu(55.29), leu(55.31), other] }), NOW);
+    const items = [...html.matchAll(/<li>([^<]*)<\/li>/g)].map((m) => m[1]);
+    expect(items).toEqual([
+      "Saint-Leu : 3 sites Free, voix, SMS et internet mobile coupés (panne), depuis le 23/11, fin prévue par Free le 30/11.",
+      "Saint-Leu : Free, internet mobile coupé (panne), depuis le 23/11, fin prévue par Free le 30/11.",
+    ]);
+    expect(html).toContain("4 sites mobiles hors service à La Réunion.");
+  });
+
   it("keeps La Réunion's lines only, with the days and never a time: the file gives no time zone", () => {
     const kept = features.flatMap((f: never) => sitesHs.site(f) ?? []);
     expect(kept).toEqual([{

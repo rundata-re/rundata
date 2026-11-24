@@ -59,6 +59,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded by marketing): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-24T09:58:00+04:00", texte: "Outils IA\u00a0: un sentier demandé avec son cirque ou sa commune («\u00a0sentier des Porteurs, Cilaos\u00a0») donne bien l'état de ce sentier" },
   { date: "2026-11-24T09:53:00+04:00", texte: "Assistants IA\u00a0: le nombre de places en crèche de chaque commune, d'après la CAF." },
   { date: "2026-11-24T09:36:00+04:00", texte: "Eau de baignade\u00a0: /eau dit d'abord que l'ARS n'a publié aucun prélèvement de la saison, avec ses dates, sans rien conclure sur l'eau" },
   { date: "2026-11-24T07:33:00+04:00", texte: "Randonnée\u00a0: un sentier que l'ONF a retiré de sa carte n'est plus dit ouvert\u00a0; sa page renvoie à la carte officielle" },

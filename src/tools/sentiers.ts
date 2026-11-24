@@ -28,7 +28,7 @@ const CIRQUES: Record<string, { nom: string; secteur: string; lon: number; lat: 
   cilaos: { nom: "le cirque de Cilaos", secteur: "Cilaos", lon: 55.475, lat: -21.13, km: 6 },
   salazie: { nom: "le cirque de Salazie", secteur: "Salazie", lon: 55.515, lat: -21.05, km: 7 },
 };
-const STOP = new Set(["sentier", "sentiers", "chemin", "route", "routes", "forestiere", "de", "des", "du", "la", "le", "les", "l", "d", "a", "au", "aux", "par", "et", "ferme", "fermes", "ouvert", "ouverts", "randonnee", "randonnees", "rando", "randos", "est", "il", "ce", "trace", "traces", "gps", "gpx", "itineraire", "parcours"]);
+const STOP = new Set(["sentier", "sentiers", "chemin", "route", "routes", "forestiere", "forestieres", "de", "des", "du", "la", "le", "les", "l", "d", "a", "au", "aux", "par", "et", "ferme", "fermes", "ouvert", "ouverts", "randonnee", "randonnees", "rando", "randos", "est", "il", "ce", "trace", "traces", "gps", "gpx", "itineraire", "parcours"]);
 
 /** What a hiker may ask for: a length, a climb. */
 export interface Filtre {
@@ -628,11 +628,26 @@ export async function sentiersRandonnee(cache: Cache, lieu: string | undefined, 
   if (asked && !("introuvable" in asked && !asked.code)) return roadsAnswer(asked, carte.routes, common, fireSentence);
 
   const q = normalize(lieu);
-  const cirque = Object.entries(CIRQUES).find(([k]) => q.split(" ").includes(k))?.[1];
+  const cirqueKey = Object.keys(CIRQUES).find((k) => q.split(" ").includes(k));
+  let cirque = cirqueKey ? CIRQUES[cirqueKey] : undefined;
   let res = cirque ? null : resolvePlace(lieu);
   // A cirque or a commune is a zone; its name in a few trails' names (« Cilaos - Bras Sec ») is not what is asked.
   const wide = !!cirque || res?.lieu.type === "commune";
-  const named = wide && !/\bsentier\b/.test(q) ? [] : trailsNamed(carte.sentiers, lieu).slice(0, NAMED_MAX);
+  // A trail's name with its cirque or commune (24/11/2026: « sentier des Porteurs Cilaos » answered for the whole
+  // cirque, 10 of its open trails without that one): the name in the whole text first, then in the words that are not
+  // the place's, the place a filter only (its trails first) and no longer the answer.
+  const placeWords = new Set(words(cirqueKey ?? (res?.lieu.type === "commune" ? `${res.lieu.commune} ${res.lieu.nom}` : "")));
+  const rest = wide ? words(lieu).filter((w) => !placeWords.has(w)) : [];
+  const whole = !wide || rest.length || /\bsentier\b/.test(q) ? trailsNamed(carte.sentiers, lieu) : [];
+  const zoneOf = (s: onf.Sentier) => cirque
+    ? trailPlace(s.nom, carte.sentiers.filter((x) => x.nom === s.nom)).secteur === cirque.secteur
+    : s.points.length > 0 && communeAt(...mid(s)) === res?.lieu.commune;
+  const byRest = !whole.length && rest.length ? trailsNamed(carte.sentiers, rest.join(" ")) : [];
+  const named = (whole.length ? whole : byRest.some(zoneOf) ? byRest.filter(zoneOf) : byRest).slice(0, NAMED_MAX);
+  if (byRest.length) {
+    cirque = undefined;
+    res = null;
+  }
   // A trail found by every word asked, a place that left some of them aside: the trail is what is asked, not the place
   // (23/11/2026: « Piste DFCI de la Glacière », 2 175 to 2 493 m, answered around La Glacière of Saint-Denis, 367 m,
   // « piste dfci » left aside). Only a word of the trail's own name counts: « Sentier du Maïdo » is still around the Maïdo.

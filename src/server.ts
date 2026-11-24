@@ -1,5 +1,5 @@
 import { chiffres, type Copie, KEY as CHIFFRES, resume as resumeChiffres } from "./chiffres.js";
-import { comptee } from "./producteurs.js";
+import { comptee, FAMILLES, FICHES, type Famille, producteursDe } from "./producteurs.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ListToolsRequestSchema, type ListToolsResult } from "@modelcontextprotocol/sdk/types.js";
 import * as courantMairies from "./providers/coupures-courant.js";
@@ -31,6 +31,7 @@ import * as marchesOsm from "./vie/marches.js";
 import { z } from "zod";
 import type { Cache } from "./cache.js";
 import type { Recorder } from "./metrics.js";
+import type { SourceInfo } from "./types.js";
 import { type Background, fordNews } from "./web/data.js";
 import icons from "./web/icons.json" with { type: "json" };
 import { GAZETTEER_ATTRIBUTION, wholeIsland } from "./places/resolve.js";
@@ -133,7 +134,7 @@ import * as peche from "./tools/peche.js";
 import * as cetaces from "./tools/cetaces.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.831";
+export const VERSION = "1.0.832";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -206,16 +207,22 @@ type Extra = { requestId?: string | number; requestInfo?: { headers?: Record<str
 
 // The three hints are said outright, destructiveHint too, though implied by readOnlyHint: the ChatGPT apps review asks
 // for them on every tool (test/serveur.test.ts checks it).
-export const SOURCES_COURT = "Réponse courte : le nombre de producteurs par licence. Chaque source avec son organisme, sa licence, l'attribution à citer et son lien : rappeler l'outil avec detail, ou https://rundata.re/chiffres#sources.";
+export const SOURCES_COURT = "Réponse courte : le nombre de producteurs par famille de licence. Chaque source avec son organisme, sa licence, l'attribution à citer et son lien : rappeler l'outil avec detail, ou https://rundata.re/chiffres#sources.";
 
 /**
- * Each licence once, with the number of producers whose sources it covers, the most used licence first. Their names are
- * in the answer with detail and on /chiffres#sources: they were 9 KB of a 27 KB answer (5/11/2026).
+ * Each family of licence once, as /chiffres counts them (Licence Ouverte, ODbL, information publique…), with the number
+ * of producers whose sources it covers, the most used first. The licence as each source writes it is in the answer
+ * with detail and on /chiffres#sources: by its own words, 36 rows and 6.5 KB of a 20 KB answer, one more with each new
+ * wording (24/11/2026). A producer under two families is counted in each.
  */
-export function parLicence(sources: { organisme: string; licence: string }[]): { licence: string; producteurs: number }[] {
-  const by = new Map<string, Set<string>>();
-  for (const x of sources) by.set(x.licence, (by.get(x.licence) ?? new Set()).add(x.organisme));
-  return [...by].map(([licence, p]) => ({ licence, producteurs: p.size })).sort((a, b) => b.producteurs - a.producteurs || a.licence.localeCompare(b.licence, "fr"));
+export function parLicence(sources: SourceInfo[]): { licence: string; producteurs: number; ouverte: boolean }[] {
+  const by = new Map<Famille, Set<string>>();
+  for (const x of sources) {
+    const f = FICHES[x.id]?.famille;
+    if (f) by.set(f, new Set([...(by.get(f) ?? []), ...producteursDe(x)]));
+  }
+  return [...by].map(([f, p]) => ({ licence: FAMILLES[f].nom, producteurs: p.size, ouverte: FAMILLES[f].ouverte }))
+    .sort((a, b) => b.producteurs - a.producteurs || a.licence.localeCompare(b.licence, "fr"));
 }
 
 const READ_ONLY = { readOnlyHint: true, destructiveHint: false, openWorldHint: true } as const;

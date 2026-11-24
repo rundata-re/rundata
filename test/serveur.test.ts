@@ -10,6 +10,9 @@ import { citation, citerOf, cite } from "../src/tools/citer.js";
 import { dataDate, fraicheur, instantOf, sourceMuette } from "../src/tools/fraicheur.js";
 import { meteoActuelle } from "../src/tools/meteo.js";
 import { resolvePlace } from "../src/places/resolve.js";
+import { FAMILLES, FICHES, producteursDe } from "../src/producteurs.js";
+import { MAX_BYTES } from "../src/bin/check-sources.js";
+import type { SourceInfo } from "../src/types.js";
 
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url), "utf8");
 const NOW = new Date("2026-10-24T09:20:00Z");
@@ -276,11 +279,19 @@ describe("the serveur block", () => {
     expect(short.sources).toBeUndefined();
     expect(short.detail.replace(/[\u00a0\u202f]/g, " ")).toBe(SOURCES_COURT);
     expect(full.detail).toBeUndefined();
-    // Every licence of the whole list, each once, with the number of its producers.
+    // Every family of licence of the whole list, as /chiffres counts them, each once, with the number of its producers:
+    // the licences as each source writes them (« Licence Ouverte 2.0 », « Licence Ouverte (Etalab) »…) made 36 rows and
+    // a third of the answer, one more with each new wording (24/11/2026); they are each source's, with detail.
     const by: { licence: string; producteurs: number }[] = short.producteurs_par_licence;
-    expect(new Set(by.map((x) => x.licence))).toEqual(new Set(full.sources.map((x: { licence: string }) => x.licence)));
+    const familleDe = (x: { id: string }) => FAMILLES[FICHES[x.id].famille].nom;
+    expect(new Set(by.map((x) => x.licence))).toEqual(new Set(full.sources.map(familleDe)));
     expect(by.map((x) => x.licence).length).toBe(new Set(by.map((x) => x.licence)).size);
-    for (const y of by) expect(y.producteurs).toBe(new Set(full.sources.filter((x: { licence: string }) => x.licence === y.licence).map((x: { organisme: string }) => x.organisme)).size);
+    expect(by.length).toBeLessThanOrEqual(Object.keys(FAMILLES).length);
+    for (const y of by) expect(y.producteurs).toBe(new Set(full.sources.filter((x: { id: string }) => familleDe(x) === y.licence).flatMap((x: SourceInfo) => producteursDe(x))).size);
+    expect(by.find((x) => x.licence === "Licence Ouverte")).toEqual({ licence: "Licence Ouverte", producteurs: expect.any(Number), ouverte: true });
+    expect(by.find((x) => x.licence === "information publique")?.ouverte).toBe(false);
+    // Held offline under its cap in the check of the sources, with room for new tools and sources.
+    expect(new TextEncoder().encode(JSON.stringify(short)).length).toBeLessThan(MAX_BYTES.sources_donnees - 2_000);
     expect(short.chiffres.sources).toBe(full.sources.length);
     // The producers of each domain and the agendas read: with detail and on /chiffres, not in the short answer.
     expect(short.chiffres.par_domaine.every((d: object) => !("producteurs" in d))).toBe(true);

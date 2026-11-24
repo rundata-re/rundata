@@ -227,7 +227,10 @@ export const MAX_BYTES: Record<string, number> = {
   "actualites (routes)": 10_500, // 9 373
   carburants: 3_000, // 2 558
   coupures_eau: 12_500, // 11 007
-  sources_donnees: 30_500, // 27 508
+  // 27 508 on 5/11/2026, 20 007 on 24/11/2026, 6 550 of it the licences as each source writes them (36 rows, one more
+  // with each new wording); about 14 000 once they are counted by family, as /chiffres does. Held offline by
+  // serveur.test.ts, 2 000 under this cap: room for new tools and sources, a sign to shorten before the check fails.
+  sources_donnees: 16_000,
   "sentiers_randonnee (Mafate)": 12_500, // 11 305
   sport: 19_000, // 22 151, then 16 984 with the 15 most recent results only (1.0.258)
   evenements: 25_500, // 22 750

@@ -245,6 +245,11 @@ function setup(env: Env): Cache {
     count();
     return (await kv.get(candhis.KEY, "json")) as candhis.Etat | null;
   }));
+  // The buoys' series of 30 days, kept by the scheduled event below (src/providers/candhis.ts `completer`).
+  candhis.configureSerie(kv && (async () => {
+    count();
+    return (await kv.get(candhis.SERIE_KEY, "json")) as candhis.Serie | null;
+  }));
   // The UV index measured at Moufia, read by the scheduled event below and kept in KV (src/providers/uv-mesure.ts):
   // without KV, the token is not used; without the token, nothing is read nor shown.
   uvMesure.configure(kv && env.SOLARDB_JETON, kv && (async () => {

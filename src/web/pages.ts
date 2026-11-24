@@ -9,6 +9,7 @@
  * 974 ». « 974 » sorts La Réunion from meetings, so the tab's title carries it, « La Réunion (974) » when it fits in
  * 60 characters; the headings stay as people say them.
  */
+import { courbesSection } from "./mer-courbes.js";
 import { faqPage, sansBalises, texteStable, type Faq } from "./texte-stable.js";
 import chaud from "../historique/plus-chaud.json" with { type: "json" };
 import { MONTHS, STATIONS_REFERENCE } from "../tools/historique.js";
@@ -1338,6 +1339,9 @@ ${CSS_CHIFFRES}
 .ch-v{min-height:2.6em;margin:.2rem 0 0;font-size:.85rem;line-height:1.3;color:var(--muted)}.hg-k{margin:0 0 .6rem}.hg-k .k-p{border-top:3px solid var(--pluie)}.hg-k .k-no{border-top:2px dashed var(--ink)}.hg-k .k-t{border-top:3px solid var(--chaud)}.hg-k .k-n{border-top:3px solid var(--frais)}.hg-k .k-bd{height:.7rem;border:0;background:var(--muted);opacity:.35}.hg-k .k-s{height:.7rem;width:.6rem;border:0;background:var(--soleil)}.hg-k .k-g{width:.5rem;height:.5rem;border:0;border-radius:50%;background:var(--ink)}.hg .nn{margin:.2rem 0 0}.hg-an{padding:.8rem;max-width:38rem}.hg-an .an-l{display:none}@media (min-width:58rem){.hg-an{max-width:none}.hg-an .an-n{display:none}.hg-an .an-l{display:block}}.hg-an .ch{touch-action:pan-y}.ch .up{fill:var(--chaud)}.ch .dn{fill:var(--frais)}.ch .gr.z{stroke:var(--ink);opacity:.6}.hg-k .k-up,.hg-k .k-dn{width:.6rem;height:.7rem;border:0;background:var(--chaud)}.hg-k .k-dn{background:var(--frais)}
 .ch .ln-v{fill:none;stroke:#248c78;stroke-width:3.5}.ch .ln-r{fill:none;stroke:#248c78;stroke-width:2;stroke-dasharray:6 4}
 .ch .wa{fill:none;stroke:var(--ink);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+/* « En courbes » on /mer (web/mer-courbes.ts): a thinner line for the highest wave, now as a dotted line, the figures under each chart. */
+.ch .ln-fin{stroke-width:2}.ch .now{stroke:var(--ink);stroke-width:1.5;stroke-dasharray:2 5;opacity:.6}
+.crb{list-style:none;padding:0;margin:.5rem 0 0;display:grid;gap:.3rem;font-size:.9rem}.crb span{color:var(--muted)}
 .k{display:inline-block;width:1.2rem;height:0;border-top:2.5px solid #248c78;vertical-align:middle;margin:0 .3rem 0 .6rem}.k-v{margin-left:0}.k-r{border-top:1.5px dashed #248c78}
 .sta-m{width:100%;border-collapse:collapse;font-size:.86rem}.sta-m th,.sta-m td{text-align:left;padding:.35rem .45rem;border-bottom:1px solid var(--line);vertical-align:top}.sta-m th{font-size:.8rem}
 .sta-m td b{display:block;font-weight:600}.sta-m td small{display:block;color:var(--muted);font-size:.78rem}
@@ -3235,7 +3239,8 @@ export function seaPage(origin: string, data: Cached<SeaData> | null, now = new 
   ${day ? `<figcaption class="note" style="color:var(--on-night-muted)">${legende([{ forme: "rond", couleur: chip(26), texte: "26°", dit: "température de l'eau au large de la plage" }], esc(seaMeasure(seen)))}</figcaption>` : ""}</figure>
 </div>`;
 
-  const body = `<section aria-labelledby="h-plages">
+  const body = `${courbesSection(d?.courbes, now)}
+<section aria-labelledby="h-plages">
   <div class="sec-h"><p class="eyebrow">Plage par plage</p><h2 id="h-plages">La mer au large de chaque plage</h2>
   <p>Du nord à l'ouest en passant par l'est et le sud : la dernière mesure satellite à moins de 12 km de chaque plage.</p></div>
   <div class="card">${list}</div>

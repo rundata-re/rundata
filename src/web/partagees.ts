@@ -144,8 +144,9 @@ export const SHARED: Shared[] = [
   // workerd (wrangler dev) on two granules of 6 and 7 November 2026, 215 to 330 in Node.
   { key: viirs.KEY, build: viirs.build, every: (last, now) => viirs.passagesEvery(last, now), cold: 3, cpu: 400, range: { usual: 60, shortest: 10 }, offset: 0 },
   // Its cold cost: 13, and 2 for the corals' grid a view of /mer kept (web/data.ts `corauxGardes`: the data center's
-  // cache, then KV), 15 in the test.
-  { key: "web:mer", build: buildSea, every: 3 * 60, cold: 15, cpu: 110, offset: 75 },
+  // cache, then KV); and 2 for « En courbes », the buoys' series and the satellite's 30 days a view kept (web/data.ts
+  // `serieLue`, `serieMerGardee`), never asked of NOAA here: 17 in the test.
+  { key: "web:mer", build: buildSea, every: 3 * 60, cold: 17, cpu: 110, offset: 75 },
   // /sport, every 30 minutes: its view rebuilt it from some 40 sources (the leagues' sites, the Grand Raid, the live
   // scores) whenever its copy was older than FRESH_SECONDS in that data center, and a robot waited for it, 2.7 s in the
   // middle over 7 days and up to 12 s (Loki, 20/11/2026); kept here, a reader gets it at once (web/site.ts `readerOf`).

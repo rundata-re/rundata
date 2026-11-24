@@ -21,7 +21,7 @@ import { IN_FLIGHT } from "./http.js";
 import { AGENDAS } from "./providers/agenda.js";
 import { LISTED_AFTER_MIN, MAX_NEW_GRIDS } from "./providers/arome.js";
 import { REFRESH_EVERY as UV_MESURE_EVERY, REFRESH_OFFSET as UV_MESURE_OFFSET } from "./providers/uv-mesure.js";
-import { KINDS as CANDHIS_KINDS, REFRESH_EVERY as CANDHIS_EVERY, REFRESH_OFFSET as CANDHIS_OFFSET } from "./providers/candhis.js";
+import { KINDS as CANDHIS_KINDS, REFRESH_EVERY as CANDHIS_EVERY, REFRESH_OFFSET as CANDHIS_OFFSET, SERIE_OFFSET as CANDHIS_SERIE_OFFSET } from "./providers/candhis.js";
 import { IMAGE_OFFSET as CMRS_IMAGE_OFFSET, LISTE_OFFSET as CMRS_LISTE_OFFSET, REFRESH_EVERY as CMRS_EVERY } from "./providers/cmrs-carte.js";
 import { FROM_MINUTE as TRACE_FROM, QUIET_MINUTES as TRACE_EVERY } from "./providers/cmrs-trace.js";
 import { REFRESH_EVERY as AIR_EVERY, REFRESH_OFFSET as AIR_OFFSET } from "./providers/air-mesures.js";
@@ -636,6 +636,20 @@ const SCHEDULED: Entry[] = [
     from: ["src/providers/candhis.ts"],
     basis: "code",
   },
+  // Only with the Cerema's key. The series of 30 days read from KV, the state read from KV for its last measurements,
+  // the series written; getCampTR for a buoy whose series is empty or has a hole, at most once a buoy a day (one buoy
+  // measures since November 2026): one subrequest more in that run.
+  {
+    id: "candhis:serie",
+    queue: "série Candhis",
+    trigger: "planifiée",
+    what: "bouées Candhis du Cerema : la série de 30 jours de chaque bouée, pour les courbes de /mer, la dernière mesure ajoutée, getCampTR pour combler un trou une fois par jour au plus, gardée dans KV",
+    every: CANDHIS_EVERY,
+    offset: CANDHIS_SERIE_OFFSET,
+    run: { subrequests: 3, kvReads: 2, kvWrites: 1, cpuMs: 10 },
+    from: ["src/providers/candhis.ts"],
+    basis: "code",
+  },
   // Only with SolarDB's token, and while the sun is up at Moufia (about 13 h a day in December, 11 h in June; counted all
   // day): the state read from KV, a login and one read of the last 20 minutes of SolarDB, OMI's ozone (the last 4 kB of
   // its file) once a day, counted in every run, and the state written: 3 requests, 2 KV calls.
@@ -885,8 +899,10 @@ const OTHER_PAGES: Record<string, Page> = {
   "/ecoles": { subrequests: 7, cpuMs: 60, from: [], what: "la page des écoles : la carte et la liste (dans le paquet), avec la vigilance et la version de l'en-tête ; le collège de secteur cherché dans le navigateur, dans le fichier de la commune (public/carte-scolaire/), servi par Cloudflare avant le Worker : 0 Worker, 0 KV, 0 D1", basis: "code" },
   "/carte": { subrequests: 7, cpuMs: 40, from: [], what: "la carte des couches : la page seule, avec la vigilance et la version de l'en-tête", basis: "code" },
   // 23, and 5 from the code for the corals' grid (providers/coraux.ts), once a day when no data center has it: the
-  // data center's cache and KV read, NOAA's grid, both written.
-  "/mer": { subrequests: 28, cpuMs: 120, from: ["src/tools/mer.ts", "src/tools/maree.ts", "src/providers/coraux.ts"] },
+  // data center's cache and KV read, NOAA's grid, both written. And for « En courbes »: the buoys' series read from KV,
+  // and the satellite's 30 days off four beaches (providers/crw-serie.ts) once a day, four requests, the cache read and
+  // write, and its copy peeked by the build: 8 more.
+  "/mer": { subrequests: 36, cpuMs: 140, from: ["src/tools/mer.ts", "src/tools/maree.ts", "src/providers/coraux.ts", "src/providers/crw-serie.ts"] },
   "/randonnees/*": { subrequests: 23, cpuMs: 130, from: ["src/tools/sentiers.ts"], what: "une randonnée et sa trace" },
   "/sentiers/*": { subrequests: 16, cpuMs: 30, from: ["src/tools/sentiers.ts"], what: "un sentier et sa trace" },
   // Its pattern and its stops (2 reads of D1), the network's real-time feed while the bus is on the road, the header's
@@ -980,8 +996,9 @@ const TOOLS: Record<string, { subrequests: number; cpuMs: number; what?: string;
   // ISLAND_READS, one write per cell asked and per run, so 4 a day per cell at most.
   prevision_meteo: { subrequests: 20, cpuMs: 100, file: "prevision", what: "l'outil prevision_meteo\u00a0: la prévision de chaque maille d'Open-Meteo gardée dans KV jusqu'au calcul suivant du modèle (toutes les 6 h), une écriture par maille demandée et par calcul, 4 par jour et par maille au plus" },
   qualite_eau: { subrequests: 15, cpuMs: 90, file: "eau" },
-  // 14, and 5 from the code for the corals' grid, as /mer.
-  temperature_mer: { subrequests: 19, cpuMs: 50, file: "mer" },
+  // 14, and 5 from the code for the corals' grid, as /mer; 7 for the figures of 30 days: the buoys' series from KV, and
+  // the satellite's 30 days off four beaches once a day (four requests, the cache read and write).
+  temperature_mer: { subrequests: 26, cpuMs: 60, file: "mer" },
   // A trip asked (« A vers B »): its journeys, as /bus/itineraire, three reads of the database and five when the next three
   // hours have none, at most ROWS_MAX (tools/itineraire.ts) rows, then, when none is found, the departures at its start.
   transports: { subrequests: 13, cpuMs: 80, file: "transports", d1: { d1Calls: 7, d1RowsRead: 2840 }, basis: "code" },

@@ -5,6 +5,8 @@ import * as acspo from "../providers/acspo.js";
 import * as candhis from "../providers/candhis.js";
 import * as coraux from "../providers/coraux.js";
 import * as cetaces from "./cetaces.js";
+import * as crwSerie from "../providers/crw-serie.js";
+import { courbes, historiqueBlock } from "./mer-courbes.js";
 import * as houle from "../providers/houle.js";
 import * as modis from "../providers/modis.js";
 import * as viirs from "../providers/viirs.js";
@@ -76,6 +78,33 @@ export async function boueesLues(cache: Cache, now: Date, near?: { lon: number; 
     return [];
   }
 }
+
+/** The buoys' series of 30 days the scheduled event keeps; null without the key, or when KV holds none. */
+export async function serieLue(cache: Cache): Promise<candhis.Serie | null> {
+  if (!candhis.configured()) return null;
+  try {
+    return (await candhis.serie(cache)).value;
+  } catch (err) {
+    console.error(`source ${candhis.SOURCE.id} : série indisponible:`, why(err));
+    return null;
+  }
+}
+
+/** The satellite's 30 days off four beaches (providers/crw-serie.ts); null when NOAA's mirror does not answer. */
+async function serieSatellite(cache: Cache): Promise<crwSerie.SerieMer | null> {
+  try {
+    return (await crwSerie.serieMer(cache)).value;
+  } catch (err) {
+    console.error(`source ${crwSerie.SOURCE.id} : série indisponible:`, why(err));
+    return null;
+  }
+}
+
+/** The forecast at a point of the sea, for the curves (tools/mer-courbes.ts). */
+export const previsionAu = (w: houle.Waves, now: Date) => (lon: number, lat: number) => {
+  const at = wavesAt(w, lon, lat, now);
+  return at && { steps: at.steps, model: at.model, modele: houle.modelOf(at.point) };
+};
 
 /** One buoy's measurement as an answer says it: always labelled a measurement, never merged into the forecast. */
 export function releveBlock(r: candhis.Releve, near?: { lon: number; lat: number }) {
@@ -540,8 +569,9 @@ export async function corauxBlock(cache: Cache, near?: { lon: number; lat: numbe
 /** `withCoraux`: false for a place's page (web/data.ts), whose copy shows no corals and does not pay for their read. */
 export async function temperatureMer(cache: Cache, lieu: string | undefined, now = new Date(), withCoraux = true) {
   if (!lieu?.trim()) {
-    const [gs, ps, w, reef, buoys] = await Promise.all([copiedGrids(cache, now), copiedPasses(cache, now), wavesNow(cache), withCoraux ? corauxBlock(cache) : null, boueesLues(cache, now)]);
+    const [gs, ps, w, reef, buoys, serie, crw] = await Promise.all([copiedGrids(cache, now), copiedPasses(cache, now), wavesNow(cache), withCoraux ? corauxBlock(cache) : null, boueesLues(cache, now), withCoraux ? serieLue(cache) : null, withCoraux ? serieSatellite(cache) : null]);
     const t = gs.length || ps ? tourOf(gs, now, TOUR, ps) : null;
+    const histo = historiqueBlock(courbes(serie, crw, undefined, now));
     if (!t && !w && !reef && !buoys.length) return unavailable();
     const measuredWaves = buoys.map((b) => releveBlock(b));
     const at = TOUR.map((n) => resolvePlace(n)!.lieu).map((p) => ({ p, v: w ? wavesAt(w.value, p.lon, p.lat, now) : null }));
@@ -569,10 +599,12 @@ export async function temperatureMer(cache: Cache, lieu: string | undefined, now
       avertissements: [...(t ? CAVEATS : []), ...(t?.used.flatMap(staleWarning) ?? []), ...(w ? WAVE_WARNINGS : [])],
       risque_requin: requin.requinBlock(now),
       ...(reef ? { coraux: reef } : {}),
+      // The figures of « En courbes » on /mer, the same.
+      ...(histo ? { sur_30_jours: histo } : {}),
       // The rules of approach of whales and dolphins, from the decrees in the code: nothing read.
       cetaces: cetaces.cetacesBlock(now),
       couverture: coverage(),
-      sources: credits([...(t?.used.map((g) => g.source) ?? []), ...(measuredWaves.length ? [candhis.SOURCE] : []), ...models.map((m) => m.source), requin.SOURCE, ...(reef ? [coraux.SOURCE] : []), cetaces.SOURCE]),
+      sources: credits([...(t?.used.map((g) => g.source) ?? []), ...(measuredWaves.length || histo?.bouees ? [candhis.SOURCE] : []), ...models.map((m) => m.source), requin.SOURCE, ...(reef || histo?.satellite ? [coraux.SOURCE] : []), cetaces.SOURCE]),
       // The oldest day measured among the points, not when rundata.re read the grids: what the answer's freshness says.
       jour_mesure: points.flatMap((p) => ("jour_mesure" in p && p.jour_mesure ? [p.jour_mesure] : [])).sort()[0],
     });
@@ -580,13 +612,14 @@ export async function temperatureMer(cache: Cache, lieu: string | undefined, now
 
   const r = resolvePlace(lieu);
   if (!r) return notFound(lieu);
-  const [gs, ps, w, reef, buoys] = await Promise.all([copiedGrids(cache, now), copiedPasses(cache, now), wavesNow(cache), withCoraux ? corauxBlock(cache, r.lieu) : null, boueesLues(cache, now, r.lieu)]);
+  const [gs, ps, w, reef, buoys, serie, crw] = await Promise.all([copiedGrids(cache, now), copiedPasses(cache, now), wavesNow(cache), withCoraux ? corauxBlock(cache, r.lieu) : null, boueesLues(cache, now, r.lieu), withCoraux ? serieLue(cache) : null, withCoraux ? serieSatellite(cache) : null]);
   // The nearest buoy that measured, within BOUEE_MAX_KM: the sea off this place, said with its distance.
   const near = buoys.find((b) => distanceKm(r.lieu.lon, r.lieu.lat, b.lon, b.lat) <= BOUEE_MAX_KM);
   const buoy = near ? releveBlock(near, r.lieu) : undefined;
   if (!gs.length && !ps && !w && !buoy) return unavailable();
   const m = gs.length || ps ? reading(r.lieu, gs, now, ps) : null;
   const v = w ? waveBlock(w, r.lieu, now) : null;
+  const histo = m || v ? historiqueBlock(courbes(serie, crw, undefined, now), r.lieu, BOUEE_MAX_KM, distanceKm) : undefined;
   const temperature = m
     ? `Eau de mer près ${de(r.lieu.nom)}\u00a0: ${m.mesure.temperature_eau}, mesurée par satellite ` +
       `(${measuredOn(m.mesure, now)}${"satellite" in m.mesure ? `, ${m.mesure.satellite}` : ""}, point de mesure à ${fr(m.mesure.distance_km)} km).`
@@ -619,10 +652,12 @@ export async function temperatureMer(cache: Cache, lieu: string | undefined, now
     ...(m || v ? { risque_requin: requin.requinBlock(now, r.lieu) } : {}),
     // On the coast only too: the three points of the island, the reef's first.
     ...((m || v) && reef ? { coraux: reef } : {}),
+    // On the coast only too: the figures of « En courbes » on /mer near the place.
+    ...(histo ? { sur_30_jours: histo } : {}),
     // On the coast only too: the rules of approach of whales and dolphins.
     ...(m || v ? { cetaces: cetaces.cetacesBlock(now) } : {}),
     couverture: coverage(),
-    sources: credits([...(m ? [m.grid.source] : gs.map((g) => g.source)), ...(buoy ? [candhis.SOURCE] : []), ...(v ? [v.model.source] : []), ...(m || v ? [requin.SOURCE] : []), ...((m || v) && reef ? [coraux.SOURCE] : []), ...(m || v ? [cetaces.SOURCE] : [])]),
+    sources: credits([...(m ? [m.grid.source] : gs.map((g) => g.source)), ...(buoy ? [candhis.SOURCE] : []), ...(v ? [v.model.source] : []), ...(m || v ? [requin.SOURCE] : []), ...((m || v) && reef || histo?.satellite ? [coraux.SOURCE] : []), ...(m || v ? [cetaces.SOURCE] : []), ...(histo?.bouees && !buoy ? [candhis.SOURCE] : [])]),
   });
 }
 

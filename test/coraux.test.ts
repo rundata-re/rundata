@@ -108,7 +108,8 @@ describe("coraux", () => {
     });
     expect(r.sources.map((s: { source: string }) => s.source)).toContain(coraux.SOURCE.nom);
     await temperatureMer(cache, undefined, NOW);
-    expect(asked.filter((u) => u.includes("dhw_5km"))).toHaveLength(1);
+    // The corals' own request, with CRW_HOTSPOT: the curves' 30 days (providers/crw-serie.ts) ask the same dataset apart.
+    expect(asked.filter((u) => u.includes("dhw_5km") && u.includes("CRW_HOTSPOT"))).toHaveLength(1);
   });
 
   it("gives a place's answer the point nearest to it only", async () => {
@@ -182,6 +183,7 @@ describe("coraux", () => {
     const view = async () => (await handle(new Request("https://rundata.re/mer", { headers: { accept: "text/html" } }), cache)).text();
     expect(await view()).toContain("Coraux : risque de blanchissement");
     expect(await view()).toContain("Récif de Saint-Gilles et l&#39;Hermitage");
-    expect(asked.filter((u) => u.includes("dhw_5km"))).toHaveLength(1);
+    // The corals' own request, with CRW_HOTSPOT: the curves' 30 days (providers/crw-serie.ts) ask the same dataset apart.
+    expect(asked.filter((u) => u.includes("dhw_5km") && u.includes("CRW_HOTSPOT"))).toHaveLength(1);
   });
 });

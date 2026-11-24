@@ -63,6 +63,9 @@ export const COLLECTEURS: Collecteur[] = [
   // Every hour, at 35 past: the public procurement notices open at La Réunion (BOAMP), the full text of the new ones
   // only, kept when they changed.
   collecteur<marchesPublics.Copie>({ nom: "marchés publics", due: marchesPublics.refreshDue, cle: marchesPublics.KV_KEY, ttl: marchesPublics.KV_TTL_SECONDS, collect: marchesPublics.collect }),
+  // Every 30 minutes, at 15 and 45 past: the buoys' last measurements added to their series of 30 days, from the state
+  // above; getCampTR for a buoy whose series is empty or has a hole, once a day at most. Nothing without the key.
+  collecteur<candhis.Serie>({ nom: "série Candhis", due: (now) => candhis.configured() && candhis.serieDue(now), cle: candhis.SERIE_KEY, ttl: candhis.SERIE_TTL_SECONDS, collect: (avant, ecrire, now) => candhis.completer(avant, ecrire, now) }),
 ];
 
 /** One pass of a collector: its copy read, collected from, written back. Run inside `counted`, which counts both. */

@@ -168,7 +168,7 @@ describe("events as schema.org Events", () => {
       author: { "@type": "Organization", name: "OTI NORD" },
       creator: { "@type": "Organization", name: "OTI NORD" },
       creditText: "OTI NORD",
-      license: "https://www.data.gouv.fr/pages/legal/licences/etalab-2.0/",
+      license: "https://www.data.gouv.fr/pages/legal/licences/etalab-2-0",
     });
     // The organiser the site names, even on a town hall's agenda; never the town hall in its place.
     expect(named.organizer).toEqual({ "@type": "Organization", name: "Association Lèv la tèt" });

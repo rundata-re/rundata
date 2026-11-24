@@ -45,7 +45,7 @@ export const SOURCE: SourceInfo = {
   organisme: "Ministère de l'Éducation nationale",
   licence: "Licence Ouverte Etalab 2.0",
   attribution: "Annuaire de l'éducation (ministère de l'Éducation nationale)",
-  url: "https://data.education.gouv.fr/explore/dataset/fr-en-annuaire-education/",
+  url: "https://data.education.gouv.fr/explore/assets/fr-en-annuaire-education/",
 };
 
 /** Each kind's words, one and several, in the page's order. */

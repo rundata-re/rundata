@@ -14,7 +14,7 @@ export const SOURCE: SourceInfo = {
   organisme: "Territoire de l'Ouest (TCO)",
   licence: "Licence Ouverte Etalab",
   attribution: "Territoire de l'Ouest (TCO)",
-  url: "https://data.tco.re/explore/dataset/meteo-des-decheteries/",
+  url: "https://data.tco.re/explore/assets/meteo-des-decheteries/",
 };
 
 const URL = "https://data.tco.re/api/explore/v2.1/catalog/datasets/meteo-des-decheteries/records?limit=100";

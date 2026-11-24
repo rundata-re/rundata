@@ -47,7 +47,7 @@ describe("the sources of a place's weather page", () => {
     // What each note says of the data itself stays where it was.
     expect(main).toMatch(/<p class="note">Mis à jour le 24\/10 à 09:42 \([^)]*\)\.<\/p>/);
     expect(main).toContain("pas celle du lagon ni du bord.");
-    expect(main).toContain(`seule compte la vigilance de <a href="https://meteofrance.re/">Météo-France La Réunion</a>.</p></section>`);
+    expect(main).toContain(`seule compte la vigilance de <a href="https://meteofrance.re/fr">Météo-France La Réunion</a>.</p></section>`);
     const end = html.slice(html.indexOf('<div class="wrap fin-sources"'), html.indexOf("<footer"));
     expect(end.match(/<p class="sources">Sources : /g)).toHaveLength(1);
     const text = said(end);

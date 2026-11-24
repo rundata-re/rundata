@@ -25,7 +25,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // A headline « Saint-Denis : … » goes to the communes it names; « Bois de Nèfles » to the commune the text names.
   // « Mobilisation » no party, no football play-offs, and in the headline only unless the lead says a strike (22/11/2026).
   // A medium not read said « rundata.re ne sait pas ce qu'ils annoncent », never « nous » (23/11/2026).
-  actualites: 25,
+  // Freedom's link at its own address, https://freedom.fr/, with the feed's revision 11 (24/11/2026).
+  actualites: 26,
   // La veille demandée aux agendas WordPress : un spectacle de ce soir revient (#795).
   // L'agenda de L'Étang-Salé repris avec l'accord écrit de la mairie du 06/11/2026.
   // Le week-end du connecteur compté comme sa page (vendredi dès 17:00, lundi férié), ce qui y commence d'abord.
@@ -239,7 +240,8 @@ export const SOURCE_REVISION: Readonly<Record<string, number>> = {
   // Its subjects narrowed (sujetsOf): « vigilance » with its colour, « annulé » or « reporté » alone no culture, « AVC » health.
   // « Enquête publique » and « tribunal administratif » no crimes (sujetsOf).
   // « Mobilisation » no « Rassemblement national », no football's « barrages », and alone in the headline only (sujetsOf).
-  "actualites:fil": 10,
+  // Freedom's home page at its own address, https://freedom.fr/ (accueils-medias.ts), no longer through a redirection.
+  "actualites:fil": 11,
   // Every agenda's first sentence whole or none, never cut with « … » (lead()): the agendas without a key of their own
   // (CIREST, the halls' agenda:<hall> included), and the seven below raised with it.
   agenda: 1,

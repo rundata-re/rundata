@@ -51,7 +51,7 @@ describe("/valeurs, what rundata.re stands for", () => {
 
   it("links each claim to where the site or its source shows it", async () => {
     const page = await text("/valeurs");
-    for (const href of [GITHUB, "/conditions#reutiliser", "/mcp", "/sites-sans-reponse", "/ouvrir-ses-donnees", "https://about.fb.com/news/2022/03/new-tools-for-facebook-group-admins/", "https://www.socialmediatoday.com/news/facebook-pages-get-charged-for-link-posts/830743/", "https://developers.facebook.com/docs/graph-api/changelog/version19.0/"]) {
+    for (const href of [GITHUB, "/conditions#reutiliser", "/mcp", "/sites-sans-reponse", "/ouvrir-ses-donnees", "https://about.fb.com/news/2022/03/new-tools-for-facebook-group-admins/", "https://www.socialmediatoday.com/news/facebook-pages-get-charged-for-link-posts/830743/", "https://developers.facebook.com/documentation/development/graph-api/changelog/version19.0"]) {
       expect(page).toContain(`href="${href}"`);
     }
     expect(await text("/conditions")).toContain('<h2 id="reutiliser">Réutiliser les données</h2>');

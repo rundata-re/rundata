@@ -24,7 +24,7 @@ export const SOURCE: SourceInfo = {
   organisme: "DILA, Bulletin officiel des annonces des marchés publics",
   licence: "Licence Ouverte",
   attribution: "BOAMP (DILA)",
-  url: "https://www.boamp.fr/",
+  url: "https://www.boamp.fr/pages/entreprise-accueil/",
 };
 
 const API = "https://boamp-datadila.opendatasoft.com/api/explore/v2.1/catalog/datasets/boamp/exports/json";

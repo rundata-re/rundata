@@ -79,7 +79,7 @@ describe("the part « Collèges et lycées : profil social et résultats » of /
     expect(html).not.toMatch(/ data-|meilleur|palmarès des|moyenne de l'île|médiane|mention|class="q-|vg\d/i);
     const links = [...html.matchAll(/href="([^"]+)"/g)].map((m) => m[1]!);
     expect(links).toHaveLength(6);
-    for (const l of links) expect(l).toMatch(/^https:\/\/(?:data\.education\.gouv\.fr\/explore\/dataset\/|doi\.org\/10\.48464\/ni-23-16$)/);
+    for (const l of links) expect(l).toMatch(/^https:\/\/(?:data\.education\.gouv\.fr\/explore\/assets\/|doi\.org\/10\.48464\/ni-23-16$)/);
     expect(html).not.toContain("www.education.gouv.fr");
   });
 });

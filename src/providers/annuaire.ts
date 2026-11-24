@@ -14,7 +14,7 @@ export const SOURCE: SourceInfo = {
   organisme: "Direction de l'information légale et administrative (DILA)",
   licence: "Licence Ouverte Etalab 2.0",
   attribution: "DILA, service-public.fr",
-  url: "https://lannuaire.service-public.fr",
+  url: "https://lannuaire.service-public.gouv.fr/",
 };
 
 const URL = "https://api-lannuaire.service-public.fr/api/explore/v2.1/catalog/datasets/api-lannuaire-administration/records";

@@ -51,7 +51,7 @@ export const SOURCE: SourceInfo = {
   organisme: "Caisse nationale de l'Assurance Maladie",
   licence: "Licence Ouverte Etalab 2.0",
   attribution: "Annuaire santé Ameli (Assurance Maladie)",
-  url: "https://www.data.gouv.fr/datasets/annuaire-sante-ameli/",
+  url: "https://www.data.gouv.fr/datasets/annuaire-sante-ameli",
 };
 
 /** Where to find a doctor's name, address and hours: the directory itself; its general practitioners of a postcode. */

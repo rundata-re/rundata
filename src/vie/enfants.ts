@@ -62,7 +62,7 @@ export const SOURCES: Record<Lieu["source"], SourceInfo> = {
     organisme: "Ministère des Sports",
     licence: "Licence Ouverte Etalab 2.0",
     attribution: "Data ES (ministère des Sports)",
-    url: "https://equipements.sports.gouv.fr/",
+    url: "https://equipements.sports.gouv.fr/pages/accueil/",
   },
   basilic: {
     id: "basilic",

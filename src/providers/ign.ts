@@ -13,7 +13,7 @@ export const ALTIMETRIE: SourceInfo = {
   organisme: "IGN",
   licence: "Licence Ouverte Etalab 2.0",
   attribution: "IGN, RGE ALTI",
-  url: "https://geoservices.ign.fr/documentation/services/services-geoplateforme/altimetrie",
+  url: "https://cartes.gouv.fr/aide/fr/guides-utilisateur/utiliser-les-services-de-la-geoplateforme/calcul-altimetrique/",
 };
 
 export const BDTOPO: SourceInfo = {
@@ -22,7 +22,7 @@ export const BDTOPO: SourceInfo = {
   organisme: "IGN",
   licence: "Licence Ouverte Etalab 2.0",
   attribution: "IGN, BD TOPO",
-  url: "https://geoservices.ign.fr/bdtopo",
+  url: "https://cartes.gouv.fr/rechercher-une-donnee/dataset/IGNF_BD-TOPO",
 };
 
 export const PHOTOS: SourceInfo = {

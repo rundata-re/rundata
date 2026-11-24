@@ -189,8 +189,9 @@ describe("MétéoR-OI's stations", () => {
     // series and the satellite's 30 days a view kept, read from cold, never asked of NOAA there, 24/11/2026); 482 with
     // Le Tampon's water notices (one request in web:coupures, 24/11/2026); 483 with the CIREST's « Événements à venir »
     // (one request every six hours, the only events of Sainte-Rose and Salazie, 24/11/2026); 485 with Saint-Joseph's and
-    // Les Avirons's water notices (two requests in web:coupures, 24/11/2026).
-    expect(worstMain().subrequests).toBeLessThanOrEqual(485);
+    // Les Avirons's water notices (two requests in web:coupures, 24/11/2026); 486 with the alerts' state written at each
+    // new bulletin or /volcan copy, at most once a run (alertes-etat.ts, 24/11/2026).
+    expect(worstMain().subrequests).toBeLessThanOrEqual(486);
   });
 
   it("has its own cron, never the minute of the event of every 5 minutes", () => {

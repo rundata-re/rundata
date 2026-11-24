@@ -52,7 +52,7 @@ describe("/appli, the Android app's trial version", () => {
     expect(page).toContain("<h2>Installer en 4 étapes</h2>");
     expect(page).toContain("Si Play Protect propose d'analyser l'appli, acceptez : elle n'est pas encore sur le Play Store.");
     expect(page).toContain("<strong>Sur iPhone :</strong> pas encore.");
-    expect(page).toContain("Version 0.3.3 · empreinte SHA-256 du fichier : <code>978da92f78ce56877c7b246b9ab3ee2fc77b4fa1b0d1e532b366377d2d6ac073</code>");
+    expect(page).toContain("Version 0.3.4 · empreinte SHA-256 du fichier : <code>8310dcbf2aa3d9270b605a1b0a333bd8853f4a85e603ba13ad196cdeecddd121</code>");
     // Neither the install block of the site on the home screen nor the sharing: this page is for the people it is sent to.
     expect(page).not.toContain('id="inst"');
     expect(page).not.toContain('<aside class="share wrap"');
@@ -69,7 +69,7 @@ describe("/appli, the Android app's trial version", () => {
   it("leads the short address of the file to the pre-release's asset", async () => {
     const res = await handle(get("/appli/rundata-re.apk"), new Cache());
     expect(res.status).toBe(302);
-    expect(res.headers.get("location")).toBe("https://github.com/rundata-re/rundata/releases/download/android-v0.3.3/rundata-re-0.3.3.apk");
+    expect(res.headers.get("location")).toBe("https://github.com/rundata-re/rundata/releases/download/android-v0.3.4/rundata-re-0.3.4.apk");
     expect(res.headers.get("x-robots-tag")).toBe("noindex");
   });
 

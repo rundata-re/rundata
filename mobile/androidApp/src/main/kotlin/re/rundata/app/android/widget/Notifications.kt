@@ -90,16 +90,26 @@ object Notifications {
         return Decision(nouvelles.map { (k, _) -> k to parCle.getValue(k) }, retirees, dites - retirees + nouvelles.map { it.first })
     }
 
+    /** Les notifications de l'appli peuvent s'afficher : permises (Android 13 et plus) et pas coupées dans les réglages. */
+    fun permises(context: Context): Boolean =
+        (Build.VERSION.SDK_INT < 33 || ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) &&
+            NotificationManagerCompat.from(context).areNotificationsEnabled()
+
     /** Après une mise à jour : `lues`, les alertes de chaque commune lue, avec la zone de sa vigilance. */
     fun signaler(context: Context, lues: List<Donnees>) {
         val gestion = NotificationManagerCompat.from(context)
-        val permise = (Build.VERSION.SDK_INT < 33 || ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) &&
-            gestion.areNotificationsEnabled()
+        val permise = permises(context)
         if (permise) creerCanaux(context)
         val (nouvelles, retirees, dites) = decider(lues, prefs(context).getStringSet("dites", emptySet()).orEmpty()) { a ->
             permise && canal(a)?.let { c -> gestion.getNotificationChannelCompat(c)?.importance != NotificationManagerCompat.IMPORTANCE_NONE } == true
         }
-        if (permise) for ((k, ad) in nouvelles) gestion.notify(k.hashCode(), construire(context, ad.first, ad.second))
+        // La permission peut être retirée entre `permises` et l'envoi : l'alerte n'est alors pas montrée, sans planter.
+        if (permise) for ((k, ad) in nouvelles) {
+            try {
+                gestion.notify(k.hashCode(), construire(context, ad.first, ad.second))
+            } catch (_: SecurityException) {
+            }
+        }
         for (k in retirees) gestion.cancel(k.hashCode())
         prefs(context).edit { putStringSet("dites", dites) }
     }
@@ -109,8 +119,7 @@ object Notifications {
             context, a.cle.hashCode(), Intent(Intent.ACTION_VIEW, Uri.parse(a.page)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
-        val ou = if (a.cyclonique || a.systeme) "La Réunion" else d.zone?.let { "zone $it" } ?: d.commune
-        val texte = listOfNotNull(ou, heureAlerte(a)).joinToString(" · ") + (a.detail?.let { "\n$it" } ?: "")
+        val texte = texteNotification(a, d.zone, d.commune)
         return NotificationCompat.Builder(context, canal(a)!!)
             .setSmallIcon(R.drawable.ic_alerte)
             .setContentTitle(a.texte)
@@ -124,4 +133,15 @@ object Notifications {
             .setOnlyAlertOnce(true)
             .build()
     }
+}
+
+/**
+ * Le texte sous le titre d'une notification. Un système suivi par le CMRS sans alerte dit d'abord qu'il n'y a pas
+ * d'alerte (les mots de la source), puis l'heure de l'avis : jusqu'à 0.3.3, « La Réunion · avis du CMRS… » le plaçait sur
+ * l'île. Une alerte cyclonique vaut pour l'île, une vigilance pour sa zone.
+ */
+fun texteNotification(a: Alerte, zone: String?, commune: String): String {
+    if (a.systeme) return listOfNotNull(a.detail, heureAlerte(a)).joinToString(" · ")
+    val ou = if (a.cyclonique) "La Réunion" else zone?.let { "zone $it" } ?: commune
+    return listOfNotNull(ou, heureAlerte(a)).joinToString(" · ") + (a.detail?.let { "\n$it" } ?: "")
 }

@@ -44,6 +44,8 @@ class Modele(
     private val temps: TimeSource = TimeSource.Monotonic,
     /** « 24/11 09:12 », heure de La Réunion : l'heure de l'échec, dite avec lui. */
     private val horloge: () -> String? = { null },
+    /** Le téléphone a un réseau (Android : ConnectivityManager) ; faux, l'échec le dit au lieu d'accuser rundata.re. */
+    private val reseau: () -> Boolean = { true },
 ) {
     /** La dernière journée lue de la commune : celle gardée sur le téléphone au lancement, montrée hors ligne. */
     private var derniere: Journee? = communeDe(reglages.commune)?.let(::gardee)
@@ -58,14 +60,33 @@ class Modele(
     }
 
     fun choisir(commune: Commune) {
+        avantChoix = null
         reglages.commune = commune.slug
         if (derniere?.commune != commune) derniere = gardee(commune)
         lire(commune)
     }
 
+    /** L'écran d'avant le choix rouvert, rendu par Retour (annulerChoix). */
+    private var avantChoix: Etat? = null
+
     fun changerDeCommune() {
+        val avant = _etat.value
+        if (avant !is Etat.Choix) avantChoix = avant
         lecture?.cancel()
         _etat.value = Etat.Choix(communeDe(reglages.commune))
+    }
+
+    /**
+     * Retour sur le choix de la commune : l'écran d'avant revient, la commune affichée (relue si sa lecture avait été
+     * interrompue par le choix). False quand il n'y a rien à rendre (aucune commune encore choisie) : Retour ferme
+     * alors l'appli, comme sur tout premier écran.
+     */
+    fun annulerChoix(): Boolean {
+        if (_etat.value !is Etat.Choix) return false
+        val avant = avantChoix ?: return false
+        avantChoix = null
+        if (avant is Etat.Chargement) lire(avant.commune) else _etat.value = avant
+        return true
     }
 
     fun rafraichir() {
@@ -86,6 +107,8 @@ class Modele(
     companion object {
         /** Le site relit ses sources toutes les quelques minutes : relire plus souvent ne montrerait rien de neuf. */
         val RELIRE_APRES = 10.minutes
+
+        const val SANS_RESEAU = "Ce téléphone n'est pas connecté à Internet"
     }
 
     private fun lire(commune: Commune) {
@@ -99,7 +122,8 @@ class Modele(
                 reglages.garderJournee(commune.slug, Gardee.enJson(j))
                 Etat.Prete(j)
             } catch (e: McpErreur) {
-                Etat.Erreur(commune, e.message ?: "rundata.re ne répond pas", derniere, horloge())
+                // Sans réseau, c'est le téléphone qui ne peut pas lire, pas rundata.re qui ne répond pas (mode avion, 24/11/2026).
+                Etat.Erreur(commune, if (!reseau()) SANS_RESEAU else e.message ?: "rundata.re ne répond pas", derniere, horloge())
             }
         }
     }

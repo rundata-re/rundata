@@ -77,7 +77,7 @@ data class Source(val nom: String, val licence: String?)
 
 /** La température de la mer au large de la commune, mesurée par satellite (le jour de la mesure). */
 @Serializable
-data class Mer(val temperature: String, val auLargeDe: String?)
+data class Mer(val temperature: String, val auLargeDe: String?, /** « 21/11 » : le jour du passage du satellite. */ val jour: String? = null)
 
 /**
  * Ce qui reste du jour d'après la PRÉVISION de modèle du résumé, jamais une mesure : « 24,1 °C », « 25,2 °C », « pas de
@@ -207,7 +207,11 @@ fun journeeDe(commune: Commune, resume: JsonObject, meteo: JsonObject?): Journee
         sources = sources,
         lueA = (resume["fraicheur"] as? JsonObject)?.texte("lue_a") ?: meteo?.let { (it["fraicheur"] as? JsonObject)?.texte("lue_a") },
         mer = (resume["mer"] as? JsonObject)?.let { m ->
-            m.texte("temperature_eau")?.let { Mer(it, (m["au_large_de"] as? JsonArray)?.firstOrNull()?.let { (it as? JsonPrimitive)?.contentOrNull }) }
+            m.texte("temperature_eau")?.let {
+                // « 2026-11-21 » → « 21/11 » : la mer se dit avec le jour de sa mesure, comme l'air avec son heure.
+                val jour = m.texte("jour_mesure")?.let { d -> Regex("^\\d{4}-(\\d{2})-(\\d{2})").find(d)?.groupValues?.let { g -> "${g[2]}/${g[1]}" } }
+                Mer(it, (m["au_large_de"] as? JsonArray)?.firstOrNull()?.let { (it as? JsonPrimitive)?.contentOrNull }, jour)
+            }
         },
         prevision = ((resume["meteo"] as? JsonObject)?.get("prevision") as? JsonObject)?.get("aujourd_hui")?.let { it as? JsonObject }?.let {
             Prevision(it.texte("temperature_min"), it.texte("temperature_max"), it.texte("pluie"))
@@ -263,6 +267,33 @@ fun avisEnPremier(avis: List<AvisEau>, mois: Int): AvisEau? {
         a to (((annee * 13 + m) * 32 + g[1].toInt()) * 24 + g[3].toInt()) * 60 + g[4].toInt()
     }.minByOrNull { it.second }?.first
 }
+
+/**
+ * Les avis d'eau dans l'ordre où l'écran les dit : l'eau à ne pas boire, les coupures en cours, puis celles à venir de
+ * la plus proche à la plus lointaine (d'après leur début), les avis sans date, et les coupures terminées en dernier.
+ * Les distributeurs les publient du plus récent au plus ancien : l'écran du 24/11/2026 disait le 26/11 avant la coupure
+ * du soir même. `mois` : le mois d'aujourd'hui, pour placer après décembre une date de janvier.
+ */
+fun avisDansLOrdre(avis: List<AvisEau>, mois: Int): List<AvisEau> {
+    val date = Regex("(\\d{1,2})/(\\d{1,2})\\D+(\\d{1,2}):(\\d{2})")
+    fun debut(a: AvisEau): Int? {
+        val g = a.de?.let { date.find(it) }?.groupValues ?: return null
+        val m = g[2].toInt()
+        val annee = if (m < mois - 6) 1 else 0
+        return (((annee * 13 + m) * 32 + g[1].toInt()) * 24 + g[3].toInt()) * 60 + g[4].toInt()
+    }
+    fun rang(a: AvisEau) = when {
+        a.nePasBoire -> 0
+        a.etat == "en cours" -> 1
+        a.etat == "terminée" -> 4
+        debut(a) != null -> 2
+        else -> 3
+    }
+    return avis.sortedWith(compareBy<AvisEau>({ rang(it) }, { debut(it) ?: 0 }))
+}
+
+/** Le mois de « 24/11 06:51 » (l'heure de lecture), ou 0 quand elle manque. */
+fun moisDe(lueA: String?): Int = lueA?.let { Regex("^\\d{1,2}/(\\d{1,2})").find(it)?.groupValues?.get(1)?.toIntOrNull() } ?: 0
 
 internal fun mesureDuResume(resume: JsonObject): Mesure? {
     val m = (resume["meteo"] as? JsonObject)?.get("mesure") as? JsonObject ?: return null

@@ -305,7 +305,7 @@ private fun ColumnScope.Bandeau(commune: Commune?, d: Donnees?) {
             Spacer(GlanceModifier.width(8.dp))
             Column(GlanceModifier.defaultWeight().fillMaxHeight().clickable(ouvrir(Pages.MER)), verticalAlignment = Alignment.CenterVertically) {
                 T(d.mer, if (haut) 22.sp else 20.sp, gras = true)
-                T(if (haut) "mer, par satellite" else "mer", 11.sp, ATTENUE)
+                T(if (haut) libelleMer(d.merJour) else "mer", 11.sp, ATTENUE)
             }
         }
         Spacer(GlanceModifier.width(8.dp))

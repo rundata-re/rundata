@@ -4,6 +4,8 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Les notifications d'alerte (Android 13 et plus : demandée à l'ouverture de l'appli) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Savoir si le téléphone a un réseau, pour dire « pas de réseau » plutôt que « rundata.re ne répond pas ». -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
         android:name=".android.RundataApp"

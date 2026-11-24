@@ -37,4 +37,12 @@ class PermissionEtIleTest {
         assertEquals(setOf("île|${cyclone.cle}", "île|${systeme.cle}", "Sud|${orange.cle}"), d.nouvelles.map { it.first }.toSet())
         assertEquals(3, d.nouvelles.size)
     }
+
+    /** Un système suivi sans alerte : la notification dit qu'il n'y a pas d'alerte, et ne le place pas sur l'île. */
+    @Test
+    fun laNotificationDUnSystemeDitQuIlNYAPasDAlerte() {
+        val suivi = systeme.copy(detail = "Pas d'alerte cyclonique en cours")
+        kotlin.test.assertEquals("Pas d'alerte cyclonique en cours · avis du CMRS du 23/11 10:00", texteNotification(suivi, "Sud", "Le Tampon"))
+        kotlin.test.assertEquals("avis du CMRS du 23/11 10:00", texteNotification(systeme, "Sud", "Le Tampon"))
+    }
 }

@@ -27,7 +27,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.TextUnit
@@ -37,12 +41,28 @@ import kotlin.math.roundToLong
 
 /** Les mots de l'écran, repris du site. */
 object Mots {
+    /** L'adresse écrite dans « Consulter le site officiel de Météo-France : https://… », ou null. */
+    fun adresseDe(texte: String): String? = Regex("https://\\S+").find(texte)?.value?.trimEnd('.', ',', ';', ')')
+
     /** « À 09:12, rundata.re ne répond pas » : l'échec avec son heure, quand elle est connue. */
     fun echec(message: String, a: String?): String = a?.let { "À ${Quand.heure(it)}, $message" } ?: message
+
+    /**
+     * Le texte de l'échec, sous l'en-tête. Sans Internet (mode avion, Wi-Fi sans Internet) : « Ce téléphone n'est pas
+     * connecté à Internet : dernières données de 10:30 », l'heure de la journée encore montrée ; sinon l'échec avec son
+     * heure, puis celle de la dernière lecture. `a` : l'heure de l'échec ; `lueA` : celle de la journée montrée.
+     */
+    fun erreur(message: String, a: String?, lueA: String?): String =
+        if (message == Modele.SANS_RESEAU) message + (lueA?.let { "\u00a0: dernières données ${Quand.du(it, a)}." } ?: ".")
+        else echec(message, a) + (lueA?.let { ". Dernière lecture\u00a0: $it, $HEURE." } ?: ".")
 
     const val TITRE = "rundata.re"
     const val SOUS_TITRE = "La Réunion en direct, d'après les données publiques."
     const val CHOISIR = "Choisir une commune"
+    /** Ce que TalkBack dit de la commune déjà choisie, dans la liste. */
+    const val CHOISIE = "commune choisie"
+    const val NOTIFICATIONS_COUPEES = "Notifications coupées\u00a0: ce téléphone ne vous préviendra pas des vigilances orange et rouge ni des alertes cycloniques."
+    const val NOTIFICATIONS_ACTIVER = "Les activer"
     const val CHANGER = "Changer de commune"
     const val CHARGEMENT = "Lecture des données…"
     const val REESSAYER = "Réessayer"
@@ -83,14 +103,18 @@ object Mots {
 
 /** L'écran principal, le même sur Android et sur l'iPhone. `ouvrir` : une page du site (un onglet du navigateur). */
 @Composable
-fun EcranPrincipal(etat: Etat, choisir: (Commune) -> Unit, changer: () -> Unit, rafraichir: () -> Unit, ouvrir: (String) -> Unit) {
+/**
+ * `notificationsCoupees` : les notifications de l'appli sont refusées après qu'on les a demandées (Android) ; l'écran le
+ * dit, et le lien ouvre leurs réglages. null : rien à dire (permises, jamais demandées, ou l'iPhone).
+ */
+fun EcranPrincipal(etat: Etat, choisir: (Commune) -> Unit, changer: () -> Unit, rafraichir: () -> Unit, ouvrir: (String) -> Unit, notificationsCoupees: (() -> Unit)? = null) {
     val c = LocalCouleurs.current
     Box(Modifier.fillMaxSize().background(c.fond).windowInsetsPadding(WindowInsets.safeDrawing)) {
         when (etat) {
             is Etat.Choix -> ListeDesCommunes(etat.actuelle, choisir)
-            is Etat.Chargement -> Carte(etat.commune, etat.precedente, Mots.CHARGEMENT, null, changer, ouvrir)
-            is Etat.Prete -> Carte(etat.journee.commune, etat.journee, null, null, changer, ouvrir)
-            is Etat.Erreur -> Carte(etat.commune, etat.precedente, null, Mots.echec(etat.message, etat.a), changer, ouvrir, rafraichir)
+            is Etat.Chargement -> Carte(etat.commune, etat.precedente, Mots.CHARGEMENT, null, changer, ouvrir, notificationsCoupees = notificationsCoupees)
+            is Etat.Prete -> Carte(etat.journee.commune, etat.journee, null, null, changer, ouvrir, notificationsCoupees = notificationsCoupees)
+            is Etat.Erreur -> Carte(etat.commune, etat.precedente, null, Mots.erreur(etat.message, etat.a, etat.precedente?.lueA), changer, ouvrir, rafraichir, notificationsCoupees)
         }
     }
 }
@@ -124,7 +148,10 @@ private fun ListeDesCommunes(actuelle: Commune?, choisir: (Commune) -> Unit, tit
         item { Texte(titre, 20.sp, gras = true, modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) }
         items(COMMUNES, key = { it.slug }) { commune ->
             Row(
-                Modifier.fillMaxWidth().clickable(role = Role.Button) { choisir(commune) }.padding(horizontal = 20.dp, vertical = 14.dp),
+                // La commune choisie est dite à TalkBack et VoiceOver, pas seulement marquée d'un point.
+                Modifier.fillMaxWidth().clickable(role = Role.Button) { choisir(commune) }
+                    .semantics { selected = commune == actuelle; if (commune == actuelle) stateDescription = Mots.CHOISIE }
+                    .padding(horizontal = 20.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Texte(commune.nom, 18.sp, gras = commune == actuelle, modifier = Modifier.weight(1f))
@@ -146,11 +173,22 @@ private fun Bloc(lien: String?, ouvrir: (String) -> Unit, fond: Color = LocalCou
     ) { contenu() }
 }
 
+/** L'en-tête met le lien « Changer de commune » sous le nom à partir de 150 % de texte (à 130 %, il tient à côté) (réglage du téléphone). */
+fun enColonne(fontScale: Float): Boolean = fontScale >= 1.5f
+
 @Composable
-private fun Carte(commune: Commune, j: Journee?, enCours: String?, erreur: String?, changer: () -> Unit, ouvrir: (String) -> Unit, rafraichir: (() -> Unit)? = null) {
+private fun Carte(commune: Commune, j: Journee?, enCours: String?, erreur: String?, changer: () -> Unit, ouvrir: (String) -> Unit, rafraichir: (() -> Unit)? = null, notificationsCoupees: (() -> Unit)? = null) {
     val c = LocalCouleurs.current
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
-        Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 12.dp, top = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+        // Avec un grand texte (réglage du téléphone), le lien passe sous le nom : à côté, il coupait le nom au milieu d'un
+        // mot (« Saint-Deni / s » à 200 %, 24/11/2026).
+        if (enColonne(LocalDensity.current.fontScale)) {
+            Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 12.dp, top = 16.dp)) {
+                Texte(Mots.TITRE, 15.sp, c.attenue)
+                Texte(commune.nom, 28.sp, gras = true)
+                Texte(Mots.CHANGER, 15.sp, c.lien, modifier = Modifier.clickable(role = Role.Button, onClick = changer).padding(vertical = 8.dp))
+            }
+        } else Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 12.dp, top = 16.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Texte(Mots.TITRE, 15.sp, c.attenue)
                 Texte(commune.nom, 28.sp, gras = true)
@@ -161,13 +199,20 @@ private fun Carte(commune: Commune, j: Journee?, enCours: String?, erreur: Strin
             if (enCours != null) Texte(enCours, 15.sp, c.attenue)
             if (erreur != null) {
                 Bloc(null, ouvrir, c.avertissementFond) {
-                    Texte(erreur + (j?.lueA?.let { ". Dernière lecture\u00a0: $it, ${Mots.HEURE}." } ?: "."), 15.sp)
+                    Texte(erreur, 15.sp)
                     if (rafraichir != null) Texte(Mots.REESSAYER, 15.sp, c.lien, gras = true, modifier = Modifier.clickable(role = Role.Button, onClick = rafraichir))
                 }
             }
             if (j == null) return@Column
             // Les alertes tout en haut, dans leur couleur officielle, avec leur heure.
             j.alertes?.liste?.forEach { BandeauAlerte(it, ouvrir) }
+            // Notifications refusées : les alertes ne sonneront pas, l'écran le dit (avant 0.3.4, rien ne le disait).
+            notificationsCoupees?.let { reglages ->
+                Column(Modifier.fillMaxWidth().clickable(role = Role.Button) { reglages() }.padding(vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Texte(Mots.NOTIFICATIONS_COUPEES, 14.sp, c.attenue)
+                    Texte(Mots.NOTIFICATIONS_ACTIVER, 14.sp, c.lien)
+                }
+            }
             // La vigilance en premier quand il y en a une, avec le lien officiel de Météo-France.
             val v = j.vigilance
             if (v != null && v.enPremier) BlocVigilance(v, ouvrir)
@@ -190,7 +235,7 @@ private fun Carte(commune: Commune, j: Journee?, enCours: String?, erreur: Strin
             if (j.coupures.isNotEmpty()) {
                 Bloc(commune.pageCoupures, ouvrir, if (j.coupures.any { it.nePasBoire }) c.avertissementFond else c.surface) {
                     Texte(Mots.COUPURES, 14.sp, c.attenue)
-                    j.coupures.forEach { a ->
+                    avisDansLOrdre(j.coupures, moisDe(j.lueA)).forEach { a ->
                         Column {
                             Texte((if (a.nePasBoire) "${Mots.NE_PAS_BOIRE}\u00a0: " else "") + a.titre, 15.sp, gras = true)
                             Mots.quand(a)?.let { Texte(it, 14.sp) }
@@ -244,6 +289,11 @@ private fun BlocVigilance(v: Vigilance, ouvrir: (String) -> Unit) {
         v.zone?.let { Texte("zone $it", 14.sp, c.attenue) }
         v.alerteCyclonique?.let { Texte(it, 16.sp, gras = true) }
         Texte(v.texte, 15.sp)
-        v.officiel?.let { Texte(it, 13.sp, c.attenue) }
+        // Le lien officiel se touche à part : la carte mène à rundata.re/vigilance, ce texte au site de Météo-France qu'il
+        // écrit (jusqu'à 0.3.3, le toucher ouvrait aussi rundata.re).
+        v.officiel?.let { texte ->
+            val url = Mots.adresseDe(texte)
+            Texte(texte, 13.sp, if (url != null) c.lien else c.attenue, modifier = if (url != null) Modifier.clickable(role = Role.Button) { ouvrir(url) } else Modifier)
+        }
     }
 }

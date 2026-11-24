@@ -40,4 +40,13 @@ class DemandeNotificationsTest {
         assertFalse(Regex("(?<![A-Za-z])Notifications\\.").containsMatchIn(source))
         assertFalse("widget.Notifications" in source)
     }
+
+    /** Notifications refusées après la demande : l'écran le dit ; jamais avant la demande, ni quand elles sont permises. */
+    @Test
+    fun lEcranDitQueLesNotificationsSontCoupees() {
+        kotlin.test.assertTrue(DemandeNotifications.coupees(permises = false, demandee = true, plusTardA = 0L))
+        kotlin.test.assertTrue(DemandeNotifications.coupees(permises = false, demandee = false, plusTardA = 1_000L))
+        kotlin.test.assertFalse(DemandeNotifications.coupees(permises = false, demandee = false, plusTardA = 0L))
+        kotlin.test.assertFalse(DemandeNotifications.coupees(permises = true, demandee = true, plusTardA = 0L))
+    }
 }

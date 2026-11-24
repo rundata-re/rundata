@@ -49,6 +49,17 @@ object DemandeNotifications {
      */
     fun aMontrer(demandee: Boolean, plusTardA: Long, maintenant: Long): Boolean = !demandee && maintenant - plusTardA >= SEPT_JOURS
 
+    /**
+     * L'écran dit que les notifications sont coupées : refusées (`permises` faux) alors qu'elles ont déjà été demandées,
+     * ou remises à plus tard. Avant la première demande, c'est le texte d'avant qui parle, pas cet avis.
+     */
+    fun coupees(permises: Boolean, demandee: Boolean, plusTardA: Long): Boolean = !permises && (demandee || plusTardA > 0L)
+
+    fun coupees(context: Context, permises: Boolean): Boolean {
+        val p = prefs(context)
+        return coupees(permises, p.getBoolean("demandee", false), p.getLong("plus_tard", 0L))
+    }
+
     fun demandee(context: Context) = prefs(context).edit { putBoolean("demandee", true) }
 
     fun plusTard(context: Context) = prefs(context).edit { putLong("plus_tard", System.currentTimeMillis()) }

@@ -44,6 +44,8 @@ data class Donnees(
     val slug: String? = null,
     /** « 27 °C » : la mer au large de la commune, mesurée par satellite. */
     val mer: String? = null,
+    /** « 21/11 » : le jour du passage du satellite qui a mesuré la mer. */
+    val merJour: String? = null,
     /** « Prévision : de 24,1 °C à 25,2 °C, pas de pluie prévue de 20 h à minuit. » : une PRÉVISION, dite comme telle. */
     val prevision: String? = null,
     /** Les autres avis d'eau, après celui qui est dit. */
@@ -97,6 +99,7 @@ data class Donnees(
                 officielLien = j.vigilance?.officiel?.let { o -> o.indexOf("https://").takeIf { it >= 0 }?.let { o.substring(it).trim() } },
                 lueA = j.lueA,
                 mer = j.mer?.temperature,
+                merJour = j.mer?.jour,
                 prevision = j.prevision?.let(::lignePrevision),
                 sorties = j.sorties?.map(::ligneSortie),
                 routes = j.routes?.infos?.map(::ligneRoute),

@@ -143,4 +143,11 @@ class LignesTest {
             horsLigne(lue.copy(heure = "21/11 23:50", lueA = "21/11 23:55", echecA = "22/11 08:00")),
         )
     }
+
+    /** La mer du widget dit le jour du passage du satellite (avant 0.3.4 : « mer, par satellite », sans date). */
+    @Test
+    fun laMerDitLeJourDeSaMesure() {
+        kotlin.test.assertEquals("mer, vue par satellite le 21/11", libelleMer("21/11"))
+        kotlin.test.assertEquals("mer, vue par satellite", libelleMer(null))
+    }
 }

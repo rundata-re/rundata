@@ -1,9 +1,10 @@
-# The lists bundled with the server, against their national base (scripts/build-irve.py, scripts/build-dae.py): every
-# Monday, each script builds its list in memory from the day's file and compares it with the bundled one, without
-# writing it. Past a few points added or gone, the job fails, saying which: the failure is the alert, someone rebuilds the
-# list and proposes it. Nothing is committed from here; the lists online stay as they were.
-# Its cost: two downloads (about 130 Mo for the charging points, 80 Mo for the defibrillators) and a few minutes of a
-# GitHub runner a week, free for a public repository; nothing on Cloudflare (no request to the Worker, no KV, no D1).
+# The lists bundled with the server, against their national base (scripts/build-irve.py, build-dae.py, build-ecoles.py,
+# build-antennes.py): every Monday, each script builds its list in memory from the day's file and compares it with the
+# bundled one, without writing it. Past a few points added, gone or changed, the job fails, saying which: the failure is
+# the alert, someone rebuilds the list and proposes it. Nothing is committed from here; the lists online stay as they were.
+# Its cost: four downloads (about 130 Mo for the charging points, 80 Mo for the defibrillators, 2 Mo for the schools,
+# 90 Mo for the antennas) and a few minutes of a GitHub runner a week, free for a public repository; nothing on
+# Cloudflare (no request to the Worker, no KV, no D1).
 name: Listes embarquées
 
 on:
@@ -36,11 +37,24 @@ jobs:
         id: dae
         continue-on-error: true
         run: python3 -I scripts/build-dae.py --verifier 20
+      # A phone, an address or a canteen that changes is given wrong by annuaire_services_publics and /ecoles: past 10.
+      - name: Écoles, collèges et lycées (annuaire de l'Éducation nationale)
+        id: ecoles
+        continue-on-error: true
+        run: python3 -I scripts/build-ecoles.py --verifier 10
+      # A few supports come and go each month; past 15, the counts of /antennes and of fiche_terrain are off. The ANFR's
+      # files are read at one request a minute per host: a few minutes.
+      - name: Antennes (ANFR)
+        id: antennes
+        continue-on-error: true
+        run: python3 -I scripts/build-antennes.py --verifier 15
       - name: Say what is to be redone
-        if: steps.irve.outcome != 'success' || steps.dae.outcome != 'success'
+        if: steps.irve.outcome != 'success' || steps.dae.outcome != 'success' || steps.ecoles.outcome != 'success' || steps.antennes.outcome != 'success'
         env:
           IRVE: ${{ steps.irve.outcome }}
           DAE: ${{ steps.dae.outcome }}
+          ECOLES: ${{ steps.ecoles.outcome }}
+          ANTENNES: ${{ steps.antennes.outcome }}
         run: |
-          echo "::error::Bornes de recharge : $IRVE ; défibrillateurs : $DAE. Le détail est dans l'étape en échec (écarts, ou base qui n'a pas répondu)."
+          echo "::error::Bornes de recharge : $IRVE ; défibrillateurs : $DAE ; écoles : $ECOLES ; antennes : $ANTENNES. Le détail est dans l'étape en échec (écarts, ou base qui n'a pas répondu)."
           exit 1

@@ -85,6 +85,15 @@ describe("the sends of the scheduled event", () => {
     expect(new Set(recus).size).toBe(7);
   });
 
+  it("keeps both changes when two overlapping events each take a different one", async () => {
+    await abonner(3);
+    await Promise.all([passage([pluie], kv(), new Date(T0), 2), passage([volcan], kv(), new Date(T0), 2)]);
+    expect(lignes("alertes_envoyees").n).toBe(2);
+    // Both in the message still going out: never one of them lost while its key is taken.
+    const row = db.prepare("SELECT changements FROM alertes_en_cours").get() as { changements: string };
+    expect((JSON.parse(row.changements) as { texte: string }[]).map((c) => c.texte).sort()).toEqual([pluie.texte, volcan.texte].sort());
+  });
+
   it("deletes the subscriptions a push service says are gone", async () => {
     await abonner(3);
     partis.add("https://fcm.googleapis.com/fcm/send/001");

@@ -10,6 +10,8 @@
  *   and only if no other event moved it first: two events never send the same batch.
  * - A change found while a message is still going out joins it, and the message starts again from the first
  *   subscription: those already reached get the earlier changes again with the new one, the others get them all in one.
+ *   The join is one statement, so two events with different changes both keep theirs. A key is taken before its
+ *   change is kept: if that statement fails, the change is not sent (its line stays in the log of alertes-etat.ts).
  * - Past TTL_S (6 h) a message not finished is dropped: the push services would drop it too.
  * - The KV key alertes:pause (any value, set by the team) stops every send without a deploy. The changes found
  *   meanwhile stay in the log line of alertes-etat.ts; they are not sent later.
@@ -98,12 +100,16 @@ export async function passage(changements: Changement[], kv: { get(key: string, 
   if (nouveaux.length) {
     bilan.nouveaux = nouveaux.length;
     await db.run("DELETE FROM alertes_envoyees WHERE envoyee < ?", new Date(now.getTime() - AN_MS).toISOString());
-    const avant = await lire();
-    const encore = avant && now.getTime() - Date.parse(avant.depuis) <= abonnements.TTL_S * 1000 ? (JSON.parse(avant.changements) as Retenu[]) : [];
+    // Joined to the message still going out in one statement: two events that each took a change both keep theirs.
     await db.run(
-      "INSERT INTO alertes_en_cours (id, changements, depuis, apres) VALUES (1, ?, ?, '') ON CONFLICT(id) DO UPDATE SET changements = excluded.changements, depuis = excluded.depuis, apres = ''",
-      JSON.stringify([...encore, ...nouveaux]),
+      `INSERT INTO alertes_en_cours (id, changements, depuis, apres) VALUES (1, ?, ?, '') ON CONFLICT(id) DO UPDATE SET
+         changements = CASE WHEN alertes_en_cours.depuis >= ? THEN (SELECT json_group_array(json(value)) FROM (
+           SELECT 0 AS o, key, value FROM json_each(alertes_en_cours.changements) UNION ALL SELECT 1, key, value FROM json_each(excluded.changements) ORDER BY o, key))
+         ELSE excluded.changements END,
+         depuis = excluded.depuis, apres = ''`,
+      JSON.stringify(nouveaux),
       now.toISOString(),
+      new Date(now.getTime() - abonnements.TTL_S * 1000).toISOString(),
     );
   }
   const r = await lire();

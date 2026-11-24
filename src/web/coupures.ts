@@ -280,7 +280,7 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
   <p>${COMMUNES.filter((c) => c.slug !== p.slug).map((c) => `<a href="/coupures-eau/${c.slug}">${esc(c.nom)}</a>`).join(" · ")}</p>
   <p class="note"><a href="/coupures-eau">Tous les avis de l'île</a>, sur une carte.</p></section>`;
 
-  // A commune whose notices are not read, its distributor's site linked (Les Avirons, Le Tampon, Saint-Joseph,
+  // A commune whose notices are not read, its distributor's site linked (Les Avirons, Saint-Joseph,
   // L'Entre-Deux): the page is named by what it holds, not by notices it does not show (marketing, 24/11/2026: it was
   // titled « Coupure d'eau » and said « rundata.re ne les reprend pas encore »). « Coupures » stays
   // in the title, with who publishes them; the description, the h1 and the hook say the rest. A commune whose notices

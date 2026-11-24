@@ -50,6 +50,8 @@ const MAIRIES: Record<string, { par: string; site: string }> = {
   "Saint-Philippe": { par: "la commune de Saint-Philippe", site: "https://saintphilippe.re/?s=eau" },
   "Petite-Île": { par: "la ville de Petite-Île", site: "https://www.petite-ile.re/taxonomy/term/301" },
   Cilaos: { par: "la ville de Cilaos", site: "https://ville-cilaos.fr/?s=eau" },
+  // Since 24/11/2026: Le Tampon posts Sudéau's notices among its news (« Communiqué : SUDÉAU – … »).
+  "Le Tampon": { par: "la ville du Tampon", site: "https://letampon.fr/?s=sud%C3%A9au&post_type=actualites" },
 };
 /** A commune whose mairie also posts the notices of a distributor read elsewhere: Les Trois-Bassins, La Créole's. */
 export const MAIRIES_AUSSI: Readonly<Record<string, { par: string; site: string }>> = {

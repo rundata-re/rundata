@@ -29,7 +29,9 @@ describe("after a cyclone, the tap water", () => {
     expect(coverageLine("L'Étang-Salé")).toBe("D'après l'ARS, runéo distribue l'eau de 7 réseaux sur 8 à L'Étang-Salé, et la mairie celle du réseau Sources Nouvelles les Hauts. " +
       "rundata.re lit les avis publiés par runéo pour L'Étang-Salé, au moins toutes les 30 minutes : ils s'affichent en haut de cette page.");
     expect(reseauNom("RESEAU SCES NOUVELLES LES HAUTS")).toBe("Sources Nouvelles les Hauts");
-    expect(coverageLine("Le Tampon")).toBe("Les avis de Sudéau, qui distribue l'eau au Tampon, ne sont pas lus par rundata.re : renseignez-vous auprès de Sudéau ou de la mairie.");
+    expect(coverageLine("Saint-Joseph")).toBe("Les avis de Sudéau, qui distribue l'eau à Saint-Joseph, ne sont pas lus par rundata.re : renseignez-vous auprès de Sudéau ou de la mairie.");
+    // Le Tampon: Sudéau's notices, as the town posts them (since 24/11/2026).
+    expect(coverageLine("Le Tampon")).toBe("rundata.re lit les avis de coupure publiés par la ville du Tampon, au moins toutes les 30 minutes : ils s'affichent en haut de cette page.");
     expect(coverageLine("Saint-Paul")).toBe("rundata.re lit les avis publiés par La Créole pour Saint-Paul, au moins toutes les 30 minutes : ils s'affichent en haut de cette page.");
     // Sainte-Marie: CISE Réunion's notices, as the ville posts them; Les Avirons, also CISE Réunion, is not read.
     expect(coverageLine("Sainte-Marie")).toBe("rundata.re lit les communiqués de CISE Réunion publiés par la ville de Sainte-Marie, au moins toutes les 30 minutes\u00a0: ils s'affichent en haut de cette page. Un communiqué publié en image ou en PDF n'est pas lu\u00a0: la page donne seulement son lien.");

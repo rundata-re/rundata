@@ -522,6 +522,10 @@ const TROIS_BASSINS = "https://trois-bassins.re/feed/";
 // feed's descriptions are all one old article's (Drupal), and the theme's debug comments come before `<?xml`: only the
 // title, the day and the link are kept from it, and each notice's own page is read once (`petiteIle`).
 const PETITE_ILE = "https://www.petite-ile.re/taxonomy/term/301/feed";
+// Le Tampon posts Sudéau's notices among its news (« Communiqué : SUDÉAU – Travaux de raccordement », about ten in
+// 2026, the last on 17/10/2026): its search feed for « sudéau » in the news, whose content holds the whole page around
+// the notice (its /wp-json/ has no route for the news). Sudéau's own site is a private delegate's, not read (rule 3 bis).
+const LE_TAMPON = "https://letampon.fr/?s=sud%C3%A9au&post_type=actualites&feed=rss2";
 
 // A notice about the water the taps give, not about the electricity, the roads (the RN5), the irrigation alone, nor a
 // post that only names water (a swimming pool, a job).
@@ -584,6 +588,38 @@ export function parseTroisBassins(xml: string): Avis[] {
       distributeur: "La Créole, par la ville de Trois-Bassins",
       titre,
       communes: ["Les Trois-Bassins"],
+      publie: new Date(item(it, "pubDate")).toISOString(),
+      ...communeTimes(texte),
+      ...sectorList(texte, false),
+      ne_pas_boire: drinkSaid(titre, texte),
+      ...cut(texte),
+      lien: httpUrl(item(it, "link")),
+    }];
+  });
+}
+
+// A notice of Sudéau about the water itself: its distribution cut or troubled, its quality; not its agencies' hours.
+const SUDEAU_WATER = /distribution (?:en |d.)eau|qualit[ée] de l.eau|manques? d.eau|eau embouteill|bouillir|potab/i;
+
+/**
+ * Le Tampon's search feed: Sudéau's notices, each its text alone, from « Sudéau vous informe » to the page's « Haut de
+ * page », without its lines Réf, Objet, Commune concernée and Date.
+ */
+export function parseLeTampon(xml: string): Avis[] {
+  return [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].flatMap(([, it]): Avis[] => {
+    const titre = strip(item(it, "title"));
+    if (!/sud[ée]au/i.test(titre)) return [];
+    const html = /<content:encoded><!\[CDATA\[([\s\S]*?)\]\]><\/content:encoded>/.exec(it)?.[1] ?? "";
+    const all = lines(sansBlocs(sansBlocs(html, "<script", "</script>"), "<style", "</style>")).replace(/</g, "");
+    const from = all.search(/vous informe/i);
+    const to = all.search(/^Haut de page$/m);
+    const notice = all.slice(from < 0 ? 0 : all.indexOf("\n", from) + 1, to > from ? to : undefined);
+    const texte = notice.replace(/^[\s\S]*?\bDate\s*:\s*\d\d\/\d\d\/\d{4}\s*/, "").replace(/\s*Retrouvez l.ensemble[\s\S]*$/, "").trim();
+    if (!SUDEAU_WATER.test(texte)) return [];
+    return [{
+      distributeur: "Sudéau, par la ville du Tampon",
+      titre,
+      communes: ["Le Tampon"],
       publie: new Date(item(it, "pubDate")).toISOString(),
       ...communeTimes(texte),
       ...sectorList(texte, false),
@@ -706,6 +742,7 @@ const PARTS: { de: string; site: string; load: (cache: Cache, before?: Avis[]) =
   { de: "de la ville de Cilaos", site: "https://ville-cilaos.fr/?s=eau", load: async () => parseCilaos(await getJson<Post[]>(SOURCE.id, CILAOS, 12_000, COMMUNE)) },
   { de: "de la ville de Trois-Bassins", site: "https://trois-bassins.re/", load: async () => parseTroisBassins(await getText(SOURCE.id, TROIS_BASSINS, 12_000, COMMUNE)) },
   { de: "de la ville de Petite-Île", site: "https://www.petite-ile.re/taxonomy/term/301", load: (cache, before) => petiteIle(cache, before) },
+  { de: "de la ville du Tampon", site: "https://letampon.fr/?s=sud%C3%A9au&post_type=actualites", load: async () => parseLeTampon(await getText(SOURCE.id, LE_TAMPON, 12_000, COMMUNE)) },
 ];
 
 /**
@@ -718,7 +755,7 @@ export const HOTES_EAU = Object.fromEntries(PARTS.map((p) => {
 }));
 
 // The sites these notices are read from, spaced with the other sources that read them (http.ts `sharedSite`).
-sharedSite(SOURCE.id, ...FEEDS.map((f) => f.url), CIREST, CREOLE.url, SAINTE_MARIE, SAINT_LEU, SAINT_PHILIPPE, CILAOS, TROIS_BASSINS, PETITE_ILE);
+sharedSite(SOURCE.id, ...FEEDS.map((f) => f.url), CIREST, CREOLE.url, SAINTE_MARIE, SAINT_LEU, SAINT_PHILIPPE, CILAOS, TROIS_BASSINS, PETITE_ILE, LE_TAMPON);
 
 const FLUX = "avis-eau:flux";
 

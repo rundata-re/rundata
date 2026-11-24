@@ -3,7 +3,7 @@ import { UA_RUNDATA } from "../src/http.js";
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
-import { communesIn, cut, extract, lecture, lifts, operatorOf, parseCilaos, parseCirest, parseCreole, parseNotice, parsePetiteIlePage, parseRss, parseSaintLeu, parseSainteMarie, parseTroisBassins, sansBlocs, sectorList, sectorsSaid, textOf } from "../src/providers/avis-eau.js";
+import { communesIn, cut, extract, lecture, lifts, operatorOf, parseCilaos, parseCirest, parseCreole, parseNotice, parsePetiteIlePage, parseRss, parseSaintLeu, parseLeTampon, parseSainteMarie, parseTroisBassins, sansBlocs, sectorList, sectorsSaid, textOf } from "../src/providers/avis-eau.js";
 import { annonceCoupure, compteAvis, coupuresEau, cutSaid, noticeRow, AVIS_AVEC_TEXTE, pourAssistant, resumeAvis, TEXTE_ET_SECTEURS_PAR_LE_LIEN, TEXTE_PAR_LE_LIEN } from "../src/tools/coupures.js";
 import type { Avis } from "../src/providers/avis-eau.js";
 import { cite, COUPURES_ILE } from "../src/tools/citer.js";
@@ -24,9 +24,9 @@ import { doubleIds, mapLinks } from "./cartes.js";
 // The communes' own sites read since 20/11/2026 (rule 3 bis): empty here, as in October; their copies of 20/11/2026 in
 // their own test (« reads the notices the communes post »).
 const communeFile = (url: string) =>
-  /saintphilippe|ville-cilaos/.test(url) ? "vide.json" : /trois-bassins|petite-ile|ville-saintesuzanne/.test(url) ? "vide.xml" : undefined;
+  /saintphilippe|ville-cilaos/.test(url) ? "vide.json" : /trois-bassins|petite-ile|ville-saintesuzanne|letampon/.test(url) ? "vide.xml" : undefined;
 const COMMUNES_20_11: Record<string, string> = {
-  saintphilippe: "saint-philippe.json", "ville-cilaos": "cilaos.json", "trois-bassins": "trois-bassins.xml", "petite-ile.re/taxonomy": "petite-ile.xml", "petite-ile.re/actualites": "petite-ile-avis.html",
+  saintphilippe: "saint-philippe.json", "ville-cilaos": "cilaos.json", "trois-bassins": "trois-bassins.xml", "petite-ile.re/taxonomy": "petite-ile.xml", "petite-ile.re/actualites": "petite-ile-avis.html", letampon: "le-tampon.xml",
 };
 const parsedCilaos = () => parseCilaos(JSON.parse(fixture("cilaos.json")));
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/avis-eau/${f}`, import.meta.url), "utf8");
@@ -727,11 +727,12 @@ describe("coupures d'eau", () => {
   });
 
   it("says when a commune's distributor publishes nothing read here, and names it as the page does", async () => {
-    const t = await coupuresEau(cache(), "Le Tampon", NOW);
+    // Saint-Joseph: Sudéau's notices posted by no site read (Le Tampon's are, by the town, since 24/11/2026).
+    const t = await coupuresEau(cache(), "Saint-Joseph", NOW);
     const b = body(t);
-    expect(b.resume).toBe("Pas d'avis en ligne lisible pour Le Tampon : rundata.re ne lit pas les avis de coupure de Sudéau, qui y distribue l'eau. Voir le site de Sudéau, rubrique «\u00a0L'eau dans ma commune\u00a0»\u00a0: https://www.sudeau.re/, ou la mairie.");
+    expect(b.resume).toBe("Pas d'avis en ligne lisible pour Saint-Joseph : rundata.re ne lit pas les avis de coupure de Sudéau, qui y distribue l'eau. Voir le site de Sudéau, rubrique «\u00a0L'eau dans ma commune\u00a0»\u00a0: https://www.sudeau.re/, ou la mairie.");
     expect(b.distributeur).toEqual({ nom: "Sudéau", site: "https://www.sudeau.re/", d_apres: "ARS La Réunion, contrôle sanitaire des eaux distribuées (Hub'Eau)" });
-    expect(b.contact).toBe("Le numéro d'urgence du distributeur (fuite, coupure non annoncée) est sur la facture d'eau\u00a0; la mairie : https://rundata.re/communes/le-tampon");
+    expect(b.contact).toBe("Le numéro d'urgence du distributeur (fuite, coupure non annoncée) est sur la facture d'eau\u00a0; la mairie : https://rundata.re/communes/saint-joseph");
     // The distributor named is the ARS's, and no notice is used: its sanitary control alone is credited and cited.
     expect(b.sources.map((s: { source: string }) => s.source)).toEqual(["Contrôle sanitaire de l'eau du robinet (ARS La Réunion, via Hub'Eau)"]);
     const c = body(cite("coupures_eau", t));
@@ -800,12 +801,13 @@ describe("coupures d'eau", () => {
     expect(av).not.toContain('content="noindex"');
     // Only CISE Réunion's home page is linked (its terms), never a page of its site.
     expect(av.match(/https:\/\/www\.cise-reunion\.re\/[^"]+"/g) ?? []).toEqual([]);
-    expect(page("le-tampon")).toContain('<meta name="robots" content="noindex">');
+    expect(page("saint-joseph")).toContain('<meta name="robots" content="noindex">');
     // Sainte-Marie and Saint-Benoît, also CISE Réunion's, have their notices read: no link to its site.
     for (const slug of ["sainte-marie", "saint-benoit"]) expect(page(slug)).not.toContain("cise-reunion.re");
     // Sudéau, also edited by Saur with the same « L'eau dans ma commune », in the same words, on each of its communes.
-    // Saint-Philippe's are read on the commune's site since 20/11/2026 (« reads the notices the communes post »).
-    for (const slug of ["le-tampon", "saint-joseph", "entre-deux"]) {
+    // Saint-Philippe's are read on the commune's site since 20/11/2026, Le Tampon's on the town's since 24/11/2026 (« reads
+    // the notices the communes post »).
+    for (const slug of ["saint-joseph", "entre-deux"]) {
       expect(page(slug)).toContain(`Ses avis de coupure ne sont pas lus par rundata.re : voir <a href="https://www.sudeau.re/" rel="noopener">le site de Sudéau</a>, qui donne la qualité de l'eau et les travaux en cours de chaque commune (rubrique « L'eau dans ma commune »), ou la mairie.`);
     }
     // The SPL Sources et Eaux, at Petite-Île: its notices read on the ville's site, never its own (its pages of notices empty).
@@ -836,7 +838,9 @@ describe("coupures d'eau", () => {
     // The link the hook announces is in the lead right under it.
     const html = page("les-avirons");
     expect(html.indexOf('<p class="lead">Les avis de coupure des Avirons sont publiés par CISE Réunion sur <a href="https://www.cise-reunion.re/"')).toBeGreaterThan(html.indexOf('<p class="hook">'));
-    for (const [slug, title] of [["le-tampon", "Eau au Tampon : coupures chez Sudéau, eau du robinet"], ["saint-joseph", "Eau à Saint-Joseph : coupures chez Sudéau, eau du robinet"], ["entre-deux", "Eau à l&#39;Entre-Deux : coupures chez Sudéau, eau du robinet"]]) {
+    // Le Tampon's notices of Sudéau are read on the town's site since 24/11/2026: its page keeps its words.
+    expect(of(page("le-tampon")).title).toBe("Coupure d&#39;eau Le Tampon · La Réunion (974)");
+    for (const [slug, title] of [["saint-joseph", "Eau à Saint-Joseph : coupures chez Sudéau, eau du robinet"], ["entre-deux", "Eau à l&#39;Entre-Deux : coupures chez Sudéau, eau du robinet"]]) {
       const x = of(page(slug));
       expect(x.title, slug).toBe(title);
       expect(x.title.replaceAll("&#39;", "'").length, slug).toBeLessThanOrEqual(60);
@@ -893,26 +897,27 @@ describe("coupures d'eau", () => {
     expect(sp).toContain(`les avis de <a href="https://lacreole.re/flash-infos" rel="noopener">la page « flash infos » de La Créole</a> : ils s'affichent en haut de cette page.`);
     expect(sp).not.toContain("Ses avis de coupure ne sont pas lus");
     // Sudéau publishes nothing read: the page says so rather than « no cut ».
-    const lt = page("le-tampon");
+    const lt = page("saint-joseph");
     expect(lt).toContain("Les avis de coupure de Sudéau ne sont pas lus par rundata.re");
     // Never said of a distributor that it does not publish (a notice may be on paper, at the mairie): only that rundata.re does not read it.
     expect(lt).not.toMatch(/ne publie pas/);
     expect(lt).not.toContain("Aucune coupure d&#39;eau annoncée");
     // Not read: who has its notices, never « pas d'avis » (marketing, 06/11/2026); the mairie's site linked when known.
-    expect(lt).toMatch(/<p class="card">rundata.re ne lit pas les avis de coupure du Tampon\u00a0: ils sont sur le site de la mairie ou du distributeur\.(?: <a href="[^"]+" rel="noopener"[^>]*>[^<]+ →<\/a>)?<\/p>/);
+    expect(lt).toMatch(/<p class="card">rundata.re ne lit pas les avis de coupure de Saint-Joseph\u00a0: ils sont sur le site de la mairie ou du distributeur\.(?: <a href="[^"]+" rel="noopener"[^>]*>[^<]+ →<\/a>)?<\/p>/);
     expect(lt).not.toContain("Pas d&#39;avis en ligne lisible");
     // The connector asked a question, without the tool's name.
-    expect(lt).toContain(`<p>Demandez aussi à votre IA, avec le <a href="/mcp">connecteur rundata.re</a>\u00a0: «\u00a0L'eau du robinet est-elle bonne au Tampon\u00a0?\u00a0»</p>`);
+    expect(lt).toContain(`<p>Demandez aussi à votre IA, avec le <a href="/mcp">connecteur rundata.re</a>\u00a0: «\u00a0L'eau du robinet est-elle bonne à Saint-Joseph\u00a0?\u00a0»</p>`);
     expect(lt).not.toContain("coupures_eau");
     expect(page("le-port")).toContain("<h1>Coupures d'eau au Port <span class=\"n974\">974</span></h1>");
     expect(waterLive(pageOf("salazie")!, { coupures })).toMatchObject({ valeur: "Eau à ne pas boire dans les secteurs de l'avis" });
     expect(waterLive(pageOf("saint-paul")!, { coupures: night })).toMatchObject({ valeur: "1 avis de coupure" });
     // When its notices were read, never for a commune whose notices are not read.
     expect(waterLive(pageOf("saint-paul")!, { coupures: night })!.detail).toMatch(/^avis lus le \d\d\/\d\d à \d\d:\d\d · distributeur /);
-    expect(waterLive(pageOf("le-tampon")!, { coupures })!.detail).not.toContain("avis lus");
+    expect(waterLive(pageOf("saint-joseph")!, { coupures })!.detail).not.toContain("avis lus");
     // The notice of the 23rd is in Saint-Paul: not on Les Trois-Bassins' page.
     expect(waterLive(pageOf("les-trois-bassins")!, { coupures: night })).toMatchObject({ valeur: "Pas de coupure annoncée" });
-    expect(waterLive(pageOf("le-tampon")!, { coupures })).toMatchObject({ valeur: "Site pas lu" });
+    expect(waterLive(pageOf("saint-joseph")!, { coupures })).toMatchObject({ valeur: "Site pas lu" });
+    expect(waterLive(pageOf("le-tampon")!, { coupures })).toMatchObject({ valeur: "Pas de coupure annoncée" });
   });
 
   it("gives the ARS's advice in one sentence on a commune's page with no notice, in full with the cyclone's while one is in progress", async () => {
@@ -1065,7 +1070,7 @@ describe("coupures d'eau", () => {
     });
     const b = body(await coupuresEau(cache(), undefined, NOW));
     expect(b.ne_pas_boire).toEqual(["La Plaine-des-Palmistes", "Saint-Pierre", "Salazie"]);
-    expect(b.couverture).toBe("Avis lus pour Bras-Panon, Cilaos, L'Étang-Salé, La Plaine-des-Palmistes, La Possession, Le Port, Les Trois-Bassins, Petite-Île, Saint-André, Saint-Benoît, Saint-Denis, Saint-Leu, Saint-Louis, Saint-Paul, Saint-Philippe, Saint-Pierre, Sainte-Marie, Sainte-Rose, Sainte-Suzanne et Salazie (Dionéo, runéo, Eaux de La Possession, La Créole, la CIREST pour ses six communes, CISE Réunion par la ville de Sainte-Marie, Derichebourg Aqua OI par la commune de Saint-Leu, Sudéau par la commune de Saint-Philippe, la SPL Sources et Eaux par la ville de Petite-Île, la ville de Cilaos, La Créole aussi par la ville de Trois-Bassins)\u00a0: une coupure que ces sources n'annoncent pas n'apparaît pas ici. Ailleurs, voir la mairie ou le distributeur.");
+    expect(b.couverture).toBe("Avis lus pour Bras-Panon, Cilaos, L'Étang-Salé, La Plaine-des-Palmistes, La Possession, Le Port, Le Tampon, Les Trois-Bassins, Petite-Île, Saint-André, Saint-Benoît, Saint-Denis, Saint-Leu, Saint-Louis, Saint-Paul, Saint-Philippe, Saint-Pierre, Sainte-Marie, Sainte-Rose, Sainte-Suzanne et Salazie (Dionéo, runéo, Eaux de La Possession, La Créole, la CIREST pour ses six communes, CISE Réunion par la ville de Sainte-Marie, Derichebourg Aqua OI par la commune de Saint-Leu, Sudéau par la commune de Saint-Philippe et par la ville du Tampon, la SPL Sources et Eaux par la ville de Petite-Île, la ville de Cilaos, La Créole aussi par la ville de Trois-Bassins)\u00a0: une coupure que ces sources n'annoncent pas n'apparaît pas ici. Ailleurs, voir la mairie ou le distributeur.");
     const value = await buildCoupures(cache(), NOW);
     expect(value.communes_suivies).toEqual(expect.arrayContaining(["Le Port", "Saint-Louis", "Saint-Pierre", "Sainte-Suzanne"]));
     const sp = island.paths.find((p: { nom: string }) => p.nom === "Saint-Pierre")!;
@@ -1192,6 +1197,20 @@ describe("coupures d'eau", () => {
     expect(tb.map((n) => n.titre)).toEqual(["Information La créole – Lavage du réservoir Cocâtre"]);
     expect(tb[0]).toMatchObject({ communes: ["Les Trois-Bassins"], debut: "2026-11-05T09:00", fin: "2026-11-05T17:00", lien: "https://trois-bassins.re/information-la-creole-lavage-du-reservoir-cocatre/" });
     expect(tb[0].texte).toContain("principalement le chemin Hibon et le chemin Marocain");
+    // Le Tampon: Sudéau's notices among the town's news (its search feed for « sudéau »), the notice alone, without its
+    // reference lines nor the page around it; the agency's closing and the Insee's survey left out.
+    const lt = parseLeTampon(fixture("le-tampon.xml"));
+    expect(lt.map((n) => n.titre)).toEqual(["Communiqué : SUDÉAU – Dégradation de l’eau", "Communiqué : SUDÉAU – Travaux de raccordement"]);
+    expect(lt[1]).toMatchObject({
+      distributeur: "Sudéau, par la ville du Tampon", communes: ["Le Tampon"], publie: "2026-06-05T11:46:52.000Z", debut: "2026-06-12T08:00", fin: "2026-06-12T15:30",
+      secteurs: ["Rue Gorbatchev partie basse", "Rue du Général Bigeard", "Rue Victor Hugo"], ne_pas_boire: false,
+      lien: "https://letampon.fr/actualites/communique-sudeau-travaux-de-raccordement-050626/",
+    });
+    expect(lt[1].texte).toMatch(/^Sudéau informe ses abonnés de la réalisation de travaux de raccordement/);
+    expect(lt[0]).toMatchObject({ ne_pas_boire: true, communes: ["Le Tampon"] });
+    expect(lt[0].secteurs).toEqual(["Plaine des Cafres"]);
+    expect(JSON.stringify(lt)).not.toMatch(/Réf :|Haut de page|citernes|Vous avez cherché/);
+    expect(asked.filter((u) => u.includes("letampon"))).toEqual(["https://letampon.fr/?s=sud%C3%A9au&post_type=actualites&feed=rss2"]);
     // Petite-Île: the feed first, its notices said by their title and link; then, one read later, the newest's own page.
     const feed = asked.filter((u) => u.includes("petite-ile"));
     expect(feed).toEqual(["https://www.petite-ile.re/taxonomy/term/301/feed"]);

@@ -156,7 +156,7 @@ export const AFTER_CUT = "D'après l'ARS La Réunion, quand l'eau revient au rob
 
 const COMMON = {
   // Worded by marketing: never « pas de coupure » where the sources say nothing.
-  couverture: `Avis lus pour ${enumeration(lues())} (Dionéo, runéo, Eaux de La Possession, La Créole, la CIREST pour ses six communes, CISE Réunion par la ville de Sainte-Marie, Derichebourg Aqua OI par la commune de Saint-Leu, Sudéau par la commune de Saint-Philippe, la SPL Sources et Eaux par la ville de Petite-Île, la ville de Cilaos, La Créole aussi par la ville de Trois-Bassins)\u00a0: une coupure que ces sources n'annoncent pas n'apparaît pas ici. Ailleurs, voir la mairie ou le distributeur.`,
+  couverture: `Avis lus pour ${enumeration(lues())} (Dionéo, runéo, Eaux de La Possession, La Créole, la CIREST pour ses six communes, CISE Réunion par la ville de Sainte-Marie, Derichebourg Aqua OI par la commune de Saint-Leu, Sudéau par la commune de Saint-Philippe et par la ville du Tampon, la SPL Sources et Eaux par la ville de Petite-Île, la ville de Cilaos, La Créole aussi par la ville de Trois-Bassins)\u00a0: une coupure que ces sources n'annoncent pas n'apparaît pas ici. Ailleurs, voir la mairie ou le distributeur.`,
   a_savoir: `${AFTER_CUT} Source\u00a0: le dépliant «\u00a0Coupure d'eau\u00a0» de l'ARS La Réunion, ${ARS_COUPURE}. La conformité de l'eau du robinet d'après les analyses de l'ARS : qualite_eau.`,
 };
 

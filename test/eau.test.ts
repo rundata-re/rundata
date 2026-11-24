@@ -196,8 +196,11 @@ describe("qualité de l'eau", () => {
 
   it("names, under the tap water, every commune whose notices are read, from the table of distributors", () => {
     for (const c of ["Saint-Denis", "Saint-Pierre", "Saint-Paul", "Sainte-Marie", "Salazie"]) expect(COMMON.eau_du_robinet).toContain(c);
-    expect(distributeur("Le Tampon")?.avis).toBe(false);
-    expect(COMMON.eau_du_robinet).not.toContain("Le Tampon");
+    // Le Tampon's notices of Sudéau read on the town's site since 24/11/2026; Saint-Joseph's nowhere.
+    expect(distributeur("Le Tampon")?.avis).toBe(true);
+    expect(COMMON.eau_du_robinet).toContain("Le Tampon");
+    expect(distributeur("Saint-Joseph")?.avis).toBe(false);
+    expect(COMMON.eau_du_robinet).not.toContain("Saint-Joseph");
     expect(COMMON.eau_du_robinet).not.toContain("les communes de l'Est");
     expect(COMMON.eau_du_robinet).toContain("Sainte-Suzanne et Salazie)\u00a0: dans cette réponse quand une commune est demandée, et par l'outil coupures_eau.");
     expect(tapNote("page")).toContain("Il est repris sur la page des coupures d'eau pour les communes dont rundata.re lit les avis (Bras-Panon,");

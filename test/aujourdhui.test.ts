@@ -194,8 +194,8 @@ describe("a commune's day page, with its water notices not read (23/11/2026)", (
       if (said) fautes.push(`${p.slug} : « ${said[0]} »`);
     }
     expect(fautes.join("\n")).toBe("");
-    // Le Tampon, served by Sudéau (live on 23/11/2026 with « ne sont pas lus »).
-    const tampon = resume(pageOf("le-tampon")!, { ...full("Le Tampon"), coupures: copy({ resume: "", couverture: "", a_savoir: "", sources: [], communes_suivies: [], avis: [] }) } as never, NOW);
+    // Saint-Joseph, served by Sudéau (Le Tampon live on 23/11/2026 with « ne sont pas lus », read since 24/11/2026).
+    const tampon = resume(pageOf("saint-joseph")!, { ...full("Saint-Joseph"), coupures: copy({ resume: "", couverture: "", a_savoir: "", sources: [], communes_suivies: [], avis: [] }) } as never, NOW);
     expect(tampon.coupures_eau?.note).toBe("Sudéau publie ses avis de coupure sur son site, rubrique «\u00a0L'eau dans ma commune\u00a0»\u00a0; la mairie peut aussi vous renseigner.");
   });
 });

@@ -7,6 +7,9 @@ import { DESCRIPTION_MAX, GITHUB } from "../src/web/pages.js";
 import { compte } from "../src/producteurs.js";
 import { toutesLesSources } from "../src/server.js";
 
+// The footer's count of sources is counted once per process, with the readers set then: this file's own modules.
+await vi.hoisted(async () => (await import("./modules-neufs.js")).modulesNeufs());
+
 // The footer's count of public sources, that of /chiffres.
 const sourcesLues = compte(toutesLesSources()).sources;
 

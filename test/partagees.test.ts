@@ -1,12 +1,15 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import * as viirs from "../src/providers/viirs.js";
 import { BUILD_BUDGET, count, counted, left, measured, SCHEDULED_BUDGET } from "../src/budget.js";
 import { Cache, CACHE_FORMAT, type CacheEntry, isCopy, MemoryStore, stampOf, TieredStore } from "../src/cache.js";
 import { VERSION } from "../src/server.js";
 import { SATELLITES as SATELLITES_KEY } from "../src/tools/mer.js";
 import { FRESH_SECONDS } from "../src/web/data.js";
-import { AFTER_DEPLOY_RESERVE, type Kv, kvKey, listShared, SHARED, SHARED_AFTER, SharedFallback, type Shared, slotStart, warmShared } from "../src/web/partagees.js";
+import { AFTER_DEPLOY_RESERVE, type Kv, kvKey, listShared, oublierEcritures, SHARED, SHARED_AFTER, SharedFallback, type Shared, slotStart, warmShared } from "../src/web/partagees.js";
 import { MAX_NEW_GRIDS } from "../src/providers/arome.js";
+
+// What an earlier file wrote to KV, kept by partagees.ts as an isolate keeps it: forgotten, as in an isolate of this file's own.
+beforeAll(oublierEcritures);
 
 // An event short of subrequests (the former budget): what is left out, and why, when the budget does not hold all.
 const TIGHT = 40;

@@ -6,6 +6,9 @@ import * as irve from "../src/providers/irve.js";
 import * as meteorOi from "../src/providers/meteor-oi.js";
 import worker from "../src/worker.js";
 
+// The Worker sets the readers of its copies in the modules (worker.ts, at each request): its own modules, dropped after.
+await vi.hoisted(async () => (await import("./modules-neufs.js")).modulesNeufs());
+
 // The Worker's scheduled event, whole: the passes chosen by the hour, the keys they write, and the same keys read back by
 // the Worker that serves the questions (23/11/2026). Its pieces have their own tests; this one keeps them together.
 

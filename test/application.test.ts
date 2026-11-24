@@ -9,6 +9,9 @@ import { toutesLesSources } from "../src/server.js";
 const sourcesLues = compte(toutesLesSources()).sources;
 import { SECTIONS } from "../src/web/pwa.js";
 
+// The footer's count of sources is counted once per process, with the readers set then: this file's own modules.
+await vi.hoisted(async () => (await import("./modules-neufs.js")).modulesNeufs());
+
 const BROWSER = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
 const get = (path: string) => new Request(`https://rundata.re${path}`, { headers: { accept: BROWSER } });
 const text = async (path: string) => (await handle(get(path), new Cache())).text();

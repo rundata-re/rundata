@@ -3,6 +3,9 @@ import { nonIndexable, sansIndex } from "../src/web/noindex.js";
 import worker from "../src/worker.js";
 import { readFileSync } from "node:fs";
 
+// The Worker sets the readers of its copies in the modules (worker.ts, at each request): its own modules, dropped after.
+await vi.hoisted(async () => (await import("./modules-neufs.js")).modulesNeufs());
+
 const O = "https://rundata.re";
 
 describe("the files that are not pages", () => {

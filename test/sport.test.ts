@@ -19,7 +19,7 @@ import { withVide } from "../src/vide.js";
 const leLocal = (l: string) => `le ${l.slice(8, 10)}/${l.slice(5, 7)} à ${l.slice(11, 16)}`;
 
 // The communes' sites read, as once they have agreed (test/autorisations.test.ts for what is said until then).
-vi.mock("../src/providers/autorisations.js", () => import("./autorisees.js"));
+await vi.hoisted(async () => (await import("./autorisees.js")).chargeesToutesAccordees());
 
 // The sources on Saturday 24/10/2026 in the morning: the Grand Raid over since the 18th, the 6th round of handball on
 // the 30th (the 5th played on the 9th to 11th), volley R1 played on Friday night and again tonight, a rally this

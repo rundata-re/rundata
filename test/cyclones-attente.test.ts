@@ -12,6 +12,7 @@ vi.mock("../src/providers/vigilance.js", async (original) => ({
     throw new Error("non lue dans ce test");
   },
 }));
+await vi.hoisted(async () => (await import("./modules-neufs.js")).modulesNeufs());
 const { cyclones } = await import("../src/tools/cyclones.js");
 
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/cyclones/${f}`, import.meta.url));

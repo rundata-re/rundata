@@ -12,7 +12,7 @@ import { SHARED } from "../src/web/partagees.js";
 import { pageOf } from "../src/web/places.js";
 
 // Every mairie agreed: their notices read (what is said while some have not: test/autorisations.test.ts).
-vi.mock("../src/providers/autorisations.js", () => import("./autorisees.js"));
+await vi.hoisted(async () => (await import("./autorisees.js")).chargeesToutesAccordees());
 
 // Saturday 24 October 2026, 14:00 at La Réunion.
 const NOW = new Date("2026-10-24T10:00:00Z");

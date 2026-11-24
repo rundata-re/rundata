@@ -20,6 +20,20 @@ export const UNPUBLISHED = "pas encore publiée";
 /** Ordinals as the kit writes them: the academy's « Vacances après 3ème période » → « 3e », « 1ère » → « 1re ». */
 export const ordinaux = (s: string) => s.replace(/(\d)ère(?=\s|$)/g, "$1re").replace(/(\d)ème(?=\s|$)/g, "$1e");
 
+/**
+ * The holidays the State's file names by their date alone, named as the others: one without its name beside named ones
+ * read as forgotten (marketing, 24/11/2026). The 20 December, its name at La Réunion.
+ */
+const NOMS_FERIES: Record<string, string> = {
+  "1er janvier": "Jour de l'an",
+  "1er mai": "Fête du Travail",
+  "8 mai": "Victoire de 1945",
+  "14 juillet": "Fête nationale",
+  "11 novembre": "Armistice de 1918",
+  "Abolition de l'esclavage": "Fête de l'abolition de l'esclavage",
+};
+export const nomFerie = (nom: string) => NOMS_FERIES[nom] ?? nom;
+
 /** A holiday and its date, its name said once: « mercredi 11 novembre 2026 » for « 11 novembre », « Toussaint, dimanche 1er novembre 2026 ». */
 export const ferieDit = (nom: string, date: string) => (date.toLowerCase().includes(nom.toLowerCase()) ? date : `${nom}, ${date}`);
 
@@ -115,13 +129,15 @@ export async function calendrier(cache: Cache, lieu: string | undefined, now = n
   const res = lieu?.trim() ? resolvePlace(lieu) : resolvePlace("Saint-Denis");
   if (!res) return notFound(lieu!);
   const day = today(now);
-  const [schools, feries] = await Promise.all([
+  const [schools, lus] = await Promise.all([
     settle(cal.SCHOOL.id, cal.schoolBreaks(cache)),
     settle(cal.HOLIDAYS.id, cal.holidays(cache, Number(day.slice(0, 4)))),
   ]);
 
   const parts = [`Nous sommes le ${longDate(day)} à La Réunion.`];
   let ferie;
+  // A copy, named: the cached file is never changed.
+  const feries = lus && Object.fromEntries(Object.entries(lus).map(([d, nom]) => [d, nomFerie(nom)]));
   if (feries) {
     const next = Object.entries(feries).filter(([d]) => d >= day).sort().slice(0, 4);
     if (feries[day]) parts.push(`Aujourd'hui est férié : ${feries[day]}.`);

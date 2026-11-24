@@ -181,7 +181,7 @@ export function collectePage(origin: string, now: Date, commune?: string, alerte
 <section aria-labelledby="h-voies">
   <div class="sec-h"><h2 id="h-voies">${commune ? `Les rues ${esc(de(commune))}` : "Toutes les rues de l'Ouest"}</h2>
   <p class="note">${esc(honesty())}</p></div>
-  ${col.pastYear(today) ? `<p class="card">${esc(col.notYet())}</p>` : `${col.nearYearEnd(today) ? `<p class="card">${esc(col.notYet())}</p>` : ""}${groups(today, commune)}`}
+  ${col.pastYear(today) ? `<p class="card">${esc(col.notYet())}</p>` : `${col.nearYearEnd(today) ? `<p class="card">${esc(col.untilYearEnd())}</p>` : ""}${groups(today, commune)}`}
 </section>
 <section><p>${commune ? `Les autres communes : ${others}` : `Par commune : ${others}`}</p>
 <p><a href="/decheteries">Les déchèteries de l'Ouest et leurs bennes en direct →</a></p></section>

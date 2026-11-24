@@ -41,7 +41,7 @@ const upper = (s: string) => s.replace(/^\p{L}/u, (c) => c.toUpperCase());
 
 function especeRow(e: Espece): string {
   return `<tr><th scope="row">${esc(e.nom)}</th><td data-label="État"><span class="badge${e.ferme ? "" : " m"}">${esc(e.etat)}</span>` +
-    `<p>${esc(e.regles)}</p><p class="note"><a href="${esc(e.lien)}" rel="noopener">${esc(upper(e.texte))}</a></p></td></tr>`;
+    `${e.bientot ? `<p><b>${esc(e.bientot)}</b></p>` : ""}<p>${esc(e.regles)}</p><p class="note"><a href="${esc(e.lien)}" rel="noopener">${esc(upper(e.texte))}</a></p></td></tr>`;
 }
 
 const regleRow = (r: Regle) =>

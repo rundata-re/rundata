@@ -110,6 +110,11 @@ export interface Espece {
   etat: string;
   /** Today's hours, when the decree sets some and fishing is open: « de 05:05 à 18:58 ». */
   heures?: string;
+  /** Its next closing, when it falls within FERMETURE_JOURS days: the first day closed, and « à la langouste ». */
+  ferme_le?: string;
+  de?: string;
+  /** That closing said under the species' name: « Fermeture dans 7 jours, le mardi 1er décembre. » */
+  bientot?: string;
   /** The rules, in sentences. */
   regles: string;
   /** « d'après l'arrêté n° 1743 …, art. 8 et 11 ». */
@@ -149,6 +154,33 @@ export function heuresBichiques(day: string): { debut: string; fin: string } {
 export const HEURES_NOTE =
   "Heures calculées par rundata.re pour Saint-Denis, à une ou deux minutes près\u00a0: l'arrêté renvoie aux heures de lever et de coucher du soleil à Saint-Denis indiquées par Météo-France.";
 
+/** A closing told in days ahead of it, under « pas de fermeture » or « saison ouverte » (24/11/2026). */
+export const FERMETURE_JOURS = 14;
+const daysTo = (from: string, to: string) => Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000);
+/** The next day `md` (« 12-01 ») from `day`, that day included. */
+const nextOf = (day: string, md: string) => (day.slice(5) <= md ? `${day.slice(0, 4)}-${md}` : `${Number(day.slice(0, 4)) + 1}-${md}`);
+const addDay = (ymd: string) => new Date(Date.parse(`${ymd}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
+
+/**
+ * « Fermeture dans 7 jours, le mardi 1er décembre. », « Fermeture demain, … »; asked about another day than today,
+ * counted from that day: « Fermeture 7 jours plus tard, … », « Fermeture le lendemain, … ». `entier`: with its species
+ * (« Fermeture de la pêche à la langouste dans 7 jours, … »), where it is not said under the species' name: in the tool,
+ * whose species follow one another (marketing, 24/11/2026).
+ */
+export function fermetureDite(e: Pick<Espece, "ferme_le" | "de">, day: string, today = day, entier = false): string | undefined {
+  if (!e.ferme_le) return undefined;
+  const n = daysTo(day, e.ferme_le);
+  if (n < 1 || n > FERMETURE_JOURS) return undefined;
+  const quand = day === today ? (n === 1 ? "demain" : `dans ${n} jours`) : n === 1 ? "le lendemain" : `${n} jours plus tard`;
+  return `Fermeture${entier && e.de ? ` de la pêche ${e.de}` : ""} ${quand}, le ${longDate(e.ferme_le, false)}.`;
+}
+
+/** Its closing within FERMETURE_JOURS days, if any, and that closing said under its name. */
+function proche(day: string, ferme_le: string, de: string): Pick<Espece, "ferme_le" | "de" | "bientot"> {
+  const bientot = fermetureDite({ ferme_le, de }, day);
+  return bientot ? { ferme_le, de, bientot } : {};
+}
+
 function langouste(day: string): Espece {
   const ferme = inWindow(day.slice(5), "12-01", "03-31");
   return {
@@ -156,6 +188,7 @@ function langouste(day: string): Espece {
     nom: "Langouste",
     ferme,
     etat: ferme ? "Fermée aujourd'hui" : "Pas de fermeture aujourd'hui",
+    ...(ferme ? {} : proche(day, nextOf(day, "12-01"), "à la langouste")),
     regles: `Fermée du 1er décembre au 31 mars${ferme ? "\u00a0: pendant cette période, l'arrêté interdit aussi de la saler, de la transporter et de l'employer" : ""}. Au moins 23\u202fcm, jamais une femelle grainée.`,
     texte: `d'après ${AP_1743}, art. 8 et 11`,
     lien: PDF_1743,
@@ -169,6 +202,7 @@ function anguille(day: string): Espece {
     nom: "Anguille marbrée",
     ferme,
     etat: ferme ? "Fermée aujourd'hui" : "Pas de fermeture aujourd'hui",
+    ...(ferme ? {} : proche(day, nextOf(day, "02-01"), "à l'anguille marbrée")),
     regles: "Fermée du 1er février au 31 mars, plus de 30\u202fcm et moins de 60\u202fcm, 5 par jour, à la tâte seulement.",
     texte: `d'après ${AP_1743_COURT}, art. 10-1`,
     lien: PDF_1743,
@@ -207,6 +241,7 @@ function bichiques(day: string): Espece {
       ferme: false,
       etat: "Saison ouverte",
       heures: `de ${h.debut} à ${h.fin}`,
+      ...proche(day, addDay(saison[1]), "aux bichiques"),
       regles:
         `Du ${dayOf(saison[0])} au ${dayOf(saison[1])}. En pêche de loisir, aujourd'hui de ${h.debut} à ${h.fin} ` +
         "(une demi-heure avant le lever du soleil et après son coucher, calculés pour Saint-Denis), 2 vouves au plus, 3\u202fkg par jour. " +
@@ -255,11 +290,18 @@ export function pecheLoisir(espece: string | undefined, date: string | undefined
   const asked = espece?.trim() ? normalize(espece) : "";
   const cle = asked ? ALIASES.find(([re]) => re.test(asked))?.[1] : undefined;
   const list = cle ? all.filter((e) => e.cle === cle) : all;
+  // Its hours and its closing within 14 days, in brackets after its state: « (fermeture de la pêche à la langouste … ) ».
+  const parens = (e: Espece) => {
+    const f = fermetureDite(e, day, today, true);
+    const x = [e.heures, f && f.charAt(0).toLowerCase() + f.slice(1, -1)].filter(Boolean);
+    return x.length ? ` (${x.join("\u00a0; ")})` : "";
+  };
   const row = (e: Espece) => ({
     espece: e.nom,
     // Another day than today: its date is said once, in the summary.
     etat: day === today ? e.etat : e.etat.replace(" aujourd'hui", " ce jour-là"),
     ...(e.heures ? { heures: e.heures } : {}),
+    ...(fermetureDite(e, day, today, true) ? { fermeture: fermetureDite(e, day, today, true) } : {}),
     regles: e.regles,
     texte: e.texte,
     lien: e.lien,
@@ -267,7 +309,7 @@ export function pecheLoisir(espece: string | undefined, date: string | undefined
   return text({
     resume:
       `Pêche de loisir à La Réunion ${day === today ? `aujourd'hui, ${longDate(day)}` : `le ${longDate(day)}`}, d'après les arrêtés du préfet\u00a0: ` +
-      list.map((e) => `${e.nom.toLowerCase()}, ${row(e).etat.charAt(0).toLowerCase()}${row(e).etat.slice(1)}${e.heures ? ` (${e.heures})` : ""}`).join("\u00a0; ") +
+      list.map((e) => `${e.nom.toLowerCase()}, ${row(e).etat.charAt(0).toLowerCase()}${row(e).etat.slice(1)}${parens(e)}`).join("\u00a0; ") +
       "." +
       (asked && !cle ? ` « ${espece!.trim()} » n'a pas de règle propre dans ce résumé\u00a0: voir les règles générales ci-dessous et le texte des arrêtés.` : ""),
     // Sonnet turned « pas de fermeture » into « ouverte », and the lagoons' rule into a ban on the lobster (bench, 31/10).

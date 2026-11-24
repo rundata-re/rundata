@@ -7,7 +7,7 @@ import { parse } from "../src/providers/seismes.js";
 import { activityPosts, phaseOf } from "../src/providers/volcan.js";
 import { A_LIRE, A_LIRE_LU, enImages, enImagesLuesAilleurs, enImagesLuesApres, IMAGE_LUE_APRES, LU_DANS_L_IMAGE, volcanSeismes } from "../src/tools/volcan.js";
 import { buildVolcan } from "../src/web/data.js";
-import { volcanPage } from "../src/web/domains.js";
+import { volcanPage } from "../src/web/volcan.js";
 import { demos, type HomeLive } from "../src/web/home.js";
 
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url), "utf8");

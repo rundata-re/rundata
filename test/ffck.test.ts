@@ -4,7 +4,7 @@ import { Cache, MemoryStore } from "../src/cache.js";
 import * as ffck from "../src/providers/ffck.js";
 import { sportTool } from "../src/tools/sport.js";
 import type { SportAnswer } from "../src/web/data.js";
-import { sportPage } from "../src/web/domains.js";
+import { sportPage } from "../src/web/sport.js";
 
 // The FFCK's calendar on 05/11/2026: the list of the 2026 season cut to 69 of its 651 rows (the first ones, and those
 // whose place is named like one of the island), and the pages of two events of the island, the people's rows taken out.

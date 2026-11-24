@@ -5,7 +5,7 @@ import type { Info } from "../src/providers/actualites.js";
 import { ajouter } from "../src/providers/prefecture-copie.js";
 import { type Page, volcanReleases } from "../src/providers/volcan.js";
 import { AVANT_2021, avant2021, CHAPEAU, CHAPEAU_OUTIL, type Communique, DERNIERE_ERUPTION, derniereEruptionDates, derniereEruptionText, depuis, EPISODES, episodesDuReleve, FIN_DE_LISTE, liste as listeAlertes, NOTE, PLAN_2021, precedentes, resumeText } from "../src/tools/volcan-historique.js";
-import { volcanPage } from "../src/web/domains.js";
+import { volcanPage } from "../src/web/volcan.js";
 import type { VolcanAnswer } from "../src/web/data.js";
 
 // The prefecture's releases as their Wayback Machine copies gave them on 24/10/2026, by copy.

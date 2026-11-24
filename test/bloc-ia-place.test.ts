@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { communePage } from "../src/web/commune.js";
-import { airPage, volcanPage } from "../src/web/domains.js";
+import { volcanPage } from "../src/web/volcan.js";
+import { airPage } from "../src/web/air.js";
 import { feuxPage } from "../src/web/feux.js";
 import { ask, askAfterData, meteoPage, seaPage, vigilancePage } from "../src/web/pages.js";
 import { pageOf } from "../src/web/places.js";

@@ -5,7 +5,7 @@ import { parsePrefecture } from "../src/providers/actualites.js";
 import { parse } from "../src/providers/seismes.js";
 import { activityPosts, phaseOf, type PitonState } from "../src/providers/volcan.js";
 import { buildVolcan } from "../src/web/data.js";
-import { volcanLive, volcanPage } from "../src/web/domains.js";
+import { volcanLive, volcanPage } from "../src/web/volcan.js";
 import { homePage, type HomeLive } from "../src/web/home.js";
 import { meteoPage } from "../src/web/pages.js";
 import { alerteVolcan, bannerText, homeCard, volcanH1, volcanMeta, volcanTitle, withVolcan } from "../src/web/volcan-alerte.js";

@@ -8,7 +8,7 @@ import * as copie from "../src/providers/prefecture-copie.js";
 import { A_LIRE, COURT, depthText, MONTER_COURT, quakeSummary, volcanSeismes } from "../src/tools/volcan.js";
 import { noteCourte } from "../src/tools/volcan-historique.js";
 import { buildVolcan } from "../src/web/data.js";
-import { volcanPage } from "../src/web/domains.js";
+import { volcanPage } from "../src/web/volcan.js";
 import { esc } from "../src/web/map.js";
 import { demos, type HomeLive } from "../src/web/home.js";
 

@@ -5,7 +5,7 @@ import type { Info } from "../src/providers/actualites.js";
 import { parse } from "../src/providers/seismes.js";
 import { activityPosts, phaseOf } from "../src/providers/volcan.js";
 import { type ActualitesAnswer, buildVolcan, type VolcanAnswer } from "../src/web/data.js";
-import { volcanLive, volcanPage } from "../src/web/domains.js";
+import { volcanLive, volcanPage } from "../src/web/volcan.js";
 import { SHARED } from "../src/web/partagees.js";
 import { site } from "../src/web/site.js";
 import { demos, homePage, type HomeLive } from "../src/web/home.js";

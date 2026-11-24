@@ -8,7 +8,7 @@ import { toutesLesSources } from "../src/server.js";
 import { agenda, COUVERTURE, PROGRAMMES_SALLES, repris, sourcesServies } from "../src/tools/agenda.js";
 import { fichesNonReprises, mentionSalles, mentionSports } from "../src/tools/non-repris.js";
 import { sportTool } from "../src/tools/sport.js";
-import { sportPage } from "../src/web/domains.js";
+import { sportPage } from "../src/web/sport.js";
 
 const NOW = new Date("2026-10-24T04:00:00Z");
 const body = (r: { content: { text: string }[] }) => JSON.parse(r.content[0].text);

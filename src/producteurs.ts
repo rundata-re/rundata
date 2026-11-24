@@ -142,6 +142,7 @@ export const FICHES: Record<string, Fiche> = {
   // The ANIL's estimates, from the ads of SeLoger and leboncoin, which write ads, not the rents.
   anil_loyers: { famille: "licence_ouverte", producteurs: ["ANIL"] },
   annuaire_education: { famille: "licence_ouverte", producteurs: ["Ministère de l'Éducation nationale"] },
+  rna: { famille: "licence_ouverte", producteurs: ["Ministère de l'Intérieur"] },
   carte_scolaire_colleges: { famille: "licence_ouverte", producteurs: ["Ministère de l'Éducation nationale"] },
   esr_parcoursup: { famille: "licence_ouverte", producteurs: ["Ministère de l'Enseignement supérieur"] },
   depp_ips: { famille: "licence_ouverte", producteurs: ["Ministère de l'Éducation nationale"] },
@@ -233,6 +234,7 @@ export const FICHES: Record<string, Fiche> = {
   // Its texts reusable « pour tout usage » with the source: no licence named, not said open.
   agenda_cirest: { famille: "information_publique", producteurs: ["CIREST"] },
   agenda_cirest_evenements: { famille: "information_publique", producteurs: ["CIREST"] },
+  agenda_tco: { famille: "information_publique", producteurs: ["Territoire de l'Ouest (TCO)"] },
   agenda_departement: { famille: "information_publique", producteurs: ["Département de La Réunion"] },
   agenda_mairies: { famille: "information_publique", agendas: true },
   agenda_le_port: { famille: "information_publique", agendas: true },

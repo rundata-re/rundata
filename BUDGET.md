@@ -18,8 +18,8 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 
 | contrôle | valeur | limite |
 |---|---:|---:|
-| pire passage planifié, sous-requêtes | 486 | 620 |
-| pire passage planifié, queues comprises, sous-requêtes (limite de la plateforme moins 15 %) | 3 060 | 8 500 |
+| pire passage planifié, sous-requêtes | 487 | 620 |
+| pire passage planifié, queues comprises, sous-requêtes (limite de la plateforme moins 15 %) | 3 061 | 8 500 |
 | queue « envoi des alertes », sous-requêtes | 2 032 | 2 300 |
 | queue « carte du CMRS », sous-requêtes | 19 | 100 |
 | queue « trace du CMRS », sous-requêtes | 8 | 100 |
@@ -41,7 +41,7 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 | queue « veille », sous-requêtes | 2 | 100 |
 | queue « espace club », sous-requêtes | 4 | 100 |
 | pire passage planifié, appels KV et D1 | 191 | 1 000 |
-| pire passage planifié, CPU (ms) | 11 628 | 30 000 |
+| pire passage planifié, CPU (ms) | 11 658 | 30 000 |
 | pire passage planifié, mémoire déclarée (Mo) | 112 | 128 |
 | passage le plus chargé (cadences les plus courtes), sous-requêtes | 214 | 620 |
 | vue la plus chère, sous-requêtes | 100 | 200 |
@@ -52,19 +52,19 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 | tâche planifiée à part meteor:jours, sous-requêtes | 2 | 100 |
 
 - Pire passage planifié : toutes les entrées planifiées dues ensemble, à froid (après un déploiement), sauf les queues, contre 620.
-- Queues : 20 lectures lancées après celles de la tâche, chacune dans son propre budget, de 100 sous-requêtes sauf mention dans le tableau ci-dessus (src/worker.ts), dans la même invocation. Elles ne prennent rien aux 620. Le pire passage, queues comprises (3 060), reste sous la limite de la plateforme, 10 000 sous-requêtes par invocation, moins 15 % de marge ; les appels KV et D1, le CPU et la mémoire se comptent aussi queues comprises.
+- Queues : 20 lectures lancées après celles de la tâche, chacune dans son propre budget, de 100 sous-requêtes sauf mention dans le tableau ci-dessus (src/worker.ts), dans la même invocation. Elles ne prennent rien aux 620. Le pire passage, queues comprises (3 061), reste sous la limite de la plateforme, 10 000 sous-requêtes par invocation, moins 15 % de marge ; les appels KV et D1, le CPU et la mémoire se comptent aussi queues comprises.
 - Mémoire : déclarée par les lectures d'un fichier de plusieurs Mo (irve:etat, 30 Mo au pic, antennes:hors-service, 15 Mo au pic, cpf:formations, 10 Mo au pic, radar:6h, 7 Mo au pic, radar:7j, 10 Mo au pic, emploi:offres, 5 Mo au pic, marches-publics:textes, 25 Mo au pic, clubs:annuaire, 10 Mo au pic), face aux 128 Mo d'un isolat ; les autres ne la déclarent pas.
 - Passage le plus chargé selon les décalages, cadences habituelles : 04:40 UTC, 150 sous-requêtes (arome:veille, partagees:liste, vigilance, actualites:fil, web:bus, web:crues, web:actualites, web:coupures, web:air, ens:ile, alertes:etat, vigilance:carte, agendas:planifies, sans-reponse:echecs, copies:echecs, meteofrance:jeton, meteofrance:jeton:nouveau, meteofrance:stations).
 - Le même, cadences les plus courtes (volcan en alerte, satellites en retard, carburants en fin de mois) : 00:05 UTC, 214 sous-requêtes (arome:veille, partagees:liste, vigilance, actualites:fil, web:bus, web:crues, web:trafic, mer:satellites, web:sport, metar, seismes, web:volcan, alertes:etat, vigilance:carte, agendas:planifies, copies:echecs, meteofrance:jeton, meteofrance:stations).
-- Sans les décalages des copies partagées (toutes dues à 00:00 UTC), cadences les plus courtes : 438 sous-requêtes à 06:00 UTC.
+- Sans les décalages des copies partagées (toutes dues à 00:00 UTC), cadences les plus courtes : 439 sous-requêtes à 06:00 UTC.
 - Vue la plus chère : /communes/*, 100. Question la plus chère : resume_du_jour, 82. Construction la plus chère : web:chiffres:evenements, 48.
 
 | | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| pire passage planifié | 3 060 | 60 | 74 | 57 | 4 006 | 2 294 | 11 628 |
-| tâche planifiée, par jour | 54 746 | 6 051 | 5 499 | 3 321 | 348 457 | 61 861 | 369 525 |
-| tâche planifiée, par jour, cadences les plus courtes | 73 878 | 7 683 | 7 803 | 3 801 | 353 497 | 61 861 | 517 805 |
-| tâche planifiée, par mois (30 jours) | 1 642 377 | 181 530 | 164 970 | 99 643 | 10 453 701 | 1 855 821 | 11 085 747 |
+| pire passage planifié | 3 061 | 60 | 74 | 57 | 4 006 | 2 294 | 11 658 |
+| tâche planifiée, par jour | 54 750 | 6 051 | 5 499 | 3 321 | 348 457 | 61 861 | 369 645 |
+| tâche planifiée, par jour, cadences les plus courtes | 73 882 | 7 683 | 7 803 | 3 801 | 353 497 | 61 861 | 517 925 |
+| tâche planifiée, par mois (30 jours) | 1 642 497 | 181 530 | 164 970 | 99 643 | 10 453 701 | 1 855 821 | 11 089 347 |
 | tâches planifiées à part, par jour | 5 810 | 169 | 169 |  |  |  | 2 933 |
 | tâches planifiées à part, par mois (30 jours) | 174 300 | 5 070 | 5 070 |  |  |  | 87 990 |
 | tâches GitHub, par jour | 0 |  | 5 | 2 |  | 28 700 |  |
@@ -120,6 +120,7 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 | agenda:etang_sale | agenda lu par la tâche planifiée : Ville de L'Étang-Salé | 180 min | 00:00 | 4 |  |  |  |  |  | 30 | mesuré |
 | agenda:cirest | agenda lu par la tâche planifiée : Médiathèques de Bras-Panon et de La Plaine-des-Palmistes | 360 min | 00:00 | 1 |  |  |  |  |  | 30 | mesuré |
 | agenda:cirest_evenements | agenda lu par la tâche planifiée : Événements à venir de l'Est (CIREST) | 360 min | 00:00 | 1 |  |  |  |  |  | 30 | mesuré |
+| agenda:tco | agenda lu par la tâche planifiée : Agenda des manifestations de l'Ouest (TCO) | 360 min | 00:00 | 1 |  |  |  |  |  | 30 | mesuré |
 | agenda:departement | agenda lu par la tâche planifiée : Département de La Réunion | 720 min | 06:00 | 7 |  |  |  |  |  | 30 | mesuré |
 | agenda:lrvb | agenda lu par la tâche planifiée : Ligue réunionnaise de volley-ball | 60 min | 00:00 | 1 |  |  |  |  |  | 30 | mesuré |
 | agenda:saint_philippe | agenda lu par la tâche planifiée : Mairie de Saint-Philippe | 60 min | 00:00 | 1 |  |  |  |  |  | 30 | mesuré |
@@ -339,6 +340,7 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | agenda:etang_sale | connecteurs/helloasso, providers/agenda, providers/avis-eau, providers/salles, providers/sport |
 | agenda:cirest | connecteurs/helloasso, providers/agenda, providers/avis-eau, providers/salles, providers/sport |
 | agenda:cirest_evenements | connecteurs/helloasso, providers/agenda, providers/avis-eau, providers/salles, providers/sport |
+| agenda:tco | connecteurs/helloasso, providers/agenda, providers/avis-eau, providers/salles, providers/sport |
 | agenda:departement | connecteurs/helloasso, providers/agenda, providers/avis-eau, providers/salles, providers/sport |
 | agenda:lrvb | connecteurs/helloasso, providers/agenda, providers/avis-eau, providers/salles, providers/sport |
 | agenda:saint_philippe | connecteurs/helloasso, providers/agenda, providers/avis-eau, providers/salles, providers/sport |

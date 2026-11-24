@@ -156,7 +156,9 @@ describe("the server's instructions", () => {
     // 41 897 the same day with the polling stations in elections: « où voter » in its example and its argument scrutin.
     // 41 952 the same day with the CIREST's calendars in annuaire_services_publics (« dans l'Ouest (TCO) et l'Est (CIREST,
     // sauf Sainte-Rose) »): the East's streets answered, Sainte-Rose said apart.
-    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(41_952);
+    // 41 981 the same day with the declared associations in annuaire_services_publics (the RNA, /associations): one line
+    // and its example (« association de surf »), the tool kept under its 2 000 signs by three words said once fewer.
+    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(41_981);
     for (const t of tools) expect(t.description.length, t.name).toBeLessThanOrEqual(2_000);
   });
 

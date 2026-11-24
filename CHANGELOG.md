@@ -4,6 +4,10 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 <!-- Généré à partir de src/nouveautes.ts par `npm run changelog` : modifier la liste là-bas. -->
 
+## Mercredi 25 novembre 2026
+
+- Agenda : les manifestations que le TCO annonce dans l'Ouest, placées dans leur commune quand l'annonce en nomme une seule.
+
 ## Mardi 24 novembre 2026
 
 - Calendrier de collecte des déchets rue par rue aussi dans l'Est : Saint-André, Bras-Panon, Saint-Benoît, Salazie et La Plaine-des-Palmistes.

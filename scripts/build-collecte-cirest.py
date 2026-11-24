@@ -50,6 +50,8 @@ RUN = 10
 # Latin-9's « Œ » and « œ » where Latin-1 has « ¼ » and « ½ » (see street_name).
 LATIN9 = str.maketrans({"\u00bc": "\u0152", "\u00bd": "\u0153"})
 SMALL = {"de", "des", "du", "la", "le", "les", "et", "au", "aux", "sur", "en"}
+# The article the site writes last, between brackets (« CHEMIN OEILLETS (DES) »): put back after the street's kind.
+ARTICLE = re.compile(r"^(\S+) (.+?) \((de la|de l'|des|du|de|la|le|les|l')\)$", re.I)
 _last = [0.0]
 
 
@@ -153,9 +155,18 @@ def street_name(s):
     """« ALLÉE BOIS NOIRS » → « Allée Bois Noirs », the small words in lower case but the first.
 
     A few names hold their « Œ » in Latin-9 (ISO-8859-15), which the page's UTF-8 shows as « ¼ » (24/11/2026:
-    « CHEMIN ¼ILLETS », « C¼UR DE VILLE »): put back, so that the name is right and « œillets » finds it."""
+    « CHEMIN ¼ILLETS », « C¼UR DE VILLE »): put back, so that the name is right and « œillets » finds it.
+
+    The article the site writes last, between brackets, goes back after the street's kind, the first word (24/11/2026:
+    123 streets, « CHEMIN ¼ILLETS (DES) », « CHEMIN ALOES (DE L') »): « Chemin des Œillets », found by « chemin des
+    œillets »."""
     words = re.sub(r"\s+", " ", s.translate(LATIN9)).strip().lower().split(" ")
-    return " ".join(w if i and w in SMALL else "-".join(p[:1].upper() + p[1:] for p in w.split("-")) for i, w in enumerate(words)).replace("D'", "d'").replace("L'", "l'")
+    name = " ".join(w if i and w in SMALL else "-".join(p[:1].upper() + p[1:] for p in w.split("-")) for i, w in enumerate(words)).replace("D'", "d'").replace("L'", "l'")
+    m = ARTICLE.match(name)
+    if m:
+        art = m.group(3).lower()
+        name = f"{m.group(1)} {art}{'' if art.endswith(chr(39)) else ' '}{m.group(2)}"
+    return name
 
 
 def main():

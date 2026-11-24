@@ -106,7 +106,8 @@ describe("the sends of the scheduled event", () => {
     await passage([pluie], kv(), new Date(T0), 2);
     recus = [];
     expect(await passage([volcan], kv(), new Date(T0 + 5 * MIN), 2)).toMatchObject({ nouveaux: 1, envoye: 2, reste: true });
-    expect(recus).toEqual(["https://fcm.googleapis.com/fcm/send/000", "https://fcm.googleapis.com/fcm/send/001"]);
+    // The batch of two from the first subscription; the pushes go out in parallel, in no set order.
+    expect(recus.sort()).toEqual(["https://fcm.googleapis.com/fcm/send/000", "https://fcm.googleapis.com/fcm/send/001"]);
     const row = db.prepare("SELECT changements FROM alertes_en_cours").get() as { changements: string };
     expect((JSON.parse(row.changements) as { texte: string }[]).map((c) => c.texte)).toEqual([pluie.texte, volcan.texte]);
   });

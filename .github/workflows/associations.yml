@@ -1,0 +1,63 @@
+# The declared associations of La Réunion (/associations, annuaire_services_publics): the Répertoire national des
+# associations (ministère de l'Intérieur, Licence Ouverte 2.0) into the tables of scripts/associations.sql, in the D1
+# database rundata-transports. The RNA comes about once a month, its date in its name (rna_waldec_20261001.zip), and
+# some months late (none in November 2026 on the 24th): checked every Monday. The date imported is read first; when
+# data.gouv.fr lists no newer file, nothing is read on the producer's side (one request to data.gouv.fr's API) and
+# nothing is written. A new file: its member for the 974 alone, by HTTP ranges, 10 seconds apart (the host's
+# Crawl-delay), compared with the rows in D1, and only what changed written (a few hundred rows a month; 99 514 for the
+# first import, in two runs under 80 % of D1's writes of the day). Over that margin the rest waits for the next run;
+# more than 5 000 changes after a complete import, nothing is written and the run fails (scripts/build-associations.py).
+name: Associations (RNA)
+
+on:
+  schedule:
+    # Mondays 05:20 UTC, 09:20 at La Réunion.
+    - cron: "20 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: associations
+  cancel-in-progress: false
+
+jobs:
+  rna:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      WRANGLER_SEND_METRICS: "false"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: The file already imported
+        id: deja
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          npx wrangler d1 execute rundata-transports --remote --json --command "SELECT valeur FROM associations_import WHERE cle = 'fichier'" > deja.json
+          python3 -I -c 'import json; r = json.load(open("deja.json"))[0]["results"]; print("fichier=" + (r[0]["valeur"] if r else ""))' >> "$GITHUB_OUTPUT"
+      # The tables, the index and the search's triggers, when one is missing (scripts/associations.sql changes nothing else).
+      - name: The tables
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: npx wrangler d1 execute rundata-transports --remote --file scripts/associations.sql -y
+      - name: The newest file, when it is new, against the rows in D1
+        id: rna
+        env:
+          DEJA: ${{ steps.deja.outputs.fichier }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: mkdir -p dist && python3 -I scripts/build-associations.py --deja "$DEJA" --d1 rundata-transports --out dist/associations.sql
+      - name: Into D1
+        if: steps.rna.outputs.nouveau == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: npx wrangler d1 execute rundata-transports --remote --file dist/associations.sql -y

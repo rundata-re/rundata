@@ -207,7 +207,11 @@ describe("the tool and the pages", () => {
     expect(col.STREETS.some((s) => s.commune === "Sainte-Rose")).toBe(false);
     // The « Œ » the CIREST's page gives in Latin-9 (« ¼ » read as UTF-8) put back: « œillets » finds its street.
     expect(col.STREETS.filter((s) => /[¼½]/.test(s.nom)).map((s) => s.nom)).toEqual([]);
-    for (const q of ["oeillets", "œillets", "Chemin Œillets"]) expect(col.findStreets(q, "Salazie").map((s) => s.nom), q).toContain("Chemin Œillets (des)");
+    // The article the CIREST writes last, between brackets (« CHEMIN ¼ILLETS (DES) »), put back after the street's kind:
+    // the name as one says it finds the street.
+    for (const q of ["oeillets", "œillets", "chemin des oeillets", "Chemin des Œillets"]) expect(col.findStreets(q, "Salazie").map((s) => s.nom), q).toContain("Chemin des Œillets");
+    expect(col.STREETS.filter((s) => /\((?:de la|de l'|des|du|de|la|le|les|l')\)$/i.test(s.nom)).map((s) => s.nom)).toEqual([]);
+    expect(col.findStreets("chemin de l'aloès", "Salazie").map((s) => s.nom)).toContain("Chemin de l'Aloès");
     expect(col.findStreets("allée soeurs", "Saint-André").map((s) => s.nom)).toContain("Allée Sœurs");
   });
 

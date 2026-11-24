@@ -97,6 +97,8 @@ function file(url: string, form?: string): string | undefined {
   // The CIREST's articles naming a médiathèque, and the Département's agenda with the pages of its two events, read on
   // 31/10/2026 at 15:40 and 15:47.
   if (url.includes("cirest.fr")) return "cirest_mediatheques.json";
+  // The TCO's agenda, its first page read on 24/11/2026 at 23:23.
+  if (url.includes("tco.re")) return "agenda-tco-2411.html";
   if (url.includes("departement974.fr/agenda/")) return `departement_${url.split("/agenda/")[1]}.html`;
   if (url.endsWith("departement974.fr/agenda")) return "departement_agenda.html";
   if (url.includes("50316469")) return "openagenda_cinor.json";
@@ -302,7 +304,7 @@ describe("agenda", () => {
       expect(before.indisponible).toBeUndefined();
       expect(before.non_lus).toContain("Ligue réunionnaise de volley-ball : première lecture dans quelques minutes");
       expect(titles(before)).not.toContain(KING);
-      expect(await refreshPlanned(at(), NOW)).toEqual({ lus: ["sainte_marie", "salazie", "saint_louis", "sechoir", "etang_sale", "cirest", "cirest_evenements", "departement", "lrvb", ...MAIRIES, "sportsregions", "luc_donat"], gardes: [], reportes: [], trop_vieilles: [] });
+      expect(await refreshPlanned(at(), NOW)).toEqual({ lus: ["sainte_marie", "salazie", "saint_louis", "sechoir", "etang_sale", "cirest", "cirest_evenements", "tco", "departement", "lrvb", ...MAIRIES, "sportsregions", "luc_donat"], gardes: [], reportes: [], trop_vieilles: [] });
       expect(urls.filter(isLeague)).toHaveLength(1);
       // Another isolate serves it, with the time it was read.
       const after = body(await agenda(at(), undefined, undefined, "King", NOW));
@@ -327,8 +329,8 @@ describe("agenda", () => {
       const leu = body(await agenda(at(), "Saint-Leu", undefined, undefined, new Date(t)));
       expect(leu.non_lus).toEqual(expect.arrayContaining([`Le Séchoir : ${since}`, `Ville de Saint-Leu : ${since}`, `Ligue réunionnaise de volley-ball : ${since}`]));
       expect(leu.non_lus.some((x: string) => x.startsWith("Ville de Saint-Louis"))).toBe(false);
-      // Le Séchoir, in Saint-Leu, read by the scheduled event as well.
-      expect(leu.resume).toContain(`sans lecture récente : Le Séchoir, ${since}\u00a0; Ville de Saint-Leu, ${since} (voir non_lus).`);
+      // Le Séchoir, in Saint-Leu, read by the scheduled event as well, and the TCO's agenda, which covers it.
+      expect(leu.resume).toContain(`sans lecture récente : Le Séchoir, ${since}\u00a0; Agenda des manifestations de l'Ouest (TCO), ${since}\u00a0; Ville de Saint-Leu, ${since} (voir non_lus).`);
       // La Plaine-des-Palmistes' agenda and news, one source name: named once.
       const plaine = body(await agenda(at(), "La Plaine-des-Palmistes", undefined, undefined, new Date(t)));
       expect(plaine.non_lus.filter((x: string) => x.startsWith("Ville de La Plaine-des-Palmistes"))).toHaveLength(1);
@@ -398,7 +400,7 @@ describe("agenda", () => {
       // is not read, its copy said too old as well (no scheduled event ran in its four hours since).
       t += 49 * 3600_000;
       league = () => new Response("", { status: 503 });
-      expect(await refreshPlanned(at(), new Date(t))).toEqual({ lus: ["sainte_marie", "salazie", "saint_louis", "sechoir", "etang_sale", "cirest", "cirest_evenements", ...MAIRIES, "sportsregions", "luc_donat"], gardes: ["lrvb"], reportes: [], trop_vieilles: ["departement", "lrvb"] });
+      expect(await refreshPlanned(at(), new Date(t))).toEqual({ lus: ["sainte_marie", "salazie", "saint_louis", "sechoir", "etang_sale", "cirest", "cirest_evenements", "tco", ...MAIRIES, "sportsregions", "luc_donat"], gardes: ["lrvb"], reportes: [], trop_vieilles: ["departement", "lrvb"] });
       expect(await entry(store)).toEqual(second);
     });
 
@@ -495,7 +497,7 @@ describe("agenda", () => {
         count(left() - 5); // what the scheduled event did before: 5 left, KEEP_LEFT 4 of them
         return refreshPlanned(new Cache(store, () => NOW.getTime()), NOW);
       });
-      expect(value).toEqual({ lus: [], gardes: [], reportes: ["sainte_marie", "salazie", "saint_louis", "sechoir", "etang_sale", "cirest", "cirest_evenements", "departement", "lrvb", ...MAIRIES, "sportsregions", "luc_donat"], trop_vieilles: [] });
+      expect(value).toEqual({ lus: [], gardes: [], reportes: ["sainte_marie", "salazie", "saint_louis", "sechoir", "etang_sale", "cirest", "cirest_evenements", "tco", "departement", "lrvb", ...MAIRIES, "sportsregions", "luc_donat"], trop_vieilles: [] });
       expect(urls).toEqual([]);
       expect(store.puts).toBe(0);
     });
@@ -697,8 +699,8 @@ describe("agenda", () => {
           return super.put(key, e);
         }
       }
-      // 37 left: the bundle's read, Sainte-Marie's, Salazie's, Saint-Louis's and Le Séchoir's agendas, L'Étang-Salé's list
-      // and three of its events' pages, the CIREST's articles and its events', the Département's list and its two events' pages, the
+      // 38 left: the bundle's read, Sainte-Marie's, Salazie's, Saint-Louis's and Le Séchoir's agendas, L'Étang-Salé's list
+      // and three of its events' pages, the CIREST's articles and its events', the TCO's agenda, the Département's list and its two events' pages, the
       // league's page, the mairies' eleven readings, the four pages, the Théâtre Luc Donat's agenda and season, the write,
       // and KEEP_LEFT (4) still left.
       const run = (n: number) => counted(PAGE_BUDGET, async () => {
@@ -706,14 +708,14 @@ describe("agenda", () => {
         const out = await refreshPlanned(new Cache(new Kv(), () => NOW.getTime()), NOW);
         return { out, left: left() };
       });
-      const both = await run(37);
-      expect(both.value.out).toEqual({ lus: ["sainte_marie", "salazie", "saint_louis", "sechoir", "etang_sale", "cirest", "cirest_evenements", "departement", "lrvb", ...MAIRIES, "sportsregions", "luc_donat"], gardes: [], reportes: [], trop_vieilles: [] });
+      const both = await run(38);
+      expect(both.value.out).toEqual({ lus: ["sainte_marie", "salazie", "saint_louis", "sechoir", "etang_sale", "cirest", "cirest_evenements", "tco", "departement", "lrvb", ...MAIRIES, "sportsregions", "luc_donat"], gardes: [], reportes: [], trop_vieilles: [] });
       expect(both.value.left).toBe(4);
       // One fewer: the Théâtre Luc Donat, the last, at a later run (its copy served meanwhile).
-      expect((await run(36)).value.out).toEqual({ lus: ["sainte_marie", "salazie", "saint_louis", "sechoir", "etang_sale", "cirest", "cirest_evenements", "departement", "lrvb", ...MAIRIES, "sportsregions"], gardes: [], reportes: ["luc_donat"], trop_vieilles: [] });
+      expect((await run(37)).value.out).toEqual({ lus: ["sainte_marie", "salazie", "saint_louis", "sechoir", "etang_sale", "cirest", "cirest_evenements", "tco", "departement", "lrvb", ...MAIRIES, "sportsregions"], gardes: [], reportes: ["luc_donat"], trop_vieilles: [] });
       // Two fewer: the clubs' calendar at a later run, the theatre's two readings still paid for after it.
       urls = [];
-      expect((await run(35)).value.out).toEqual({ lus: ["sainte_marie", "salazie", "saint_louis", "sechoir", "etang_sale", "cirest", "cirest_evenements", "departement", "lrvb", ...MAIRIES, "luc_donat"], gardes: [], reportes: ["sportsregions"], trop_vieilles: [] });
+      expect((await run(36)).value.out).toEqual({ lus: ["sainte_marie", "salazie", "saint_louis", "sechoir", "etang_sale", "cirest", "cirest_evenements", "tco", "departement", "lrvb", ...MAIRIES, "luc_donat"], gardes: [], reportes: ["sportsregions"], trop_vieilles: [] });
       expect(urls.filter((u) => u.includes("sportsregions"))).toEqual([]);
       vi.mocked(console.log).mockRestore();
     });

@@ -29,7 +29,7 @@ class ModeleTest {
         }), "rundata.re-android/test")
         val reglages = object : Reglages { override var commune: String? = "saint-pierre" }
         val temps = TestTimeSource()
-        val modele = Modele(JourneeSource(mcp), reglages, backgroundScope, temps)
+        val modele = Modele(JourneeSource(mcp, copie = Copie(temps)), reglages, backgroundScope, temps)
         modele.etat.first { it is Etat.Prete }
         assertEquals(1, lectures)
 

@@ -13,6 +13,11 @@ import kotlin.time.TimeSource
 /** Ce que l'appli garde d'une fois sur l'autre (SharedPreferences sur Android, NSUserDefaults sur l'iPhone). */
 interface Reglages {
     var commune: String?
+
+    /** La dernière journée lue de la commune `slug` (Gardee.enJson) ; null : aucune, ou d'un format plus ancien. */
+    fun journeeGardee(slug: String): String? = null
+
+    fun garderJournee(slug: String, json: String) {}
 }
 
 /** Ce que montre l'écran principal. */
@@ -21,8 +26,11 @@ sealed interface Etat {
     data class Choix(val actuelle: Commune?) : Etat
     data class Chargement(val commune: Commune, val precedente: Journee?) : Etat
     data class Prete(val journee: Journee) : Etat
-    /** La lecture a échoué : la dernière journée lue reste montrée avec son heure, jamais une valeur inventée. */
-    data class Erreur(val commune: Commune, val message: String, val precedente: Journee?) : Etat
+    /**
+     * La lecture a échoué : la dernière journée lue reste montrée avec son heure, jamais une valeur inventée, même après un
+     * redémarrage (Gardee). `a` : « 24/11 09:12 », l'heure de l'échec.
+     */
+    data class Erreur(val commune: Commune, val message: String, val precedente: Journee?, val a: String? = null) : Etat
 }
 
 /**
@@ -34,11 +42,14 @@ class Modele(
     private val reglages: Reglages,
     private val portee: CoroutineScope,
     private val temps: TimeSource = TimeSource.Monotonic,
+    /** « 24/11 09:12 », heure de La Réunion : l'heure de l'échec, dite avec lui. */
+    private val horloge: () -> String? = { null },
 ) {
-    private val _etat = MutableStateFlow<Etat>(communeDe(reglages.commune)?.let { Etat.Chargement(it, null) } ?: Etat.Choix(null))
+    /** La dernière journée lue de la commune : celle gardée sur le téléphone au lancement, montrée hors ligne. */
+    private var derniere: Journee? = communeDe(reglages.commune)?.let(::gardee)
+    private val _etat = MutableStateFlow<Etat>(communeDe(reglages.commune)?.let { Etat.Chargement(it, derniere) } ?: Etat.Choix(null))
     val etat: StateFlow<Etat> = _etat
     private var lecture: Job? = null
-    private var derniere: Journee? = null
     /** La dernière lecture lancée, réussie ou non. */
     private var lanceeA: TimeMark? = null
 
@@ -48,7 +59,7 @@ class Modele(
 
     fun choisir(commune: Commune) {
         reglages.commune = commune.slug
-        if (derniere?.commune != commune) derniere = null
+        if (derniere?.commune != commune) derniere = gardee(commune)
         lire(commune)
     }
 
@@ -85,10 +96,14 @@ class Modele(
             _etat.value = try {
                 val j = source.journeeEtAlertes(commune)
                 derniere = j
+                reglages.garderJournee(commune.slug, Gardee.enJson(j))
                 Etat.Prete(j)
             } catch (e: McpErreur) {
-                Etat.Erreur(commune, e.message ?: "rundata.re ne répond pas", derniere)
+                Etat.Erreur(commune, e.message ?: "rundata.re ne répond pas", derniere, horloge())
             }
         }
     }
+
+    /** La journée gardée de `commune`, si elle est bien la sienne et d'un format lisible. */
+    private fun gardee(commune: Commune): Journee? = Gardee.de(reglages.journeeGardee(commune.slug))?.takeIf { it.commune == commune }
 }

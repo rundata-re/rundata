@@ -1,6 +1,9 @@
 package re.rundata.app
 
+import kotlinx.serialization.Serializable
+
 /** Une des 24 communes de La Réunion, avec le nom de sa page sur rundata.re. */
+@Serializable
 data class Commune(val slug: String, val nom: String) {
     /** La journée de la commune sur le site : météo mesurée, vigilance, coupures d'eau, marchés… */
     val pageDuJour: String get() = "$SITE/aujourdhui/$slug"

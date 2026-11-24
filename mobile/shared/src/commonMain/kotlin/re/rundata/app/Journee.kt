@@ -2,6 +2,7 @@ package re.rundata.app
 
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -27,6 +28,7 @@ enum class Couleur(val mot: String) {
 }
 
 /** Une température MESURÉE, avec sa station, sa distance et son heure, telle que rundata.re la donne. */
+@Serializable
 data class Mesure(
     val temperature: String,
     val station: String,
@@ -40,6 +42,7 @@ data class Mesure(
 }
 
 /** La vigilance de Météo-France pour la zone de la commune : jamais une couleur donnée à la commune elle-même. */
+@Serializable
 data class Vigilance(
     /** « Vigilance météo : verte pour le Sud (Météo-France), la zone de Saint-Pierre. » */
     val texte: String,
@@ -66,28 +69,36 @@ data class Vigilance(
     val enPremier: Boolean get() = auDessusDuVert || alerteCyclonique != null
 }
 
+@Serializable
 data class Volcan(val niveau: String?, val eruption: String?, val alerte: Boolean, val page: String)
 
+@Serializable
 data class Source(val nom: String, val licence: String?)
 
 /** La température de la mer au large de la commune, mesurée par satellite (le jour de la mesure). */
+@Serializable
 data class Mer(val temperature: String, val auLargeDe: String?)
 
 /**
  * Ce qui reste du jour d'après la PRÉVISION de modèle du résumé, jamais une mesure : « 24,1 °C », « 25,2 °C », « pas de
  * pluie prévue de 20 h à minuit ». Jamais dite comme une alerte.
  */
+@Serializable
 data class Prevision(val min: String?, val max: String?, val pluie: String?)
 
 /** Une sortie du jour : un événement d'un agenda (avec son statut, « ANNULÉ »…) ou un marché, et son lien. */
+@Serializable
 data class Sortie(val titre: String, val quand: String?, val lieu: String?, val statut: String?, val lien: String?, val marche: Boolean = false)
 
 /** Une information des médias sur les routes, ou un avis du réseau de bus, telle quelle, avec son heure et son média. */
+@Serializable
 data class InfoRoute(val titre: String, val quand: String?, val media: String?, val lien: String?)
 
 /** Ce que le résumé dit des routes : ses informations, ou rien de lu (null : les médias n'ont pas été lus). */
+@Serializable
 data class Routes(val infos: List<InfoRoute>?, val bus: List<InfoRoute>, val littoral: String?)
 
+@Serializable
 data class AvisEau(
     val titre: String,
     val nePasBoire: Boolean,
@@ -101,6 +112,7 @@ data class AvisEau(
 )
 
 /** La journée d'une commune, comme rundata.re la donne : ce que l'écran principal et le widget montrent. */
+@Serializable
 data class Journee(
     val commune: Commune,
     val resume: String?,
@@ -133,10 +145,16 @@ class JourneeSource(
     private val mcp: RundataMcp,
     /** Les réponses de `vigilance_meteo` et de `cyclones` à montrer au lieu des vraies : la version d'essai seulement. */
     private val simulees: () -> Pair<JsonObject?, JsonObject?>? = { null },
+    /** La copie des réponses, partagée par l'écran et les widgets (Copie). */
+    private val copie: Copie = Copie(),
 ) {
+    /** Un outil, lu du site ou de la copie de moins de 5 min. */
+    private suspend fun appeler(outil: String, lieu: String? = null): JsonObject =
+        copie.lire("$outil|${lieu.orEmpty()}") { mcp.appeler(outil, lieu?.let { mapOf("lieu" to it) } ?: emptyMap()) }
+
     suspend fun journee(commune: Commune): Journee = coroutineScope {
-        val resume = mcp.appeler("resume_du_jour", mapOf("lieu" to commune.nom))
-        val meteo = if (mesureDuResume(resume) == null) runCatching { mcp.appeler("meteo_actuelle", mapOf("lieu" to commune.nom)) }.getOrNull() else null
+        val resume = appeler("resume_du_jour", commune.nom)
+        val meteo = if (mesureDuResume(resume) == null) runCatching { appeler("meteo_actuelle", commune.nom) }.getOrNull() else null
         journeeDe(commune, resume, meteo)
     }
 
@@ -146,8 +164,8 @@ class JourneeSource(
      */
     suspend fun journeeEtAlertes(commune: Commune): Journee = coroutineScope {
         val essai = simulees()
-        val vigilance = async { essai?.first ?: runCatching { mcp.appeler("vigilance_meteo", mapOf("lieu" to commune.nom)) }.getOrNull() }
-        val cyclones = async { essai?.second ?: runCatching { mcp.appeler("cyclones") }.getOrNull() }
+        val vigilance = async { essai?.first ?: runCatching { appeler("vigilance_meteo", commune.nom) }.getOrNull() }
+        val cyclones = async { essai?.second ?: runCatching { appeler("cyclones") }.getOrNull() }
         val j = journee(commune)
         val v = vigilance.await()
         val c = cyclones.await()
@@ -272,6 +290,7 @@ internal fun etatDe(texte: String): String? {
 }
 
 /** « Vigilance orange vents forts », en orange : une pastille de vigilance. */
+@Serializable
 data class Pastille(val texte: String, val couleur: Couleur)
 
 /** Les pastilles de `etat` (voir Vigilance.pastilles), dans l'ordre du texte. */

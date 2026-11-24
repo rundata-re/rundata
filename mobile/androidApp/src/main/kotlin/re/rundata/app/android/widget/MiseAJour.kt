@@ -11,7 +11,7 @@ import androidx.work.WorkerParameters
 import re.rundata.app.McpErreur
 import re.rundata.app.android.PrefsReglages
 import re.rundata.app.communeDe
-import re.rundata.app.android.source
+import re.rundata.app.android.sourceWidget
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -33,7 +33,7 @@ class MiseAJour(context: Context, params: WorkerParameters) : CoroutineWorker(co
         val lues = communes.map { commune ->
             val avant = Donnees.lire(c, commune.slug)
             val apres = try {
-                Donnees.de(c.source.journeeEtAlertes(commune))
+                Donnees.de(c.sourceWidget.journeeEtAlertes(commune))
             } catch (e: McpErreur) {
                 // La dernière lecture reste, avec son heure ; l'échec est dit.
                 (avant ?: Donnees(commune.nom, null, null, null, null, false, null, slug = commune.slug)).copy(echecA = heureLocale())

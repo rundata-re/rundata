@@ -44,6 +44,7 @@ data class Alerte(
  * Les alertes d'une commune, lues de `vigilance_meteo` (sa zone) et de `cyclones` (l'île) : la plus grave en premier.
  * Vide : rien au-dessus du vert, ni alerte cyclonique, ni système actif.
  */
+@Serializable
 data class Alertes(
     val liste: List<Alerte>,
     /** « Sud ». */

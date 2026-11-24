@@ -37,7 +37,7 @@ import re.rundata.app.android.widget.RecepteurWidget
 class MainActivity : ComponentActivity() {
     class Etat(app: RundataApp) : ViewModel() {
         private val reglages = PrefsReglages(app)
-        val modele = Modele(app.source, reglages, viewModelScope)
+        val modele = Modele(app.source, reglages, viewModelScope, horloge = ::heureDeLaReunion)
     }
 
     private lateinit var modele: Modele

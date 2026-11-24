@@ -8,7 +8,7 @@
 import type { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import type { JSONRPCMessage } from "@modelcontextprotocol/sdk/types.js";
 import { stopwatch, type Hit, type Recorder } from "./metrics.js";
-import { communeAt, resolvePlace } from "./places/resolve.js";
+import { communeAt, resolvePlace, wholeIsland } from "./places/resolve.js";
 
 /** One JSON-RPC message of a request. */
 export interface Asked {
@@ -63,6 +63,9 @@ const ADDRESS = /(?:^|[^\p{L}\d])\d{1,4}\s*(?:bis|ter|[a-d])?\s*,?\s*(?:rue|ruel
 
 /** The place asked, as the gazetteer understands it: its name and commune, or the text asked if it does not. */
 export function understood(lieu: string): Pick<Hit, "detail" | "place" | "commune"> {
+  // « La Réunion » alone: the whole island, which the tools take as no place given (server.ts), never a place not
+  // understood: a tool failing then is an « erreur », not a « lieu inconnu » (24/11/2026).
+  if (wholeIsland(lieu)) return { detail: "toute l'île", place: "île" };
   const r = resolvePlace(lieu);
   if (r?.correspondance === "coordonnees") return { detail: "coordonnées", place: "coordonnées", commune: communeAt(r.lieu.lon, r.lieu.lat) };
   if (r) return { detail: r.lieu.nom, place: "résolu", commune: r.lieu.commune };

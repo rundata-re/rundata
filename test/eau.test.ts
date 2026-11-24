@@ -54,6 +54,14 @@ describe("qualité de l'eau", () => {
     expect(p.samples).toHaveLength(34);
     expect(p.samples.find((s) => s.date === "2026-01-20")).toEqual({ date: "2026-01-20", enterocoques: "4000", e_coli: "2500", qualite: "mauvaise" });
     expect(p.samples.at(-1)).toMatchObject({ date: "2026-09-15", enterocoques: "15", e_coli: "<15", qualite: "bonne" });
+    expect(parsePage(fixture("baignade_974000709_2027.html", "latin1")).classement).toEqual({ saison: 2027, texte: "site non classé" });
+  });
+
+  it("reads a classification written in its own tag, and none from an empty label", () => {
+    // As on the page of the centre-ville beach of Saint-Pierre, season 2026 (read 24/11/2026).
+    const classed = "<td class=\"titre_depeche\">\n\t\tClassement de l'ann&eacute;e 2026 : \n\t\t<span class=\"clast1\">\n\t\t Excellent  </span> \n\t</td>";
+    expect(parsePage(classed).classement).toEqual({ saison: 2026, texte: "Excellent" });
+    expect(parsePage("<td>\n\t\tClassement de l'ann&eacute;e 2026 : \n\t</td>").classement).toBeNull();
   });
 
   it("grades a sample by the ministry's thresholds, and names the season by the year it ends", () => {
@@ -69,6 +77,8 @@ describe("qualité de l'eau", () => {
     expect(b.eau_du_robinet).toBeUndefined();
     expect(b.baignade.sites[0]).toMatchObject({ site: "Plage de l'Hermitage centre", dernier_prelevement: "15/09/2026", qualite_dernier_prelevement: "bonne" });
     expect(b.baignade.sites[0].derniers_prelevements[1]).toEqual({ date: "08/09/2026", qualite: "moyenne", enterocoques_100ml: "290", e_coli_100ml: "130" });
+    // Neither season classified (« site non classé », then an empty label): no classement at all, as on /eau.
+    expect(b.baignade.sites[0]).not.toHaveProperty("classement");
     expect(b.risque_requin.regle).toMatch(/^À La Réunion, la baignade et les activités de vague .* Arrêté préfectoral n° 180 du 13\/02\/2026/);
     expect(b.risque_requin.zones).toContain("Lagon de l'Hermitage : lagon, baignade permise dans les conditions fixées par la commune (arrêté préfectoral n° 180, art. 2).");
     expect(b.sources.map((s: { source: string }) => s.source)).toContain(SOURCE.nom);
@@ -128,6 +138,11 @@ describe("qualité de l'eau", () => {
     const paul = await qualiteEau(cache(), "Saint-Paul", "baignade", NOW);
     expect(body(paul).baignade.sites).toHaveLength(9);
     expect(paul.content[0].text.length).toBeLessThan(11_000);
+    // Saint-Gilles-les-Bains: its own beaches, never the one of L'Étang-Salé-les-Bains.
+    const gilles = body(await qualiteEau(cache(), "Saint-Gilles-les-Bains", "baignade", NOW)).baignade.sites.map((r: { site: string; commune: string }) => r);
+    expect(gilles.length).toBeGreaterThan(0);
+    expect(gilles.every((r: { commune: string }) => r.commune === "Saint-Paul")).toBe(true);
+    expect(gilles.map((r: { site: string }) => r.site)).toContain("Plage des Roches Noires");
     expect(body(paul).baignade.sites.filter((r: object) => "derniers_prelevements" in r)).toHaveLength(2);
     expect(body(await qualiteEau(cache(), "Terre-Sainte", "baignade", NOW)).baignade.sites.length).toBeLessThanOrEqual(2);
     // A place with more than one site within 5 km gets two: Grand Fond, between Boucan Canot and Les Roches Noires.
@@ -266,6 +281,20 @@ describe("qualité de l'eau", () => {
     const rien = coupuresCommunePage("https://rundata.re", p, { coupures: null, eau: null, secheresse: null }, NOW);
     expect(rien).not.toContain('id="h-robinet"');
     expect(rien).toContain('<a href="/eau">La qualité de l\'eau du robinet, commune par commune →</a>');
+  });
+
+  it("gives on /eau each site's classification by the ARS, as qualite_eau does, and none for a site not classified", async () => {
+    const ile = await gather(cache(), NOW);
+    const [first] = ile.baignades;
+    // The recorded seasons are « site non classé »: no classification read.
+    expect(first.classement).toBeUndefined();
+    const render = (baignades: typeof ile.baignades) => {
+      const page = eauPage("https://rundata.re", { value: { ...ile, baignades, a_savoir: COMMON, sources: [] }, fetchedAt: NOW, stale: false }, NOW);
+      const at = page.indexOf(`>${esc(first.site)}<small>`);
+      return page.slice(at, page.indexOf("</li>", at));
+    };
+    expect(render([{ ...first, classement: "Excellent (saison 2026)" }])).toContain(" · classée Excellent par l'ARS (saison 2026)");
+    expect(render([first])).not.toContain("classée");
   });
 
   it("says on /eau, under the count, that no sample was published for weeks, and gives the note without « toutes les deux semaines »", async () => {
@@ -508,6 +537,13 @@ describe("qualité de l'eau", () => {
     // A name of common words only: found by them, not left for two other beaches of the commune.
     expect(siteNamed("plage du centre-ville de Saint-Pierre")?.nom).toBe("Plage du centre-ville de Saint-Pierre");
     expect(siteNamed("Saint-Pierre")).toBeNull();
+    // « les Bains » names no site: Saint-Gilles-les-Bains is not the beach of L'Étang-Salé-les-Bains.
+    expect(siteNamed("Saint-Gilles-les-Bains")).toBeNull();
+    expect(siteNamed("Saint-Gilles les Bains")).toBeNull();
+    expect(siteNamed("L'Étang-Salé-les-Bains")?.nom).toBe("Plage de L'Étang-Salé-les-Bains");
+    expect(siteNamed("plage de l'Étang-Salé-les-Bains")?.nom).toBe("Plage de L'Étang-Salé-les-Bains");
+    expect(siteNamed("La Saline-les-Bains")?.nom).toBe("Plage de La Saline-les-Bains");
+    expect(siteNamed("La Saline")?.nom).toBe("Plage de La Saline-les-Bains");
     expect(networkName("RESEAU ILET A CORDES")).toBe("Ilet à Cordes");
     expect(networkName("RESEAU MARE A POULE D'EAU")).toBe("Mare à Poule D'Eau");
   });

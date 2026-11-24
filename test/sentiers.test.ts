@@ -225,6 +225,32 @@ describe("sentiers de randonnée", () => {
     expect(trailsNamed(parseTrails(JSON.parse(fixture("sentiers.json")).features), "Roche Plate")).toHaveLength(6);
   });
 
+  it("finds a trail by its name with its cirque or commune after it, the place a filter only (24/11/2026)", async () => {
+    // « sentier des Porteurs Cilaos » answered for the whole cirque, 10 of its open trails, without the one asked.
+    for (const lieu of ["sentier des Porteurs Cilaos", "Porteurs à Cilaos", "sentier des Porteurs, Cilaos", "le sentier des Porteurs à Cilaos est ouvert ?"]) {
+      const b = body(await sentiersRandonnee(cache(), lieu, NOW));
+      expect(b.resume, lieu).toMatch(/^Sentier des Porteurs : ouvert\./);
+      expect(b.sentiers_nommes.map((t: { sentier: string }) => t.sentier), lieu).toEqual(["Sentier des Porteurs"]);
+      expect(b.autour, lieu).toBeUndefined();
+    }
+    // A trail of Mafate with « Mafate »; one of a commune with the commune.
+    const mafate = body(await sentiersRandonnee(cache(), "Marla - Maison Laclos à Mafate", NOW));
+    expect(mafate.sentiers_nommes.map((t: { sentier: string }) => t.sentier)).toEqual(["Marla - Maison Laclos"]);
+    expect(mafate.autour).toBeUndefined();
+    const commune = body(await sentiersRandonnee(cache(), "sentier de la Roche Pendue Saint-Leu", NOW));
+    expect(commune.resume).toMatch(/^Sentier de la Roche Pendue : FERMÉ/);
+    // /randonnees finds it the same way: its filter reads each row with its sector's title, the cirque one word of it.
+    const page = randonneesPage("https://rundata.re", { value: await buildRandonnees(cache(), NOW), fetchedAt: NOW, stale: false }, NOW);
+    const at = page.indexOf(">Sentier des Porteurs<");
+    const summary = page.slice(page.lastIndexOf("<summary", at), page.indexOf("</summary>", page.lastIndexOf("<summary", at)));
+    expect(at).toBeGreaterThan(0);
+    expect(summary).toContain("Cilaos");
+    expect(page.lastIndexOf("</details>", at)).toBeLessThan(page.lastIndexOf("<summary", at));
+    // The place alone, or with words of no trail: the zone, as before.
+    expect(body(await sentiersRandonnee(cache(), "sentiers à Cilaos", NOW)).sentiers_nommes).toBeUndefined();
+    expect(body(await sentiersRandonnee(cache(), "Cilaos", NOW)).autour).toBeDefined();
+  });
+
   it("takes a cirque as a whole, not the places named after it", async () => {
     const b = body(await sentiersRandonnee(cache(), "sentiers fermés à Mafate", NOW));
     // A hike of the cirque crosses a closed trail: said first.

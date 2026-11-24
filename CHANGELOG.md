@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Mardi 24 novembre 2026
 
+- Outils IA : un sentier demandé avec son cirque ou sa commune (« sentier des Porteurs, Cilaos ») donne bien l'état de ce sentier
 - Assistants IA : le nombre de places en crèche de chaque commune, d'après la CAF.
 - Eau de baignade : /eau dit d'abord que l'ARS n'a publié aucun prélèvement de la saison, avec ses dates, sans rien conclure sur l'eau
 - Randonnée : un sentier que l'ONF a retiré de sa carte n'est plus dit ouvert ; sa page renvoie à la carte officielle

@@ -40,7 +40,8 @@ describe("/en, the page in English", () => {
     const page = await text("/en");
     expect(page).toContain('<header lang="fr" ');
     expect(page).toMatch(/<footer class="foot[^"]*" lang="fr">/);
-    expect(page).toContain('<a class="evite" href="#contenu" lang="fr">Skip to content</a>');
+    // In English like the page around it: a screen reader says it with the page's voice (WCAG 3.1.2).
+    expect(page).toContain('<a class="evite" href="#contenu">Skip to content</a>');
     // The text itself, in English: no French typography, no « nous ».
     const main = page.slice(page.indexOf("<main"), page.indexOf("</main>"));
     expect(main).not.toMatch(/ [:;?!]/);

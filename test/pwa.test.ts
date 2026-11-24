@@ -385,7 +385,8 @@ describe("the site's part", () => {
     expect(INSTALL).not.toContain("Ajouter au Dock");
     expect(INSTALL).not.toContain("Pas de bouton");
     expect(INSTALL).not.toContain("Selon la version de Firefox");
-    expect(INSTALL).not.toContain("<h2");
+    // No section heading of /application in the block: its one heading is its own.
+    expect(INSTALL.match(/<h\d/g)).toEqual(["<h2"]);
   });
 
   it("gives marketing's steps for Safari, Chrome and Firefox, and general ones where no menu name was read", () => {

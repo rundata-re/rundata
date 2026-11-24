@@ -13,6 +13,9 @@ describe("the template of every page, lighter by its repeated words", () => {
     const html = placePage(O, pageOf("cilaos")!, null, NOW);
     expect(INSTALL.startsWith('<template id="inst-t"><div class="card inst" id="inst" hidden>')).toBe(true);
     expect(INSTALL.endsWith("</div></template>")).toBe(true);
+    // A second-level heading: on the bus pages it comes right after the h1, and a h3 there skipped a level.
+    expect(INSTALL).toContain("<h2>rundata.re sur votre écran d'accueil</h2>");
+    expect(INSTALL).not.toContain("<h3>");
     expect(html).toContain(INSTALL);
     expect(text(html)).not.toContain("rundata.re sur votre écran d'accueil");
     expect(text(html)).not.toContain("Faites défiler les options");

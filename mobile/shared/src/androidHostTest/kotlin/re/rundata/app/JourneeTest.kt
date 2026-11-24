@@ -184,6 +184,19 @@ class JourneeTest {
         assertEquals("13 km", Mots.km(13.2))
     }
 
+    /** Une bouée mesure près de la commune : sa mesure d'abord, avec son nom et son heure ; le satellite n'est pas pris. */
+    @Test
+    fun laBoueeDAbordQuandElleMesure() = runTest {
+        val satellite = """\"mer\": {\"temperature_eau\": \"27 °C\", \"au_large_de\": [\"Saint-Denis\"], \"jour_mesure\": \"2026-11-21\", \"mesure\": \"satellite\"}"""
+        val bouee = """\"mer\": {\"temperature_eau\": \"25,8 °C\", \"mesure\": \"bouée Saint-Pierre du Cerema, à 3 km, à 09:40\", """ +
+            """\"bouee\": \"Saint-Pierre\", \"reseau\": \"Candhis\", \"distance_km\": 3.1, \"mesuree_a\": \"24/11/2026 09:40\", """ +
+            """\"satellite\": {\"temperature_eau\": \"27 °C\", \"au_large_de\": [\"Saint-Denis\"], \"jour_mesure\": \"2026-11-21\", \"mesure\": \"satellite\"}}"""
+        val enregistre = enregistree("resume-saint-denis")
+        assertTrue(satellite in enregistre)
+        val j = JourneeSource(serveur(mapOf("resume_du_jour" to enregistre.replace(satellite, bouee)))).journee(communeDe("saint-denis")!!)
+        assertEquals(Mer("25,8\u00a0°C", null, null, bouee = "Saint-Pierre", heure = "09:40"), j.mer)
+    }
+
     @Test
     fun lesVingtQuatreCommunesEtLeursPages() {
         assertEquals(24, COMMUNES.size)

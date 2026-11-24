@@ -192,7 +192,10 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
   const ailleurs = /^(?:la )?(?:ville|commune|mairie)\b/i.test(publisher ?? "") ? "Une coupure peut être annoncée ailleurs." : "Une coupure peut être annoncée ailleurs, par la mairie par exemple.";
   // The same sentence opens the page and its description (meta, og, twitter, JSON-LD), so that neither says it otherwise.
   // Given `esc` for the page, which escapes only the names and the hour.
-  const noNotice = (e = (t: string) => t) => `Pas d'avis de coupure récent ou à venir publié par ${e(publisher!)}${publisher!.includes(p.nom) ? "" : ` ${e(where)}`}, lu ${e(at)}.`;
+  // A publisher that names the commune already (« la ville du Tampon », « la ville de Trois-Bassins ») is not followed by
+  // « au Tampon » (24/11/2026): the commune is looked for without its article.
+  const named = (who: string) => who.includes(p.nom.replace(/^(?:Les?|La) |^L'/, ""));
+  const noNotice = (e = (t: string) => t) => `Pas d'avis de coupure récent ou à venir publié par ${e(publisher!)}${named(publisher!) ? "" : ` ${e(where)}`}, lu ${e(at)}.`;
   // Not read again for a while (tools/copie-ancienne.ts): said first, the publisher's site and the mairie's linked when
   // known (marketing, 23/11/2026); the mairie alone when the notices read are its own.
   const ancienne = w.coupures && (dist?.avis || x.avis.length) ? copieAncienne("eau", new Date(lusLe(w.coupures)), now, "page") : undefined;

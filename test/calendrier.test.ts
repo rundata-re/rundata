@@ -5,7 +5,7 @@ import { astronomicalNight, breaks, darkNight, horizonDe, moon, moonLight, nextP
 import { resolvePlace } from "../src/places/resolve.js";
 import { calendrier, ferieDit, nomFerie, longDate, moonOf, nuitOf, ordinaux } from "../src/tools/calendrier.js";
 import { buildCalendrier } from "../src/web/data.js";
-import { calendrierLive, calendrierPage } from "../src/web/domains.js";
+import { calendrierLive, calendrierPage } from "../src/web/calendrier.js";
 
 const fixture = (f: string) => JSON.parse(readFileSync(new URL(`./fixtures/${f}`, import.meta.url), "utf8"));
 const body = (r: { content: { text: string }[] }) => JSON.parse(r.content[0].text);

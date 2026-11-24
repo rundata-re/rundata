@@ -6,7 +6,7 @@ import { actualites, infoRow } from "../src/tools/actualites.js";
 import { annonceOf, etatText, forSummary, littoral, NONE } from "../src/tools/littoral.js";
 import { resume } from "../src/tools/resume.js";
 import { type ActualitesAnswer, type TraficAnswer, withRoadNews } from "../src/web/data.js";
-import { traficPage } from "../src/web/domains.js";
+import { traficPage } from "../src/web/trafic.js";
 import { pageOf } from "../src/web/places.js";
 
 // Saturday 24/10/2026, 19:00 in La Réunion.

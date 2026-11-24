@@ -4,7 +4,7 @@ import { counted, SCHEDULED_BUDGET, scheduled } from "../src/budget.js";
 import { Cache, type CacheEntry, MemoryStore, TieredStore } from "../src/cache.js";
 import { readings, type Readings, STATIONS } from "../src/providers/vigicrues.js";
 import { buildCrues, type CruesAnswer, FRESH_SECONDS } from "../src/web/data.js";
-import { cruesLive } from "../src/web/domains.js";
+import { cruesLive } from "../src/web/crues.js";
 import { type Kv, kvKey, oublierEcritures, SHARED, SharedFallback, warmShared } from "../src/web/partagees.js";
 
 // What an earlier file wrote to KV, kept by partagees.ts as an isolate keeps it: forgotten, as in an isolate of this file's own.

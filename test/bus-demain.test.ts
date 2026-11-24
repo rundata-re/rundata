@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { Cached } from "../src/cache.js";
 import { communePage } from "../src/web/commune.js";
 import type { BusData, CommuneData, TraficAnswer } from "../src/web/data.js";
-import { busLive, busPage, saidNow, traficPage } from "../src/web/domains.js";
+import { busLive, busPage, saidNow } from "../src/web/domains.js";
+import { traficPage } from "../src/web/trafic.js";
 import { demos } from "../src/web/home.js";
 import { pageOf } from "../src/web/places.js";
 

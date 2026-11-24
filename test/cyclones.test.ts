@@ -9,7 +9,7 @@ import { SECTIONS } from "../src/web/kit-cyclone.js";
 import { alertePage } from "../src/web/alerte-cyclone.js";
 import { basinMap } from "../src/web/cyclones-bassin.js";
 import type { CyclonesAnswer } from "../src/web/data.js";
-import { cyclonesPage } from "../src/web/domains.js";
+import { cyclonesPage } from "../src/web/cyclones.js";
 import { CYCLONE_SCALE, vigilancePage } from "../src/web/pages.js";
 import { ecolesPage } from "../src/web/ecoles.js";
 

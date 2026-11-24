@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, type Cached, MemoryStore } from "../src/cache.js";
 import { buildCrues, type CruesAnswer, fordNews } from "../src/web/data.js";
-import { cruesLive, cruesPage } from "../src/web/domains.js";
+import { cruesLive, cruesPage } from "../src/web/crues.js";
 import { homePage } from "../src/web/home.js";
 import { CSS } from "../src/web/pages.js";
 import { deadAnchors, doubleIds } from "./cartes.js";

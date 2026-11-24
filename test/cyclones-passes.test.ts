@@ -5,7 +5,7 @@ import { kmh, mesures, PASSES, passeOf, RAIN_NOTE, records, slugDuNom, total } f
 import { cyclones } from "../src/tools/cyclones.js";
 import { metaOf, passePage, titleOf } from "../src/web/cyclones-passes.js";
 import { DESCRIPTION_MAX } from "../src/web/pages.js";
-import { cyclonesPage } from "../src/web/domains.js";
+import { cyclonesPage } from "../src/web/cyclones.js";
 
 const NOW = new Date("2026-10-24T10:00:00Z");
 const passe = (slug: string) => PASSES.find((p) => p.slug === slug)!;

@@ -3,7 +3,7 @@ import * as accidents from "../src/routes/accidents.js";
 import { toutesLesSources } from "../src/server.js";
 import { enGrand } from "../src/tools/format.js";
 import { communePage } from "../src/web/commune.js";
-import { accidentsSection } from "../src/web/domains.js";
+import { accidentsSection } from "../src/web/trafic.js";
 import { pageOf } from "../src/web/places.js";
 
 // Tuesday 03/11/2026, 15:00 at La Réunion.

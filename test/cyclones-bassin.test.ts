@@ -5,7 +5,7 @@ import type { CyclonesAnswer } from "../src/web/data.js";
 import { carteHtml } from "../src/web/cmrs-carte.js";
 import traces from "../src/historique/cyclones-traces.json" with { type: "json" };
 import { basinMap, label, TRACES, TRACES_SCRIPT, xy, ZONE_SOURCE } from "../src/web/cyclones-bassin.js";
-import { cyclonesPage } from "../src/web/domains.js";
+import { cyclonesPage } from "../src/web/cyclones.js";
 import { CSS } from "../src/web/pages.js";
 import ocean from "../src/web/ocean.json" with { type: "json" };
 

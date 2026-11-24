@@ -7,7 +7,7 @@ import type { Store } from "../src/providers/vigilance-carte.js";
 import { carteOfficielle, cyclones } from "../src/tools/cyclones.js";
 import { carteHtml, carteRoute } from "../src/web/cmrs-carte.js";
 import { buildCyclones } from "../src/web/data.js";
-import { cyclonesPage } from "../src/web/domains.js";
+import { cyclonesPage } from "../src/web/cyclones.js";
 
 // Météo-France's list of the RSMC's bulletins as read on 27/10/2026 (AGUEDA's, the newest of 23/10/2026 at 13:06 UTC),
 // and its forecast track map as web.archive.org kept it on 02/01/2026 (GRANT, written at 12:44:09 UTC): to test the

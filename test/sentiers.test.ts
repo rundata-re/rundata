@@ -10,7 +10,8 @@ import { communeAt } from "../src/places/resolve.js";
 import { citerOf } from "../src/tools/citer.js";
 import { routesIn } from "../src/web/randonnees.js";
 import { SECTEURS as PAGES_SECTEURS } from "../src/traces/secteurs.js";
-import { closedTrails, randonneesLive, randonneesPage, sentiersPage } from "../src/web/domains.js";
+import { closedTrails, randonneesLive, randonneesPage } from "../src/web/domains.js";
+import { sentiersPage } from "../src/web/sentiers.js";
 import { mapPoints, tabStops } from "./cartes.js";
 
 // The ONF's map of the trails on 24/10/2026, last edited on 20/10: 56 trails closed out of 351 (389 pieces).

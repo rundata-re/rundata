@@ -5,7 +5,7 @@ import { Cache, MemoryStore } from "../src/cache.js";
 import * as carburants from "../src/providers/carburants.js";
 import type { Fil, Info } from "../src/providers/actualites.js";
 import { buildTrafic, roadNewsNow, withRoadNews } from "../src/web/data.js";
-import { traficPage } from "../src/web/domains.js";
+import { traficPage } from "../src/web/trafic.js";
 import { islandMap, ownIds } from "../src/web/map.js";
 import { doubleIds } from "./cartes.js";
 

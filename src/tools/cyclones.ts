@@ -6,6 +6,8 @@ import * as cmrsTrace from "../providers/cmrs-trace.js";
 import { SITE_URL } from "./citer.js";
 import * as mf from "../providers/vigilance.js";
 import { why } from "../types.js";
+import { later } from "../budget.js";
+import { noteLecture } from "../lectures.js";
 import { credits, text } from "./format.js";
 import * as prefecture from "../providers/prefecture.js";
 import { ecolesBlock, ORSEC, quotidienLine } from "./ecoles.js";
@@ -184,6 +186,42 @@ export function carteOfficielle(c: cmrs.Carte | undefined) {
   };
 }
 
+/**
+ * How long a call waits for GDACS's list when its copy says no system is active and no cyclone alert is up, ms: past it,
+ * that copy, its time said, and the read goes on after the answer. The wait of /aujourdhui/<commune> for an assistant
+ * (web/site.ts HOME_READER_WAIT_MS). Its keys are always waited for by the cache (cache.ts ALWAYS_WAITED): from 21 to
+ * 24/11/2026 (Analytics Engine), 36 of the tool's 134 calls took more than 2 s, 2,568 ms in the middle when the list was
+ * read again, with no system active in the basin.
+ */
+export const CALME_WAIT_MS = 800;
+/** A copy of the list older than this, ms, is no answer in its place: the read is waited for, as before. */
+export const CALME_COPIE_MAX_MS = 3600_000;
+
+/**
+ * GDACS's list as the call can tell it. While a system is active in the newest copy, or a cyclone alert is up or could
+ * not be read (or the vigilance is not plugged in), or the copy is older than CALME_COPIE_MAX_MS or missing, the read is waited for as long as it takes: a cyclone is never told
+ * from an old copy. Otherwise past CALME_WAIT_MS the copy is the answer, noted as a late read (tools/fraicheur.ts).
+ */
+async function systemesDuMoment(cache: Cache, now: Date, alerted: ReturnType<typeof alert>): Promise<{ value: gdacs.Systeme[] }> {
+  const read = gdacs.systemes(cache, now);
+  // Its failure handled where it is awaited, below or by the caller: none left unhandled while the copy is read.
+  read.catch(() => undefined);
+  const copie = await cache.peek<gdacs.Systeme[]>("cyclones:liste").catch(() => undefined);
+  if (!copie || now.getTime() - copie.fetchedAt.getTime() >= CALME_COPIE_MAX_MS || copie.value.some((s) => gdacs.isActive(s, now))) return read;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const late = new Promise<undefined>((resolve) => (timer = setTimeout(() => resolve(undefined), CALME_WAIT_MS)));
+  const got = await Promise.race([read, late]);
+  clearTimeout(timer);
+  if (got) return got;
+  // A cyclone alert up, or not read (a doubt): GDACS waited for, whatever its copy says.
+  const a = await alerted;
+  if (!a || a.texte || a.non_lue) return read;
+  later(read.catch(() => undefined));
+  console.log(`lecture trop lente pour la réponse : cyclones:liste, copie du ${copie.fetchedAt.toISOString()} servie, aucun système actif`);
+  noteLecture({ key: "cyclones:liste", fetchedAt: copie.fetchedAt.getTime(), stale: true, tardive: true, freshSeconds: gdacs.LIST_FRESH_SECONDS, source: gdacs.SOURCE.id });
+  return copie;
+}
+
 /** `lieu` is still accepted, for the clients that send it, and has no effect: no distance is computed any more. */
 export async function cyclones(cache: Cache, _lieu: string | undefined, now = new Date(), nom?: string) {
   if (nom?.trim()) {
@@ -197,7 +235,7 @@ export async function cyclones(cache: Cache, _lieu: string | undefined, now = ne
   const alerted = alert(cache, now);
   let list: gdacs.Systeme[];
   try {
-    list = (await gdacs.systemes(cache, now)).value.filter((s) => s.debut <= now.toISOString());
+    list = (await systemesDuMoment(cache, now, alerted)).value.filter((s) => s.debut <= now.toISOString());
   } catch (err) {
     console.error(`source ${gdacs.SOURCE.id} indisponible:`, why(err));
     const a = await alerted;

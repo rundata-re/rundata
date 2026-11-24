@@ -26,7 +26,7 @@ export const SOURCE: SourceInfo = {
 };
 
 const API = "https://www.gdacs.org/gdacsapi/api";
-const LIST_FRESH_SECONDS = 30 * 60;
+export const LIST_FRESH_SECONDS = 30 * 60;
 // An episode's timeline never changes once published; a new advisory is a new episode.
 const TIMELINE_FRESH_SECONDS = 24 * 3600;
 /** A system whose last advisory is older than this is over (one advisory every 6 hours while active). */

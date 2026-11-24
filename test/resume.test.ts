@@ -6,7 +6,7 @@ import { Cache, type CacheEntry, MemoryStore, stampOf, TieredStore } from "../sr
 import { configure } from "../src/providers/mf-auth.js";
 import { withLectures } from "../src/lectures.js";
 import { fraicheur } from "../src/tools/fraicheur.js";
-import { AFTER_ANSWER_CAP, apresAlertes, COURT, court, readCopies, refresh, resume, RESUME_BUILD_WAIT_MS, RESUME_REFRESH_WAIT_MS, resumeDuJour, UPDATING, VOLCANO_COMMUNES } from "../src/tools/resume.js";
+import { AFTER_ANSWER_CAP, apresAlertes, COURT, court, METEO_NOM, partiesLaissees, PREVISION_NOM, fromStations, readCopies, refresh, resume, RESUME_BUILD_WAIT_MS, RESUME_REFRESH_WAIT_MS, resumeDuJour, STATIONS_KEY, UPDATING, VOLCANO_COMMUNES } from "../src/tools/resume.js";
 import { HOME_READER_WAIT_MS, LIVE_READER_WAIT_MS } from "../src/web/site.js";
 import * as volcanSrc from "../src/providers/volcan.js";
 import * as seismes from "../src/providers/seismes.js";
@@ -678,6 +678,71 @@ describe("reading the copies", () => {
     // The island's copy waited within the call's own wait without a copy (ISLAND_ALONE_MS, bounded by RESUME_BUILD_WAIT_MS).
     expect(logs.mock.calls.flat().join("\n")).toContain(`servie, copie du centre de données trop vieille, attente ${RESUME_BUILD_WAIT_MS} ms`);
     logs.mockRestore();
+  });
+
+  /** The copy of the island's stations (/meteo), `min` old: Saint-Paul's station and Le Port's, measured 6 min before. */
+  const islandStations = (min: number) => ({
+    value: {
+      stations: [],
+      toutes: [
+        { nom: "Le Port", id: "97407520", source: "meteofrance", lon: 55.29, lat: -20.94, altitude_m: 9, time: ago(6).toISOString(), stale: false, temperature: 29 },
+        { nom: "Saint-Paul", id: "97415590", source: "meteofrance", lon: SAINT_PAUL.place.lon, lat: SAINT_PAUL.place.lat, altitude_m: 30, time: ago(6).toISOString(), stale: false, temperature: 27.4, humidite: 70, vent: 12, direction: 250, pluie_1h: 0 },
+        { nom: "Station de quartier", source: "meteor-oi", lon: SAINT_PAUL.place.lon, lat: SAINT_PAUL.place.lat, altitude_m: 30, time: ago(3).toISOString(), stale: false, temperature: 31, amateur: true },
+      ],
+      mer: [],
+      sources: SOURCE("Météo-France"),
+      indisponibles: [],
+    },
+    fetchedAt: ago(min).getTime(),
+  });
+
+  /** The weather's copy of Saint-Paul from before midnight, its refresh slow: the weather left out without another copy. */
+  const oldWeather = async (stationsMin?: number) => {
+    const edge = await edgeWith();
+    await edge.put(KEYS.meteo, { value: COPIES.meteo.value, fetchedAt: ago(958).getTime() });
+    if (stationsMin != null) await edge.put(STATIONS_KEY, islandStations(stationsMin));
+    const served = globalThis.fetch;
+    const asked: string[] = [];
+    vi.stubGlobal("fetch", (url: string, init?: RequestInit) => {
+      asked.push(String(url));
+      return String(url).includes("DPPaquetObs") ? new Promise<Response>((ok) => setTimeout(() => ok(served(url, init)), 8000)) : served(url, init);
+    });
+    const logs = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const r = body(await resumeDuJour(isolate(edge), "Saint-Paul", NOW, () => undefined));
+    logs.mockRestore();
+    return { r, asked };
+  };
+
+  it("gives the weather measured from the island's stations when the commune's copy is too old, only the forecast left out", async () => {
+    // 24/11/2026 12:50, Saint-Philippe: « copie de 24/11 11:20, trop ancienne » in non_inclus, while meteo_actuelle gave
+    // Le Baril measured at 12:42 at the same minute.
+    const { r, asked } = await oldWeather(3);
+    // The station meteo_actuelle would name first, with its time, never the amateur one nearer.
+    expect(r.meteo.mesure).toMatchObject({ station: "Saint-Paul", heure_mesure: "24/10 13:54", mesures: { temperature: "27,4 °C", humidite: "70 %", vent_moyen: "12 km/h", pluie_1h: "0 mm en 1 h" } });
+    expect(r.meteo.prevision).toBeUndefined();
+    expect(r.resume).toContain("27,4 °C mesurés à 13:54 (station Saint-Paul");
+    expect(r.non_inclus.find((x: { partie: string }) => x.partie === METEO_NOM)).toBeUndefined();
+    expect(r.non_inclus.find((x: { partie: string }) => x.partie === PREVISION_NOM)).toMatchObject({ raison: "pas de copie récente", outil: "prevision_meteo", page: "https://rundata.re/meteo/saint-paul" });
+    // Its network credited; no source read for it: the measure is there with every request refused.
+    expect(r.sources.map((x: { source: string }) => x.source)).toContain("Météo-France");
+    expect(asked.length).toBeGreaterThan(0);
+    const edge = new EdgeLike();
+    await edge.put(STATIONS_KEY, islandStations(3));
+    vi.stubGlobal("fetch", () => Promise.reject(new Error("aucune requête attendue")));
+    const own = await fromStations(isolate(edge), SAINT_PAUL.place, NOW);
+    expect(own?.value.meteo?.stations[0]).toMatchObject({ station: "Saint-Paul", pertinence: "bonne", heure_mesure: "24/10 13:54" });
+    expect(own?.value.meteo?.stations.some((x) => x.amateur || x.source === "meteor-oi")).toBe(false);
+    expect(partiesLaissees({ content: [{ type: "text", text: JSON.stringify(r) }] })).toContain(PREVISION_NOM);
+  });
+
+  it("leaves the weather out when the island's stations are too old as well", async () => {
+    for (const r of [(await oldWeather(45)).r, (await oldWeather()).r]) {
+      expect(r.meteo).toBeUndefined();
+      expect(r.non_inclus.find((x: { partie: string }) => x.partie === METEO_NOM)).toMatchObject({ outil: "meteo_actuelle et prevision_meteo" });
+      expect(r.non_inclus.find((x: { partie: string }) => x.partie === PREVISION_NOM)).toBeUndefined();
+      expect(partiesLaissees({ content: [{ type: "text", text: JSON.stringify(r) }] })).toContain(METEO_NOM);
+    }
+    expect(partiesLaissees({ content: [{ type: "text", text: "{}" }] })).toBeUndefined();
   });
 
   it("gives the weather as its page has it, waiting a moment for a copy older than FRESH_SECONDS", async () => {

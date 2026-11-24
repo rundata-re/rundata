@@ -56,7 +56,7 @@ import { catalogue, INDEX, listeDu, serveur } from "./nouveautes.js";
 import { cite, SITE_URL } from "./tools/citer.js";
 import { marquerTiers, OUTILS_TIERS } from "./tools/tiers.js";
 import { FICHE_LA1ERE, FICHE_REUNION_FR, fichesNonReprises } from "./tools/non-repris.js";
-import { resumeDuJour } from "./tools/resume.js";
+import { partiesLaissees, resumeDuJour } from "./tools/resume.js";
 import { credits, text } from "./tools/format.js";
 import { localTime } from "./geo.js";
 import { INFOTRAFIC } from "./tools/littoral.js";
@@ -138,7 +138,7 @@ import * as peche from "./tools/peche.js";
 import * as cetaces from "./tools/cetaces.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.920";
+export const VERSION = "1.0.924";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -384,7 +384,9 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
       const island = !!lieu && wholeIsland(lieu) && !NEEDS_PLACE.has(name);
       const { value: { value: r, vide }, lectures } = await withLectures(() => withVide(name, () => run(island ? { ...args, lieu: undefined } : args, extra)), TOOL_WAIT_MS);
       // A call that found nothing (vide.ts) is told with its id, for the transport's record of it (usage.ts).
-      record({ kind: "mcp", name, detail: lieu?.trim().slice(0, 60) || undefined, ok: !("isError" in r && r.isError), ...(vide && { outcome: "vide", id: extra.requestId }) });
+      // The day's summary: the parts it left out, in its point's message (metrics.ts), the weather missing counted by day.
+      const laisse = name === "resume_du_jour" ? partiesLaissees(r) : undefined;
+      record({ kind: "mcp", name, detail: lieu?.trim().slice(0, 60) || undefined, ok: !("isError" in r && r.isError), ...(vide && { outcome: "vide", id: extra.requestId }), ...(laisse && { message: laisse }) });
       // Every answer says how to cite it, error or not (tools/citer.ts); the feedback tool's thanks already names rundata.re.
       const now = new Date();
       // The day's summary has a dozen dated parts: no single « donnee_du » for it, each part says its own.

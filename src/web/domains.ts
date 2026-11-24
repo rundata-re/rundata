@@ -1820,9 +1820,12 @@ const dayFr = (iso: string) => iso.slice(0, 10).split("-").reverse().join("/");
 function siteLine(s: EauAnswer["baignades"][number], g: Porte): string {
   const last = s.derniers_prelevements[0];
   const q = s.qualite_dernier_prelevement;
+  // The ARS's classification, as qualite_eau gives it (« Excellent (saison 2026) »); none for a site not classified.
+  const classe = s.classement ? /^(.+) \(saison (\d{4})\)$/.exec(s.classement) : null;
   return `<li class="tgt" id="${anchorId("b", s.site)}"><span>${esc(s.site)}<small>dernier prélèvement le ${esc(s.dernier_prelevement)}` +
     (last ? ` · ${esc(last.enterocoques_100ml)} entérocoques et ${esc(last.e_coli_100ml)} E. coli pour 100 mL` : "") +
-    (s.mauvais_sur_12_mois ? ` · ${s.mauvais_sur_12_mois} mauvais résultat${s.mauvais_sur_12_mois > 1 ? "s" : ""} sur 12 mois` : "") + `</small>${g.aller({ nom: s.site, lat: s.lat, lon: s.lon }, "baignade")}</span>` +
+    (s.mauvais_sur_12_mois ? ` · ${s.mauvais_sur_12_mois} mauvais résultat${s.mauvais_sur_12_mois > 1 ? "s" : ""} sur 12 mois` : "") +
+    (classe ? ` · classée ${esc(classe[1])} par l'ARS (saison ${classe[2]})` : "") + `</small>${g.aller({ nom: s.site, lat: s.lat, lon: s.lon }, "baignade")}</span>` +
     `<span class="q-${q ?? "none"}">${q ? esc(q) : "pas de résultat"}</span></li>`;
 }
 

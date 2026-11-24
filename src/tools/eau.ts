@@ -208,7 +208,7 @@ export function siteRow(r: baignades.Results, now: Date, from?: { lon: number; l
     })),
     mauvais_sur_12_mois: year.filter((s) => s.qualite === "mauvaise").length || undefined,
     prelevements_en_retard: sansPrelevement(last?.date, now),
-    classement: r.classement && !/non class/i.test(r.classement.texte) ? `${r.classement.texte} (saison ${r.classement.saison})` : undefined,
+    classement: r.classement?.texte && !/non class/i.test(r.classement.texte) ? `${r.classement.texte} (saison ${r.classement.saison})` : undefined,
   };
 }
 
@@ -252,8 +252,9 @@ function bathSentence(row: Omit<ReturnType<typeof siteRow>, "derniers_prelevemen
 export function siteNamed(lieu: string): baignades.Site | null {
   const q = new Set(words(lieu));
   const scored = baignades.SITES.map((s) => {
-    // The words of the site's own name: not « plage », not its commune (« Plage du centre-ville de Saint-Leu »).
-    const common = new Set([...words(s.commune), "plage", "bassin", "saint", "sainte", "ville", "centre"]);
+    // The words of the site's own name: not « plage », not its commune (« Plage du centre-ville de Saint-Leu »), not
+    // « Bains », which Saint-Gilles-les-Bains carries as well as L'Étang-Salé-les-Bains.
+    const common = new Set([...words(s.commune), "plage", "bassin", "saint", "sainte", "ville", "centre", "bains"]);
     // A name made of common words only (« Plage du centre-ville de Saint-Pierre ») is found by all of them but « plage ».
     const distinct = words(s.nom).filter((t) => !common.has(t));
     const own = distinct.length ? distinct : words(s.nom).filter((t) => t !== "plage" && t !== "bassin");

@@ -59,6 +59,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded by marketing): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-24T04:48:00+04:00", texte: "Eau de baignade\u00a0: chaque plage dit son classement par l'ARS, et Saint-Gilles-les-Bains donne ses propres plages" },
   { date: "2026-11-24T04:43:00+04:00", texte: "Assistants IA\u00a0: les résultats des élections de chaque commune depuis 1999, tels que le ministère de l'Intérieur les publie." },
   { date: "2026-11-24T04:39:00+04:00", texte: "Météo d'un lieu\u00a0: les sources sont dites une seule fois, en fin de page, regroupées par licence." },
   { date: "2026-11-24T04:23:00+04:00", texte: "Coupures d'eau aux Avirons, au Tampon, à Saint-Joseph et à l'Entre-Deux\u00a0: le titre dit où sont publiés les avis du distributeur." },

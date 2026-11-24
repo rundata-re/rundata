@@ -75,7 +75,10 @@ const cells = (row: string) => [...row.matchAll(/_resultat">\s*([^<]*?(?:<\s*\d[
 
 /** One season's page: its classification and its samples (tables of five, the dates in the header). */
 export function parsePage(html: string): { classement: { saison: number; texte: string } | null; samples: Sample[] } {
-  const c = /Classement de l'ann(?:&eacute;|é)e\s+(\d{4})\s*:\s*([^<]+)</.exec(html);
+  // The label, then its text up to the end of the cell: bare (« site non classé ») or in its own tag (« <span
+  // class="clast1"> Excellent </span> »). Nothing after the label: no classification.
+  const c = /Classement de l'ann(?:&eacute;|é)e\s+(\d{4})\s*:([\s\S]*?)<\/td>/.exec(html);
+  const texte = c ? unescape(c[2].replace(/<[^>]*>/g, " ")).replace(/\s+/g, " ").trim() : "";
   const samples: Sample[] = [];
   for (const block of html.split(/<!--\s*ENTETE\s*-->/).slice(1)) {
     const head = block.slice(0, block.indexOf("Valeur limite"));
@@ -88,7 +91,7 @@ export function parsePage(html: string): { classement: { saison: number; texte: 
       samples.push({ date, enterocoques: e[i] ?? "", e_coli: k[i] ?? "", qualite: quality(e[i] ?? "", k[i] ?? "") });
     });
   }
-  return { classement: c ? { saison: Number(c[1]), texte: unescape(c[2]).trim() } : null, samples };
+  return { classement: c && texte ? { saison: Number(c[1]), texte } : null, samples };
 }
 
 /** The season under way, by the year it ends: October 2026 opens the season « 2027 ». */

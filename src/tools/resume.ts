@@ -119,7 +119,7 @@ interface Copy {
   build: (cache: Cache, now: Date) => Promise<unknown>;
   /** How old a copy may be and still say something of today, in minutes. */
   max: number;
-  /** A copy of another day says nothing of today: an air index, the events, the holidays. */
+  /** A copy of another day says nothing of today: an air index, the holidays. */
   sameDay?: boolean;
   /** What the part is, for `non_inclus`, and the tool that answers it. */
   nom: string;
@@ -150,7 +150,10 @@ function copiesOf(commune: PlacePage, place: PlacePage): Record<Part, Copy | und
     actualites: { key: "web:actualites", build: buildActualites, max: 2 * H, nom: "actualités de la commune", outil: "actualites", page: "/actualites" },
     trafic: { key: "web:trafic", build: buildTrafic, max: 2 * H, nom: "routes, circulation et prix des carburants", outil: "actualites (sujet routes) et annuaire_services_publics (carburants)", page: "/trafic" },
     coupures: { key: "web:coupures", build: buildCoupures, max: 3 * H, nom: "coupures d'eau", outil: "coupures_eau", page: `/coupures-eau/${commune.slug}` },
-    agenda: { key: "web:agenda", build: buildAgenda, max: 24 * H, sameDay: true, nom: "événements du jour", outil: "evenements", page: "/evenements" },
+    // Not sameDay: the copy lists two weeks and the day's events are taken from it by date, each with the hour its
+    // source was read. A data center's copy of the day before was refused after midnight, the events left out until
+    // the refresh after the answer (24/11/2026 at 03:32, a copy of 15:19).
+    agenda: { key: "web:agenda", build: buildAgenda, max: 24 * H, nom: "événements du jour", outil: "evenements", page: "/evenements" },
     calendrier: { key: "web:calendrier", build: buildCalendrier, max: 24 * H, sameDay: true, nom: "jour férié et vacances", outil: "calendrier", page: "/calendrier" },
     // Only the TCO publishes the state of its skips: the other communes have no such part.
     dechets: dech.TCO_COMMUNES.includes(commune.nom)

@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Mardi 24 novembre 2026
 
+- Outils IA : la liste des sources compte les producteurs par famille de licence, comme la page des chiffres
 - Outils IA : dans une grande commune, les lieux pour enfants donnent les 15 plus proches, avec leur distance et le lien vers sa page.
 - Coupures d'eau : chaque avis dit le lieu qu'il nomme, et un site muet laisse lire ce que disait sa dernière lecture
 - Eau de baignade : chaque plage dit son classement par l'ARS, et Saint-Gilles-les-Bains donne ses propres plages

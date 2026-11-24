@@ -53,8 +53,11 @@ const OFFLINE_DEFAULT = "Les informations ont pu changer depuis.";
 const WHEN = `const when=(t,now)=>{const d=new Date(t+144e5),n=new Date(now+144e5),p=(x)=>String(x).padStart(2,"0");
 return p(d.getUTCDate())+"/"+p(d.getUTCMonth()+1)+(d.getUTCFullYear()===n.getUTCFullYear()?"":"/"+d.getUTCFullYear())+" à "+p(d.getUTCHours())+":"+p(d.getUTCMinutes())};`;
 
-/** The service worker, with the files of the page's shell it keeps (`shell`: addresses, the offline page first). */
-export function serviceWorker(shell: string[]): string {
+/**
+ * The service worker, with the files of the page's shell it keeps (`shell`: addresses, the offline page first), and
+ * the icon of the alerts' notifications (`icone`).
+ */
+export function serviceWorker(shell: string[], icone?: string): string {
   const files = [OFFLINE_PATH, ...shell.filter((f) => f !== OFFLINE_PATH)];
   return `// rundata.re : la lecture hors ligne (src/web/pwa.ts).
 const SHELL=${JSON.stringify(files)};
@@ -62,7 +65,7 @@ const STYLE=SHELL.find((f)=>/^\\/style-\\w+\\.css$/.test(f));
 const SHELL_CACHE="coquille-${hash(JSON.stringify(files) + REVISION)}";
 const PAGES="pages",STATE="etat",KEEP=${KEPT_PAGES},SLOW_MS=${SLOW_MS},STYLE_MS=${STYLE_MS},OFFLINE=${JSON.stringify(OFFLINE_PATH)};
 const AFTER=${JSON.stringify(OFFLINE_AFTER)},AFTER_DEFAULT=${JSON.stringify(OFFLINE_DEFAULT)};
-const SKIP=/^\\/(?:mcp|sw\\.js|avis|\\.well-known)(?:\\/|$)|\\.(?:rss|gpx|xml|txt|webmanifest|json)$/;
+const SKIP=/^\\/(?:mcp|sw\\.js|avis|alertes|\\.well-known)(?:\\/|$)|\\.(?:rss|gpx|xml|txt|webmanifest|json)$/;
 ${WHEN}
 self.addEventListener("install",(e)=>{e.waitUntil(caches.open(SHELL_CACHE).then((c)=>c.addAll(SHELL)).then(()=>self.skipWaiting()))});
 self.addEventListener("activate",(e)=>{e.waitUntil(caches.keys().then((ks)=>Promise.all(ks.filter((k)=>k.startsWith("coquille-")&&k!==SHELL_CACHE).map((k)=>caches.delete(k)))).then(()=>self.clients.claim()))});
@@ -103,6 +106,13 @@ e.waitUntil(got.then(()=>kept).catch(()=>{}));
 const copy=()=>caches.open(PAGES).then((c)=>c.match(key));
 const slow=new Promise((ok)=>setTimeout(()=>copy().then((c)=>{if(c)ok(fromCopy(c,u))}),SLOW_MS));
 try{return await Promise.race([got,slow])}catch{const c=await copy();return c?fromCopy(c,u):offline()}}
+// The alerts on the phone (web/alertes.ts, push/abonnements.ts): the message comes encrypted with its words, title, text
+// and the page a tap opens. A tap opens it, or the window already on it; only rundata.re's pages, or this site's.
+self.addEventListener("push",(e)=>{let d=null;try{d=e.data?e.data.json():null}catch{}if(!d||typeof d.titre!=="string")return;
+e.waitUntil(self.registration.showNotification(d.titre,{body:typeof d.corps==="string"?d.corps:"",tag:"alertes",renotify:true,${icone ? `icon:${JSON.stringify(icone)},` : ""}data:{lien:typeof d.lien==="string"?d.lien:"/"}}))});
+self.addEventListener("notificationclick",(e)=>{e.notification.close();let u;try{u=new URL(e.notification.data&&e.notification.data.lien||"/",self.location.origin)}catch{u=new URL("/",self.location.origin)}
+if(u.origin!==self.location.origin&&u.origin!=="https://rundata.re")u=new URL("/",self.location.origin);
+e.waitUntil(self.clients.matchAll({type:"window",includeUncontrolled:true}).then((ws)=>{const w=ws.find((c)=>c.url===u.href);return w&&w.focus?w.focus():self.clients.openWindow(u.href)}))});
 self.addEventListener("fetch",(e)=>{const r=e.request;if(r.method!=="GET")return;const u=new URL(r.url);
 if(u.origin!==self.location.origin||SKIP.test(u.pathname)||u.searchParams.has("maj"))return;
 if(r.mode==="navigate")return e.respondWith(page(e,u));

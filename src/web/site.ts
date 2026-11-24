@@ -140,6 +140,7 @@ import { avisPost } from "./avis-envoi.js";
 import * as connecteurs from "./connecteurs.js";
 import * as alertesPush from "./alertes.js";
 import { enLigne as alertesEnLigne } from "./alertes-drapeau.js";
+import { alertesPage, PATH as ALERTES_PAGE } from "./alertes-page.js";
 import * as espaceClub from "./club.js";
 import * as formulaires from "./propositions.js";
 import * as dae from "../providers/dae.js";
@@ -791,6 +792,10 @@ async function pages(request: Request, cache: Cache, background: Background, now
     const r = await alertesPush.route(request, path);
     if (r) return r;
   }
+  // Its page, never indexed until the alerts open to all (out of the sitemap, linked from nowhere yet).
+  if (alertesEnLigne() && path === ALERTES_PAGE) {
+    return new Response(alertesPage(origin, await alerte(cache, background, now)), { headers: { ...HTML, "x-robots-tag": "noindex" } });
+  }
   // The feedback form at the bottom of every page (web/avis.ts).
   if (path === "/avis") return avisPost(request, now);
   // The clubs' and associations' forms (web/propositions.ts), once their page goes out.
@@ -1351,7 +1356,7 @@ async function pages(request: Request, cache: Cache, background: Background, now
   if (path === SW_PATH) {
     // Checked again at each visit: a new version reaches the phones at once (web/pwa.ts). The light relief, the one
     // a phone's maps take (RELIEF_SCRIPT): the full one, for a wider or zoomed map, kept by the browser's cache.
-    return new Response((swText ??= serviceWorker([STYLE_PATH, FONT_PATH, RELIEF_LEGER, ALLER_PATH, "/favicon.svg", icons["192"]])), {
+    return new Response((swText ??= serviceWorker([STYLE_PATH, FONT_PATH, RELIEF_LEGER, ALLER_PATH, "/favicon.svg", icons["192"]], icons["192"])), {
       headers: { "content-type": "text/javascript; charset=utf-8", "cache-control": "no-cache", "x-content-type-options": "nosniff" },
     });
   }

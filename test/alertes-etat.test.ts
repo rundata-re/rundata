@@ -70,7 +70,7 @@ describe("the vigilance a push would follow", () => {
     const lignes: string[] = [];
     await detecter(kv, bulletin(0), undefined, new Date(T0), (l) => lignes.push(l));
     await detecter(kv, bulletin(1, { ...pluie(3), "VIGI974-15": { 1: [{ couleur: 3, debut: iso(T0) }] } }), undefined, new Date(T0 + H), (l) => lignes.push(l));
-    expect(lignes).toEqual(["alertes push (à blanc, rien n'est envoyé) : vigilance orange fortes pluies / orages, Sud-Est ; vigilance orange vents forts, Ouest"]);
+    expect(lignes).toEqual(["alertes push (à blanc, rien n'est envoyé) : vigilance orange fortes pluies / orages, Sud-Est\u00a0; vigilance orange vents forts, Ouest"]);
   });
 });
 
@@ -84,6 +84,22 @@ describe("the cyclone alert a push would follow", () => {
       ["alerte cyclonique pré-alerte"],
       ["alerte cyclonique levée"],
     ]);
+  });
+});
+
+describe("the cyclone step within one bulletin", () => {
+  /** The bulletin of T0 (05:00 UTC) with the island's cyclone periods, read again at each run, one an hour. */
+  const meme = (periodes: mf.Period[]) => copie<mf.Vigilance>({ emise: iso(T0), zones: { [mf.ISLAND]: { [mf.CYCLONE]: periodes } }, suivi: [] }, T0);
+  const runs = (b: Cached<mf.Vigilance>, n: number) => rejouer(Array.from({ length: n }, () => [b, undefined] as [Cached<mf.Vigilance>, undefined]));
+
+  it("says an orange announced for later in the bulletin when its hour comes, without a new bulletin", () => {
+    const b = meme([{ couleur: 2, debut: iso(T0), fin: iso(T0 + 6 * H) }, { couleur: 3, debut: iso(T0 + 6 * H) }]);
+    expect(runs(b, 8)).toEqual([[], [], [], [], [], [], ["alerte cyclonique orange"], []]);
+  });
+
+  it("says a pré-alerte lifted when it ends, without a new bulletin", () => {
+    const b = meme([{ couleur: 2, debut: iso(T0 - 5 * H), fin: iso(T0 + 2 * H) }]);
+    expect(runs(b, 4)).toEqual([[], [], ["alerte cyclonique levée"], []]);
   });
 });
 

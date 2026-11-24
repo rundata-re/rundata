@@ -8,15 +8,19 @@
  * - vigilance: a zone and phenomenon whose highest colour of the bulletin reaches orange, or rises above what was
  *   already said in its episode (orange → red). Never one that falls: the pages say it. An episode ends 12 h after its
  *   last bulletin at orange or above; until then, a fall back to yellow and a rise to orange again say nothing;
- * - cyclone: each change of the step in force, both ways, and its lifting (« on peut ressortir »);
+ * - cyclone: each change of the step in force, both ways, and its lifting (« on peut ressortir »). The step is
+ *   computed at each run from the last bulletin, whose periods start and end at their own hours: an orange announced
+ *   for 11:00 in the bulletin of 05:00 is said at 11:00, a pré-alerte that ends at 07:00 is said lifted then, without
+ *   a new bulletin;
  * - volcano: each change of level from Alerte 1, up or down, the return to Vigilance (« fin de l'alerte ») and the
  *   start of an eruption; Vigilance and Vigilance renforcée are not said alone. The level is read in texts (a release
  *   may quote an old one, a reading of an image may be wrong): a change goes only once seen in two copies in a row.
  *
- * What never counts: a copy that is the last good one of a failed source (`stale`) or one served late (`tardive`),
- * a bulletin not newer than the last one taken, the same /volcan copy twice, a level not read (`niveau_inconnu`). Each
- * keeps its part's state as it was, so a source that fails then comes back says nothing again. The first run of a
- * part only writes its state.
+ * What never counts: a bulletin older than the last one taken, nor the same one again for the vigilance's colours;
+ * the same /volcan copy twice; a level not read (`niveau_inconnu`). In the Worker, a copy whose rebuild failed stays
+ * the one already taken (peek() gives the copy kept, whose `emise` and `fetchedAt` do not move), so a source that
+ * fails then comes back says nothing again. A copy marked `stale` or `tardive`, as other reads give, is not read at
+ * all. Each part keeps its state as it was. The first run of a part only writes its state.
  *
  * Its cost: no read of a source (the copies are those the event just kept), one KV read a run and one KV write only
  * when the state changes.
@@ -37,7 +41,7 @@ const CALME = "Vigilance";
 export interface EtatAlertes {
   /** « zone|phénomène » → the highest colour already said in its episode, and the last bulletin at orange or above. */
   vigilance?: Record<string, { c: number; vu: string }>;
-  /** The bulletin last taken (`emise`): an older or the same one is not read again. */
+  /** The bulletin last taken (`emise`): an older one is not read, the same one only for the cyclone step in force. */
   emise?: string;
   /** The cyclone step in force (2 pré-alerte … 6 phase de sauvegarde), -1 for none. */
   cyclone?: number;
@@ -68,8 +72,8 @@ export function suivre(avant: EtatAlertes | undefined, vigilance: Cached<mf.Vigi
   const dits: string[] = [];
 
   const v = frais(vigilance);
+  const premier = etat.emise === undefined;
   if (v && (!etat.emise || v.emise > etat.emise)) {
-    const premier = etat.emise === undefined;
     const t = Date.parse(v.emise);
     const vus: Record<string, { c: number; vu: string }> = {};
     // An episode still open keeps its highest colour said, even when this bulletin no longer has it.
@@ -86,6 +90,9 @@ export function suivre(avant: EtatAlertes | undefined, vigilance: Cached<mf.Vigi
       }
     }
     etat.vigilance = vus;
+  }
+  // The cyclone step at each run, from the last bulletin (the same one too): its periods start and end on their own.
+  if (v && (!etat.emise || v.emise >= etat.emise)) {
     const periods = v.zones[mf.ISLAND]?.[mf.CYCLONE];
     const cyclone = periods && cycloneOn(periods, now) ? cycloneNow(periods, now) : -1;
     if (!premier && etat.cyclone !== undefined && cyclone !== etat.cyclone) {
@@ -132,7 +139,7 @@ export async function detecter(kv: Kv, vigilance: Cached<mf.Vigilance> | null | 
   const avant = lire(await kv.get(ETAT_KEY, "json"));
   const { etat, dits } = suivre(avant, vigilance, volcan, now);
   // One line a run, as one message would go: the count of lines is the count of pushes.
-  if (dits.length) log(`alertes push (à blanc, rien n'est envoyé) : ${dits.join(" ; ")}`);
+  if (dits.length) log(`alertes push (à blanc, rien n'est envoyé) : ${dits.join("\u00a0; ")}`);
   if (JSON.stringify(etat) !== JSON.stringify(avant ?? {})) await kv.put(ETAT_KEY, JSON.stringify(etat));
   return dits;
 }

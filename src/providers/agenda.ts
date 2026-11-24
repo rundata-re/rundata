@@ -29,6 +29,7 @@ import { INSEE } from "../places/insee.js";
 import { normalize, resolvePlace } from "../places/resolve.js";
 import { type SourceInfo, UpstreamError } from "../types.js";
 import { communesIn, strip } from "./avis-eau.js";
+import { CIREST as EST_CIREST } from "../eau/distributeurs.js";
 import { annonceEvenement, avisDeService, extrait, lead, monthOf, premiere, statusOf, type Statut } from "./agenda-mots.js";
 import { SALLES, SOURCE as SALLES_SOURCE, TIMEOUT_MS, tokens } from "./salles.js";
 import { SOURCES as SPORT_SOURCES } from "./sport.js";
@@ -1731,6 +1732,51 @@ export const CIREST: Agenda = {
   load: (cache, now) => cache.get("agenda:cirest", 6 * 3600, async () => parseCirest(JSON.parse(await getText(CIREST_SOURCE.id, CIREST_POSTS, TIMEOUT_MS, HEADERS)), now)),
 };
 
+/**
+ * The CIREST's category « Événements à venir » (93): the festivals of the East it is a partner of (Dipavali, Détakali,
+ * Gayar, Jours de Feu), about two posts a month, the only source of events for Sainte-Rose and Salazie (24/11/2026). The
+ * same terms as its médiathèques' programmes: its texts reused with the source cited, its photos never.
+ */
+export const CIREST_EVENEMENTS_SOURCE: SourceInfo = {
+  ...CIREST_SOURCE,
+  id: "agenda_cirest_evenements",
+  nom: "Événements à venir de l'Est (CIREST)",
+  url: "https://www.cirest.fr/categorie/evenements-a-venir/",
+};
+const CIREST_EVENEMENTS_POSTS = "https://www.cirest.fr/wp-json/wp/v2/posts?categories=93&per_page=10&_fields=date,link,title,excerpt";
+const CIREST_COMMUNES: readonly string[] = EST_CIREST.communes;
+
+/**
+ * A post is an event when its title or its first sentence gives its day, today or later (newsEvent: « Du 13 au 15
+ * novembre 2026, Saint-André accueillera… »), in the commune that sentence or its title names, one of the CIREST's six;
+ * naming none, or another, it is not placed, never guessed. A report written after the day (« a accueilli ») gives no
+ * day in its first sentence. A médiathèque's programme is its own agenda's (CIREST, parseCirest).
+ */
+export function parseCirestEvenements(posts: WpPost[], now: Date): Evenement[] {
+  return posts.flatMap((p) => {
+    const titre = clean(p.title.rendered);
+    if (/m[ée]diath[èe]que/i.test(titre)) return [];
+    const texte = clean(p.excerpt?.rendered ?? "").replace(/\s*(?:…|&hellip;)\.?$/u, "");
+    const dated = `${titre} ${premiere(texte)}`;
+    const commune = communesIn(dated).find((c) => CIREST_COMMUNES.includes(c));
+    if (!commune) return [];
+    return newsEvent(titre, texte, dated, p.link, new Date(`${p.date}+04:00`), now, "CIREST", commune);
+  });
+}
+
+/** Read by the scheduled event every six hours, as its médiathèques' programmes are: one request, about two posts a month. */
+export const CIREST_EVENEMENTS: Agenda = {
+  id: "cirest_evenements",
+  nom: "Événements à venir de l'Est (CIREST)",
+  source: CIREST_EVENEMENTS_SOURCE,
+  couvre: [...CIREST_COMMUNES],
+  planifie: true,
+  relecture: 6 * 3600,
+  credit: "CIREST, www.cirest.fr",
+  load: (cache, now) => cache.get("agenda:cirest_evenements", 6 * 3600, async () =>
+    parseCirestEvenements(JSON.parse(await getText(CIREST_EVENEMENTS_SOURCE.id, CIREST_EVENEMENTS_POSTS, TIMEOUT_MS, HEADERS)), now)),
+};
+
 // ---------------------------------------------------------------- The Département's agenda (departement974.fr)
 
 /**
@@ -1879,6 +1925,7 @@ export const LISIBLES: Agenda[] = [
   { ...saintBenoit, site_commune: "site de la commune de Saint-Benoît", faits: true, programmes: true },
   otiEst,
   CIREST,
+  CIREST_EVENEMENTS,
   DEPARTEMENT_AGENDA,
   openAgenda("cinor", "CINOR", 50316469, NORD),
   openAgenda("oti_nord", "Office de tourisme du Nord", 32570974, NORD),

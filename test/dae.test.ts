@@ -136,3 +136,16 @@ describe("défibrillateurs", () => {
     expect(b.urgence).toMatch(/massage cardiaque/);
   });
 });
+
+describe("where to learn first aid", () => {
+  it("is linked in the answer and on the page alike, nothing of the Protection civile's page copied", async () => {
+    const lien = "https://formations.protection-civile.org/formation-psc/";
+    for (const r of [body(defibrillateurs(undefined)), body(defibrillateurs("Saint-Pierre"))]) {
+      expect(r.se_former).toEqual({ texte: "Se former aux premiers secours (PSC1) : Protection civile", lien });
+    }
+    const page = daePage("https://rundata.re", { value: await buildDae(), fetchedAt: new Date(), stale: false });
+    expect(page).toContain(`<p>Se former aux premiers secours (PSC1) : <a href="${lien}">Protection civile</a>.</p>`);
+    // The call and the device come first: the link is under the list, never on the first screen.
+    expect(page.indexOf(lien)).toBeGreaterThan(page.indexOf('id="h-dae"'));
+  });
+});

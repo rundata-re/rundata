@@ -4,6 +4,8 @@
  * (cache.ts) in the context of the call, so that no tool has to say it.
  */
 import { AsyncLocalStorage } from "node:async_hooks";
+import { later } from "./budget.js";
+import { UpstreamError } from "./types.js";
 
 export interface Lecture {
   key: string;
@@ -44,6 +46,50 @@ export async function withLectures<T>(fn: () => Promise<T>, waitMs?: number): Pr
 
 /** When the tool call being answered stops waiting for a source that has a copy; nothing outside one that set it. */
 export const callDeadline = () => until.getStore();
+
+/**
+ * In a tool call, a source read without a copy is waited for this long past the call's deadline for copies (5 s): 8 s in
+ * all. Past it, the read is said not answered and ends after the answer, stored for the next question. 22/11/2026: the
+ * ARS's site silent, its two tries (8 then 12 s) waited for, qualite_eau answered in 20 and 28 s, the assistants gone
+ * before it; 21/11/2026: three fiche_terrain calls in a row, 19,5 to 19,9 s, on sources without a copy.
+ */
+export const PAST_DEADLINE_MS = 3_000;
+/**
+ * With `shared`, the least a read started past the shared end is given: enough for a copy in the Worker's KV (a few ms),
+ * not for a source.
+ */
+const SHARED_FLOOR_MS = 500;
+
+/** A source read without a copy, not answered within `bounded`'s time: its read goes on after the answer. */
+export class LectureTardive extends UpstreamError {
+  constructor(source: string, public ms: number) {
+    super(source, `pas de réponse en ${Math.round(ms / 1000)} s, lecture poursuivie après la réponse`);
+  }
+}
+
+/**
+ * `read` within a tool call: waited for until `PAST_DEADLINE_MS` past the call's deadline (`callDeadline`), a read
+ * started after it `PAST_DEADLINE_MS` more; past that, `LectureTardive`, and the read ends after the answer. With
+ * `shared`, every read of the call ends at the same time, the deadline plus `PAST_DEADLINE_MS`, however late it starts: a
+ * read that waits on another (an address, then its parcel) is not given 3 s more each (tools/terrain.ts). Outside a tool
+ * call (the island's copy, a page, a summary brought up to date apart), `read` is waited for as long as it takes.
+ */
+export async function bounded<T>(source: string, read: Promise<T>, shared = false): Promise<T> {
+  const end = callDeadline();
+  if (end == null) return read;
+  const left = end - Date.now();
+  const ms = shared ? Math.max(SHARED_FLOOR_MS, left + PAST_DEADLINE_MS) : Math.max(0, left) + PAST_DEADLINE_MS;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const late = new Promise<never>((_, reject) => (timer = setTimeout(() => reject(new LectureTardive(source, ms)), ms)));
+  try {
+    return await Promise.race([read, late]);
+  } catch (err) {
+    later(read.catch(() => undefined));
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 /**
  * Runs `fn` apart from the tool call being answered: a copy brought up to date after the answer (tools/resume.ts). What

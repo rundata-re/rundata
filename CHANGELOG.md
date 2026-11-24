@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Mardi 24 novembre 2026
 
+- Outils IA, fiche terrain : une source lente n'est plus attendue au-delà de 8 s, la partie manquante est nommée, l'adresse non lue le dit
 - L'indice UV mesuré au Moufia (Saint-Denis), sur la page météo et pour les assistants IA, d'après ENERGY-Lab, erreur possible jusqu'à 15 %.
 - transports : un trajet d'un lieu à un autre (« Trou d'Eau vers Saint-Pierre ») donne ses bus du jour, directs ou avec une correspondance
 - Bus : une page par ligne Car Jaune, Alternéo et Estival, avec les départs du jour et ses arrêts dans l'ordre, depuis /bus.

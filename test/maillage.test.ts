@@ -29,7 +29,7 @@ describe("the links between the pages of the sitemap", () => {
   });
 
   it("give the commune's page a tile to its waste collection, before its recycling centres, where the calendars are read", () => {
-    expect(collecte.COMMUNES.length).toBe(5);
+    expect(collecte.COMMUNES.length).toBe(10);
     for (const nom of collecte.COMMUNES) {
       const p = COMMUNES.find((c) => c.nom === nom)!;
       const href = `/collecte/${collecte.communeSlug(nom)}`;
@@ -39,9 +39,9 @@ describe("the links between the pages of the sitemap", () => {
       const tile = all[at];
       expect(tile, nom).toContain(`<h3><a href="${href}">Collecte des déchets<span class="sr"> `);
       expect(tile, nom).toContain('<p class="tv">Jour par rue</p>');
-      // « TCO » is spelled out at its first occurrence on the page (web/sigles.ts): the words alone.
+      // « TCO » is spelled out at its first occurrence on the page (web/sigles.ts): the words alone. In the East, the CIREST's.
       const detail = tile.match(/<p class="td all">(.*?)<\/p>/)![1].split(/<[^>]*>/).join("").replaceAll("&#39;", "'");
-      expect(detail, nom).toBe(`ordures ménagères, tri et déchets verts, d'après le calendrier ${collecte.YEAR} du TCO`);
+      expect(detail, nom).toBe(`ordures ménagères, tri et déchets verts, d'après le calendrier ${collecte.YEAR} ${["Saint-André", "Bras-Panon", "Saint-Benoît", "Salazie", "La Plaine-des-Palmistes"].includes(nom) ? "de la CIREST" : "du TCO"}`);
       // The detail whole, never cut after three lines: it names the calendar's year and whose it is.
       expect(tile, nom).toContain(`<a href="${href}">Chercher ma rue →</a>`);
       // The collection every week, the recycling centre now and then: the collection first.

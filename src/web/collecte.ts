@@ -1,5 +1,5 @@
 /**
- * /collecte and /collecte/<commune>: the day each street's bins are collected in the West (vie/collecte.ts), in
+ * /collecte and /collecte/<commune>: the day each street's bins are collected in the West and the East (vie/collecte.ts), in
  * the validated words. The streets are grouped by calendar, the rhythm said once per group; a search box shows the
  * line of the streets typed. Built from the bundled calendars and the day: no source is read.
  */
@@ -17,20 +17,25 @@ import { script } from "./scripts-declares.js";
 // The titles and a commune's description say the year of the calendars read (vie/collecte.ts YEAR), never the year of
 // the day: people search « collecte des déchets saint-paul 2026 » and « calendrier tco » (wording validated on 24/11/2026).
 const TITLE_MAX = 60;
-export const TITLE = `Calendrier collecte TCO ${col.YEAR} : jours par rue · 974`;
+export const TITLE = `Calendrier collecte TCO et CIREST ${col.YEAR} : jours par rue · 974`;
 const H1 = "Quel jour passent les poubelles ?";
-const META = `Ordures ménagères, tri, déchets verts : le jour de collecte rue par rue à Saint-Paul, La Possession, Saint-Leu, Le Port et Trois-Bassins (974), d'après le TCO.`;
+const META = `Ordures ménagères, tri, déchets verts : le jour de collecte rue par rue dans l'Ouest et l'Est (974), d'après le TCO et la CIREST.`;
+/** Who collects in a commune whose calendars are read, as the sentences say it; both on /collecte. */
+const qui = (c?: string) => (c ? col.epciOf(col.STREETS.find((s) => s.commune === c)!).nom : "le TCO et la CIREST");
+const des = (c?: string) => (c ? col.epciOf(col.STREETS.find((s) => s.commune === c)!).du : "du TCO et de la CIREST");
 // A long name (Les Trois-Bassins) without « jours par rue ».
 const titleOf = (c: string) => [`Collecte des déchets ${c} ${col.YEAR} : jours par rue · 974`].find((t) => t.length <= TITLE_MAX) ?? `Collecte des déchets ${c} ${col.YEAR} · 974`;
 const h1Of = (c: string) => `Quel jour passent les poubelles ${a(c)} ?`;
 const COLLECTE = { name: "Collecte des déchets", path: "/collecte" };
-const metaOf = (c: string) => `Calendrier ${col.YEAR} de collecte des déchets ${a(c)} (974) : ordures ménagères, tri et déchets verts, le jour de passage de votre rue, d'après le TCO.`;
-const LEAD = `Tapez le nom de votre rue : le jour de passage pour les ordures ménagères, le tri et les déchets verts, d'après les calendriers ${col.YEAR} publiés par le TCO.`;
+// Past 160 signs (La Plaine-des-Palmistes, 166), without « (974) »: the commune's name says the island.
+const metaFull = (c: string) => `Calendrier ${col.YEAR} de collecte des déchets ${a(c)} (974) : ordures ménagères, tri et déchets verts, le jour de passage de votre rue, d'après ${qui(c)}.`;
+const metaOf = (c: string) => (metaFull(c).length <= 160 ? metaFull(c) : metaFull(c).replace(" (974)", ""));
+const leadOf = (c?: string) => `Tapez le nom de votre rue : le jour de passage pour les ordures ménagères, le tri et les déchets verts, d'après les calendriers ${col.YEAR} publiés par ${qui(c)}.`;
 const { honesty, communeSlug } = col;
-// With the list just below, and the tool's first words of `a_savoir` (honesty): only the West is read.
-/** « Seulement les 5 communes de l'Ouest (TCO) pour l'instant. », the tool's words: under the field, and after a street not found. */
+// With the list just below, and the tool's first words of `a_savoir` (honesty): only the West and the East are read.
+/** « Seulement les communes de l'Ouest (TCO) et de l'Est (CIREST, sauf Sainte-Rose) pour l'instant. », the tool's words: under the field, and after a street not found. */
 const OUEST = honesty().split(" Calendriers")[0];
-const NOT_FOUND_HERE = `Rue non trouvée dans les calendriers du TCO. Vérifiez l'orthographe, essayez le nom du quartier, ou cherchez dans la liste ci-dessous. ${OUEST}`;
+const NOT_FOUND_HERE = `Rue non trouvée dans les calendriers du TCO et de la CIREST. Vérifiez l'orthographe, essayez le nom du quartier, ou cherchez dans la liste ci-dessous. ${OUEST}`;
 /**
  * The communes of the other intercommunalities, for the search box: typed alone or ending what is typed (« rue de
  * Paris, Saint-Denis »), the same sentence as the tool's (vie/collecte.ts `ailleurs`, the validated words of 04/11/2026),
@@ -125,9 +130,9 @@ function groups(today: number, commune?: string): string {
   // no more by the year's last days), folded under their number.
   const pdfs = (g: { cals: number[]; commune: string }) => {
     const where = commune ? "" : `${esc(g.commune)} · `;
-    const links = g.cals.map((c) => lienNom(col.CALENDARS[c].pdf, `calendrier ${col.CALENDARS[c].code} du TCO (PDF)`, ' rel="noopener"')).join(" · ");
+    const links = g.cals.map((c) => lienNom(col.CALENDARS[c].pdf, `calendrier ${col.CALENDARS[c].code} ${col.epciOf(col.CALENDARS[c]).du} (PDF)`, ' rel="noopener"')).join(" · ");
     return g.cals.length > 3
-      ? `<details class="note"><summary>${where}${g.cals.length}\u00a0calendriers du TCO (PDF)</summary><p>${links}</p></details>`
+      ? `<details class="note"><summary>${where}${g.cals.length}\u00a0calendriers ${col.epciOf(col.CALENDARS[g.cals[0]]).du} (PDF)</summary><p>${links}</p></details>`
       : `<p class="note">${where}${links}</p>`;
   };
   // « La Possession » is glued by a no-break space: Chrome hyphenates no word of such a group and cut it bare,
@@ -139,7 +144,8 @@ function groups(today: number, commune?: string): string {
       const hx = commune ? "h3" : "h4";
       const cal = col.CALENDARS[g.c];
       const r = x.parts.join("\u00a0; ");
-      const feries = col.holidays(cal, today).map((h) => (h.reportee ? esc(col.holidayLine(h)) : `Jour férié : vérifiez <a href="${esc(cal.pdf)}" rel="noopener">le calendrier du TCO (PDF) →</a>`));
+      const e = col.epciOf(cal);
+      const feries = col.holidays(cal, today).map((h) => (h.reportee ? esc(col.holidayLine(h, e)) : `Jour férié : vérifiez <a href="${esc(cal.pdf)}" rel="noopener">le calendrier ${e.du} (PDF) →</a>`));
       return `<div class="card groupe" data-c="${esc(g.commune)}" data-r="${esc(`${r}.`)}">${folded(true,
         `<${hx}>${esc(cap(x.parts[0]))}\u00a0<span class="note">· ${commune ? "" : `${`${esc(g.commune)},`.replace(/^(Le|La|Les) (.+)/, "$1\u00a0<span>$2</span>")} `}${count(g)}</span>${apart(x)}</${hx}>`,
         `<p>${esc(cap(r))}.</p>${feries.map((f) => `<p>${f}</p>`).join("")}
@@ -171,20 +177,22 @@ export function collectePage(origin: string, now: Date, commune?: string, alerte
   // A commune's page is about the commune (JSON-LD), by its place in the site's list of communes.
   const place = commune ? PAGES.find((p) => p.commune && p.nom === commune) : undefined;
   const today = col.todayOf(now);
+  // The year's end said for who collects: on a commune's page its intercommunality, on /collecte both.
+  const ici = col.epciDe(commune);
   const others = col.COMMUNES.filter((c) => c !== commune).map((c) => `<a href="/collecte/${communeSlug(c)}">${esc(c)}</a>`).join(" · ");
   const band = `${crumbBar(commune ? `Collecte ${a(commune)}` : "Collecte des déchets", commune ? COLLECTE : undefined)}
 <div class="wrap intro"><div class="pitch">
-  <p class="pill">Calendriers du TCO · ${col.YEAR}</p>
+  <p class="pill">Calendriers ${des(commune)} · ${col.YEAR}</p>
   <h1>${esc(commune ? h1Of(commune) : H1)}</h1>
-  <p class="lead">${esc(LEAD)}</p>
+  <p class="lead">${esc(leadOf(commune))}</p>
   <label class="search">Votre rue <input id="rue" type="search" placeholder="Rue, chemin, impasse…" autocomplete="off" aria-describedby="ouest"></label>
   <p class="note" id="ouest">${esc(OUEST)}</p>
 </div></div>`;
   const body = `<section aria-label="Votre rue"><div id="trouve" aria-live="polite"></div><p id="rien" hidden>${esc(NOT_FOUND_HERE)}</p></section>
 <section aria-labelledby="h-voies">
-  <div class="sec-h"><h2 id="h-voies">${commune ? `Les rues ${esc(de(commune))}` : "Toutes les rues de l'Ouest"}</h2>
+  <div class="sec-h"><h2 id="h-voies">${commune ? `Les rues ${esc(de(commune))}` : "Toutes les rues de l'Ouest et de l'Est"}</h2>
   <p class="note">${esc(honesty())}</p></div>
-  ${col.pastYear(today) ? `<p class="card">${esc(col.notYet())}</p>` : `${col.nearYearEnd(today) ? `<p class="card">${esc(col.untilYearEnd())}</p>` : ""}${groups(today, commune)}`}
+  ${col.pastYear(today) ? `<p class="card">${esc(col.notYet(ici))}</p>` : `${col.nearYearEnd(today) ? `<p class="card">${esc(col.untilYearEnd(ici))}</p>` : ""}${groups(today, commune)}`}
 </section>
 <section><p>${commune ? `Les autres communes : ${others}` : `Par commune : ${others}`}</p>
 <p><a href="/decheteries">Les déchèteries de l'Ouest et leurs bennes en direct →</a></p></section>

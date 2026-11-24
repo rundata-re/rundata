@@ -59,6 +59,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded for the site): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-24T23:09:00+04:00", texte: "Calendrier de collecte des déchets rue par rue aussi dans l'Est\u00a0: Saint-André, Bras-Panon, Saint-Benoît, Salazie et La Plaine-des-Palmistes." },
   { date: "2026-11-24T20:37:00+04:00", texte: "Carte de la qualité de l'eau des plages\u00a0: moins de traits passent sous le rond d'une autre plage." },
   { date: "2026-11-24T16:08:00+04:00", texte: "Coupures d'eau\u00a0: les avis publiés par la ville de Saint-Joseph et par la commune des Avirons sont lus, avec le lien de chaque avis." },
   { date: "2026-11-24T16:05:00+04:00", texte: "Journée d'une commune\u00a0: la température de la mer mesurée à la bouée de Saint-Pierre, avec son heure, avant celle du satellite." },

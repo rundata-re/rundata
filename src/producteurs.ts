@@ -163,6 +163,7 @@ export const FICHES: Record<string, Fiche> = {
   tco_decheteries: { famille: "licence_ouverte", producteurs: ["TCO"] },
   ademe_decheteries: { famille: "licence_ouverte", producteurs: ["ADEME"] },
   tco_collecte: { famille: "licence_ouverte", producteurs: ["TCO"] },
+  cirest_collecte: { famille: "information_publique", producteurs: ["CIREST"] },
   osm_enfants: { famille: "odbl", producteurs: [OSM] },
   osm_marches: { famille: "odbl", producteurs: [OSM] },
   // The markets of the town halls, from their own pages (vie/marches-mairies.json).

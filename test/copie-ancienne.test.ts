@@ -3,7 +3,7 @@ import { Cache, MemoryStore } from "../src/cache.js";
 import { copieAncienne } from "../src/tools/copie-ancienne.js";
 import { coupuresEau } from "../src/tools/coupures.js";
 import { courantBlock, type CourantAnswer } from "../src/tools/courant.js";
-import { coupuresPage, electriciteCommune, electricitePage } from "../src/web/domains.js";
+import { copieBandeau, coupuresPage, electriciteCommune, electricitePage } from "../src/web/domains.js";
 import { coupuresCommunePage } from "../src/web/coupures.js";
 import { pageOf } from "../src/web/places.js";
 import { CSS, icon } from "../src/web/pages.js";
@@ -14,11 +14,21 @@ const ago = (h: number) => new Date(NOW.getTime() - h * 3600_000);
 const body = (r: { content: { text: string }[] }) => JSON.parse(r.content[0].text);
 const unescape = (t: string) => t.replace(/&#39;/g, "'");
 
-// The banner, with the site's sign of a warning (as the other card.warn).
-const WARN = `<div class="card warn">${icon("alert")}<p>`;
+// The banner, with the site's sign of a warning (as the other card.warn), beside its text: with no title in the card, the
+// sign alone on a line of its own stood above the sentence.
+const WARN = `<div class="card warn enligne">${icon("alert")}<p>`;
 const EAU_PAGE = "Les avis de coupure d'eau affichés ici ont été lus le 23/11 à 09:30 et n'ont pas pu être relus depuis : une coupure terminée ou une nouvelle coupure peut ne pas y figurer.";
 
 describe("the notices of cuts not read again for a while", () => {
+  it("puts the warning's sign on the line of its text, in a column of its own", () => {
+    expect(copieBandeau("Lu hier.", "Voir le site.")).toBe(`${WARN}Lu hier. Voir le site.</p></div>`);
+    expect(copieBandeau(undefined)).toBe("");
+    // The sign in the first column, the text in the second, which takes the rest and may shrink (a long address).
+    expect(CSS).toContain(".warn.enligne{grid-template-columns:auto minmax(0,1fr);align-items:start}");
+    // A warning with a title keeps its sign above it.
+    expect(CSS).not.toMatch(/\.card\.warn\{[^}]*grid-template-columns/);
+  });
+
   it("are said past 2 hours for the water, 6 hours for the power cuts, with the day and the hour of the read", () => {
     expect(copieAncienne("eau", ago(2), NOW, "page")).toBeUndefined();
     expect(copieAncienne("eau", ago(2.5), NOW, "page")).toBe(EAU_PAGE);

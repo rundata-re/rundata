@@ -8,13 +8,17 @@ their INSEE code (a monument may lie on two), its address, its centuries and its
 the notices that only send to another one (« notice de renvoi »), and a building whose protection was lifted (its
 protection empty, the delisting in its observations).
 Run again when the list changes (a few protections a year). Downloads at a low pace, one request a minute per host.
-Usage: python3 -I scripts/build-monuments.py [--csv merimee.csv --du 2026-10-29]
+With --verifier, the list is rebuilt in memory and compared with the bundled one, monument by monument, writing nothing
+(the Monday check of the bundled lists): the base's date of change moves with no change of content (19/11/2026, the
+same 204 monuments as on 29/10).
+Usage: python3 -I scripts/build-monuments.py [--csv merimee.csv --du 2026-10-29] [--verifier ECART]
 """
 import argparse
 import csv
 import io
 import json
 import re
+import sys
 import time
 import urllib.request
 from datetime import date
@@ -82,6 +86,7 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--csv", help="a local copy of merimee.csv")
     p.add_argument("--du", help="its day, 2026-10-29")
+    p.add_argument("--verifier", type=int, metavar="ECART", help="write nothing: compare with src/vie/monuments.json, fail past ECART monuments added, gone or changed")
     a = p.parse_args()
     page = "https://www.data.gouv.fr/datasets/immeubles-proteges-au-titre-des-monuments-historiques-2"
     if a.csv:
@@ -93,6 +98,8 @@ def main():
     rows = [r for r in csv.DictReader(io.StringIO(text), delimiter="|") if r["Departement_format_numerique"].strip() == "974"]
     out = sorted(filter(None, map(monument, rows)), key=lambda m: m["ref"])
     dest = ROOT / "src/vie/monuments.json"
+    if a.verifier is not None:
+        sys.exit(verifier(out, a.verifier, json.loads(dest.read_text(encoding="utf-8")), du))
     dest.write_text(json.dumps({
         "construit": date.today().isoformat(),
         "fichier_du": du,
@@ -102,6 +109,31 @@ def main():
         "monuments": out,
     }, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
     print(f"{len(rows)} rows of 974, {len(out)} monuments, {sum('lon' in m for m in out)} with a point -> {dest.relative_to(ROOT)}")
+
+
+def verifier(rows, ecart, bundled, du=None):
+    """
+    The bundled list `bundled` against `rows`, rebuilt from the day's file, without writing: each monument by its
+    reference in the base Mérimée, all its fields (name, communes, address, protection, centuries, point), not the day
+    it was built. 1 (the job's failure, its alert) when more than `ecart` were added, are gone or changed, else 0.
+    """
+    before, now = {m["ref"]: m for m in bundled["monuments"]}, {m["ref"]: m for m in rows}
+    added, gone = [r for r in now if r not in before], [r for r in before if r not in now]
+    changed = {r: sorted(f for f in set(before[r]) | set(now[r]) if before[r].get(f) != now[r].get(f)) for r in now if r in before}
+    changed = {r: f for r, f in changed.items() if f}
+    print(f"liste du {bundled['construit']} (fichier du {bundled['fichier_du']}) : {len(before)} monuments ; "
+          f"le fichier{f' du {du}' if du else ''} : {len(now)}, {len(added)} nouveaux, {len(gone)} disparus, {len(changed)} changés")
+    for r in added[:20]:
+        print(f"  nouveau : {now[r]['nom']} ({r})")
+    for r in gone[:20]:
+        print(f"  disparu : {before[r]['nom']} ({r})")
+    for r, f in list(changed.items())[:20]:
+        print(f"  changé : {now[r]['nom']} ({r} : {', '.join(f)})")
+    n = len(added) + len(gone) + len(changed)
+    if n > ecart:
+        print(f"::error::La liste des monuments historiques a {n} écarts avec la base Mérimée (seuil {ecart}) : lancer scripts/build-monuments.py et proposer la PR.")
+        return 1
+    return 0
 
 
 if __name__ == "__main__":

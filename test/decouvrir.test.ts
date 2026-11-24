@@ -13,10 +13,10 @@ const page = (slug: string) => communePage("https://rundata.re", pageOf(slug)!, 
 const tile = (html: string) => html.match(/<li class="tile[^>]*>(?:(?!<li class="tile).)*?<h3>À découvrir<\/h3>.*?(?=<li class="tile|<\/ul>\n\s*<p class="note">)/s)?.[0];
 
 describe("the remarkable places (vie/decouvrir.ts)", () => {
-  it("are the SIT's list of 01/11/2026, read one by one: no place named after a person, no « Terroir » alone", () => {
-    // 263 places in the list, 122 of the heritage, 13 of them left out by name; the names kept are those read.
+  it("are the SIT's list of 22/11/2026, read one by one: no place named after a person, no « Terroir » alone", () => {
+    // 264 places in the list, 123 of the heritage, 14 of them left out by name; the names kept are those read.
     expect(LIEUX.length).toBe(109);
-    expect(LISTE_DU).toBe("2026-11-01");
+    expect(LISTE_DU).toBe("2026-11-22");
     const lus = readFileSync(new URL("../scripts/decouvrir-lus.txt", import.meta.url), "utf8").trim().split("\n");
     expect(lus.length).toBe(109);
     const codes = new Set(Object.values(INSEE));
@@ -96,7 +96,7 @@ describe("the tile « À découvrir »", () => {
     expect(t).toMatch(/^.*?<ul class="rows lieux cols"><li><span><b>Musée de Villèle<\/b> · monument historique<small>/s);
     expect(t.split("<details")[0].match(/<li>/g)).toHaveLength(DECOUVRIR_SHOWN);
     expect(t).toContain(`<summary>Les ${11 - DECOUVRIR_SHOWN} autres lieux</summary>`);
-    expect(t).toContain("Liste du SIT de La Réunion, mise à jour chaque semaine (version du 01/11). Horaires et visites\u00a0: à demander au lieu.");
+    expect(t).toContain("Liste du SIT de La Réunion, mise à jour chaque semaine (version du 22/11). Horaires et visites\u00a0: à demander au lieu.");
     expect(t).not.toMatch(/en direct/i);
   });
 

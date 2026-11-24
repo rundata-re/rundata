@@ -12,12 +12,15 @@ A place of « Patrimoine culturel » that is also a historic monument (src/vie/m
 first) carries its reference: the same name, or a word of its own name shared with a monument less than 150 m away
 (« Maison Folio », « Villa Folio »). The distance alone is not enough: the old centres have a monument every 100 m.
 Run again now and then (the SIT rebuilds the list every Sunday). Two requests, a minute apart.
-Usage: python3 -I scripts/build-decouvrir.py [--json lieux.json --du 2026-11-01]
+Usage: python3 -I scripts/build-decouvrir.py [--json lieux.json --du 2026-11-01] [--verifier ECART]
+  (--verifier: write nothing, compare with src/vie/decouvrir.json and fail past ECART places added, gone or changed,
+  the Monday check of .github/workflows/listes.yml; the names not read are counted there, never printed)
 """
 import argparse
 import json
 import math
 import re
+import sys
 import time
 import unicodedata
 import urllib.request
@@ -91,10 +94,31 @@ def monument(r, monuments):
     return best and best[0]
 
 
+def verifier(out, bundled, du, unread, ecart):
+    """The bundled places against the SIT's list of today, without writing: each by its name and commune, and what is
+    kept of it. 1 (the job's failure, its alert) when more than `ecart` were added, are gone or changed. The names not
+    read are only counted: one may be a person's, and the job's log is public."""
+    before = {(x["nom"], x["insee"]): x for x in bundled["lieux"]}
+    now = {(x["nom"], x["insee"]): x for x in out}
+    added, gone = sorted(now.keys() - before.keys()), sorted(before.keys() - now.keys())
+    changed = sorted(k for k in now.keys() & before.keys() if now[k] != before[k])
+    n = len(added) + len(gone) + len(changed)
+    print(f"liste du {bundled['liste_du']} : {len(before)} lieux ; SIT du {du} : {len(now)}, {len(added)} nouveaux, "
+          f"{len(gone)} disparus, {len(changed)} changés ; {unread} noms pas encore lus (scripts/decouvrir-lus.txt)")
+    for label, keys in (("nouveau", added), ("disparu", gone), ("changé", changed)):
+        for nom, insee in keys[:20]:
+            print(f"  {label} : {nom} ({insee})")
+    if n > ecart:
+        print(f"::error::Les lieux remarquables ont {n} écarts avec le SIT (seuil {ecart}) : lancer scripts/build-decouvrir.py et proposer la PR.")
+        return 1
+    return 0
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--json", help="a local copy of the dataset's export, in JSON")
     p.add_argument("--du", help="the day the SIT rebuilt it, 2026-11-01")
+    p.add_argument("--verifier", type=int, metavar="ECART", help="write nothing: compare with src/vie/decouvrir.json, fail past ECART places added, gone or changed")
     a = p.parse_args()
     if a.json:
         rows, du = json.loads(Path(a.json).read_text(encoding="utf-8")), a.du
@@ -122,6 +146,8 @@ def main():
         })
     out.sort(key=lambda x: (x["insee"], x["nom"]))
     dest = ROOT / "src/vie/decouvrir.json"
+    if a.verifier is not None:
+        sys.exit(verifier(out, json.loads(dest.read_text(encoding="utf-8")), du, len({r["nom_du_lieu_remarquable"] for r in rows} - lus), a.verifier))
     dest.write_text(json.dumps({
         "construit": date.today().isoformat(),
         "liste_du": du,

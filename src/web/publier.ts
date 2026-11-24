@@ -1,6 +1,6 @@
 /**
- * /publier: the guide « Publier son agenda et ses données » for the mairies, associations and organisers, written by
- * marketing (web/publier-texte.ts). Each format says whether rundata.re reads it, from the code: a label turns to
+ * /publier: the guide « Publier son agenda et ses données » for the mairies, associations and organisers, written for
+ * the site (web/publier-texte.ts). Each format says whether rundata.re reads it, from the code: a label turns to
  * « Déjà lu » only once its reader is merged. Nothing is read to build it.
  */
 import { adresseCoupable, adressesDuTexte } from "./adresse.js";

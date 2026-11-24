@@ -2,7 +2,7 @@
  * The map of the south-west Indian Ocean on /cyclones, all year: the lands (ocean.json, scripts/build-ocean.py), the
  * zone the RSMC of La Réunion watches, dotted, and La Réunion. It never shows a system's forecast, neither its track
  * nor a cone nor a distance: for the people's safety, the site shows Météo-France's own map and links to its site
- * (kit.md, « Vigilance et cyclone : affichage de Météo-France », after Météo-France's mail of 27/10/2026). While a
+ * (the brand kit, « Vigilance et cyclone : affichage de Météo-France », after Météo-France's mail of 27/10/2026). While a
  * system is watched, the line under the map sends to that official map, shown whole above it (cmrs-carte.ts), and
  * the map shows only the path the system has already travelled, its positions at the RSMC's advisories, once
  * Météo-France agrees (providers/cmrs-trace.ts, the user's decision of 31/10/2026); before that, nothing else. The rest of the time, it draws the tracks of the past cyclones
@@ -53,7 +53,7 @@ const REUNION = { lon: 55.53, lat: -21.13 };
 
 /**
  * Where each past cyclone's number goes, on its track towards its end, where it leaves the basin, in the map's units:
- * the list under the map names them by these numbers (marketing, 31/10/2026: nine names do not fit by their tracks'
+ * the list under the map names them by these numbers (wording validated on 31/10/2026: nine names do not fit by their tracks'
  * ends). Found by a search along the second half of each track: no number over another, a name, land, an island or a
  * graduation, the nearest to the end and over the fewest other tracks; then set here, as the communes' names are. The
  * side of its name, shown while it is lit: the first of right, left and above clear of the map's names and graduations

@@ -116,7 +116,7 @@ export const PERIMEE_MIN = 60;
 const quand = (t: Date, now: Date) => (daysApart(t, now) === 0 ? `à ${localTime(t).split(" ")[1]}` : `le ${localTime(t).replace(" ", " à ")}`);
 
 /**
- * Said first when EDF's latest line is older than PERIMEE_MIN, in marketing's words (05/11/2026): never that EDF
+ * Said first when EDF's latest line is older than PERIMEE_MIN, in the validated words (05/11/2026): never that EDF
  * published nothing since, which is not known (our reading may be what fails). « Dernière mesure de production lue chez
  * EDF : le 04/11 à 04:35, il y a 23 h. Ce n'est pas la production de maintenant. » From the line's « 04/11 04:35 ».
  */
@@ -202,7 +202,7 @@ export async function electricite(cache: Cache, now = new Date(), lieu?: string,
         "réseau tendu, décaler les gros usages. La recharge conseillée est la part de la puissance de recharge d'un véhicule électrique.",
     };
   }
-  // A mairie's site that did not answer: in marketing's words, as in coupures_annoncees.injoignable.
+  // A mairie's site that did not answer: in the validated words, as in coupures_annoncees.injoignable.
   const silent = (coupures.injoignable ?? []).map((s) => s.texte);
   if (res) parts.unshift(coupures.avis?.length ? coupures.avis[0].texte : coupures.note ?? "", ...silent);
   else parts.push(...silent);

@@ -71,7 +71,7 @@ describe("the days of the satellite readings", () => {
   });
 });
 
-describe("the weather's field (marketing, 06/11/2026)", () => {
+describe("the weather's field (wording validated on 06/11/2026)", () => {
   it("has its label above it, its example inside, and no « 2 000 lieux » when no page has the name", () => {
     const page = meteoPage("https://rundata.re", null, NOW);
     expect(page).toContain(`<label class="champ-m" for="filtre">Météo d'un lieu : commune, quartier, sommet</label><span class="search">`);

@@ -9,7 +9,7 @@ const commune = communeMap({ commune: "Saint-Paul", spots: [{ lon: 55.27, lat: -
 const trace = traceMap({ lines: [{ etat: "ouvert", points: [[55.45, -21.1], [55.46, -21.11]] }], label: "Carte : la trace" });
 
 describe("the IGN's backgrounds on the zoomed maps", () => {
-  it("are offered in marketing's order, the relief chosen, shown by the script only", () => {
+  it("are offered in the validated order, the relief chosen, shown by the script only", () => {
     for (const [html, k] of [[commune, "ecm"], [trace, "t"]]) {
       expect(html).toContain(`<div class="tabs fonds" role="radiogroup" aria-label="Fond de la carte" data-fd="${k}" hidden>`);
       expect([...html.matchAll(/<label for="fd-[a-z]+-[a-z]+">([^<]+)<\/label>/g)].map((m) => m[1])).toEqual(["Relief", "Plan IGN", "Photo aérienne"]);

@@ -389,7 +389,7 @@ describe("the site's part", () => {
     expect(INSTALL.match(/<h\d/g)).toEqual(["<h2"]);
   });
 
-  it("gives marketing's steps for Safari, Chrome and Firefox, and general ones where no menu name was read", () => {
+  it("gives the validated steps for Safari, Chrome and Firefox, and general ones where no menu name was read", () => {
     expect(INSTALL).toContain("</svg>. S'il n'est pas dans la barre, ouvrez d'abord le menu de la page (bouton «\u00a0⋯\u00a0»), puis touchez «\u00a0Partager\u00a0».</li><li>Faites défiler les options, puis touchez «\u00a0Sur l'écran d'accueil\u00a0».</li><li>Touchez «\u00a0Ajouter\u00a0».</li></ol>");
     expect(INSTALL).toContain("<li>Touchez «\u00a0En voir plus\u00a0» (ou le bouton Plus, selon la version).</li>");
     expect(INSTALL).toContain(`<p data-inst="ios-autre">Touchez Partager dans votre navigateur, puis cherchez «\u00a0Sur l'écran d'accueil\u00a0». Si l'option n'y est pas, ouvrez cette page dans Safari et suivez ses étapes.</p>`);

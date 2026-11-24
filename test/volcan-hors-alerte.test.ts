@@ -81,7 +81,7 @@ describe("out of an alert, whether it erupts only with the official texts", () =
     }
   });
 
-  it("describes /volcan and heads it in marketing's words", async () => {
+  it("describes /volcan and heads it in the validated words", async () => {
     const page = volcanPage(O, { value: await answer(), fetchedAt: NOW, stale: false }, NOW);
     // Timeless: a search engine keeps it for days.
     expect(page).toContain(`<meta name="description" content="Piton de la Fournaise en direct\u00a0: niveau d&#39;alerte d&#39;après la préfecture, publications de l&#39;OVPF, accès à l&#39;Enclos, séismes localisés sous le volcan.">`);
@@ -121,7 +121,7 @@ describe("the Enclos, as the official texts say it", () => {
     const v = await answer(release("Piton de la Fournaise : passage en alerte 1, fermeture de l’enclos", "2026-10-23T08:00:00.000Z"));
     expect(v.resume).toContain("Accès à l'Enclos : « fermeture » selon le communiqué de la préfecture du 23/10.");
     expect(v.resume).not.toContain("interdit selon le communiqué");
-    // The short form: forbidden, the release's day (marketing).
+    // The short form: forbidden, the release's day.
     expect(trafic(v)).toContain(`<h3>Volcan : accès à l'Enclos</h3><p><b>Interdit</b> (préfecture, 23/10). <a href="/volcan#monter">Puis-je monter au volcan ? →</a></p></div>`);
     // What the alert's level says, once at the top of the page; the release's words in « Puis-je monter au volcan ? ».
     expect(volcanPage(O, copyOf(v), NOW)).toContain("<p class=\"lead\"><b>Accès à l&#39;Enclos interdit.</b>");
@@ -165,7 +165,7 @@ describe("the Enclos, as the official texts say it", () => {
     for (const t of [page, v.resume]) expect(t).not.toMatch(/« partiel »|2026-627|Résumé de pitonlive/);
   });
 
-  it("says on /trafic that the OVPF publishes the level, the prefect setting it (marketing)", async () => {
+  it("says on /trafic that the OVPF publishes the level, the prefect setting it", async () => {
     const v = await answer(VIGILANCE);
     v.etat!.acces_enclos = { ovpf: { niveau: "Alerte 1", date: "25/10 08:00 heure de La Réunion", lien: "https://bsky.app/x" } };
     expect(trafic(v).replace(/&#39;/g, "'")).toContain('<p><b>Interdit</b> (plan <abbr title="Organisation de la réponse de sécurité civile">ORSEC</abbr> en alerte 1, niveau publié par l\'OVPF).');

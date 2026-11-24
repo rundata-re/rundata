@@ -1,6 +1,6 @@
 /**
  * /appli, « L'appli rundata.re pour Android »: the trial version of the Android app, shared with a few people before it
- * reaches the Play Store. Marketing's words of 21/11/2026, word for word. Never indexed and never linked: noindex in
+ * reaches the Play Store. The validated words of 21/11/2026, word for word. Never indexed and never linked: noindex in
  * the page and in its header, out of the sitemap, in no menu nor list of the site. The file itself is a pre-release
  * of the GitHub repository; /appli/rundata-re.apk leads to the current one, so that a new version changes only
  * VERSION, EMPREINTE and the asset's name here.

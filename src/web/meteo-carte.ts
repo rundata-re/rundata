@@ -85,7 +85,7 @@ function rainColor(mm: number): string {
 const VEIL: [number, number[]][] = [[8, [42, 106, 154]], [17, [36, 140, 120]], [24, [214, 168, 40]], [28, [222, 112, 40]], [33, [200, 48, 28]]];
 // The radar's rain, class 1 to 8 (web/pluie-radar.ts), in four blues going to violet, a step every two classes: darker
 // as it rains harder in the light theme, lighter in the dark one, opaque, never red nor orange (the alerts'); a line
-// around it in the drops' colour sets its lightest blue apart from the sea (researcher, 31/10/2026: four steps read
+// around it in the drops' colour sets its lightest blue apart from the sea (31/10/2026: four steps read
 // alone, the drops 3.5:1 at least on each; the user, « délimiter plus franchement les zones de pluie, plus opaque »).
 const RAIN_TIERS = { light: ["#abd8f3", "#7cb5f8", "#738be9", "#7561c5"], dark: ["#284972", "#405a9d", "#6469c3", "#8c79e0"] };
 const RAIN_INK = { light: "#0b1a3a", dark: "#ffffff" };
@@ -96,7 +96,7 @@ const INK_RGB = [rgbOf(RAIN_INK.light), rgbOf(RAIN_INK.dark)];
 /**
  * How the drops move, three proposals to choose from (the user, 31/10/2026): M1, falling down the screen, leaning with
  * the wind's east-west part; M2, seen from above, short strokes going where the wind goes; M3, M2 with a small splash
- * where some end. And whether they fall during a replay (researcher: two motions at once say little).
+ * where some end. And whether they fall during a replay (two motions at once say little).
  */
 type Motion = "M1" | "M2" | "M3";
 const MOTION: Motion = "M2";
@@ -161,7 +161,7 @@ const NAMED = new Set(["97418110", "97407520", "97415590", "97416463", "97417360
 /**
  * A disc's radius for its figure (dot()), the figure always 30 units high: 34 up to 3 characters; beyond, wide enough
  * for 3 px of disc around the figure at 390 px inside its white edge (« 12,3 » is 74 units wide, « 104,5 » 95, measured
- * in WebKit; marketing's review n° 457). Without a figure, a small dot.
+ * in WebKit; the validated review n° 457). Without a figure, a small dot.
  */
 export const discR = (label?: string) => (!label ? 17 : label.length <= 3 ? 34 : label.length === 4 ? 49 : 59);
 
@@ -335,7 +335,7 @@ const rainSaid = (rain: number, named: boolean) => named || rain >= 1;
 /** A rain disc's figure: mm to a tenth. */
 const rainFigure = (rain: number) => fr(Math.round(rain * 10) / 10);
 
-/** For each mark moved off its place (apart()): a white line on a night edge, to the mark (under it), and a white dot on its place (marketing). */
+/** For each mark moved off its place (apart()): a white line on a night edge, to the mark (under it), and a white dot on its place. */
 function ties(list: StationNow[], placed: [number, number][]): string {
   return list.map((s, i) => {
     const [x0, y0] = project(s.lon, s.lat), [x, y] = placed[i];
@@ -364,7 +364,7 @@ export function stationsMap(every: StationNow[], altPath = ALT_PATH): string {
     const windAt = new Map(w.map((s, i) => [s, placed[i]]));
     const windTies = ties(w, placed);
     // No rain disc with its figure covers another (four over each other in the middle of the island under the rain of
-    // 31/10 at 10:23, marketing's review): moved apart and tied to their place the same way (#607's rounds). The small
+    // 31/10 at 10:23, the validated review): moved apart and tied to their place the same way (#607's rounds). The small
     // dots stay on their place.
     const r = list.filter((s) => (mm(s) ?? 0) > 0 && rainSaid(mm(s)!, named(s)));
     // Each at its own size: a disc of 4 characters is wider.
@@ -454,7 +454,7 @@ export function stationsMap(every: StationNow[], altPath = ALT_PATH): string {
     (wd.length ? fo("v", `<div class="vt"><canvas class="voile" data-vent="${esc(vent)}"${ventAm} data-alt="${esc(altPath)}" width="1" height="1"></canvas><canvas class="flux" width="1" height="1"></canvas></div>`) : "");
   const n = (k: number, one: string, many: string) => `${k} ${k > 1 ? many : one}`;
   // Once « Stations amateur » is ticked, each legend counts them apart, after the official ones, and dates the latest
-  // of all those shown (marketing, 10/11/2026); a layer that none of them measures keeps its legend.
+  // of all those shown (wording validated on 10/11/2026); a layer that none of them measures keeps its legend.
   const tAm = amateurs.filter((s) => s.temperature != null).length;
   const pAm = amateurs.filter((s) => mm(s) != null).length;
   const wAm = amateurs.filter((s) => s.vent != null).length;
@@ -497,14 +497,14 @@ export function stationsMap(every: StationNow[], altPath = ALT_PATH): string {
   // screen (the user, 01/11/2026, as /electricite).
   // The tabs in a bar, which the full screen's button joins (pages.ts).
   // The amateur stations' box, unticked (the user, 10/11/2026): its words are the user's; ticked, the legend says what
-  // the dotted outline is (marketing).
+  // the dotted outline is.
   const box = amateurs.length ? `<label class="amchk"><input type="checkbox" id="wx-am"> Stations amateur</label>` : "";
   // « Valeurs » (the user, 10/11/2026: « une option pour afficher/masquer les valeurs »), ticked: the discs and pills
   // with their figures; unticked, the points of pointsData(). One box for the three layers, kept by the browser (VALEURS_JS);
   // hidden without a script, which draws the points.
   const values = `<label class="amchk" data-js hidden><input type="checkbox" id="wx-val" checked> Valeurs</label>`;
   // « Radar » and « Pluviomètres » (the user, 16/11/2026: « des options radar et pluviomètres, cochées par défaut qu'on
-  // peut décocher »; marketing's words), on a line of their own under the boxes, on the rain's tab only (CSS, pages.ts):
+  // peut décocher »; the validated words), on a line of their own under the boxes, on the rain's tab only (CSS, pages.ts):
   // each hides its layer and its legend, live and in the replay. Shown by the site's script, which draws both.
   const pluvio = nRain ? `<div class="wxchk wxpv" data-js hidden><label class="amchk"><input type="checkbox" id="wx-rd" checked> Radar</label><label class="amchk"><input type="checkbox" id="wx-pv" checked> Pluviomètres</label></div>` : "";
   // The map zooms in its full screen only, its buttons in the bar there (the user, 10/11/2026: « plus de commandes comme
@@ -564,11 +564,11 @@ let left=false;try{left=localStorage.getItem("wx-valeurs")==="0"}catch(e){}
 if(left){b.checked=false;f.classList.add("vatt");const later=()=>setTimeout(()=>{f.classList.remove("vatt");set()});if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",later);else later()}
 b.addEventListener("change",()=>{set();try{localStorage.setItem("wx-valeurs",b.checked?"1":"0")}catch(e){}})})();`;
 
-/** Under the stations' map, the way to /carte, its view of the weather now: the same rain and stations, the others to tick (marketing). */
+/** Under the stations' map, the way to /carte, its view of the weather now: the same rain and stations, the others to tick. */
 export const TOUTES_LES_COUCHES = "La météo avec les rivières, les sentiers et le volcan, sur une seule carte →";
 const CARTE_METEO = "/carte#meteo";
 
-/** The replay bar's words (marketing): each length, and the button's full name for it. */
+/** The replay bar's words: each length, and the button's full name for it. */
 export const REVOIR: Record<(typeof DUREES)[number], [string, string]> = {
   "6h": ["6\u00a0h", "Lire les 6\u00a0dernières heures"],
   "24h": ["24\u00a0h", "Lire les 24\u00a0dernières heures"],
@@ -736,7 +736,7 @@ if(amb&&sa.length)amb.addEventListener("change",()=>{RJ.v.live=live();RJ.v.now=f
 /**
  * The land cells seen badly on an image (of 8 382) from which the sentence of the hatches is said under the map; the
  * hatches are drawn from the first. Under it, an ordinary day: 0 to 98 cells, median 38.5, over 330 surveys of
- * 29/10-2/11/2026, 100 or more only during the two episodes (marketing's choice).
+ * 29/10-2/11/2026, 100 or more only during the two episodes (the validated choice).
  */
 export const HACHURES_DITES = 100;
 
@@ -1140,11 +1140,11 @@ export const PLUVIO_ALT_M = 500;
  * around them a dark rose, a light one in the dark theme, never the radar's.
  */
 export const PLUVIO_MM = [0.2, 2, 8, 20];
-/** Their legend in the replay, before the radar's, and the word under the time while they are shown (marketing, 16/11/2026). */
+/** Their legend in the replay, before the radar's, and the word under the time while they are shown (wording validated on 16/11/2026). */
 export const PLUVIO_LEGENDE = "En rose\u00a0: la pluie de l'heure autour des pluviomètres de Météo-France qui en ont mesuré, jusqu'à 5\u00a0km, avec un ton par force de pluie, comme pour le radar. Elle n'est mesurée qu'au pluviomètre\u00a0: autour, c'est une estimation.";
 export const PLUVIO_MOT = "radar et pluviomètres";
 /**
- * The same once « Stations amateur » is ticked and their rain is among the zones (marketing, 16/11/2026), then the
+ * The same once « Stations amateur » is ticked and their rain is among the zones (wording validated on 16/11/2026), then the
  * association's credit with its link, as it asked (providers/meteor-oi.ts).
  */
 export const PLUVIO_LEGENDE_AM = "En rose\u00a0: la pluie de l'heure autour des pluviomètres de Météo-France et des stations amateur qui en ont mesuré, jusqu'à 5\u00a0km, avec un ton par force de pluie, comme pour le radar. Elle n'est mesurée qu'au pluviomètre ou à la station\u00a0: autour, c'est une estimation.";
@@ -1153,7 +1153,7 @@ export const PLUVIO_TONES = { light: ["#fec0e0", "#f691c9", "#e461ae", "#c6338f"
 export const PLUVIO_EDGE = { light: [92, 14, 66], dark: [255, 222, 242] };
 /** The rose zones' numbers for the page's scripts, live and in the replay. */
 const PLUVIO_JS = JSON.stringify({ r: PLUVIO_KM / KM, a: PLUVIO_ALT_M, m: altitudes.pas_m, cl: PLUVIO_MM, c: PLUVIO_TONES, e: PLUVIO_EDGE });
-/** Where their legend leads, the question of /meteo's FAQ that says how they are worked out (the user, 16/11/2026), and its words (marketing). */
+/** Where their legend leads, the question of /meteo's FAQ that says how they are worked out (the user, 16/11/2026), and its words. */
 export const PLUVIO_ANCRE = "h-zones-roses";
 export const PLUVIO_LIEN = "Comment c'est calculé →";
 /** Two times of La Réunion as a span of hours, by the site's rule for hours: « 14 h–15 h », « 14:18–15:18 ». */
@@ -1174,7 +1174,7 @@ const GAUGE_REACH = Math.round((10 / KM) * 10) / 10;
 /** How near an anemometer must be for its wind to lean the drops, in the map's units: 15 km. */
 const WIND_REACH = Math.round((15 / KM) * 10) / 10;
 /**
- * The drops, to tune (researcher, 31/10/2026). By the radar's class, 1 to 8: how many a cell asks for 100 × 100 px of
+ * The drops, to tune (31/10/2026). By the radar's class, 1 to 8: how many a cell asks for 100 × 100 px of
  * the map (×1.4 a class), how long, how wide, in CSS pixels. They go `slow` px a second, up to `fast` with a wind of
  * `strong` km/h, never faster where it rains harder; each lives `life` s, faded in and out over `fade` s; `max` at most
  * on the map. M1 leans `lean` degrees a km/h of east-west wind, `tilt` at most; M2 and M3 go the wind's way, to one of
@@ -1248,7 +1248,7 @@ export const turnsBack = (p: number[], q: number[]) => {
 
 /**
  * What the radar misses, said under the rain's legend, live and in the replay, its 7 days too (15/11/2026;
- * marketing's words): the gauges measured over 01–13/11 against the radar's images of those days, the median of
+ * the validated words): the gauges measured over 01–13/11 against the radar's images of those days, the median of
  * 154 rainy days at a gauge (radar + 1) / (gauge + 1). A new measure changes the dates and the share together.
  */
 export const RADAR_SOUS = "Le radar sous-estime la pluie, surtout dans l'Est, le Sud-Est et les hauts\u00a0: du 01 au 13/11, il a vu en médiane 17\u00a0% de la pluie mesurée par les pluviomètres de Météo-France. Là où il ne montre rien, il peut pleuvoir fort\u00a0: les pluviomètres font foi.";
@@ -1438,7 +1438,7 @@ const turn=(was,nw)=>{if(cw)paint();if(!was&&moving()||nw&&calm())o.again()};
 // The blues get darker with the rain in light, lighter in dark: the legend says which.
 const fo=()=>(dark()?"plus c'est clair":"plus c'est foncé")+", plus elle est forte.";
 const hx=(t)=>{const x=loc(t),m=x.getUTCMinutes();return x.getUTCHours()+"\u00a0h"+(m?"\u00a0"+p2(m):"")};
-// The drops' sentence (marketing), after the legend: what they show, and the wind they follow (WT: "live", the round
+// The drops' sentence, after the legend: what they show, and the wind they follow (WT: "live", the round
 // hour of the replay's, or none); the replay's (all), the same for every hour.
 const gd=(all)=>(all?!${rd}:hush())?"":"Les gouttes sont un effet visuel\u00a0: plus la pluie est forte, plus elles sont nombreuses et grosses"+(all?", et elles ${motion === "M1" ? "penchent" : "vont"} dans le sens du vent estimé d'après les anémomètres de Météo-France les plus proches, mesuré chaque heure. Loin de tout anémomètre, ou quand le vent de l'heure n'est pas connu, elles tombent droit.":WT==null?". Le vent de cette heure n'est pas connu\u00a0: elles tombent droit.":
 ", et elles ${motion === "M1" ? "penchent" : "vont"} dans le sens du vent estimé d'après les anémomètres "+(WT==="live"?"les plus proches, à leur dernière mesure.":"de Météo-France les plus proches, à "+hm(new Date(WT).toISOString())+".")+" Loin de tout anémomètre, elles tombent droit.");

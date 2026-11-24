@@ -1,8 +1,8 @@
 /**
  * The page of a station of Météo-France's 6-minute package (its own and the CIRAD's), /meteo/station/<id>: what it measured last (the 6-minute package), its last 24
  * hours (the hourly package, already kept for /meteo's rain), and from the climatological archive (D1) its last 30 days,
- * its year month by month and its records. Every chart is drawn here, in SVG: no script. The words are marketing's
- * (29/10/2026).
+ * its year month by month and its records. Every chart is drawn here, in SVG: no script. The words are the ones
+ * validated on 29/10/2026.
  */
 import type { Cache, Cached } from "../cache.js";
 import { sun } from "../providers/calendrier.js";
@@ -83,7 +83,7 @@ const HOUR_MS = 3600_000;
 
 /**
  * No measure in the last 6-minute slots: since when, from its last hour kept or the archive's last day; never said
- * broken or stopped, which is not known: what rundata.re has, not what the station does (marketing).
+ * broken or stopped, which is not known: what rundata.re has, not what the station does.
  */
 function silence(d: StationData, now: Date): string {
   const last = d.heures.find((h) => h.t != null || h.rr != null || h.ff != null || h.u != null);
@@ -101,7 +101,7 @@ function daylight(d: StationData, fin: string): boolean {
 }
 
 /** A day, with its year when it is not this year's: « 28/10 », « 30/06/2025 ». */
-// « 30/08/2026 »: the year in full beside another (« de 1952 au 30/08/2026 », marketing).
+// « 30/08/2026 »: the year in full beside another (« de 1952 au 30/08/2026 »).
 const full = (ymd: string) => ymd.split("-").reverse().join("/");
 const dated = (ymd: string, now: Date) => (ymd.slice(0, 4) === local(now.toISOString()).slice(0, 4) ? dayMonth(ymd) : ymd.split("-").reverse().join("/"));
 /** Whether the station sent something in the last 24 hours: else its page is its history (a station that has stopped sending). */
@@ -128,7 +128,7 @@ function band(d: StationData, now: Date): string {
     ? ""
     : m.temperature != null
       ? `<div class="now"><span class="big span">${enGrand(thin(deg(m.temperature)))}</span><p>mesurés ${cirad(d.nom) ? "" : "sous abri "}<b>${at}</b> ${where}.</p></div>`
-      // A rain gauge says what it measures; another station without a thermometer, its measures (marketing).
+      // A rain gauge says what it measures; another station without a thermometer, its measures.
       : `<div class="now"><p>${Object.keys(m).every((k) => k.startsWith("pluie")) ? `Pluie mesurée <b>${at}</b>` : `Mesures <b>${duAt(d.derniere!.time)}</b>`} ${where}.</p></div>`;
   // The last round hour, in the box only when it ends before the last measure, and not long before.
   const h = d.heures[0] && d.derniere && Date.parse(d.heures[0].fin) <= Date.parse(d.derniere.time) && Date.parse(d.derniere.time) - Date.parse(d.heures[0].fin) <= 2 * HOUR_MS ? d.heures[0] : undefined;

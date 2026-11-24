@@ -100,7 +100,7 @@ describe("/meteo with an amateur station", () => {
     expect(voile.map((v) => v[3])).toEqual([24.6, 12.3]);
     expect(JSON.parse(svg.match(/data-voile-am="([^"]+)"/)![1].replaceAll("&quot;", '"'))).toHaveLength(1);
     expect(svg).toContain("data-vent-am=");
-    // The legends count the official stations; ticked, a line says what the dotted outline is (marketing).
+    // The legends count the official stations; ticked, a line says what the dotted outline is.
     expect(svg).toContain("Température mesurée sous abri à 2 des 2 stations");
     expect(svg).toContain("2 anémomètres");
     expect(svg).toContain('<span class="amlg">Contour pointillé : station amateur.</span>');

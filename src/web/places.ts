@@ -58,7 +58,7 @@ const BY_SLUG = new Map(PAGES.map((p) => [p.slug, p]));
  * A place whose page says what another's says: the same station, the same forecast and the same swell. Its address
  * sends to the other's for good (301, web/site.ts), out of the sitemap; the tools still know the place. From the pages of
  * 20/11/2026: L'Hermitage and Saint-Gilles-les-Bains, Pointe des Trois-Bassins at 4.1 and 6.1 km, the forecast the same
- * 7 days out of 7, 70 % of their text in common; Saint-Gilles-les-Bains the name searched for (marketing).
+ * 7 days out of 7, 70 % of their text in common; Saint-Gilles-les-Bains the name searched for.
  */
 export const PRINCIPAL: Readonly<Record<string, string>> = { "l-hermitage": "saint-gilles-les-bains" };
 

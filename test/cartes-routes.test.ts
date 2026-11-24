@@ -16,7 +16,7 @@ const inside = (px: number, py: number, r: number[][]) => {
   return k;
 };
 const RINGS = island.paths.map((p) => ({ nom: p.nom, r: ring(p.d) }));
-/** Whether a commune's name is on its commune (marketing): of 9 points across by 3 up and down of its box, its middle and 14 or more on it or at sea. */
+/** Whether a commune's name is on its commune: of 9 points across by 3 up and down of its box, its middle and 14 or more on it or at sea. */
 const onItsOwn = (n: { x: number; y: number; fs: number; nom: string }) => {
   const half = (n.nom.length * 0.56 * n.fs) / 2;
   let ok = 0, mid = false;
@@ -30,7 +30,7 @@ const onItsOwn = (n: { x: number; y: number; fs: number; nom: string }) => {
     }
   return mid && ok >= 14;
 };
-/** Whether a commune's name faces its town (marketing): from its middle towards the town, the first land met is its commune. */
+/** Whether a commune's name faces its town: from its middle towards the town, the first land met is its commune. */
 const facing = (n: { x: number; y: number; fs: number; nom: string }, [tx, ty]: [number, number]) => {
   const steps = Math.ceil(Math.hypot(tx - n.x, ty - n.y) / (n.fs / 4));
   for (let i = 0; i <= steps; i++) {
@@ -283,7 +283,7 @@ describe("the roads and the names of places on the pages' maps", () => {
     expect(shown(wx)).toEqual([]);
     const fills = islandMap({ fills: { "Saint-Paul": "#f00" }, label: "x" });
     expect(fills).toContain('<g class="rd"');
-    // The six names of every map of the whole island (marketing's charter of the maps, § 2.4), no other place.
+    // The six names of every map of the whole island (the brand charter of the maps, § 2.4), no other place.
     expect(fills).toContain('<g class="nm" aria-hidden="true" data-i=""');
     expect(fills).not.toMatch(/data-r="[123]"/);
     const hero = islandMap({ relief: true, label: "x" });

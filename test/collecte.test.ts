@@ -97,7 +97,7 @@ describe("the bins' calendars of the West", () => {
 });
 
 describe("the tool and the pages", () => {
-  it("answers for a street, in marketing's words, with the calendar's PDF", () => {
+  it("answers for a street, in the validated words, with the calendar's PDF", () => {
     const r = body(collecteAnswer("12 rue Victoria, La Possession", NOW));
     expect(r.resume).toMatch(/^Rue Victoria, La Possession : ordures ménagères le lundi et le jeudi\u00a0; tri le mercredi, une semaine sur deux \(prochain : 28\/10\)/);
     expect(r.rues[0].calendrier_pdf).toMatch(/2026_POSS_01\.pdf$/);

@@ -48,7 +48,7 @@ const MAIN = /^(supercarburant|gazole|gaz)$/i;
 const mainLines = (m: carburants.Mois) => m.produits.filter((x) => MAIN.test(x.produit)).map(priceLine).join("\u00a0; ");
 
 /**
- * What is said of an order on `now`'s day, marketing's words. Before its 1st: « Prix maximum au 1er novembre, fixés
+ * What is said of an order on `now`'s day, the validated words. Before its 1st: « Prix maximum au 1er novembre, fixés
  * par la préfecture (communiqué du 31 octobre) : … » then « En vigueur jusqu'au 31 octobre : … ». From the 1st: the
  * month in force, and when the order is an older month's, that the new one is not published or not read yet.
  */

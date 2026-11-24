@@ -39,7 +39,7 @@ describe("cétacés", () => {
     expect(cetaces.LUES_LE).toBe("2026-11-04");
   });
 
-  it("never says the old zone, « autorisé », a whales' season, their presence today, nor links to Globice; non-breaking spaces where marketing set them", () => {
+  it("never says the old zone, « autorisé », a whales' season, their presence today, nor links to Globice; non-breaking spaces where the validated words set them", () => {
     const all = ALL().join("\n");
     expect(all).not.toMatch(/Grand Cap|baie de Saint-Paul|autoris|saison|globice/i);
     for (const t of ALL()) {

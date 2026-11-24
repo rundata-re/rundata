@@ -21,7 +21,7 @@ import { script } from "./scripts-declares.js";
 
 export const PATH = "/antennes";
 
-// The words of the page, marketing's.
+// The words of the page, the validated ones.
 const T = {
   title: "Antennes 4G, 5G, TNT et radio · La Réunion (974)",
   description: "Les supports d'antennes mobiles (Orange, SFR Réunion, Free, Zeop) et les émetteurs de radio et de télévision de La Réunion, d'après l'ANFR.",
@@ -84,11 +84,11 @@ export const LOOK = `const look=(d,o,g,m)=>{const has=(x)=>g.length?g.some((y)=>
 if(!on&&!r.some(([,a,p])=>has(a+p)))return null;if(m==="o"){const w=d.filter(([,a,p])=>has(a+p));return[!on,w.length>1?"m":w[0][0]]}
 const a=r.map((x)=>x[1]).join(""),x=Math.max(...[...(a||r.map((y)=>y[2]).join(""))].map(Number));return[!on,x===5?"5":x===4?"4":"2"]};`;
 
-/** The colours, marketing's (Okabe-Ito, never an operator's brand colour): by operator, then by generation; radio and TV
+/** The colours, the validated ones (Okabe-Ito, never an operator's brand colour): by operator, then by generation; radio and TV
  * have one of their own, shared with no operator (it was Free's magenta). */
 export const COULEURS: Record<string, string> = { o: "#56b4e9", s: "#f0e442", f: "#b0508a", z: "#2563d8", m: "#0b1f36", 5: "#f0e442", 4: "#56b4e9", 2: "#b4c6d8", r: "#6a3d9a" };
 
-// The words of the filters and of the legends, marketing's.
+// The words of the filters and of the legends, the validated ones.
 const MOTS = {
   operateur: "Opérateur :",
   type: "Type :",
@@ -108,7 +108,7 @@ const ou = (g: string[]) => g.map((x) => `${x}G`).join(", ").replace(/, ([^,]+)$
 /**
  * The count under the map, for what it shows: `on` mobile supports with one of the generations chosen active (in
  * service, or technically operational for the 5G, as the legend says; the 5G alone, « techniquement opérationnelle »,
- * the ANFR's word), `off` only planned, `e` supports of the radio and TV chosen (`r`), named after them (marketing).
+ * the ANFR's word), `off` only planned, `e` supports of the radio and TV chosen (`r`), named after them.
  * The page's script runs the same, from PHRASE: the test runs both.
  */
 export function phrase(on: number, off: number, e: number, g: string[], r: string[] = []): string {
@@ -209,7 +209,7 @@ function table(): string {
   return `<div class="card table-wrap"><table class="drought niveaux"><caption class="sr">Par commune</caption><thead><tr><th scope="col">Commune</th><th scope="col">Supports mobiles</th><th scope="col">Dont 5G techniquement opérationnelle</th><th scope="col">Supports par opérateur</th><th scope="col">Supports radio et TV</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
-// The words of the mobile sites out of service, marketing's.
+// The words of the mobile sites out of service, the validated ones.
 /** The island's four mobile networks, as said here, by the names the file may give them. */
 const RESEAUX: [string, string[]][] = [["Free", ["Free"]], ["SFR Réunion", ["SFR", "SRR"]], ["Zeop", ["Zeop", "ZEOP"]], ["Orange", ["Orange"]]];
 const de = (n: string) => (/^[AEIOUaeiou]/.test(n) ? `d'${n}` : `de ${n}`);
@@ -242,7 +242,7 @@ export function coupe(s: sitesHs.Site): string {
 
 /**
  * « Saint-Philippe : Free, voix, SMS et internet mobile coupés (panne), depuis le 28/10, fin prévue par Free le 04/11. »
- * Several sites of the same line, `n`: « Saint-Leu : 3 sites Free, … » (marketing, 24/11/2026).
+ * Several sites of the same line, `n`: « Saint-Leu : 3 sites Free, … » (wording validated on 24/11/2026).
  */
 export const ligneSite = (s: sitesHs.Site, n = 1) =>
   `${s.commune} : ${n > 1 ? `${nombre(n)} sites ` : ""}${s.operateur}, ${coupe(s)}${s.raison ? ` (${s.raison})` : ""}${s.debut ? `, depuis le ${jm(s.debut)}` : ""}${s.fin ? `, fin prévue par ${s.operateur} le ${jm(s.fin)}` : ", fin non précisée"}.`;

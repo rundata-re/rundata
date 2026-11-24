@@ -39,7 +39,7 @@ describe("where a place stands against the cloud sea", () => {
     expect(arome.cloudLayer(81130, 0).top).toBeNull();
   });
 
-  it("gives the five states in marketing's order", () => {
+  it("gives the five states in the validated order", () => {
     expect(etat(hour(SIX, 10, 1200, 1800), 2190)?.etat).toBe("degage");
     expect(etat(hour(SIX, 80, 1200, 1800), 2190)).toEqual({ etat: "dessus", texte: "au-dessus de la mer de nuages (nuages entre 1 200 et 1 800 m)" });
     expect(etat(hour(SIX, 80, 1200, 2130), 2190)).toEqual({ etat: "bord", texte: "au bord de la mer de nuages (nuages jusqu'à 2 100 m)" });

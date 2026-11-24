@@ -6,7 +6,7 @@
  *
  * Never the old zone of article 6 (« du nord de la baie de Saint-Paul au Grand Cap »), which the DMSOI's summary table
  * and the prefecture's press release of 17/06/2026 still give: the decree n° 1098 alone is authoritative. The DMSOI's
- * page of the decree n° 944 does not mention the decree n° 1098: both are linked. Words (marketing, 4/11/2026): the
+ * page of the decree n° 944 does not mention the decree n° 1098: both are linked. Words (wording validated on 4/11/2026): the
  * decree sets a period of rules for the humpback whales, never « la saison des baleines »; never « autorisé »; the
  * rules never say where the whales are.
  */
@@ -39,7 +39,7 @@ const N944 = `arrêté n°${NB}944`;
 /** The humpback whales' period of rules, both days included (944, art. 1): « MM-JJ ». */
 export const PERIODE = { du: "07-01", au: "09-30" };
 
-/** marketing's words (4/11/2026). */
+/** the validated words (4/11/2026). */
 export const T = {
   surtitre: `Arrêtés du préfet de La Réunion, lus le ${LUES_LE.split("-").reverse().join("/")}`,
   titre: `Baleines et dauphins${NB}: les règles d'approche`,
@@ -62,7 +62,7 @@ export interface Regle {
   article: string;
 }
 
-/** The twelve rules, in marketing's order and words (4/11/2026). */
+/** The twelve rules, in the validated order and words (4/11/2026). */
 export const REGLES: Regle[] = [
   {
     regle: `Dans les 300${NB}m autour des cétacés${NB}: 3${NB}navires immatriculés au plus, jet-skis (véhicules nautiques à moteur) compris, et 3${NB}engins de plage.`,
@@ -118,13 +118,13 @@ export const REGLES: Regle[] = [
   },
 ];
 
-/** The links, with marketing's words. */
+/** The links, with the validated words. */
 export const LIENS = [
   { texte: `Arrêté n°${NB}944 du 4${NB}juin 2025`, pdf: PDF_944, page: PAGE_944 },
   { texte: `Arrêté n°${NB}1098 du 27${NB}juin 2025, qui réécrit l'article${NB}6`, pdf: PDF_1098, page: PAGE_1098 },
 ];
 
-/** How an assistant says it (marketing, 4/11/2026). */
+/** How an assistant says it (wording validated on 4/11/2026). */
 export const COMMENT_LE_DIRE =
   `Dire ces règles comme celles de l'arrêté, avec son article. Elles ne disent pas où sont les baleines${NB}: ` +
   `jamais «${NB}baleines visibles aujourd'hui${NB}». Seul le texte des arrêtés fait foi.`;

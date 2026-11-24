@@ -24,7 +24,7 @@ export const fireMarkers = (f: feux.Feux | undefined, now: Date): Marker[] =>
 const FIRE_COLOR = "#7c2d12";
 const CLOSED_COLOR = "#e3262d";
 
-/** The two marks of the maps of fires and trails, in their legend (marketing's words). */
+/** The two marks of the maps of fires and trails, in their legend (the validated words). */
 export const CLE_FEU: Cle = { forme: "triangle", couleur: FIRE_COLOR, dit: "Point chaud détecté par satellite, pas forcément un feu." };
 export const CLE_FERME: Cle = { forme: "rond", couleur: CLOSED_COLOR, texte: "×", dit: "Sentier fermé" };
 
@@ -41,7 +41,7 @@ export const closedMarkers = (s: SentiersAnswer | undefined, page = ""): Marker[
     ...(listed.has(p.nom) ? { place: p.nom, say: "sentier fermé", href: `${page}#${anchorId("t", p.nom)}` } : {}) }));
 };
 
-/** The section of the fires seen by satellite (worded by marketing): the emergency numbers always, a quiet day said as such. */
+/** The section of the fires seen by satellite (worded for the site): the emergency numbers always, a quiet day said as such. */
 export function firesSection(f: feux.Feux | undefined, now: Date): string {
   if (!f) return "";
   const list = f.detections.length
@@ -57,7 +57,7 @@ export function firesSection(f: feux.Feux | undefined, now: Date): string {
 }
 
 /**
- * /sentiers's stable text (marketing, 14/11/2026): how many trails the ONF follows, how many have no known state, how
+ * /sentiers's stable text (wording validated on 14/11/2026): how many trails the ONF follows, how many have no known state, how
  * many full hikes; each sentence left out without its figure.
  */
 const sentiersLire = (suivis?: number, sansEtat?: number, randonnees?: number) => `<p>La page liste, commune par commune, les sentiers que la carte de l'ONF donne fermés. Pour chacun, elle donne la cause quand l'ONF la publie (éboulement, passage effondré, arbres en travers, travaux) et la date de réouverture si elle est annoncée. Un sentier est fermé par arrêté (préfet ou maire) ou par décision de l'ONF : s'y engager est interdit et dangereux.</p>
@@ -114,14 +114,14 @@ export function sentiersPage(origin: string, data: Cached<SentiersAnswer> | null
   <p>Les ${d?.randonnees.length ?? ""} itinéraires complets (GR R1, R2, R3, sommets, boucles) et les sentiers de l'ONF, avec leur trace GPS, leur distance, leur dénivelé et leur état d'après la carte de l'ONF, sur une carte de l'île et filtrables : <a href="/randonnees">la page randonnée</a>.</p></div>
 </section>`;
 
-  // In the words people type (« onf sentiers fermés », « sentier fermé reunion »; marketing, 24/11/2026). « À jour » holds
+  // In the words people type (« onf sentiers fermés », « sentier fermé reunion »; wording validated on 24/11/2026). « À jour » holds
   // by the day the description gives, the one the ONF dates its map of; none before the list is here, nor from a map
   // without a date. Never « ouvert »: a trail out of the list is not said open.
   const title = "Sentiers fermés ONF : la liste à jour · La Réunion (974)";
   const says = (carte: string) => `Sentier fermé ? La liste des sentiers fermés par l'ONF à La Réunion (974)${carte} : la commune, le sentier et la raison de chaque fermeture.`;
   const short = says("");
   const base = onfDay(d?.carte_mise_a_jour) ? describe(says(`, d'après sa carte du ${onfDay(d?.carte_mise_a_jour)}`), short) : short;
-  // The fires, when there is room for them (marketing): else the description stays as it was.
+  // The fires, when there is room for them: else the description stays as it was.
   const withFires = `${base.replace(/\.$/, "")}, et les feux de végétation détectés par satellite.`;
   const description = d?.feux && withFires.length <= DESCRIPTION_MAX ? withFires : base;
 

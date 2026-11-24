@@ -171,7 +171,7 @@ describe("the antennas of the island (ANFR)", () => {
     expect(look(parse("o234 f2345"), ["o", "f"], ["5"], "o")).toEqual([false, "f"]);
   });
 
-  it("colours the dots with marketing's palette, never an operator's own colour", () => {
+  it("colours the dots with the brand palette, never an operator's own colour", () => {
     expect(COULEURS).toEqual({ o: "#56b4e9", s: "#f0e442", f: "#b0508a", z: "#2563d8", m: "#0b1f36", 5: "#f0e442", 4: "#56b4e9", 2: "#b4c6d8", r: "#6a3d9a" });
     for (const [k, c] of Object.entries(COULEURS)) expect(CSS, k).toContain(`.antmap .k${k}{--c:${c}}`);
     // Radio and TV share no operator's colour: they had Free's magenta.

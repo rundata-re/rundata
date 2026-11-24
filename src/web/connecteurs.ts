@@ -1,5 +1,5 @@
 /**
- * « Relier votre plateforme » (marketing/relier-plateforme-helloasso.md, words as written), on plain HTML like the
+ * « Relier votre plateforme » (words as written), on plain HTML like the
  * other forms of the space (web/propositions.ts), so it works without a script:
  * - GET /associations/relier: the form; POST: the keys asked to the platform, then « C'est bien votre association ? »,
  *   or the form again with what went wrong (the client secret never given back);

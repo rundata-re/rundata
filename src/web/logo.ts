@@ -3,7 +3,7 @@
  * volcano (the red triangle), and its two yellow waves run down the slopes: the live. In the colours of Lo Mahavéli,
  * without being the flag, which stays content (flag.ts) wherever it shows La Réunion.
  *
- * Copied as they are from the brand kit's files (marketing: identite/logo/svg/point-chaud.svg, -petit.svg), on a grid
+ * Copied as they are from the brand kit's files (point-chaud.svg, -petit.svg), on a grid
  * of 48; never redrawn here.
  */
 

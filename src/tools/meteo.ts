@@ -67,7 +67,7 @@ export const stationKind = (source: string) => {
 
 /**
  * What a station's measures are, beside them: « mesure de station officielle de Météo-France »; an amateur one's with its
- * network, as the page names it (the user's words of 10/11/2026, « fiabilité non vérifiée »; marketing, 20/11/2026).
+ * network, as the page names it (the user's words of 10/11/2026, « fiabilité non vérifiée »; wording validated on 20/11/2026).
  */
 export const natureStation = (source: string) =>
   source === "metar" ? "mesure de station d'aéroport (observation METAR)" : `mesure de ${stationKind(source)}`;

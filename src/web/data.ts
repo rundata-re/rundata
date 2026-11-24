@@ -843,7 +843,7 @@ export interface RandonneesAnswer {
   hauts?: (MerDeNuages & { nom: string; slug?: string; enclos?: boolean })[];
 }
 
-// The Hauts whose morning the hikers' page tells, in marketing's order; `slug`, their weather page; `enclos`, the way
+// The Hauts whose morning the hikers' page tells, in the validated order; `slug`, their weather page; `enclos`, the way
 // down into the Enclos, forbidden during a volcano alert.
 const HAUTS: { nom: string; lieu: string; slug?: string; precision?: string; enclos?: boolean }[] = [
   { nom: "Maïdo", lieu: "Maïdo", slug: "maido" },
@@ -2142,7 +2142,7 @@ export function alerteOf(v: mf.Vigilance, now: Date): Alerte | undefined {
 }
 
 // The last vigilance kept is served however old while Météo-France is late or fails: the tile and the banner say when
-// it was read once that is more than 15 min ago, and that Météo-France has not answered since beyond an hour (marketing).
+// it was read once that is more than 15 min ago, and that Météo-France has not answered since beyond an hour.
 const LUE_AFTER_MS = 15 * 60_000;
 const SANS_REPONSE_AFTER_MS = 3600_000;
 

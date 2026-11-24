@@ -563,7 +563,7 @@ describe("what crawlers and previews fetch", () => {
     const robots = await (await handle(new Request("https://rundata.re/robots.txt"), isolate())).text();
     expect(robots).toContain("Sitemap: https://rundata.re/sitemap.xml");
     const map = await (await handle(new Request("https://rundata.re/sitemap.xml"), isolate())).text();
-    // Only the pages of marketing's list of 24/11/2026 (web/sitemap-gardees.ts, counted in test/sitemap-liste.test.ts):
+    // Only the pages of the validated list of 24/11/2026 (web/sitemap-gardees.ts, counted in test/sitemap-liste.test.ts):
     // the head pages, the 24 communes, their water where the page is indexable, and the trails, hikes and places people
     // look for. Less /feux, with no FIRMS key here. No weather station's page, no stop's.
     expect(map.match(/<loc>/g)).toHaveLength(SITEMAP_NOMBRE - 1);
@@ -895,7 +895,7 @@ describe("vigilance and sea pages", () => {
     expect(new Set((alerteOf(v, NOW)?.court as { zones: string[] }).zones)).toEqual(new Set([mf.ZONES["VIGI974-11"], mf.ZONES["VIGI974-12"]]));
   });
 
-  it("never says « 2 jours de retard »: a measure appears the next day at the earliest, later on cloudy days (marketing)", async () => {
+  it("never says « 2 jours de retard »: a measure appears the next day at the earliest, later on cloudy days", async () => {
     const sea = (await serve(isolate(), "/mer")).text;
     expect(sea).toContain("<h3>Au mieux, la mesure d'hier</h3>");
     expect(sea).toContain("publiée au plus tôt le lendemain");

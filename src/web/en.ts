@@ -1,5 +1,5 @@
 /**
- * /en, the one page in English (text by marketing, 09/11/2026, read again 23/11/2026): what the site shows, how to get
+ * /en, the one page in English (text validated on 09/11/2026, read again 23/11/2026): what the site shows, how to get
  * answers in English through an AI assistant, the French pages most useful to visitors, and safety. One address, no
  * hreflang: no page in French is its twin. The links go to the French pages, and the text says so; the official
  * warnings are not translated. The site's menu, banners and footer stay in French, in lang="fr" (layout's `en`).

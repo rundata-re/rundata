@@ -1,7 +1,7 @@
 /**
  * /feux: the vegetation fires seen by satellite in the last 24 hours (providers/feux.ts) on the island's map and in a
  * list, with the closed trails (the last copy of /sentiers) and the vigilance: what someone looks for when a fire breaks
- * out above Saint-Paul. Worded by marketing. Without FIRMS's key the page says the detection is not active yet, is kept
+ * out above Saint-Paul. Worded for the site. Without FIRMS's key the page says the detection is not active yet, is kept
  * out of the search engines and the sitemap, and nothing links to it.
  */
 import type { Cached } from "../cache.js";
@@ -35,7 +35,7 @@ const QUIET_META = (at: Date) => `Aucun point chaud détecté par satellite à L
 const BLIND_META = "Feux de végétation à La Réunion (974) vus par satellite : la carte des dernières 24 h, les sentiers fermés et la vigilance du jour. Un feu ? 18 ou 112.";
 const OFF = "La détection des feux par satellite n'est pas encore active sur rundata.re.";
 const DOWN = "Le service de la NASA ne répond pas pour le moment : rechargez la page dans quelques minutes.";
-// The first screen (marketing, 06/11/2026): a satellite sees hot spots, not fires; « aucun point chaud » always with
+// The first screen (wording validated on 06/11/2026): a satellite sees hot spots, not fires; « aucun point chaud » always with
 // « détecté par satellite » and the time it was read, never « pas de feu ».
 const PILL = "Satellites de la NASA · 24 h";
 const SEES = "Un satellite voit des points chauds (feu, brûlage, toit très chaud), pas forcément des feux. Les nuages et les heures entre deux passages peuvent en cacher.";

@@ -19,7 +19,7 @@ describe("the times of the answers", () => {
     expect(paire(8 * 60 + 30, 12 * 60)).toEqual(["08:30", "12:00"]);
   });
 
-  it("write every hour of one place with its minutes as soon as one has some (kit.md, 30/10/2026)", () => {
+  it("write every hour of one place with its minutes as soon as one has some (the brand kit, 30/10/2026)", () => {
     expect(minutees([[8 * 60, 12 * 60], [13 * 60 + 30, 16 * 60 + 30]])).toBe(true);
     expect(minutees([[8 * 60, 12 * 60], [14 * 60, 17 * 60]])).toBe(false);
     expect(tranche(8 * 60, 12 * 60, true)).toBe("08:00–12:00");

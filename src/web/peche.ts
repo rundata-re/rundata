@@ -1,7 +1,7 @@
 /**
  * /peche: the rules of recreational fishing at La Réunion, for the day of the view: what is closed today, the sizes and
  * the quantities, the species never to take, the lagoons, from the prefect's two decrees (tools/peche.ts). Computed at
- * each view from the bundled rules: nothing is read but the vigilance's banner. In marketing's words (31/10/2026).
+ * each view from the bundled rules: nothing is read but the vigilance's banner. In the validated words (31/10/2026).
  */
 import { longDate } from "../tools/calendrier.js";
 import {

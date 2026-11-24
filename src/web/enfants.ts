@@ -1,7 +1,7 @@
 /**
  * Where to go with children (/enfants): the agenda's activities for them, this weekend first, then the places of the
  * 24 communes by kind (vie/enfants.ts), each with its ages: the source's as a fact, else an indication by kind, marked.
- * Filtered by age band and kind in the page. The words are marketing's (marketing/enfants-textes.md).
+ * Filtered by age band and kind in the page. The words are the validated ones.
  */
 import type { Cached } from "../cache.js";
 import { mentionOf } from "../mentions.js";
@@ -119,7 +119,7 @@ document.querySelectorAll("#enf .note[data-n]").forEach((e)=>{const all=+e.datas
 document.getElementById("kf-n").textContent=b||t?n+" résultat"+(n>1?"s":""):"";};
 f.addEventListener("input",run);f.addEventListener("submit",(e)=>e.preventDefault());})();`;
 
-/** The « sentiers marmailles » part's words: marketing's. */
+/** The « sentiers marmailles » part's words: the validated ones. */
 const MARMAILLES = {
   intro: (n: number) => typo(`Les balades pour toute la famille recensées par le Conseil Général et l'AGORAH : ${n} sentiers marmailles, avec leur longueur et leur durée.`),
   etat: "État sur la carte de l'ONF\u00a0: ",
@@ -268,7 +268,7 @@ const pathOf = (commune: string) => {
 };
 
 /**
- * The words of a commune's page, marketing's. A commune takes its own « à » and « de » (« au Port », « des Avirons »),
+ * The words of a commune's page, the validated ones. A commune takes its own « à » and « de » (« au Port », « des Avirons »),
  * and a commune with a single place is said in the singular.
  */
 const MOTS = {
@@ -294,7 +294,7 @@ const MOTS = {
   versPage: (c: string) => `La carte des lieux ${deCommune(c)}`,
 };
 
-/** A filter's words, a kind's plural: marketing's. */
+/** A filter's words, a kind's plural: the validated ones. */
 const FILTRES: Record<enfants.Kind, string> = {
   aire_de_jeux: "Aires de jeux",
   parc: "Parcs et jardins",
@@ -321,7 +321,7 @@ const FAMILLES: { f: string; types: enfants.Kind[] }[] = [
   { f: "sport", types: ["sport", "escalade"] },
 ];
 /**
- * A colour's name in the legend (marketing, 29/10): the filter of its one kind in the list, word for word; else its
+ * A colour's name in the legend (wording validated on 29/10): the filter of its one kind in the list, word for word; else its
  * kinds' filters in the buttons' order, the next ones in lower case, « et » before the last, or commas alone when a
  * filter has its own « et » (« Parcs et jardins, zoos et aquariums »).
  */
@@ -393,7 +393,7 @@ export function enfantsCommunePage(origin: string, p: PlacePage, data: Cached<En
   const legend = `<p class="klegend note">${families.map((x) => `<span><i class="ksw f-${x.f}"></i>${esc(couleur(x.types, list))}</span>`).join(" ")}</p>`;
   const sheet = `<div id="ecs" class="card ksheet" hidden aria-live="polite"><button type="button" class="x" aria-label="${esc(MOTS.fermer)}">×</button><p class="nm"></p><p class="note tp"></p><p class="ya"></p><p><a class="go" href="#">${esc(MOTS.dansListe)}</a></p></div>`;
 
-  // Each kind folded, its count in its line (marketing's words), but in a short list or a commune of one kind.
+  // Each kind folded, its count in its line (the validated words), but in a short list or a commune of one kind.
   const fold = list.length > FOLD_ROWS && kinds.length > 1;
   const places = `<div id="ecl">${kinds.map((t) => {
     const of = list.map((l, i) => [l, i] as const).filter(([l]) => l.type === t.type);

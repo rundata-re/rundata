@@ -78,7 +78,7 @@ export function luLe(at: Date): string {
   return `${JOURS[new Date(r.slice(0, 10)).getUTCDay()]} ${r.slice(8, 10)}/${r.slice(5, 7)} à ${r.slice(11, 16)}`;
 }
 
-// Worded by marketing (20/11/2026).
+// Worded for the site (20/11/2026).
 export const TITRE = "Chantiers de runéo autorisés par la ville";
 export const PHRASE =
   "La ville de Sainte-Suzanne publie les arrêtés qui autorisent les chantiers de runéo : voici ceux en cours ou à venir, avec leur lieu, leurs dates et leur lien. Ce sont des autorisations de chantier, pas des avis de coupure d'eau ; les avis de runéo sont plus haut sur cette page.";

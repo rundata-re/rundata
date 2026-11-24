@@ -266,7 +266,7 @@ describe("the fires' page", () => {
     expect(await (await page("/sitemap.xml"))!.text()).not.toContain("/feux");
   });
 
-  it("with it: the map, the list, the closed trails and the vigilance, worded by marketing, and in the sitemap", async () => {
+  it("with it: the map, the list, the closed trails and the vigilance, worded for the site, and in the sitemap", async () => {
     feux.configure("key");
     const r = (await page("/feux"))!;
     const html = await r.text();
@@ -284,7 +284,7 @@ describe("the fires' page", () => {
     expect(html).not.toContain('class="askbox"');
     expect(html).toContain('fill="#7c2d12"/></svg>Point chaud détecté par satellite, pas forcément un feu.</span>');
     expect(html).toMatch(/<span class="mls">Croix\s: sentiers fermés par l&#39;ONF, pas des feux\. Points chauds\s: données des satellites de la NASA, lues le 24\/10 à\s08:00\.<\/span>/);
-    // The first screen (marketing, 06/11/2026): the hot spots of 24 hours, when they were read, what a satellite sees.
+    // The first screen (wording validated on 06/11/2026): the hot spots of 24 hours, when they were read, what a satellite sees.
     expect(html).toContain('<p class="pill"><span class="dot"></span>Satellites de la NASA · 24\u00a0h</p>');
     expect(html).toContain("<div class=\"now\"><span class=\"big\">2</span><p>points chauds détectés par satellite dans les 24\u00a0h avant le 24/10 à\u00a008:00.</p></div>\n    <p>Un satellite voit des points chauds (feu, brûlage, toit très chaud), pas forcément des feux. Les nuages et les heures entre deux passages peuvent en cacher.</p>\n    <p class=\"lead\"><b>Vous voyez un feu\u00a0? Appelez le 18 ou le 112.</b></p>");
     expect(await (await page("/sitemap.xml"))!.text()).toContain("<loc>https://rundata.re/feux</loc>");

@@ -65,7 +65,7 @@ describe("the size of electricite", () => {
     const r = await electricite(new Cache(store, () => NOW.getTime()), NOW);
     const c = body(r).coupures_annoncees;
     // Notices of no cut today or later: one sentence for the island, their mairies and days, without their links
-    // (marketing, 22/11/2026); their sentences and links in the answer for their commune.
+    // (wording validated on 22/11/2026); their sentences and links in the answer for their commune.
     expect(c.avis).toEqual([]);
     expect(c.sans_date_a_venir).toBe("Dernier avis sans date à venir\u00a0: Sainte-Marie (avis du 12/10), Saint-André (avis du 04/09). Une coupure peut y être prévue sans que rundata.re l'ait lue.");
     // 19/11/2026, with both full entries: 5 590 bytes live, 4 340 here. The 1 250 between are what the server adds (citer,
@@ -123,7 +123,7 @@ describe("the size of electricite", () => {
     const cache = new Cache(store, () => NOW.getTime());
     const r = await electricite(cache, NOW);
     const c = body(r).coupures_annoncees;
-    // One range, how many others, the link; the streets in the notice and in the answer for the commune (marketing).
+    // One range, how many others, the link; the streets in the notice and in the answer for the commune.
     expect(c.avis.map((a: { texte: string }) => a.texte)).toEqual([
       "Dernier avis de coupure d'électricité publié par la mairie de Saint-André le 22/10\u00a0: coupure programmée le lundi 26/10 de 09:00 à 12:30, et 2 autres plages dans l'avis\u00a0; secteurs dans l'avis.",
       "Dernier avis de coupure d'électricité publié par la mairie de Sainte-Marie le 21/10\u00a0: coupure programmée le mercredi 28/10 de 09:00 à 15:00\u00a0; secteurs dans l'avis.",

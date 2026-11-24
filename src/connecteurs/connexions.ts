@@ -1,7 +1,7 @@
 /**
  * The links of the associations to their platform (« Relier votre plateforme », web/connecteurs.ts), in the D1 table
- * `connexions` (scripts/connecteurs.sql), next to the proposals. The words of the e-mails are marketing's
- * (marketing/relier-plateforme-helloasso.md).
+ * `connexions` (scripts/connecteurs.sql), next to the proposals. The words of the e-mails are
+ * the validated ones.
  *
  * 1. The association pastes its keys: the platform says which association they administer (`verifier`), and nothing
  *    is written yet. What it said, and the secret to keep, travel to the next screen sealed (`sceller`): encrypted
@@ -256,7 +256,7 @@ export async function purger(now = new Date()): Promise<number> {
   return changed.reduce((a, b) => a + b, 0);
 }
 
-// ---------------------------------------------------------------- the e-mails (marketing's words)
+// ---------------------------------------------------------------- the e-mails (the validated words)
 
 const SIGNATURE = ["", "L'équipe rundata.re", "rundata.re · https://rundata.re/associations"];
 

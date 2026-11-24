@@ -37,15 +37,15 @@ const enclosSaid = (x: Enclos) =>
         : x.vigilance
           ? esc(VIGILANCE_ENCLOS)
           : `Accès à l'Enclos : à vérifier sur ${GOUV}, avant de partir.`;
-// The card's title (marketing).
+// The card's title.
 const ENCLOS_TITRE = "Accès à l'Enclos";
 const OVPF_LINK = `<a href="${OVPF.url}">${OVPF.url.replace("https://", "")}</a>`;
 // A text of ours with the OVPF's link, or a post's, in it: escaped, then the link put back as a link.
 const linked = (t: string, url: string, a: string) => esc(t).replace(esc(url), a);
 
-// The OVPF's Facebook page, which rundata.re does not read: a link only, no embed (marketing).
+// The OVPF's Facebook page, which rundata.re does not read: a link only, no embed.
 const FACEBOOK_LINE = `<p class="lead">L'OVPF publie aussi sur Facebook, que rundata.re ne lit pas : <a href="${OVPF_FACEBOOK}">suivre sa page officielle ↗</a></p>`;
-/** After « …est en images, qui ne sont pas lues : »: the post on Bluesky, and the OVPF's Facebook page, where the same post may not be (marketing). */
+/** After « …est en images, qui ne sont pas lues : »: the post on Bluesky, and the OVPF's Facebook page, where the same post may not be. */
 export const imageLinks = (lien: string) => `<a href="${esc(lien)}">la voir sur Bluesky ↗</a>, ou suivre <a href="${OVPF_FACEBOOK}">l'OVPF sur Facebook ↗</a>`;
 
 // Where the prefecture publishes each phase of the ORSEC volcano plan.
@@ -78,27 +78,27 @@ export function volcanPage(origin: string, data: Cached<VolcanAnswer> | null, no
   const jusqua = q?.lus_jusqu_au ? `, ${jusquALecture(q.lus_jusqu_au)}` : "";
   const url = `${origin}/volcan`;
   // Under an alert, the OVPF's newest post in images, newer than the release: said once, with its time, at the top;
-  // IMAGE_APRES is then not said (marketing).
+  // IMAGE_APRES is then not said.
   const p0 = Array.isArray(d?.publications_ovpf) ? d.publications_ovpf[0] : undefined;
   const folded = !!a && !a.eruption && !a.arret && !!e && !!e.image_ovpf_plus_recente && !!p0?.lien;
   // Its text read in the first image: said so, the text open on its card (providers/ovpf-ocr.ts).
   const lu = !!p0?.texte_lu_dans_l_image;
   const apres = lu ? IMAGE_LUE_APRES : IMAGE_APRES;
-  // pitonlive.com, after the official source, as its own (marketing); the OVPF's level, newer than the release.
+  // pitonlive.com, after the official source, as its own; the OVPF's level, newer than the release.
   const piton = e?.pitonlive_non_officiel
     ? pitonLines(e.pitonlive_non_officiel, !!e.niveau_inconnu, OVPF.url).map((x) => `<p class="lead">${linked(x, OVPF.url, OVPF_LINK)}</p>`).join("")
     : "";
   const ovpf = e?.niveau_ovpf
     ? `<p class="lead">${linked(ovpfNiveau(e.niveau_orsec, givenAt(e.niveau_ovpf.date), e.niveau_ovpf.lien), e.niveau_ovpf.lien, `<a href="${esc(e.niveau_ovpf.lien)}">lien</a>`)}</p>`
     : "";
-  // The IPGP's site silent (marketing), with the list of the silent sites: at the top out of an alert, with the
+  // The IPGP's site silent, with the list of the silent sites: at the top out of an alert, with the
   // official texts during one, where it says what may be missing.
   const silent = d?.injoignable ? `<p class="note">${esc(d.injoignable)} <a href="${SANS_REPONSE}">Voir les sites sans réponse</a>.</p>` : "";
   const m = d?.puis_je_monter;
 
   // During an alert, five lines at most under the heading, each fact once: no eruption announced (whose words), the
   // Enclos with the way to the detail, whose the level is, the OVPF's newest post in images, the OVPF's accounts
-  // (marketing, 26/10/2026). The level's words are in the heading, the decree in « Les niveaux du dispositif ».
+  // (wording validated on 26/10/2026). The level's words are in the heading, the decree in « Les niveaux du dispositif ».
   const [jour, heure] = (p0?.date.split(" ") ?? []) as [string, string];
   const top = (a: VolcanAlerte) =>
     `<p class="lead"><b>${esc(!a.eruption && !a.arret ? nonAnnoncee : volcanLead(a))}</b></p>` +
@@ -119,7 +119,7 @@ export function volcanPage(origin: string, data: Cached<VolcanAnswer> | null, no
         ? top(a)
         : e
         ? (e.niveau_inconnu
-            // No official level read nor kept: why, then pitonlive as a last resort (marketing).
+            // No official level read nor kept: why, then pitonlive as a last resort.
             ? `<p class="lead">${esc(nonAnnoncee)} ${esc(NIVEAU_ILLISIBLE).replace("reunion.gouv.fr", GOUV)}</p>`
             : `<p class="lead">${esc(nonAnnoncee)} Niveau du dispositif ORSEC volcan : <b>${esc(e.niveau_orsec)}</b>.` +
               (e.niveau_definition ? ` <span class="note">${esc(e.niveau_definition)}</span>` : "") +
@@ -146,8 +146,8 @@ export function volcanPage(origin: string, data: Cached<VolcanAnswer> | null, no
 
   const ABOVE_SEA = "Profondeur comptée depuis le niveau de la mer\u00a0; «\u00a0−\u00a0» : au-dessus, sous le sommet (vers 2,6\u00a0km d'altitude).";
   // During an alert, five at most, one line each at 390 px: « 24/10 16:55 · magnitude 1,2 · sommet, 0 km », the
-  // section saying « sous le volcan » already (marketing).
-  // « sommet, 0,1 km » kept whole, the line breaking before it, never inside (marketing); a longer place breaks as words.
+  // section saying « sous le volcan » already.
+  // « sommet, 0,1 km » kept whole, the line breaking before it, never inside; a longer place breaks as words.
   const where = (s: NonNullable<typeof q>["derniers"][number]) => {
     // Counted from the sea level (note under the list): above it under the summit, « −1,2 km ».
     const at = `${s.lieu === SOMMET ? "sommet" : s.lieu}, ${s.profondeur_km < 0 ? "−" : ""}${fr(Math.abs(s.profondeur_km))}\u00a0km`;
@@ -168,17 +168,17 @@ export function volcanPage(origin: string, data: Cached<VolcanAnswer> | null, no
       (q.derniers.length ? `<ul class="rows${a ? " seismes" : ""}">${q.derniers.slice(0, a ? 5 : undefined).map(quakeRow).join("")}</ul>` : "") +
       // The short rows give a depth above the sea level as « −1,2 km »: said once under them.
       (a && q.derniers.slice(0, 5).some((s) => s.profondeur_km < 0) ? `<p class="note">${esc(ABOVE_SEA)}</p>` : "") +
-      // LOCALISES once, under the day counts (marketing).
+      // LOCALISES once, under the day counts.
       `<p class="note">${q.copie ? `${esc(q.copie)} ` : ""}${esc(q.note.replace(` ${LOCALISES}`, ""))}</p></div>`
     : "";
 
   // The alerts before this one, from the releases (tools/volcan-historique.ts): the same list whatever the copy says.
   const moment = (m: historique.Moment) =>
-    // Non-breaking spaces inside the quotes and before the colon: a lone « at the end of a line at 390 px (marketing).
+    // Non-breaking spaces inside the quotes and before the colon: a lone « at the end of a line at 390 px.
     `<li><b>${esc(historique.date(m.jour))}</b>, ${esc(m.quoi)} : « ${esc(m.dit)} » <a href="${esc(m.communique.copie)}">${esc(historique.label(m.communique))} →</a></li>`;
   const episodes = (list: historique.Episode[]) =>
     `<ul class="posts">${list.map((x) => `<li class="card"><p class="note">Début</p><ul class="plain">${x.debut.map(moment).join("")}</ul><p class="note">Fin</p><ul class="plain">${moment(x.fin)}</ul>${x.puis ? then(x.puis) : ""}</li>`).join("")}</ul>`;
-  // « Le même jour, nouvelle alerte 2-2 : « … » (communiqué du 19/02/2019 →). Sa fin n'est pas… » (marketing).
+  // « Le même jour, nouvelle alerte 2-2 : « … » (communiqué du 19/02/2019 →). Sa fin n'est pas… ».
   const then = (m: historique.Moment) =>
     `<p>${esc(historique.PUIS)} ${esc(m.quoi)} : « ${esc(m.dit)} » (<a href="${esc(m.communique.copie)}">${esc(historique.label(m.communique))} →</a>). ${esc(historique.SANS_FIN)}</p>`;
   // Before the plan of 2021, folded: as many cards again at 390 px, under the levels of the plan then.
@@ -191,14 +191,14 @@ export function volcanPage(origin: string, data: Cached<VolcanAnswer> | null, no
   <p class="note">${esc(historique.note(alertes))}</p></section>
 `;
 
-  // The text read in a post's first image, folded under what it is (draft, marketing); open on the first card during an
+  // The text read in a post's first image, folded under what it is (draft); open on the first card during an
   // alert, which the top of the page leads to.
   const readText = (t: string, open: boolean) => `<details${open ? " open" : ""}><summary>${esc(LU_DANS_L_IMAGE)}</summary>${t.split("\n\n").map((x) => `<p>${esc(x)}</p>`).join("")}</details>`;
   const list = Array.isArray(d?.publications_ovpf) ? d.publications_ovpf.slice(0, a ? 3 : 4) : [];
   const cards = list.length
     ? `<ul class="posts" id="ovpf">${list.map((p, i) => `<li class="card"><p class="note">${esc(p.date)}</p><p>${adressesCoupables(p.texte)}</p>${p.texte_lu_dans_l_image ? readText(p.texte_lu_dans_l_image, !!a && i === 0) : ""}${p.lien ? `<p><a href="${esc(p.lien)}">${p.image ? "Voir les images sur Bluesky" : "Lire le message"} →</a></p>` : ""}</li>`).join("")}</ul>`
     : "";
-  // During an alert, the official texts in one section: the prefecture's release, then the OVPF's posts (marketing).
+  // During an alert, the official texts in one section: the prefecture's release, then the OVPF's posts.
   const official = a
     ? `<section id="annonces" aria-labelledby="h-officiel"><div class="sec-h"><h2 id="h-officiel">Les annonces officielles</h2><p>${esc(!a.eruption && !a.arret ? `${ANNONCERONT} ${BLUESKY_SEUL}` : BLUESKY_SEUL)}</p></div>` +
       silent + releaseCard(a) + cards + `</section>`
@@ -209,7 +209,7 @@ export function volcanPage(origin: string, data: Cached<VolcanAnswer> | null, no
     : "";
 
   // In vigilance from the prefecture's release, said with « pas d'éruption annoncée »; no official level, the state of
-  // the volcano, the reason right under it (marketing).
+  // the volcano, the reason right under it.
   const vigilance = !a && !!e && !e.niveau_inconnu && e.niveau_orsec === "Vigilance";
   const heading = a ? volcanH1(a) : vigilance ? "Piton de la Fournaise : vigilance, pas d'éruption annoncée" : e?.niveau_inconnu ? "Piton de la Fournaise : état du volcan" : undefined;
   // A state in the title says the day it was read (volcanTitle); « état du volcan » and the default say none. Vigilance
@@ -218,7 +218,7 @@ export function volcanPage(origin: string, data: Cached<VolcanAnswer> | null, no
   const title = a
     ? volcanTitle(a, read)
     : vigilance ? `Piton de la Fournaise au ${localTime(read).slice(0, 5)} : vigilance · 974` : heading ? `${heading} · 974` : "Piton de la Fournaise en direct : éruption, séismes · 974";
-  // Out of an alert, timeless: search engines keep it for days, a state in it would go stale (marketing).
+  // Out of an alert, timeless: search engines keep it for days, a state in it would go stale.
   const description = a
     ? volcanMeta(a)
     : "Piton de la Fournaise en direct : niveau d'alerte d'après la préfecture, publications de l'OVPF, accès à l'Enclos, séismes localisés sous le volcan.";
@@ -226,7 +226,7 @@ export function volcanPage(origin: string, data: Cached<VolcanAnswer> | null, no
   const question = ask(`Volkan la pété ? Gèt si ${url} é di amwin si lanklo lé ouvèr.`,
     `Le Piton de la Fournaise est-il en éruption ? Lis ${url} et dis-moi aussi si l'Enclos est ouvert.`);
   // During an alert, the question to an assistant goes to the foot of the page, and the island's map leaves phones: it
-  // shows where the volcano is, which everyone knows (marketing).
+  // shows where the volcano is, which everyone knows.
   const band = `${crumbBar("Volcan")}
 <div class="wrap intro">
   <div class="pitch">
@@ -238,8 +238,8 @@ export function volcanPage(origin: string, data: Cached<VolcanAnswer> | null, no
   <figure class="card mapcard nophone">${islandMap({ pin: FOURNAISE, label: "Carte de La Réunion (974) avec le Piton de la Fournaise" })}</figure>
 </div>`;
 
-  // « Puis-je monter au volcan ? », first: the official texts place by place, and the levels of the plan (marketing).
-  // A non-breaking space before our colons, never inside a quote: no « : » alone at the start of a line (marketing).
+  // « Puis-je monter au volcan ? », first: the official texts place by place, and the levels of the plan.
+  // A non-breaking space before our colons, never inside a quote: no « : » alone at the start of a line.
   const colons = (s: string) => s.split(/(«[^»]*»)/).map((x, i) => (i % 2 ? x : x.replace(/ :/g, " :"))).join("");
   const line = (l: Ligne) =>
     `<li>${colons(esc(l.texte))}${l.source ? ` (${l.lien ? `<a href="${esc(l.lien)}">${esc(l.source)} →</a>` : esc(l.source)}).` : l.lien ? ` (<a href="${esc(l.lien)}">la source →</a>).` : ""}</li>`;
@@ -251,7 +251,7 @@ export function volcanPage(origin: string, data: Cached<VolcanAnswer> | null, no
     : "";
 
   // One question a block, in the order they come: may I go up, what the official texts say, what is measured, what the
-  // media say, what came before (marketing, 26/10/2026). « À savoir » stays in the tool: during an alert, the foot of
+  // media say, what came before (wording validated on 26/10/2026). « À savoir » stays in the tool: during an alert, the foot of
   // « Puis-je monter au volcan ? » says it.
   const measured = `<section id="seismes" aria-labelledby="h-volcan">
   <div class="sec-h"><p class="eyebrow">En ce moment</p><h2 id="h-volcan">${a ? "Séismes sous le volcan" : "L'Enclos et les séismes"}</h2></div>
@@ -273,7 +273,7 @@ const PLACE_WHOLE = 20;
 const DAYS_SCALE_MIN = 10;
 
 /**
- * The events located under the summit per day, as bars from 0, today marked « en cours » (marketing); each
+ * The events located under the summit per day, as bars from 0, today marked « en cours »; each
  * bar says its day and count to screen readers, and the line under it today's, yesterday's and the highest. The
  * catalogue silent: the day of its last read « jusqu'à » that time, the days after it hatched, « non lu », no bar.
  */
@@ -290,7 +290,7 @@ function quakeDays(days: Jour[] | undefined, imageAfter: string | undefined): st
   const top = read.reduce<typeof last>((a, j) => (!a || j.nombre > a.nombre ? j : a), undefined);
   // The day before today, counted whole: only when today is.
   const yesterday = "en_cours" in today ? read.at(-2) : undefined;
-  // « Le plus en un jour »: not to be read as a total over the 30 days (marketing).
+  // « Le plus en un jour »: not to be read as a total over the 30 days.
   const facts = ("en_cours" in today
     ? `Aujourd'hui (en cours) : <b>${today.nombre}</b>${yesterday ? `, hier : <b>${yesterday.nombre}</b>` : ""}.`
     : `${last?.jusqu_a ? `Le ${dd(last.jour)} jusqu'à ${last.jusqu_a} : <b>${last.nombre}</b>. ` : ""}${JOURS_SUIVANTS}`) +
@@ -311,7 +311,7 @@ export function volcanLive(data: Cached<VolcanAnswer> | null, now = new Date()):
   if (a) return tileLive(a);
   const q = typeof data!.value.seismes === "object" ? data!.value.seismes : undefined;
   const enclos = enclosShort(e.acces_enclos);
-  // What the texts read say, never « no eruption » on our word, nor pitonlive's (marketing).
+  // What the texts read say, never « no eruption » on our word, nor pitonlive's.
   const lus = `OVPF et préfecture, textes lus ${leAt(data!.fetchedAt)}`;
   return {
     valeur: "Pas d'éruption annoncée",

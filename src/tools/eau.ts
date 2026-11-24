@@ -379,7 +379,7 @@ async function baignade(cache: Cache, res: Resolution, now: Date, lieu: string) 
 const NB = "\u00a0";
 
 /**
- * The note under the tap water, worded by marketing, with the communes whose notices are read (src/eau/distributeurs.ts):
+ * The note under the tap water, worded for the site, with the communes whose notices are read (src/eau/distributeurs.ts):
  * for the tool, which shows a commune's « ne pas boire » notice itself, and for the /eau page, which shows none
  * (web/domains.ts, with a link to /coupures-eau after it).
  */

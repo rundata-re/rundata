@@ -162,7 +162,7 @@ export function cyclonesLive(data: Cached<CyclonesAnswer> | null): Live | undefi
   const d = data?.value;
   if (!d) return undefined;
   const active = d.systemes_actifs ?? [];
-  // In an alert, what the plan says of daily life is a click away (marketing).
+  // In an alert, what the plan says of daily life is a click away.
   const plan = d.vie_quotidienne ? ` · <a href="/alerte-cyclone">Ce qui ferme, ce qui continue →</a>` : "";
   if (active.length) {
     const r = active[0];

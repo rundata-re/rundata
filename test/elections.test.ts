@@ -162,7 +162,7 @@ describe("the part « Élections » of a commune's page", () => {
 });
 
 describe("a commune's elections page, and its summary on the commune's page", () => {
-  it("has marketing's title, description and h1, its own canonical, and the first year of the commune's scrutins", () => {
+  it("has the validated title, description and h1, its own canonical, and the first year of the commune's scrutins", () => {
     const html = elec("le-port");
     expect(html).toContain("<title>Élections au Port depuis 1999 · La Réunion (974)</title>");
     // The suffix of the other pages, within the 60 characters a search engine shows, for the 24 communes.

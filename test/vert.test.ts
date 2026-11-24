@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { CSS } from "../src/web/pages.js";
 
 // « Ouvert », « bonne », vigilance verte: one green for the site, darker in the light theme and lighter in the dark one,
-// so that it reads over 4.5:1 in both (marketing, 04/11/2026: #237534 is 5.73:1 on white, #4cc765 7.84:1 on #0f1d2c).
+// so that it reads over 4.5:1 in both (wording validated on 04/11/2026: #237534 is 5.73:1 on white, #4cc765 7.84:1 on #0f1d2c).
 const lum = (hex: string) => {
   const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
   return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];

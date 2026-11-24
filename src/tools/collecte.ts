@@ -13,7 +13,7 @@ const { communeSlug, honesty, NOT_FOUND } = col;
 export const COLLECTION = /collecte|poubelle|ordures?\b|ramassage(?! scolaire)|\bbacs?\b|(?<!centres? de )\btri\b|camion/i;
 
 const page = (commune?: string) => `https://rundata.re/collecte${commune ? `/${communeSlug(commune)}` : ""}`;
-// The line marketing gives for a commune, without a street.
+// The validated line for a commune, without a street.
 const communeLine = (commune: string) => `Collecte des déchets : le jour de votre rue sur rundata.re/collecte/${communeSlug(commune)}.`;
 
 /** The commune of the West `lieu` names, and the street it gives besides (number and commune left out). */

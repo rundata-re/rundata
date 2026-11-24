@@ -20,7 +20,7 @@
  * phone asks for less motion: the rings are a layer of their own over the map, only its opacity moving, which the
  * browser does without drawing the map again.
  *
- * The words are marketing's of 31/10/2026: the page's title, description, heading and lead, the layers' themes in the menu,
+ * The words are the ones validated of 31/10/2026: the page's title, description, heading and lead, the layers' themes in the menu,
  * « en direct » allowed where a layer is measured live, never « en temps réel ».
  */
 import island from "../places/island.json" with { type: "json" };
@@ -44,7 +44,7 @@ import { script } from "./scripts-declares.js";
 
 export const PATH = "/carte";
 
-/** The page's words, marketing's. */
+/** The page's words, the validated ones. */
 export const MOTS = {
   title: "Carte de La Réunion (974) : croisez les données publiques",
   description: "La Réunion en direct sur une même carte : pluie au radar, stations météo, rivières, séismes, sentiers fermés, défibrillateurs… Source et heure de chaque couche.",
@@ -193,7 +193,7 @@ const DIT: Record<string, Dit> = {
   },
 };
 
-/** Where each source of the children's places is said, under its name in the list (marketing). */
+/** Where each source of the children's places is said, under its name in the list. */
 const SOUS: Record<string, string> = { "enfants-osm": "OpenStreetMap", "enfants-data-es": "ministère des Sports", "enfants-basilic": "ministère de la Culture" };
 
 /**
@@ -203,7 +203,7 @@ const SOUS: Record<string, string> = { "enfants-osm": "OpenStreetMap", "enfants-
 export const ORDRE = ["vitesses", "velo", "velo-osm", "marmailles", "canyons", "sentiers", "rivieres", "enfants-basilic", "enfants-data-es", "enfants-osm", "defibrillateurs", "bornes", "monuments", "seismes", "stations"];
 
 /**
- * A view: its name on its button and in its address, what it shows (marketing's words), its layers, its frame (west,
+ * A view: its name on its button and in its address, what it shows (the validated words), its layers, its frame (west,
  * south, east, north; the whole island without) and its background.
  */
 export interface Vue {
@@ -215,7 +215,7 @@ export interface Vue {
   fond: "relief" | "plan" | "photo";
 }
 
-/** The views, marketing's words; at least two cross two layers (the user, 31/10: curiosity, what lies over what). */
+/** The views, the validated words; at least two cross two layers (the user, 31/10: curiosity, what lies over what). */
 export const VUES: Vue[] = [
   { id: "meteo", nom: "Météo maintenant", dit: "La pluie estimée par le radar de Météo-France et la dernière mesure de chaque station.", couches: ["pluie", "stations"], fond: "relief" },
   {
@@ -254,7 +254,7 @@ function conf() {
     w: W,
     h: H,
     couches: COUCHES.map((c) => ({ id: c.id, nom: c.nom, nature: c.nature, forme: c.forme, fichier: fichierOf(c), page: c.page, ...DIT[c.id], source: { attribution: c.source.attribution } })),
-    // A defibrillator leads to its commune on /defibrillateurs, a child's place to its commune's page (marketing).
+    // A defibrillator leads to its commune on /defibrillateurs, a child's place to its commune's page.
     dae: Object.fromEntries(COMMUNES.map((p) => [p.nom, anchorId("c", p.nom)])),
     enfants: Object.fromEntries(COMMUNES.map((p) => [p.nom, enfantsPath(p)])),
     acces: ACCES,
@@ -291,7 +291,7 @@ function choix(): string {
   }).join("");
 }
 
-/** A layer's block of « Couches affichées », shown once ticked: its lines in marketing's order, the script's left empty. */
+/** A layer's block of « Couches affichées », shown once ticked: its lines in the validated order, the script's left empty. */
 function bloc(c: Couche): string {
   const d = DIT[c.id];
   const src = `Source : ${esc(c.source.attribution)}, ${esc(c.source.licence)}${c.id === "rivieres" ? '<span class="kmaj"></span>' : ""}.`;

@@ -1,6 +1,6 @@
 /**
  * /sites-sans-reponse: the public sites of La Réunion that do not answer at the moment, since when, what was seen and
- * what is missing here because of it (sans-reponse.ts). Worded by marketing (25/10): a silent site is never said
+ * what is missing here because of it (sans-reponse.ts). Worded for the site (25/10): a silent site is never said
  * down, closed or empty, nor why it is silent, and one that answers but not to our reads is never said to refuse.
  */
 import { constatEnMots, jour, jourHeure, publiques, siteDe, statutEnMots, type Ligne, type Public } from "../sans-reponse.js";
@@ -13,7 +13,7 @@ import { layout } from "./pages.js";
 export const PATH = "/sites-sans-reponse";
 const H1 = "Sites publics sans réponse";
 const TITLE = "Sites publics sans réponse · La Réunion (974)";
-// Shorter than the lead, for the previews and the search engines (marketing, within DESCRIPTION_MAX).
+// Shorter than the lead, for the previews and the search engines (within DESCRIPTION_MAX).
 const DESCRIPTION = "Les sites publics de La Réunion qui ne répondent pas en ce moment, depuis quand, et ce qui manque alors sur rundata.re. Revérifiés chaque jour.";
 const CHAPEAU = "Certains sites publics de La Réunion ne répondent pas en ce moment. Ce qu'ils publient manque alors sur rundata.re. Cette page dit lesquels, depuis quand, et ce qui manque ici. Chaque site est revérifié chaque jour et quitte la liste dès qu'il répond.";
 const BLOQUES = "Ces sites s'affichent dans un navigateur, mais ne répondent pas aux lectures de rundata.re. Cela peut venir d'un réglage de leur hébergeur.";

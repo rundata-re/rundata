@@ -128,7 +128,7 @@ describe("the page /ecoles", () => {
     expect(html.match(/<li id="e-/g)).toHaveLength(ecoles.LIST.length);
     expect(html.match(/<li class="card tgt" id="c-/g)).toHaveLength(24);
     for (const v of ["c", "i", "u"]) expect(html).toContain(`<input type="checkbox" name="es" id="es-${v}" value="${v}">`);
-    // In the menu's group « Vie pratique » (marketing's menu of 04/11), not in the quick bar.
+    // In the menu's group « Vie pratique » (the validated menu of 04/11), not in the quick bar.
     expect(between(html, '<nav class="quick"', "</nav>")).not.toContain('href="/ecoles"');
     expect(between(between(html, '<nav class="sheet"', "</nav>"), "Vie pratique", "</ul>")).toContain('href="/ecoles"');
     expect(html).toContain("le secteur est fixé par chaque mairie, et il n&#39;est pas publié en données ouvertes");

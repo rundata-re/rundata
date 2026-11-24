@@ -104,7 +104,7 @@ export const TOURS = ["1er tour", "2nd tour"];
 /** The names of the file's scrutins, newest first. */
 export const NOMS: string[] = SCRUTINS.map((s) => s.nom);
 
-/** How the ballot lines are given, under every list of them (marketing, 20/11/2026): the page's note and the tool's. */
+/** How the ballot lines are given, under every list of them (wording validated on 20/11/2026): the page's note and the tool's. */
 export const ORDRE = "Les candidats et les listes sont dans l'ordre des panneaux (N°), celui du ministère, quel que soit le résultat, avec leurs voix et leur % des exprimés. Les nuances politiques ne sont pas reprises.";
 
 /** Under the cantonales, on the page and in the tool. */

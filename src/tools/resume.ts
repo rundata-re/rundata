@@ -219,7 +219,7 @@ const MARKETS_NOT_ALL = "D'après OpenStreetMap et les sites des mairies : tous 
 const NO_DUTY = "rundata.re ne sait pas quelle pharmacie est de garde : seuls 3237.fr et le 32 37 le disent.";
 const FUEL_NOTE = "Prix maximum fixés chaque mois par le préfet, les mêmes dans toute l'île.";
 
-/** « sans plomb 2,00 €/L, gazole 1,80 €/L », as marketing words the prices everywhere. */
+/** « sans plomb 2,00 €/L, gazole 1,80 €/L », as the prices are worded everywhere. */
 function fuelShort(p: { produits: { produit: string; prix_eur: number }[] }): string {
   const litre = (re: RegExp, nom: string) => {
     const x = p.produits.find((y) => re.test(y.produit));
@@ -298,7 +298,7 @@ function vigilance(p: PlacePage, v: mf.Vigilance, now: Date) {
     au_dessus_du_vert: zoneLevels(v, zone, now).above.length > 0,
     vagues_submersion: coastal(p) ? coastText(v) : undefined,
     alerte_cyclonique: alert ? cyclone(v, now) : undefined,
-    /** The schools closed by the cyclone alert in force, in marketing's words (tools/ecoles.ts). */
+    /** The schools closed by the cyclone alert in force, in the validated words (tools/ecoles.ts). */
     ecoles: resumeLine(ecoles(v, now)),
     emise: localTime(new Date(v.emise)),
     officiel: mf.officiel(alert ? mf.OFFICIEL_CYCLONE : mf.OFFICIEL_VIGILANCE),
@@ -335,7 +335,7 @@ function seaBuoy(p: PlacePage, mer: SeaData | undefined, now: Date) {
 }
 
 /**
- * The water's temperature off the commune: the buoy first when one measures near it, then the satellite (marketing's
+ * The water's temperature off the commune: the buoy first when one measures near it, then the satellite (the validated
  * rule of 24/11/2026: « la bouée d'abord quand elle mesure », the satellite said as such); the satellite alone else.
  */
 function sea(p: PlacePage, mer: SeaData | undefined, place: PlaceData | undefined, now: Date) {
@@ -496,7 +496,7 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
     infos: [...l.actualites.value.en_direct, ...l.actualites.value.infos].map(asRead),
     prefecture: l.actualites.value.prefecture.map((r) => ({ ...r, publie: instant(r.publie, now), heure: false })),
   };
-  // None in the last hours: said so (marketing's words) when the copy reaches that far back, a copy cut short
+  // None in the last hours: said so (the validated words) when the copy reaches that far back, a copy cut short
   // (NEWS_LISTED, web/data.ts) could have left one out; and not when an older one was read, which is not « none ».
   const covered = !!read && read.infos.some((i) => now.getTime() - Date.parse(i.publie) >= LITTORAL_SUMMARY_HOURS * 3600_000);
   const road = LITTORAL_ENDS.includes(nom) && read
@@ -739,7 +739,7 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
           page: `${SITE_URL}/decheteries#${anchorOf(nom)}`,
         }
       : undefined,
-    // The days change from a street to the next: the commune's page, never « collecte aujourd'hui » (marketing).
+    // The days change from a street to the next: the commune's page, never « collecte aujourd'hui ».
     collecte_dechets: bins ? { texte: `Collecte des déchets : le jour de votre rue sur rundata.re/collecte/${col.communeSlug(nom)}.`, page: `${SITE_URL}/collecte/${col.communeSlug(nom)}` } : undefined,
     carburants: prices ? { prix_maximum: fuelShort(prices) || undefined, prix_maximums: prices.produits.map(priceLine), depuis: prices.depuis, a_savoir: FUEL_NOTE, lien: fuel!.lien } : undefined,
     pharmacie_de_garde: { site: sante.GARDE.site, telephone: sante.GARDE.telephone, quand: sante.GARDE.quand, a_savoir: NO_DUTY },
@@ -852,7 +852,7 @@ function vigilanceOf(cache: Cache): Promise<Cached<mf.Vigilance> | null> {
  */
 /**
  * No notice read: « pas d'avis », never « pas de coupure », with who publishes the notices read and when they were read
- * (marketing, 22/11/2026), as the tool coupures_eau and the page /coupures-eau say it. The day with the hour when the
+ * (wording validated on 22/11/2026), as the tool coupures_eau and the page /coupures-eau say it. The day with the hour when the
  * copy is not of today.
  */
 export function noCutSaid(publisher: string, readAt: Date, now: Date): string {

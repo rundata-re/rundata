@@ -98,7 +98,7 @@ function vefa(list: { valeur: number; surface_bati: number; vefa: boolean }[]) {
 }
 
 /**
- * « 12 ventes dont 5 de neuf sur plan, 3 600 €/m² sans elles », inside the summary's parentheses. marketing's words (27/10):
+ * « 12 ventes dont 5 de neuf sur plan, 3 600 €/m² sans elles », inside the summary's parentheses. the validated words (27/10):
  * « neuf sur plan », never « ancien » nor « hors neuf » (a new home sold once built is a plain « Vente » in DVF), and no
  * « ; » inside the parentheses, the summary's own separator. The figures only, no note (the user's choice, 27/10).
  */
@@ -138,7 +138,7 @@ export function market(sales: terrain.Sale[]) {
   };
 }
 
-// The area of `market`: a square, not a radius (marketing's words, 25/10).
+// The area of `market`: a square, not a radius (the validated words, 25/10).
 const SECTEUR = "dans le secteur alentour (environ 600 m sur 600 m)";
 
 /**
@@ -147,7 +147,7 @@ const SECTEUR = "dans le secteur alentour (environ 600 m sur 600 m)";
  */
 export function streetMarket(nom: string, depuis: number, sales: terrain.StreetSale[]) {
   const n = sales.length;
-  // marketing's words (25/10): DVF comes months late, so « no sale » is DVF's, not the street's.
+  // the validated words (25/10): DVF comes months late, so « no sale » is DVF's, not the street's.
   if (n < MEDIANE_MIN) return { voie: nom, depuis, ventes: n, note: n ? `${enregistrees(n)} dans DVF sur la voie depuis ${depuis}, trop peu pour une médiane` : `aucune vente enregistrée dans DVF sur la voie depuis ${depuis}` };
   const built = (type: "maison" | "appartement") => {
     const list = sales.filter((s) => s.type === type && s.surface_bati >= 15);
@@ -169,7 +169,7 @@ export function streetMarket(nom: string, depuis: number, sales: terrain.StreetS
 
 const enregistrees = (n: number) => `${n} vente${n > 1 ? "s enregistrées" : " enregistrée"}`;
 
-// The rents' words: marketing's (26/10). Never « médian », « moyen » nor « signé »: a rent asked in an ad, for a
+// The rents' words: the validated ones (26/10). Never « médian », « moyen » nor « signé »: a rent asked in an ad, for a
 // reference home, with the ANIL's mention word for word.
 const ANIL = loyers.SOURCE.attribution;
 const T3 = `3e trimestre ${loyers.MILLESIME}`;
@@ -203,7 +203,7 @@ export function rents(insee: string) {
   };
 }
 
-// The internet's words: marketing's (26/10). « Éligible » never without « ce qui ne veut pas dire raccordés ».
+// The internet's words: the validated ones (26/10). « Éligible » never without « ce qui ne veut pas dire raccordés ».
 const INTERNET = {
   techno: { fibre: "fibre optique", cable: "câble", cuivre_30: "cuivre (ADSL, VDSL2) à 30 Mbit/s ou plus", thd_radio: "très haut débit radio", cuivre_8: "cuivre (ADSL, VDSL2) de 8 à 30 Mbit/s", "4g_fixe": "4G fixe", hd_radio: "haut débit radio", satellite: "satellite" } as Record<internet.Techno, string>,
   ligne: (commune: string, part: string) => `${part} des logements et locaux professionnels ${commune === "Entre-Deux" ? "de l'Entre-Deux" : de(commune)} sont éligibles à la fibre au ${internet.date()}, ce qui ne veut pas dire raccordés (Arcep)`,
@@ -229,7 +229,7 @@ export function connexion(insee: string) {
   };
 }
 
-// The antennas' words: marketing's (29/10). The ANFR's states word for word; never « couverture » nor « exposition ».
+// The antennas' words: the validated ones (29/10). The ANFR's states word for word; never « couverture » nor « exposition ».
 const ANTENNES = {
   etat: { service: "en_service", operationnel: "techniquement_operationnel", projet: "projet_approuve" } as Record<antennes.Etat, string>,
   supports: (n: number) => (n === 1 ? "1 support d'antennes mobiles" : `${nombre(n)} supports d'antennes mobiles`),
@@ -283,12 +283,12 @@ export function antennas(lon: number, lat: number) {
 
 /**
  * One kind's price in the summary: « maisons 2 650 €/m² (prix médian, 8 ventes) ». Each price says it is a median, as
- * an assistant often quotes one piece alone (marketing's words, 05/11).
+ * an assistant often quotes one piece alone (the validated words, 05/11).
  */
 const prixMedian = (name: string, k: { ventes: number; prix_m2_median?: string; dont_vefa?: number } | undefined) =>
   k?.prix_m2_median ? `${name} ${k.prix_m2_median} (prix médian, ${ventes(k)})` : undefined;
 
-/** The street's line of the summary, its name first, as the address base writes it (marketing's words, 05/11). */
+/** The street's line of the summary, its name first, as the address base writes it (the validated words, 05/11). */
 export function streetLine(v: ReturnType<typeof streetMarket>): string {
   const voie = `${v.voie}, depuis ${v.depuis} :`;
   if (!v.ventes) return `${voie} aucune vente enregistrée dans DVF`;
@@ -336,7 +336,7 @@ async function settle<T>(source: SourceInfo, p: Promise<{ value: T }>, missed?: 
 const DOWN = "service momentanément indisponible : réessayer dans un instant";
 
 /**
- * The sales not read, in marketing's words (22/11/2026): the services asked named, the day and the hour they did not
+ * The sales not read, in the validated words (22/11/2026): the services asked named, the day and the hour they did not
  * answer (a page served from a copy may have been read the day before). The page /terrain says the part after « : ».
  */
 export function nonLues(asked: ("Cerema" | "Etalab")[], now: Date): string {

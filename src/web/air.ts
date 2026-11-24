@@ -20,7 +20,7 @@ export const aq = (n: number) => `<span class="aq aq${n >= 1 && n <= 6 ? n : 0}"
 // A sub-index: its level, or, by the guide, « indisponible » (0) or « événement » (7) in words.
 const subIndex = (n: number) => (n >= 1 && n <= 6 ? aq(n) : esc(atmo.level(n)));
 
-// The map's pollutants, one at a time, worded by marketing (29/10/2026), by their name in the measures (tools/air.ts, `measured`). PM10 first, shown
+// The map's pollutants, one at a time, worded for the site (29/10/2026), by their name in the measures (tools/air.ts, `measured`). PM10 first, shown
 // by default: measured at 10 of the 15 stations across the island on 29/10/2026, the nitrogen dioxide (12) mostly
 // by the roads.
 const MAP_POLLUTANTS = [
@@ -67,7 +67,7 @@ function airMeasured(l: AirLayer, lu: string, now: Date): string {
   const big = at.length > 1 && Math.round(lo.valeur) !== Math.round(hi.valeur)
     ? `${l.tab} : ${Math.round(lo.valeur)} à ${Math.round(hi.valeur)} µg/m³`
     : `${l.tab} : ${Math.round(hi.valeur)} µg/m³`;
-  // Worded by marketing (29/10/2026): the verb says it is a measure; the legend's name of the pollutant.
+  // Worded for the site (29/10/2026): the verb says it is a measure; the legend's name of the pollutant.
   const name = `${l.polluant[0].toUpperCase()}${l.polluant.slice(1)} ${l.polluant.startsWith("particules") ? "mesurées" : "mesuré"} ${l.heure}`;
   const lead = at.length > 1 ? `${name} à ${at.length} stations d'Atmo Réunion : le plus haut ${aLieu(where(hi))}.` : `${name} à la station ${where(hi)}.`;
   // With its day, as every reading.
@@ -108,7 +108,7 @@ function airMap(d: AirAnswer | undefined, layers: AirLayer[]): string {
 const withArticle = (p: string) => (p.startsWith("particules") ? `les ${p}` : /^[aeiouy]/i.test(p) ? `l'${p}` : `le ${p}`);
 
 /**
- * The forecast under the measure at the top of /air (marketing's words, choices of 06/11/2026): one line
+ * The forecast under the measure at the top of /air (the validated words, choices of 06/11/2026): one line
  * always shown, « Air prévu aujourd'hui : moyen (prévision) » in the index's colour, or « de bon à moyen selon la
  * commune »; under it the index out of 6, the pollutant most often in cause in the communes at the highest level, when
  * Atmo Réunion diffused it and when rundata.re read it.
@@ -196,7 +196,7 @@ export function airPage(origin: string, data: Cached<AirAnswer> | null, now = ne
 </section>`
     : "";
 
-  // The sensors of private people, under the index and apart from it, worded by marketing (29/10/2026): raw values by
+  // The sensors of private people, under the index and apart from it, worded for the site (29/10/2026): raw values by
   // commune, their network and the hour they measured, never a colour, a threshold, an identifier nor a place;
   // sensors.social's credit as it asked it (09/11/2026), in English, with a link to its site and one to its licence.
   const am = d?.capteurs_amateurs;

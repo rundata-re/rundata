@@ -77,9 +77,9 @@ export const AUTORISATIONS: Record<string, Autorisation> = {
 export interface SourceNonReprise {
   /** As said: « Cité des Arts », « ffgolf ». */
   nom: string;
-  /** With its article, in a list or before « a refusé » (marketing): « la Cité des Arts », « le TÉAT (Champ Fleuri et Plein Air) », « Bisik ». */
+  /** With its article, in a list or before « a refusé »: « la Cité des Arts », « le TÉAT (Champ Fleuri et Plein Air) », « Bisik ». */
   cite: string;
-  /** Shorter, after « Nous avons demandé cet accord à », when its citation has more (marketing): « le TÉAT ». */
+  /** Shorter, after « Nous avons demandé cet accord à », when its citation has more: « le TÉAT ». */
   court?: string;
   /** After « Les mentions légales »: « du site de la Cité des Arts », « du site de la ffgolf ». */
   du_site: string;

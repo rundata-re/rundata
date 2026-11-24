@@ -1,5 +1,5 @@
 /**
- * The legend of a map of points on the island (marketing's charter of the maps, 31/10/2026): under the map, each mark
+ * The legend of a map of points on the island (the brand charter of the maps, 31/10/2026): under the map, each mark
  * drawn as on the map then what it means, in the secondary text's colour, never a coloured word; then on a line of its
  * own the nature, source and time of what the map shows (« Mesure de …, la plus récente à HH:MM »).
  */
@@ -10,7 +10,7 @@ export const COUNT_COLOR = "#14202b";
 
 /**
  * The discs that hold a figure in white (/bornes, /velos, /eau): each colour over 4.5:1 under its white figure (WCAG 1.4.3),
- * the same in both themes, since a disc keeps its colour on the map. They are the site's colours already chosen by marketing:
+ * the same in both themes, since a disc keeps its colour on the map. They are the site's colours already chosen for the site:
  * the green of « ouvert » and « bonne » (--vert of the light theme, 5.73:1), the grey of « pas de vigilance » (--vg0, 5.46:1),
  * the orange of an average water (--q-moyenne of the light theme, 5.18:1). Before (24/11/2026): #2b8a3e 4.37:1, #868e96
  * 3.32:1, #e8590c 3.58:1.

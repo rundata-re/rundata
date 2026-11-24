@@ -12,7 +12,7 @@ import { alerteVolcan, bannerText, homeCard, volcanH1, volcanMeta, volcanTitle, 
 
 // The prefecture's release of 24/10/2026, alert 1 (its page as captured, and its card in the list), and pitonlive at
 // « Alerte 2-1 » the same day: the release's level everywhere, pitonlive's in a line of its own in the body, never in a
-// title (the user, 25/10/2026; marketing's words).
+// title (the user, 25/10/2026; the validated words).
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url), "utf8");
 const PAGE = fixture("actualites/prefecture-alerte1-enclos.html");
 const LIEN = "https://www.reunion.gouv.fr/Actualites/Communiques-de-presse/Piton-de-la-Fournaise-passage-en-alerte-1-fermeture-de-l-enclos5";

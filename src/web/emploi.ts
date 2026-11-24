@@ -1,6 +1,6 @@
 /**
  * /emploi: the public sector's offers open at La Réunion, from Choisir le service public, newest first, to filter by
- * commune or by words, each with its link to apply on the site. In marketing's words (29/10/2026); the companies'
+ * commune or by words, each with its link to apply on the site. In the validated words (29/10/2026); the companies'
  * offers are not taken: a sentence with two links, and the user's line on the sites that do not allow it. Then « Se
  * former avec le CPF »: how many formations eligible to the CPF have an open session at La Réunion, by theme, without
  * a body's name nor a fee (03/11/2026); the tool gives them for words asked.

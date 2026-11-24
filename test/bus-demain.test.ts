@@ -33,7 +33,7 @@ describe("« demain » decided at the view, from the day at La Réunion, never k
     expect(saidNow("23:58", at("2026-10-27T00:03").getTime(), at("2026-10-26T23:59"))).toBe("23:58");
     expect(saidNow("demain 00:03", at("2026-10-27T00:03").getTime(), at("2026-10-26T23:59"))).toBe("demain 00:03");
     expect(saidNow("demain 00:03", at("2026-10-27T00:03").getTime(), at("2026-10-27T00:01"))).toBe("00:03");
-    // A round hour, as the copies write it (« 5 h »), and a copy written before kit.md's form (« 4h30 »), said in it.
+    // A round hour, as the copies write it (« 5 h »), and a copy written before the brand kit's form (« 4h30 »), said in it.
     expect(saidNow("demain 5\u00a0h", at("2026-10-27T05:00").getTime(), at("2026-10-26T23:55"))).toBe("demain 5\u00a0h");
     expect(saidNow("demain 5\u00a0h", at("2026-10-27T05:00").getTime(), at("2026-10-27T03:00"))).toBe("5\u00a0h");
     expect(saidNow("4h30", at("2026-10-27T04:30").getTime(), at("2026-10-26T23:55"))).toBe("demain 04:30");

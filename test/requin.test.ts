@@ -96,7 +96,7 @@ describe("the shark rule and the zones where bathing is allowed", () => {
     for (const now of [NOW, AFTER]) for (const p of PAGES) expect(JSON.stringify(requinBlock(now, { nom: p.nom, ...p.place }))).not.toMatch(NEVER);
   });
 
-  it("serve /baignade with marketing's title, description and the zones by commune", async () => {
+  it("serve /baignade with the validated title, description and the zones by commune", async () => {
     const r = await handle(new Request(`${O}/baignade`), new Cache(new MemoryStore(), () => NOW.getTime()));
     expect(r.status).toBe(200);
     const html = await r.text();

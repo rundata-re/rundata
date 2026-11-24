@@ -1,5 +1,5 @@
 /**
- * The pages of the sitemap from 24/11/2026: marketing's list of that day, the pages with a content of their own that
+ * The pages of the sitemap from 24/11/2026: the validated list of that day, the pages with a content of their own that
  * people search. The sitemap named 893 pages: a young site with many pages of one model is judged as a whole, so it now
  * names 230 of them: the home page and the head pages, the 24 communes, a commune's water cuts where the page has
  * something of its own to say, and the trails, hikes, weather, waste collection and children's pages people look for.
@@ -104,5 +104,5 @@ const GARDEES = new Set([...TETE, ...COMMUNES, ...COUPURES_EAU, ...COLLECTE, ...
 /** How many pages the list holds. */
 export const NOMBRE = GARDEES.size;
 
-/** Whether a page of the site is one of the sitemap (marketing's list of 24/11/2026). */
+/** Whether a page of the site is one of the sitemap (the validated list of 24/11/2026). */
 export const gardee = (path: string) => GARDEES.has(path);

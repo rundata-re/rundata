@@ -39,7 +39,7 @@ export const FICHIER_DU: string = data.fichier_du;
 
 /**
  * A camera with its commune, that of the nearest place of the gazetteer. Never that place itself: a beach named for a
- * camera on a boulevard would be repeated as where it stands (marketing, 26/10).
+ * camera on a boulevard would be repeated as where it stands (wording validated on 26/10).
  */
 export interface RadarPlace extends Radar {
   commune: string;
@@ -71,7 +71,7 @@ export const carte = (r: Pick<Radar, "lon" | "lat">) => `https://www.openstreetm
 /** « 30/12/2025 ». */
 export const fichierDu = () => FICHIER_DU.split("-").reverse().join("/");
 
-/** What is said with the list, wherever it is shown (marketing, 26/10). « Once a year »: the dataset's page says so. */
+/** What is said with the list, wherever it is shown (wording validated on 26/10). « Once a year »: the dataset's page says so. */
 export const RESERVE = () =>
   `Liste des radars fixes publiée par le ministère de l'Intérieur, fichier du ${fichierDu()}, mise à jour une fois par an : un radar installé depuis, ou absent du fichier, n'y figure pas. Les contrôles mobiles n'y sont pas.`;
 

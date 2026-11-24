@@ -35,7 +35,7 @@ describe("the menu in five groups", () => {
     expect(CSS).toContain(".k-secheresse,.k-feux{--k:#4fd1c5}");
   });
 
-  it("names the pages as marketing does", () => {
+  it("names the pages as validated", () => {
     const nom = (k: string) => CATEGORIES.find((c) => c.key === k)!.nom;
     expect([nom("bornes"), nom("eau"), nom("air")]).toEqual(["Bornes de recharge", "Qualité de l'eau", "Qualité de l'air"]);
   });
@@ -45,7 +45,7 @@ describe("the home page's field « Aller à une rubrique, une commune ou un lieu
   const page = homePage(O, null, NOW);
   const section = page.slice(page.indexOf('<section class="champ"'), page.indexOf("</section>", page.indexOf('<section class="champ"')));
 
-  it("sits above the tiles, shown with the script only, with marketing's words", () => {
+  it("sits above the tiles, shown with the script only, with the validated words", () => {
     expect(page.indexOf('<section class="champ" data-js hidden>')).toBeGreaterThan(page.indexOf('<div class="hero-txt">'));
     expect(page.indexOf('<section class="champ"')).toBeLessThan(page.indexOf('<ul class="tiles"'));
     expect(section).toContain(`<label for="aller-q">Aller à une rubrique, une commune ou un lieu</label>`);
@@ -81,7 +81,7 @@ describe("the home page's field « Aller à une rubrique, une commune ou un lieu
     expect(to("xyzw")).toEqual([]);
   });
 
-  it("leads from marketing's other words to their pages", () => {
+  it("leads from the other validated words to their pages", () => {
     expect(to("essence")).toEqual(["/carburants"]);
     expect(to("poubelle")).toEqual(["/collecte", "/decheteries"]);
     expect(to("plage")).toEqual(expect.arrayContaining(["/mer", "/baignade"]));

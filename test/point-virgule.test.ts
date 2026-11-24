@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-// marketing's rule: a no-break space before « ; », as before « : ? ! », in all that is said. The site's pages get it as
+// the validated rule: a no-break space before « ; », as before « : ? ! », in all that is said. The site's pages get it as
 // they are sent (web/typo.ts), so src/web is left out, but for what is not a page: the feeds and the data files. Comments
 // are not said, nor the scheduled run's log (worker.ts). The NOUVEAUTES already published keep their text: the release
 // notes find the new ones by their text (scripts/release-notes.mjs).

@@ -3,7 +3,7 @@
  * mountain side, closed, closed at night, reopening. Read from the headlines and first sentences the tool actualites
  * already gathers (0 subrequest), each with who said it and when the article was published, never as a measured state:
  * the official state is the Region's, on infotrafic.re, which rundata.re may not reuse. A headline on the new road's
- * building site (NRL) that says nothing of the traffic is left out. The texts are marketing's.
+ * building site (NRL) that says nothing of the traffic is left out. The texts are the validated ones.
  */
 import { normalize } from "../places/resolve.js";
 import type { Info } from "../providers/actualites.js";
@@ -155,7 +155,7 @@ export function littoral(news: { infos: Item[]; prefecture: Item[] }, now: Date,
   return { annonces: other ? [first, other] : [first], age_h: Math.floor((now.getTime() - Date.parse(first.publie)) / 3600_000) };
 }
 
-/** « Basculée sur 2×1 voies, côté montagne »: the state, as marketing words it. */
+/** « Basculée sur 2×1 voies, côté montagne »: the state, as validated. */
 export function etatText(a: Annonce): string {
   switch (a.etat) {
     case "4 voies":
@@ -192,7 +192,7 @@ export function lineText(a: Annonce, now: Date): string {
 
 /**
  * What the tool actualites gives of it, when the place or the subject is the road. With no announcement it says so,
- * in marketing's words: left out, the AI said nothing of the road (researcher, 25/10). Never « ouverte » by deduction.
+ * in the validated words: left out, the AI said nothing of the road (tried on 25/10). Never « ouverte » by deduction.
  */
 export function forTool(l: Littoral | undefined, now: Date) {
   if (!l) return { annonce: NONE, aucune_annonce: true as const, etat_officiel: INFOTRAFIC };

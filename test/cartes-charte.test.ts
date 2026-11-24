@@ -17,7 +17,7 @@ import { islandMap } from "../src/web/map.js";
 import { CSS, seaPage } from "../src/web/pages.js";
 import { pageOf } from "../src/web/places.js";
 
-// The charter of the maps (marketing, 31/10/2026): the same kind of map, the same look.
+// The charter of the maps (wording validated on 31/10/2026): the same kind of map, the same look.
 const ORIGIN = "https://rundata.re";
 const NOW = new Date("2026-10-24T06:00:00Z");
 // The day the bundled list of defibrillators was rebuilt (scripts/build-dae.py): « 05/11 ».
@@ -140,7 +140,7 @@ describe("the maps of communes in colours (type C)", () => {
     expect(POINTS_SCRIPT).toContain(`if(a.matches(".zn"))a.classList.add("on");`);
     expect(POINTS_SCRIPT).toContain(`e.target.closest("svg.map a.mk,svg.map a.sp,svg.map a.zn"),r=a&&row(a);`);
     expect(CSS).toContain(".map .zn.on path{fill:rgb(255 255 255/.14);stroke:var(--sun);stroke-width:4}");
-    // Inside the map (marketing's review): below the commune, its arrow up, when there is no room above it (Saint-Denis),
+    // Inside the map (the validated review): below the commune, its arrow up, when there is no room above it (Saint-Denis),
     // moved in from its sides (Saint-Philippe); the arrow stays on the commune.
     expect(POINTS_SCRIPT).toContain(`const f=a.matches(".zn")?a.ownerSVGElement.getBoundingClientRect():{left:0,right:innerWidth,top:0},l=Math.max(f.left,0)+6,r=Math.min(f.right,innerWidth)-6;`);
     expect(POINTS_SCRIPT).toContain(`x=Math.min(Math.max(c[0]-w/2,l),r-w),up=c[1]-h-20>=Math.max(0,f.top);`);

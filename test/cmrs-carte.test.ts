@@ -200,7 +200,7 @@ describe("the scheduled event's turn", () => {
   });
 });
 
-describe("the map on /cyclones (marketing's words, 27/10)", () => {
+describe("the map on /cyclones (the validated words, 27/10)", () => {
   const NOW = new Date("2026-02-03T14:40:00Z");
   const i = { empreinte: "0123456789abcdef", largeur: 760, hauteur: 1122, lue: "2026-02-03T14:30:00.000Z" };
 

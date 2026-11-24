@@ -20,7 +20,7 @@ const LEVEE = "https://www.reunion.gouv.fr/Actualites/Cyclone-Test/Levee";
 const lifted = (reouverture?: Cyclone["reouverture"]): Cyclone => ({ decision: { niveau: "levee", titre: "Levée de l'alerte cyclonique", lien: LEVEE, jour: "2026-10-24" }, reouverture });
 
 describe("/alerte-cyclone, the plan step by step", () => {
-  it("has a section per step, in marketing's order, each line with its page of the plan", () => {
+  it("has a section per step, in the validated order, each line with its page of the plan", () => {
     expect(STEPS.map((s) => s.titre)).toEqual(["Pré-alerte", "Alerte orange", "Alerte rouge", "Alerte violette", "Phase de sauvegarde", "Fin de l'alerte"]);
     for (const s of STEPS) for (const l of s.lignes) expect(l.pages.length, l.texte).toBeGreaterThan(0);
     const html = page(bulletin([]));
@@ -30,7 +30,7 @@ describe("/alerte-cyclone, the plan step by step", () => {
     expect(html).toContain(`<a href="${PDF}#page=20" rel="noopener">p. 20</a>`);
     expect(html).toContain("« NE SORTEZ EN AUCUN CAS »");
     expect(html).toContain("<h3>Les bus roulent-ils pendant une alerte cyclonique ?</h3>");
-    // No FAQPage markup (marketing), no colour for the pré-alerte (two official sources disagree on it).
+    // No FAQPage markup, no colour for the pré-alerte (two official sources disagree on it).
     expect(html).not.toContain("FAQPage");
     expect(html).not.toMatch(/pr[ée]-alerte[^.]{0,30}jaune|jaune[^.]{0,30}pr[ée]-alerte/i);
   });
@@ -40,7 +40,7 @@ describe("/alerte-cyclone, the plan step by step", () => {
     expect(html).toContain('Alerte rouge en vigueur à La Réunion (bulletin de Météo-France du 24/10 à 06:00).</b> <a href="#rouge">Ce que prévoit ce niveau ↓</a>');
   });
 
-  it("gives the tool one line in an alert, in marketing's words, and none outside one", () => {
+  it("gives the tool one line in an alert, in the validated words, and none outside one", () => {
     expect(quotidienLine(bulletin([[8, "2026-10-24T06:00:00"]]), NOW)).toBe("En alerte orange, selon le dispositif ORSEC Cyclones : écoles et crèches fermées, « l'activité économique continue » (p. 17). Détail : rundata.re/alerte-cyclone.");
     expect(quotidienLine(bulletin([]), NOW)).toBeUndefined();
   });
@@ -56,7 +56,7 @@ describe("/alerte-cyclone and the tool quote the plan, page by page", () => {
       expect(said.length, step).toBeGreaterThan(0);
       for (const { quote, pages } of said) expect(onPages(quote, pages), `${step}, p. ${pages.join("-")} : « ${quote} »`).toBe(true);
     }
-    // No line says what the plan does not: the four deductions marketing struck out.
+    // No line says what the plan does not: the four deductions struck out when the words were validated.
     const all = codes.map(([code]) => quotidienLine(bulletin([[code, "2026-10-24T06:00:00"]]), NOW)).join(" ");
     expect(all).not.toMatch(/pas de fermeture|pendant le passage|Ces activités cessent/);
   });

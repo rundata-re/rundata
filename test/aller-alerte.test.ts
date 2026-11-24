@@ -140,7 +140,7 @@ describe("« Y aller » under a cyclone alert", () => {
     expect(level(4, true).court).toEqual({ cyclone: 4, prevue: true });
     expect(retire(undefined)).toBe("");
     expect(retire(level(4, true))).toBe("");
-    // The line, in marketing's words: the level as the site names it, the step of /alerte-cyclone, the prefecture's page.
+    // The line, in the validated words: the level as the site names it, the step of /alerte-cyclone, the prefecture's page.
     const tail = ` <a href="${ORSEC.lien}" rel="noopener">la\u00a0préfecture\u00a0↗</a></p>`;
     expect(retire(level(4))).toBe(`<p class="note">Alerte rouge cyclonique en cours\u00a0: pas d'itinéraire proposé tant qu'elle dure. <a href="/alerte-cyclone#rouge">Les consignes</a> ·${tail}`);
     expect(retire(level(3))).toContain("Alerte orange cyclonique en cours\u00a0: pas d'itinéraire proposé tant qu'elle dure. <a href=\"/alerte-cyclone#orange\">");

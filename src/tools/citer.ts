@@ -125,7 +125,7 @@ function citerCoupures(p: Payload): string {
 
 /**
  * The tools whose producers' names do not make a short sentence (English, the same producer twice, a long list): their
- * `citer` in the words of marketing (06/11/2026), when the answer credits any source. `sources` keeps each one's exact
+ * `citer` in the words validated on 06/11/2026, when the answer credits any source. `sources` keeps each one's exact
  * attribution, the NASA's whole.
  */
 const CITER: Partial<Record<string, (p: Payload) => string>> = {

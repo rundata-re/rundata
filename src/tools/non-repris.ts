@@ -3,14 +3,14 @@ import { enumeration } from "./format.js";
 
 /**
  * What is said instead of a source not read until it agrees: a medium, reunion.fr's agenda, a hall or a sports site
- * (src/providers/autorisations.ts), in marketing's words. The communes' own sites are all read since 20/11/2026, as
+ * (src/providers/autorisations.ts), in the validated words. The communes' own sites are all read since 20/11/2026, as
  * their public information: nothing is said for them.
  */
 
 const dayMonth = (day: string) => `${day.slice(8, 10)}/${day.slice(5, 7)}`;
 
 /**
- * The accord asked of those of a block, in one sentence after it (marketing, 26/10): the day once when all were asked
+ * The accord asked of those of a block, in one sentence after it (wording validated on 26/10): the day once when all were asked
  * that day; otherwise the ones asked, in the block's order, after their day, or before each day from the oldest.
  */
 function demandees<T extends { etat: string; demandee_le?: string }>(waiting: T[], to: (x: T) => string): string {
@@ -27,8 +27,8 @@ function demandees<T extends { etat: string; demandee_le?: string }>(waiting: T[
 
 // ---------------------------------------------------------------- a medium not read
 
-// Réunion La 1ère (src/providers/autorisations.ts, MEDIAS), in marketing's words (projects/rundata/marketing/
-// la1ere-non-reprise.md): France Télévisions named, never a journalist; a plain space before « : » in the tools, a
+// Réunion La 1ère (src/providers/autorisations.ts, MEDIAS), in the validated words (the validated wording
+// for this medium): France Télévisions named, never a journalist; a plain space before « : » in the tools, a
 // non-breaking one on the pages. Nothing said of a request before one has gone.
 const LA1ERE = MEDIAS["media:la1ere"];
 const TERMS = `les conditions d'utilisation des sites de France Télévisions, lues le ${dayMonth(LA1ERE.lues_le)}, interdisent d'en reprendre le contenu par un programme sans son accord écrit, titres compris`;
@@ -62,8 +62,8 @@ export { dayMonth };
 
 // ---------------------------------------------------------------- reunion.fr's agenda, not read
 
-// The tourist board's site (src/providers/autorisations.ts, MEDIAS), in marketing's words (projects/rundata/marketing/
-// reunion-fr-et-nuages.md): Île de La Réunion Tourisme, whose site it is, and the Comité Réunionnais du Tourisme, whom
+// The tourist board's site (src/providers/autorisations.ts, MEDIAS), in the validated words (the validated wording
+// for this site): Île de La Réunion Tourisme, whose site it is, and the Comité Réunionnais du Tourisme, whom
 // its terms name. Nothing said of its agenda's state there, only the link; nothing of a request before one has gone.
 const REUNION_FR = MEDIAS["site:reunion_fr"];
 const TERMS_IRT = `es mentions légales de reunion.fr, le site d'Île de La Réunion Tourisme, lues le ${dayMonth(REUNION_FR.lues_le)}, interdisent d'en reprendre le contenu sans l'accord écrit du Comité Réunionnais du Tourisme`;
@@ -89,8 +89,8 @@ export const FICHE_REUNION_FR = {
 
 // ---------------------------------------------------------------- the halls and the sports sites, not read
 
-// For a hall or a sports site (src/providers/autorisations.ts, NON_REPRISES), in marketing's
-// words (projects/rundata/marketing, 26/10): one site alone, or several in one block, each with its article.
+// For a hall or a sports site (src/providers/autorisations.ts, NON_REPRISES), in the words
+// validated on 26/10: one site alone, or several in one block, each with its article.
 const upper = (x: string) => x.charAt(0).toUpperCase() + x.slice(1);
 
 function phraseNonReprise(x: SourceNonReprise): string {

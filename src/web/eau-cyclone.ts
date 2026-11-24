@@ -3,7 +3,7 @@
  * spécifique ORSEC Cyclones, arrêté 2026-182, p. 18), and whose notices are read, commune by commune, from the ARS's
  * table of distributors (src/eau/distributeurs.ts). Never « potable », « rétabli » nor « aucun avis » where the
  * notices are not read. Up the page in the cyclone season, at its foot the rest of the year. Nothing more is fetched.
- * Worded by marketing.
+ * Worded for the site.
  */
 import { CONSIGNE, CONSIGNE_PAGE, inSeason, ORSEC_PDF as PDF } from "../eau/cyclone.js";
 import { BUILT, distributeur, MAIRIE_SAINTE_MARIE, partage, phrasePartage } from "../eau/distributeurs.js";

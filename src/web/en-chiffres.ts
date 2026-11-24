@@ -3,7 +3,7 @@
  * an assistant: six figures (the last 24 hours, yesterday, the rain, the month, the wind, a station near) and a curve of
  * 24 hours, 7 days or 30 days, each figure and each point giving its exact value, its time and its station on hover or
  * touch, never the place's name again nor « Voir la page ». Its settings (the station, the units, the curve's period,
- * the figures shown) are kept in the browser only. The UX review and marketing's words of 10/11/2026, which the user
+ * the figures shown) are kept in the browser only. The UX review and the validated words of 10/11/2026, which the user
  * accepted the same day: « oui, supprime les variantes 6h et ajoute 30j ».
  *
  * The figures come from what the place's copy already reads (the 6-minute and hourly packages of Météo-France), from
@@ -307,7 +307,7 @@ export const dessine = (
   const norm7 = n7.length ? sum(n7) : null;
   const r24 = h ? sum(h.rr) : null;
   const r7 = j ? sum(j.rr.slice(-7)) : null;
-  // The archive's days end the day before yesterday each morning, until the day before is loaded (marketing's words,
+  // The archive's days end the day before yesterday each morning, until the day before is loaded (the validated words,
   // 12/11/2026): its 7 days then said by their dates, « 31 mm du 04/11 au 10/11 », never « en 7 jours ».
   const veille = loc(new Date(Date.parse(D.lu) - 86400_000).toISOString()).slice(0, 10);
   const avant = j != null && j.au !== veille;
@@ -487,7 +487,7 @@ export function enChiffres(c: Chiffres | undefined, lieu: string, slug: string):
 </section>`;
 }
 
-/** The block's styles, in the site's sheet: the tokens of the page (the warm and cool of measure charts, kit.md). */
+/** The block's styles, in the site's sheet: the tokens of the page (the warm and cool of measure charts, the brand kit). */
 export const CSS_CHIFFRES = `.mx{margin:0 0 1.6rem}.mx h2{margin:0 0 .2rem}.mx-lead{color:var(--muted);margin:0 0 .8rem;max-width:62ch}
 .mx-bar{display:flex;justify-content:space-between;align-items:flex-start;gap:.6rem 1rem;flex-wrap:wrap;margin-bottom:.6rem}.mx-bar>div:first-child{min-width:0;flex:1 1 20rem}
 .mx-reg{flex:0 1 auto}.mx-reg[open]{flex-basis:100%}.mx-reg>summary{list-style:none;cursor:pointer;font-weight:700;font-size:.9rem;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:.5rem .9rem;display:inline-flex;gap:.4rem;align-items:center;min-height:44px}

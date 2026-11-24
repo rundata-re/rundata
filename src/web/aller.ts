@@ -4,7 +4,7 @@
  * script turns it into a sheet of the apps that fit the device: Plans, Google Maps and Waze on an iPhone; on Android, the
  * system's own choice of the installed apps first (geo:), then Google Maps and Waze; Google Maps and OpenStreetMap on a
  * computer. The place alone goes into the links, never the visitor's position, and rundata.re learns nothing of the
- * click: nothing is counted. The words are marketing's.
+ * click: nothing is counted. The words are the validated ones.
  */
 import { type Office, positionNote } from "../providers/annuaire.js";
 import { ORSEC } from "../tools/ecoles.js";
@@ -60,7 +60,7 @@ const PHASES: Record<number, { nom: string; id: string }> = {
 const VERS: Record<string, string> = { mairie: "la mairie", defibrillateur: "les défibrillateurs" };
 
 /**
- * Said once on a page whose buttons the alert took away, in their place (marketing's words): nothing left, or only the
+ * Said once on a page whose buttons the alert took away, in their place (the validated words): nothing left, or only the
  * places it keeps that the page has (`gardes`: the town hall, the defibrillators).
  */
 export function retire(a: Alerte | undefined, gardes: Genre[] = []): string {

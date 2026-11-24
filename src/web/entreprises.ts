@@ -2,8 +2,8 @@
  * /entreprises, « Espace entreprises et organismes »: for the companies and bodies with their own computing (an airport,
  * carriers, water or energy distributors, network operators), on putting information they already show the public in
  * open data without opening their systems. Each part is written for whom it answers (the DPO, the IT department), with an
- * anchor that a mail can aim at. The guide for those without a technical team stays /ouvrir-ses-donnees. Text written by
- * marketing, validated by the user on 17/11/2026.
+ * anchor that a mail can aim at. The guide for those without a technical team stays /ouvrir-ses-donnees. Text written for
+ * the site, validated by the user on 17/11/2026.
  *
  * Out quietly at first: in noindex, out of the sitemap and linked from no page while `DISCRETE` is true, so that Google's
  * judgement of the site is measured without anything new (until 22/11/2026). The address works for whoever receives it.

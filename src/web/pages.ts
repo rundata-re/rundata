@@ -424,7 +424,7 @@ p,ul,ol,table,figure{margin:0}
 .wrap{max-width:72rem;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .ic{width:1.4em;height:1.4em;flex:none}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-/* A day's number with its month (« 10 novembre »), on one line (marketing), or « Saint-Paul » in /presse's release, never
+/* A day's number with its month (« 10 novembre »), on one line, or « Saint-Paul » in /presse's release, never
    « Saint- / Paul » at 390 px; under 19.9 em, below, the line may break there. */
 .jm{white-space:nowrap}
 /* An address in a sentence (adresseTexte, adresse.ts): its <wbr> count only under 19.9 rem, below. An address
@@ -448,7 +448,7 @@ background:#fff;color:#0b1f36;font-weight:800;text-decoration:none;box-shadow:0 
 [hidden]{display:none!important}
 
 /* A section's colour is never one of the alert scale (yellow, orange, red, purple) nor a red: those say a real state
-   (kit.md). The sections of risks share one neutral colour. */
+   (the brand kit). The sections of risks share one neutral colour. */
 .k-meteo{--k:#ff9f43}.k-vigilance,.k-crues,.k-volcan,.k-cyclones,.k-secheresse,.k-feux{--k:#4fd1c5}.k-actualites{--k:#a5d8ff}.k-mer{--k:#22b8cf}.k-bus{--k:#4dabf7}.k-velos{--k:#51cf66}.k-bornes{--k:#94d82d}.k-eau{--k:#3bc9db}.k-coupures{--k:#74c0fc}.k-dae{--k:#40c057}.k-sentiers{--k:#69db7c}.k-sport{--k:#ffa94d}.k-historique{--k:#e599f7}.k-agenda{--k:#da77f2}.k-enfants{--k:#f06595}.k-emploi{--k:#20c997}.k-peche{--k:#66d9e8}.k-antennes{--k:#ced4da}.k-marches{--k:#748ffc}
 .k-air{--k:#38d9a9}.k-electricite{--k:#fab005}.k-calendrier{--k:#b197fc}.k-associations{--k:#f472d0}.k-communes{--k:#f783ac}.k-services{--k:#74c0fc}.k-trafic{--k:#91a7ff}.k-terrain{--k:#d8a65a}
 .kb{display:grid;place-items:center;width:2.6rem;height:2.6rem;border-radius:12px;flex:none;color:var(--k);
@@ -808,7 +808,7 @@ radial-gradient(1px 1px at 6% 92%,#fff,transparent),radial-gradient(1.2px 1.2px 
 @keyframes pop{from{opacity:0;transform:translateY(6px)}}
 .hero-map figcaption{display:flex;align-items:center;justify-content:center;gap:.5rem;font-size:.82rem;color:rgb(255 255 255/.75);text-align:center;flex-wrap:wrap}
 .hero-map figcaption a{color:#fff}
-/* The home page's map (accueil-carte.ts): marketing's « Lagon » on the « Circuit » layout, a layout for a phone, one for a wide screen. */
+/* The home page's map (accueil-carte.ts): the validated « Lagon » on the « Circuit » layout, a layout for a phone, one for a wide screen. */
 .ile .map.defs{position:absolute;width:0;height:0;overflow:hidden}
 .ile .hm-large{display:none}
 @media (min-width:58rem){.ile .hm-tel{display:none}.ile .hm-large{display:block}}
@@ -1492,7 +1492,7 @@ interface Head {
 
 /**
  * An alert on one line, for a phone (below 600 px), two in a rare case: the whole line leads to the page that details
- * it. Never cut with « … », which could cut whose the alert is or « Enclos interdit » (marketing). The banner's sentence
+ * it. Never cut with « … », which could cut whose the alert is or « Enclos interdit ». The banner's sentence
  * stays on wider screens, and on the page the line would lead to. `after`: said after it, free to break (the time of a
  * vigilance kept).
  */
@@ -1503,7 +1503,7 @@ export function ligne(href: string, picto: string, text: string, after?: string)
   return `<a class="ligne" href="${href}">${picto ? `<span aria-hidden="true">${picto}</span>` : ""}<span class="txt">${said}${after ? ` · ${esc(after)}` : ""}</span><span aria-hidden="true">→</span></a>`;
 }
 
-// The words of the line, marketing's: the phenomena by a short name, two at most; the zones named while one or two,
+// The words of the line, the validated ones: the phenomena by a short name, two at most; the zones named while one or two,
 // counted beyond, « toute l'île » or « toutes les côtes » when all are.
 const SHORT: Record<string, string> = { "Fortes pluies / orages": "pluies-orages", "Vents forts": "vents forts", "Vagues - submersion": "vagues-submersion" };
 const COASTS = Object.values(mf.ZONES).filter((z) => z.startsWith("Zone côtière")).length;
@@ -1517,7 +1517,7 @@ function zonesSaid(zones: string[]): string {
   return parts.filter(Boolean).join(", ");
 }
 
-// The cyclone alert is the prefect's, which Météo-France publishes: the line says whose it is (marketing).
+// The cyclone alert is the prefect's, which Météo-France publishes: the line says whose it is.
 function vigilanceLigne(a: Alerte): string {
   const c = a.court;
   if ("cyclone" in c) return c.prevue ? "Alerte cyclonique prévue par le préfet" : `${cycloneHead(c.cyclone)} du préfet`;
@@ -1671,7 +1671,7 @@ function share(origin: string, head: Head): string {
   const text = `${head.title.replace(/ · (?:La Réunion \(974\)|974)$/, "")} : ${origin}${head.path}?ref=wa`;
   const link = (s: Social, label = s.nom) => `<a href="${esc(fromSite(s.url))}" rel="noopener">${esc(label)}</a>`;
   // The two promises first, Facebook's fact every morning and the WhatsApp channel's outings on Friday; then the
-  // other networks, a plain list of where rundata.re is, with no rhythm promised (marketing, 22/11/2026): « Suivez
+  // other networks, a plain list of where rundata.re is, with no rhythm promised (wording validated on 22/11/2026): « Suivez
   // rundata.re : une info utile chaque matin sur Facebook, les sorties du week-end le vendredi sur notre chaîne
   // WhatsApp. Aussi sur Instagram, Threads, TikTok, YouTube et X. » A network added later goes before « et X ».
   // The code is not an account to follow for news: GitHub stays out of this sentence.
@@ -1694,7 +1694,7 @@ ${head.sansInstallation ? "" : INSTALL}
 </aside>`;
 }
 
-/** The hook goes right under the page's title; not on /volcan during an alert, whose heading and lines say it (marketing). */
+/** The hook goes right under the page's title; not on /volcan during an alert, whose heading and lines say it. */
 /**
  * The count of /chiffres (« sources publiques lues », from compte()), in the footer since the home page's top was made
  * lighter (04/11/2026): from the code alone, counted once per isolate.
@@ -1709,7 +1709,7 @@ const withHook = (band: string, path: string, volcan?: boolean, own?: string, te
 };
 
 // The menu: every category with a page, the clubs' space after the sport (once it is out), then the communes; the first
-// few also sit in the bar on wide screens. The map of every layer right after the first few (marketing), in the menu only.
+// few also sit in the bar on wide screens. The map of every layer right after the first few, in the menu only.
 const MENU = [
   ...WITH_PAGE.flatMap((c) => [{ key: c.key, nom: c.nom, path: c.path, icon: c.icon },
     ...(c.key === "sport" ? [{ key: "associations", nom: "Associations", path: "/associations?ref=menu", icon: "people" }] : [])]),
@@ -1915,7 +1915,7 @@ export function layout(origin: string, head: Head, written: string, body: string
   const choix = !map && main.includes('class="tabs fonds"') ? '<span class="fd-c"></span>' : "";
   const url = `${origin}${head.path}`;
   // The descriptions in French typography like the page's text, with the no-break space itself, never « &nbsp; »: their
-  // length is unchanged. Not the titles, nor the JSON-LD's other values (marketing, 25/10).
+  // length is unchanged. Not the titles, nor the JSON-LD's other values (wording validated on 25/10).
   const d = typo(esc(head.description));
   const image = ogImage(origin, head.path, head.image);
   // Each acronym spelled out at its first occurrence, from the title's band to the end of the main text (web/sigles.ts).
@@ -1926,8 +1926,8 @@ export function layout(origin: string, head: Head, written: string, body: string
   // On a page in English, what the site keeps in French around it, said so to a reader of the page aloud; not the skip
   // link, in English like the page (WCAG 3.1.2).
   const fr = head.en ? ' lang="fr"' : "";
-  // The page in English (web/en.ts) is linked from the footer of every other page, in one word (marketing,
-  // 24/11/2026): no page led to it.
+  // The page in English (web/en.ts) is linked from the footer of every other page, in one word (wording
+  // validated on 24/11/2026): no page led to it.
   return `<!doctype html>
 <html lang="${head.en ? "en" : "fr"}">
 <head>
@@ -2235,7 +2235,7 @@ function weatherLive(data: Cached<HomeData> | null, now: Date): string {
 
 /**
  * Every station of the official networks, filtered by commune and sorted by the page's script; without it, by altitude.
- * Under them, folded, the amateur stations, each said so (marketing's words, 10/11/2026).
+ * Under them, folded, the amateur stations, each said so (the validated words, 10/11/2026).
  */
 function stationsList(every: StationNow[], now: Date): string {
   const all = every.filter((s) => !s.amateur);
@@ -2278,7 +2278,7 @@ export function placeLinks(except?: string, hubs = false): string {
   const li = (p: PlacePage) =>
     `<li${aussi(p) ? ` data-aussi="${esc(aussi(p))}"` : ""}><a href="/${hubs && p.commune ? "communes" : "meteo"}/${p.slug}">${esc(p.nom)}</a></li>`;
   const others = PAGES.filter((p) => p.slug !== except && !PRINCIPAL[p.slug]);
-  // The weather's field (marketing, 06/11/2026): its label above it, what was typed in the answer when no page has it.
+  // The weather's field (wording validated on 06/11/2026): its label above it, what was typed in the answer when no page has it.
   const field = hubs
     ? `<label class="search">${icon("search")}<span class="sr">Chercher une commune ou un lieu</span>` +
       `<input id="filtre" type="search" placeholder="Saint-Leu, Cilaos, le volcan…" autocomplete="off"></label>`
@@ -2456,7 +2456,7 @@ export function recordsSection(h: HistoriqueAnswer | undefined): string {
 }
 
 /**
- * /meteo's stable text (marketing, 14/11/2026). The stations of reference and the first year of Gillot's series from
+ * /meteo's stable text (wording validated on 14/11/2026). The stations of reference and the first year of Gillot's series from
  * the data of /historique. The record of each station of reference is in the block « Records » just above it
  * (recordsSection()).
  */
@@ -2476,7 +2476,7 @@ const meteoLire = () => `<p>Tout ce qui est sur cette page est <b>mesuré</b>. L
 <li>Elle donne la température de chaque année depuis ${(chaud.annees as [number, number][])[0][0]} ${a(chaud.station.replace(/ \(aéroport\)$/, ""))}.</li>
 <li>Avec le connecteur, votre assistant IA lit aussi les mesures quotidiennes des stations que Météo-France a eues sur l'île, records compris.</li></ul>`;
 
-/** The FAQ's answer on the rose zones (marketing, 16/11/2026), its figures those of the map (meteo-carte.ts, PLUVIO_*). */
+/** The FAQ's answer on the rose zones (wording validated on 16/11/2026), its figures those of the map (meteo-carte.ts, PLUVIO_*). */
 const ZONES_ROSES = "Les zones roses estiment la pluie de l'heure affichée autour des pluviomètres de Météo-France, et des stations amateur quand la case «\u00a0Stations amateur\u00a0» est cochée. " +
   "Chaque pluviomètre compte jusqu'à 5\u00a0km, et seulement là où l'altitude est à moins de 500\u00a0m de la sienne\u00a0: la pluie de la côte ne monte pas sur le volcan. " +
   "En chaque point, la pluie est la moyenne des pluviomètres proches, chacun compté d'autant plus qu'il est près\u00a0: un pluviomètre sec compte aussi, et tire la zone vers zéro. " +
@@ -2491,7 +2491,7 @@ const METEO_FAQ: Faq[] = [
   { q: "Les stations amateur sont-elles fiables ?", a: "Leur fiabilité n'est pas vérifiée par Météo-France. Elles sont donc en option (la case « Stations amateur »), et chacune est marquée. Elles aident à voir ce qui se passe entre les stations officielles." },
   { q: "Il a peu plu ces derniers temps : est-ce normal pour la saison ?", a: `<a href="/historique">La page Historique</a> compare la pluie des 30 derniers jours à la normale 1991-2020 de chaque station de référence.` },
   // How the rose zones of the rain are worked out, and that they can be wrong (the user, 16/11/2026: « une section plus
-  // bas dans la page qui explique le modèle de calcul et qu'il peut comporter des erreurs »; marketing's words). Their
+  // bas dans la page qui explique le modèle de calcul et qu'il peut comporter des erreurs »; the validated words). Their
   // legend leads here: its id is meteo-carte.ts's PLUVIO_ANCRE, written out (read here while that module loads, it would
   // not be there yet; test/meteo-carte.test.ts checks they are the same).
   { q: "Comment sont calculées les zones roses de la pluie\u00a0?", id: "h-zones-roses", a: ZONES_ROSES },
@@ -2653,7 +2653,7 @@ function stationCard(s: StationAnswer): string {
 
 /**
  * The nearest amateur station, when the answer gives one after the others (tools/meteo.ts): folded, its reliability
- * said not checked in its title (marketing, 10/11/2026), its credit under its measures.
+ * said not checked in its title (wording validated on 10/11/2026), its credit under its measures.
  */
 function amateurCard(s: StationAnswer): string {
   const at = s.distance_km != null ? `, à ${fr(s.distance_km)}\u00a0km` : "";
@@ -2678,7 +2678,7 @@ export function sinceMidnightCard(j: DepuisMinuit): string {
 export const CONFIANCE_ANCRE = "confiance";
 
 /**
- * « Repères : station …, à … km » (marketing, 14/11/2026, its records' sentence 19/11/2026): this month's normals and records
+ * « Repères : station …, à … km » (wording validated on 14/11/2026, its records' sentence 19/11/2026): this month's normals and records
  * at the station of the copy (tools/historique.ts, reperesMois), none written by hand. Left out without them, and when
  * the copy was built in another month than the view's. Without a record, the records' line; without a first year, its
  * last sentence.
@@ -2797,7 +2797,7 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
     return short ? `<p class="why">${esc(short)}</p>` : "";
   };
   // What the confidence says is said once, on /meteo (« Comment lire cette page »): here, a line and its link
-  // (marketing, 14/11/2026: the same 90 words on every place page).
+  // (wording validated on 14/11/2026: the same 90 words on every place page).
   const confidenceNote = f?.jours?.some((j) => j.confiance);
   const range = (lo?: string, hi?: string) => (lo && hi ? fourchette(lo.replace(/ °C$/, "°"), hi.replace(/ °C$/, "°"), " / ") : "—");
   const forecast = f?.jours?.length
@@ -2871,7 +2871,7 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
 </div>`;
 
   // The UV index MEASURED at Moufia, near it: the tool's words (prevision_meteo), never the forecast's card. « mesuré » in
-  // small letters on the page, its label « Mesure » saying it, as for the waves measured (marketing, 23/11/2026).
+  // small letters on the page, its label « Mesure » saying it, as for the waves measured (wording validated on 23/11/2026).
   const uvm = d?.prevision?.indice_uv_mesure;
   const uvMeasured = uvm
     ? `<section aria-labelledby="h-uv"><div class="hb"><h2 id="h-uv">L'indice UV mesuré au Moufia</h2><span class="badge m">Mesure</span></div>` +
@@ -2933,7 +2933,7 @@ ${script(OFFLINE_SCRIPT)}`);
 
 /**
  * The class of a cyclone alert's badge: no colour for the pré-alerte, whose box is white in the plan's table (DSO
- * p. 9) and whose yellow the prefecture dropped (marketing).
+ * p. 9) and whose yellow the prefecture dropped.
  */
 export const cycloneVg = (c: number) => (c === 2 ? "vgpre" : `vg${c >= 1 && c <= 5 ? c : 0}`);
 /** The link to Météo-France's own site, in its words (providers/vigilance.ts). */
@@ -2948,7 +2948,7 @@ const LAND_PHENOMENA = [12, 1];
 const COAST = 9;
 
 // The colours of the vigilance and the phases of the cyclone alert, by their names only: what each one means is
-// Météo-France's to say, on its own site (marketing).
+// Météo-France's to say, on its own site.
 const SCALE = `<ul class="scale">${[1, 2, 3, 4].map((c) => `<li>${vg(c)}</li>`).join("")}</ul><p>${officielHtml(mf.OFFICIEL_VIGILANCE)}</p>`;
 
 /** The phases of the cyclone alert, shown on /cyclones with the prefecture's word (domains.ts). */
@@ -3088,7 +3088,7 @@ ${suivi}
 const CROWDED = new Set(["Plage de la Saline les Bains", "Plage de Saint-Paul"]);
 
 /**
- * The risk of coral bleaching at the three points of NOAA's grid, in marketing's words: the level in words with a scale
+ * The risk of coral bleaching at the three points of NOAA's grid, in the validated words: the level in words with a scale
  * of 0 to 7 in night blue (the level's cell full), never NOAA's yellow, orange and red, and what the level is (the
  * highest of the last 7 days, or of the days the source has). A point without a level had none on any of those days, so it
  * says so of « ces jours », never of one day.
@@ -3115,7 +3115,7 @@ export function reefSection(c: Cached<coraux.Coraux> | null): string {
 }
 
 /**
- * The rules of approach of whales and dolphins, from the decrees in the code (tools/cetaces.ts), in marketing's words:
+ * The rules of approach of whales and dolphins, from the decrees in the code (tools/cetaces.ts), in the validated words:
  * the day's state (the humpback whales' period of rules or not), then the twelve rules with their articles. Computed
  * at each view, nothing read.
  */

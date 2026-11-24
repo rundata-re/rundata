@@ -1,7 +1,7 @@
 /**
  * The answers that carry texts of third parties as they wrote them (media titles and first sentences, agendas' and
  * clubs' events): a field says so, so that a sentence planted in a title is taken by the assistant for data, never for
- * an instruction (indirect prompt injection). Worded by marketing. The answers of the official producers (vigilance,
+ * an instruction (indirect prompt injection). Worded for the site. The answers of the official producers (vigilance,
  * water, volcano) carry none: their safety instructions are to be passed on as they are.
  */
 

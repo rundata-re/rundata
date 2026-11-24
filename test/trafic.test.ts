@@ -45,7 +45,7 @@ describe("circulation", () => {
     expect(res.status).toBe(200);
     const page = await res.text();
     expect(page).toContain("<h1>Circulation à La Réunion");
-    // The question to an assistant holds with what the page has (marketing; its Creole validated by the user on 04/11/2026).
+    // The question to an assistant holds with what the page has (its Creole validated by the user on 04/11/2026).
     expect(page.replaceAll("\u00a0", " ")).toContain("« Y a-t-il des routes coupées ou des travaux à La Réunion");
     expect(page.replaceAll("\u00a0", " ")).toContain("« Néna in rout koupé oubien travo zordi ? Gèt si <span class=\"adrweb\">https://<wbr>rundata.<wbr>re/<wbr>trafic</span> é di amwin. »");
     expect(page).not.toMatch(/kat-voi|bouchonne/);

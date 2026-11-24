@@ -15,7 +15,7 @@ import { pageOf } from "../src/web/places.js";
 import { pressePage } from "../src/web/presse.js";
 import { publierPage } from "../src/web/publier.js";
 
-// The green dot that pulses reads « en direct »: only with what was measured or read today (marketing, 04/11/2026).
+// The green dot that pulses reads « en direct »: only with what was measured or read today (wording validated on 04/11/2026).
 // Anything older says its date in the pill, « NATURE · DATE », without the dot; a pill with no data has no dot either.
 const O = "https://rundata.re";
 const NOW = new Date("2026-11-04T06:00:00Z");

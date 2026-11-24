@@ -11,7 +11,7 @@ export const VERIFIE = "2026-10-24";
 
 const day = VERIFIE.split("-").reverse().join("/");
 
-/** marketing's words, as given. */
+/** the validated words, as given. */
 export const T = {
   outil:
     `Il n'y a pas de liaison maritime régulière de passagers entre La Réunion et Maurice (vérifié le ${day}). ` +

@@ -220,7 +220,7 @@ describe("fiche terrain", () => {
   it("reads an address: parcel, PLU zone, altitude, market", async () => {
     const r = body(await ficheLieu(new Cache(new MemoryStore(), () => NOW.getTime()), "7 rue de la Buse, Saint-Paul", NOW));
     expect(r.resume).toMatch(/^7 Rue de la Buse 97460 Saint-Paul \(adresse exacte\)\u00a0; altitude 5\u00a0m\u00a0; parcelle cadastrale BO 0552 \(2\u202f416\u00a0m²\)\u00a0; zone U1c du PLU, zone urbaine/);
-    // The thousands and the unit held to the number (marketing's kit, « Nombres »); the parcel's number untouched.
+    // The thousands and the unit held to the number (the brand kit, « Nombres »); the parcel's number untouched.
     expect(r.marche_immobilier.maisons.prix_m2_median).toMatch(/^\d{1,3}\u202f\d{3}\u00a0€\/m²$/);
     expect(r.marche_immobilier.maisons.prix_median).toMatch(/^\d{1,3}(\u202f\d{3})+\u00a0€$/);
     expect(r.urbanisme.approuve_le).toBe("27/09/2012");

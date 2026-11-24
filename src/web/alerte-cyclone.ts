@@ -1,7 +1,7 @@
 /**
  * /alerte-cyclone: what the prefecture's plan (dispositif spécifique ORSEC Cyclones, arrêté 2026-182) says of daily
  * life at each step of the cyclone alert, quoted page by page, under the alert in force (as /ecoles-cyclone reads it).
- * Only the plan's words: where it says nothing (the buses, the shops), nothing is filled in. Worded by marketing.
+ * Only the plan's words: where it says nothing (the buses, the shops), nothing is filled in. Worded for the site.
  */
 import type { Cached } from "../cache.js";
 import { ORSEC_PDF } from "../eau/cyclone.js";
@@ -32,11 +32,11 @@ interface Step {
   lignes: Line[];
 }
 
-// In the pré-alerte, the step's line and the state point to /kit-cyclone (marketing).
+// In the pré-alerte, the step's line and the state point to /kit-cyclone.
 const KIT = "Le kit d'urgence du plan →";
 export const q = (sujet: string, texte: string, ...pages: number[]): Line => ({ sujet, texte, pages, cite: true });
 
-/** The plan, step by step, as marketing laid it out; each quotation as the PDF writes it. */
+/** The plan, step by step, as validated; each quotation as the PDF writes it. */
 export const STEPS: Step[] = [
   {
     id: "pre-alerte",
@@ -159,7 +159,7 @@ const THIS_STEP = "Ce que prévoit ce niveau ↓";
 /**
  * The step in force, or announced, as /ecoles-cyclone reads it; the sentence and its anchor. The end of the alert in
  * #133's sentences when a release of the prefecture says it; the phase de sauvegarde, not the end, while the bulletin
- * gives it (marketing).
+ * gives it.
  */
 function stateOf(v: mf.Vigilance | undefined, now: Date, decision?: Cyclone | null): State | undefined {
   if (!v) return undefined;

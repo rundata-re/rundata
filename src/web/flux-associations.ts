@@ -1,5 +1,5 @@
 /**
- * The open feed of the events the clubs and associations proposed (espace-associations.md, « Licence et données
+ * The open feed of the events the clubs and associations proposed (the spec of the clubs' space, « Licence et données
  * ouvertes »): all of them, as published, in ICS for calendars and in JSON for anyone who reuses them, the licence
  * written in both. Never the author's address; the public contact only when its author asked for one. With them, the
  * events of the associations linked to HelloAsso that chose the open data while linking (providers/agenda-connecteurs.ts,

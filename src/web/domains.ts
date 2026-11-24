@@ -62,7 +62,7 @@ const TITLE_MAX = 60;
 /** `full` when it fits in what search engines show, else `short`. */
 const describe = (full: string, short: string) => (full.length <= DESCRIPTION_MAX ? full : short);
 
-// The descriptions with the figures of a copy, worded by marketing (24/11/2026) to fit in DESCRIPTION_MAX with the
+// The descriptions with the figures of a copy, worded for the site (24/11/2026) to fit in DESCRIPTION_MAX with the
 // largest realistic figures (test/descriptions-longueur.test.ts): too long, a page would always say its short one.
 export const velosDescription = (total: number) =>
   `Altervélo, vélos électriques en libre-service (974) : ${total} vélos libres en ce moment, et les places par station à Saint-Pierre, Saint-Louis et L'Étang-Salé.`;
@@ -115,7 +115,7 @@ export const sansLecture = (nonLus: string[] | undefined): string[] =>
   nonLus?.length ? [`Agendas sans lecture récente : ${nonLus.map((x) => x.replace(/ : (?!.* : )/, ", ")).join("\u00a0; ")}. Leurs événements peuvent manquer ici.`] : [];
 
 /**
- * What a list of events may lack, one formula for /evenements, its weekend and its concerts (marketing): the agendas
+ * What a list of events may lack, one formula for /evenements, its weekend and its concerts: the agendas
  * not read this time, silent or left to the next visit, then those of the scheduled event not read lately.
  */
 export const agendaNotes = (data: Cached<AgendaAnswer> | null | undefined, now: Date): string[] => [
@@ -200,7 +200,7 @@ const connectorCta = (tool: string, what: string) => `<section aria-labelledby="
  * The note under the water notices (/coupures-eau, /coupures-eau/x): the tool's, with a link to /eau in place of the
  * name of the tool for the tap water.
  */
-/** /coupures-eau's stable text (marketing, 14/11/2026): `lus`, how many distributors' notices are read. */
+/** /coupures-eau's stable text (wording validated on 14/11/2026): `lus`, how many distributors' notices are read. */
 const COUPURES_LIRE = (lus: number) => `<p>En haut, les avis en cours ou à venir, du plus récent au plus ancien. Chaque avis porte le nom du distributeur, la commune, l'heure de publication et le lien vers l'avis complet. On en distingue deux sortes :</p>
 <ul class="plain"><li>les <b>coupures et travaux</b> : l'eau est interrompue, avec l'heure de retour annoncée par le distributeur ;</li>
 <li>l'<b>eau à ne pas boire</b> : l'eau coule, mais le distributeur demande de ne pas la boire, souvent après de fortes pluies ou un incident à l'usine de traitement.</li></ul>
@@ -235,13 +235,13 @@ export const afterCutNote = `<p class="note" id="ars-coupure">${esc(AFTER_CUT)} 
 
 /**
  * A commune's page with no notice in progress: the ARS's advice in one sentence, and the full advice and the cyclone
- * one (ORSEC) on the island's page. Worded by marketing (20/11): 24 pages carried the same 183 words.
+ * one (ORSEC) on the island's page. Worded for the site (20/11): 24 pages carried the same 183 words.
  */
 export const afterCutShort = `<p class="note">Après une coupure, l'eau qui revient au robinet peut être impropre à la consommation pendant plusieurs heures, d'après l'ARS La Réunion\u00a0: ne la buvez pas et ne cuisinez pas avec. Quand un avis dit de ne pas boire l'eau, suivez ses consignes. <a href="/coupures-eau#ars-coupure">Les consignes de l'ARS, et celles d'après un cyclone →</a></p>`;
 
 /**
  * The connector on the water's pages (/coupures-eau, /coupures-eau/x, /eau): a question to ask, without the tool's name
- * (marketing, 06/11/2026).
+ * (wording validated on 06/11/2026).
  */
 export const connectorAsk = (what: string, commune: string) => `<section aria-labelledby="h-ia">
   <div class="card cta"><h2 id="h-ia">Votre IA, branchée sur ${esc(what)}</h2>
@@ -250,12 +250,12 @@ export const connectorAsk = (what: string, commune: string) => `<section aria-la
 
 const dayOf = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", timeZone: "Indian/Reunion" });
 
-// The Enclos as the official texts say it (marketing): the prefecture's release in its title's own words, « 20/10 » its
+// The Enclos as the official texts say it: the prefecture's release in its title's own words, « 20/10 » its
 // day, or closed by the level of an alert whose title says nothing of it; in vigilance from a release, the plan's rule.
 // Never pitonlive's (25/10/2026).
 const dd = (jour: string) => `${jour.slice(8, 10)}/${jour.slice(5, 7)}`;
 /**
- * The short form, on the home page's tile and the card of /trafic, never « ouvert » (marketing): forbidden by the
+ * The short form, on the home page's tile and the card of /trafic, never « ouvert »: forbidden by the
  * release, its words, the plan's rule in vigilance, or to check.
  */
 const enclosShort = (x: Enclos | undefined): { valeur: string; source: string } =>
@@ -278,7 +278,7 @@ export const silentText = (s: { texte: string; site: string }) => esc(s.texte).r
 export const silentItem = (s: { texte: string; site: string }) => `<li><span class="note">${silentText(s)}</span></li>`;
 
 /**
- * One notice of power cut, its link after it. A PDF letter's sentence ends on its link (marketing's words): « l'avis
+ * One notice of power cut, its link after it. A PDF letter's sentence ends on its link (the validated words): « l'avis
  * publié par la mairie (PDF) → », « dans l'avis (PDF) → », a target tall enough for a finger.
  */
 export function courantItem(x: Pick<CourantRow, "texte" | "lien" | "nature" | "pdf">): string {
@@ -288,7 +288,7 @@ export function courantItem(x: Pick<CourantRow, "texte" | "lien" | "nature" | "p
   return `${li}${esc(x.texte.slice(0, end.index))}<a class="tap" href="${esc(x.lien)}" rel="noopener">${esc(end[1])} (PDF) →</a></li>`;
 }
 
-/** EDF's words that a resident does not know, said once on /electricite (marketing, UX review of 04/11/2026). */
+/** EDF's words that a resident does not know, said once on /electricite (UX review of 04/11/2026). */
 const FILIERES_DITES: Record<string, string> = {
   bioliquide: "bioliquide (combustible d'origine végétale)",
   "turbines à combustion": "turbines à combustion (centrales de pointe, démarrées quand la demande monte)",
@@ -339,7 +339,7 @@ export function electricitePage(origin: string, data: Cached<ElectriciteAnswer> 
       `<p class="note">${esc(m.explication)}</p></div>`
     : "";
 
-  // The cuts the mairies relay, in marketing's words (tools/courant.ts); never « pas de coupure ».
+  // The cuts the mairies relay, in the validated words (tools/courant.ts); never « pas de coupure ».
   const c = d?.coupures_annoncees;
   const cuts = c
     ? `<section id="coupures" aria-labelledby="h-coupures">
@@ -415,7 +415,7 @@ export function electriciteLive(data: Cached<ElectriciteAnswer> | null, now = ne
 
 /**
  * The commune's Électricité tile: a cut its mairie announces today or later first, its day and hours, the notice's link
- * under it; the island's renewable share after, smaller (marketing, 21/11/2026). None announced: the island's tile, never
+ * under it; the island's renewable share after, smaller (wording validated on 21/11/2026). None announced: the island's tile, never
  * « pas de coupure ».
  */
 export function electriciteCommune(data: Cached<ElectriciteAnswer> | null, commune: string, now = new Date()): { live?: Live; more?: string; foot?: string } {
@@ -424,7 +424,7 @@ export function electriciteCommune(data: Cached<ElectriciteAnswer> | null, commu
   if (!cut) return { live: island };
   const next = nextSlot(cut, now);
   const others = next?.autres ? `, et ${next.autres === 1 ? "1 autre plage" : `${next.autres} autres plages`} dans l'avis` : "";
-  // A cut the mairie says under way: « d'après la mairie, avis du 21/11 à 08:53 » (marketing, 21/11/2026).
+  // A cut the mairie says under way: « d'après la mairie, avis du 21/11 à 08:53 » (wording validated on 21/11/2026).
   const published = cut.publie_le ? `, avis du ${cut.publie_le.replace(" ", " à ")}` : "";
   const when = next && cut.nature !== "en cours" ? `${next.quand}, d'après la mairie${cut.pdf ? ", heures et secteurs dans l'avis" : others}` : `d'après la mairie${published}`;
   // « 82,2 % renouvelable sur l'île, le 20/11 à 17:10 »: the hour of EDF's figure, its day when not today's.
@@ -435,7 +435,7 @@ export function electriciteCommune(data: Cached<ElectriciteAnswer> | null, commu
     ? `<p class="td all note">${esc(`${fr(p.renouvelable_pct)}\u202f% renouvelable sur l'île, ${at.startsWith(`${today} `) ? `à ${at.slice(today.length + 1)}` : leJour(at)}`)}</p>`
     : "";
   // The notices not read again for a while: said under the cut in the short form of the tile, the mairie's site linked
-  // above the tile's own link (.dessus), so that a touch opens it (marketing, 23/11/2026).
+  // above the tile's own link (.dessus), so that a touch opens it (wording validated on 23/11/2026).
   const lu = data!.value.coupures_annoncees?.lu_le;
   const ancienne = lu ? copieAncienneCourte("courant", new Date(lu), now) : undefined;
   const site = MAIRIES.find((m) => m.commune === commune)?.site;
@@ -548,7 +548,7 @@ export const enAttente = (html: string) => `${ATTENTE}${html}</span>`;
 export const HORAIRES_EN_ATTENTE = enAttente(HORAIRES_CHARGENT);
 
 /**
- * /bus's stable text (marketing, 14/11/2026): `reseaux` and `lignes` from the timetables, the sentence that says them
+ * /bus's stable text (wording validated on 14/11/2026): `reseaux` and `lignes` from the timetables, the sentence that says them
  * left out without them. The networks one by one are in the band's list.
  */
 // The station of Saint-Pierre in the example: Car Jaune and Alternéo at « Gare de Saint-Pierre », CarSud at « Gare
@@ -699,7 +699,7 @@ export function velosPage(origin: string, data: Cached<VelosAnswer> | null, now 
     : `<div class="now"><span class="big">${total}</span><p>vélo${total > 1 ? "s" : ""} à assistance électrique disponible${total > 1 ? "s" : ""} ${esc(leAt(data!.fetchedAt))} dans les <b>${d.stations.length}\u00a0stations</b> Altervélo de ${esc(BIKE_COMMUNES.join(", ").replace(/, ([^,]+)$/, " et $1"))}.</p></div>`;
 
   // The communes served in a yellow that stands out from the others' land in both themes (--zone-on: the highlight's
-  // brown, in the dark theme, hardly did, marketing's review).
+  // brown, in the dark theme, hardly did, the validated review).
   const fills = Object.fromEntries(BIKE_COMMUNES.map((c) => [c, "var(--zone-on)"]));
   // Each commune served leads to its stations below; the others have their bubble only.
   const links: Record<string, ZoneLink> = d
@@ -923,7 +923,7 @@ function tapCard(c: EauAnswer["communes"][number], dry?: { dit: string; lien?: s
 
 /**
  * « du 15 au 22/09 », « du 28/08 au 22/09 », « du 22/09 »: the days of the samples a page shows, from two ISO days. No
- * green dot goes with it: an analysis is weeks old, never a reading of the day (marketing, 04/11/2026).
+ * green dot goes with it: an analysis is weeks old, never a reading of the day (wording validated on 04/11/2026).
  */
 export function duAu(from: string, to: string): string {
   if (from === to) return `du ${dayMonth(from)}`;
@@ -1045,7 +1045,7 @@ const kmFr = (n: number) => String(n).replace(".", ",");
 const meters = (n: number) => `${nombre(n)}\u00a0m`;
 /** The hook of /randonnees and its sectors, with the map's date. */
 export const randoHook = (miseAJour: string | undefined) => `Choisir une rando ouverte d'après ${onfCarte(miseAJour)}, avec sa trace GPS et son dénivelé.`;
-/** The hook of a hike no trail of the ONF is on (marketing). */
+/** The hook of a hike no trail of the ONF is on. */
 export const NOT_ON_ONF = "Ce sentier n'est pas sur la carte de l'ONF : rundata.re n'a pas son état d'ouverture.";
 /** « 20/10 »: the day the ONF edited its map, from the tool's « 20/10/2026 (ONF) » or the ISO time the copies keep (data.ts). */
 export function onfDay(miseAJour: string | undefined): string {
@@ -1055,7 +1055,7 @@ export function onfDay(miseAJour: string | undefined): string {
   return Number.isFinite(t) ? new Date(t + 4 * 3600_000).toISOString().slice(5, 10).split("-").reverse().join("/") : "";
 }
 
-/** « la carte de l'ONF du 27/10 », the one formula of the trails' state (marketing, UX review of 04/11/2026): never « aujourd'hui » nor « ce matin ». */
+/** « la carte de l'ONF du 27/10 », the one formula of the trails' state (UX review of 04/11/2026): never « aujourd'hui » nor « ce matin ». */
 export const onfCarte = (miseAJour: string | undefined) => `la carte de l'ONF${onfDay(miseAJour) ? ` du ${onfDay(miseAJour)}` : ""}`;
 
 /** « Carte de l'ONF du 27/10, relue le 04/11 à 14:05 »: the map's date and when rundata.re read it. */
@@ -1306,7 +1306,7 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 /**
  * The fires seen by satellite in the 24 hours before the copy was built, from the hikes' copy (its `feux`): none said as
- * « aucun point chaud détecté » with the hour of the read, never « aucun feu » (marketing, 04/11/2026).
+ * « aucun point chaud détecté » with the hour of the read, never « aucun feu » (wording validated on 04/11/2026).
  */
 export function feuxLive(data: Cached<SentiersAnswer> | null): Live | undefined {
   const f = data?.value.feux;
@@ -1467,7 +1467,7 @@ export function tracePage(origin: string, kind: "sentier" | "randonnee", slug: s
     ? `<p class="part-of">Fait partie de : ${d.randonnees.map((r) => `<a href="/randonnees/${esc(r.slug)}">${esc(r.nom)}</a>`).join(", ")}</p>`
     : "";
   // « Y aller » to a hike's start, beside the download, only when its copy kept the start (data.ts buildRoute). A forest
-  // road closed by the start is said as the ONF's fact, dated, in grey: the trail itself is not closed (marketing's words).
+  // road closed by the start is said as the ONF's fact, dated, in grey: the trail itself is not closed (the validated words).
   // A cyclone alert that closes the trails (aller.ts permis) says so in the button's place, before the road.
   const alerted = kind === "randonnee" && !permis(alerte, "randonnee");
   const go = d?.depart && !alerted ? aller({ nom: `départ du ${nom}`, lat: d.depart.lat, lon: d.depart.lon }) : "";
@@ -1577,8 +1577,8 @@ ${connectorCta("sentiers_randonnee", "les sentiers de randonnée")}`;
 const DROUGHT_COLOR: Record<string, string> = { vigilance: "#ffd43b", alerte: "#ff922b", "alerte renforcée": "#f03e3e", crise: "#862e9c" };
 const DROUGHT_ORDER = ["crise", "alerte renforcée", "alerte", "vigilance"];
 /**
- * The text of a pill where the sheet's dark ink is not readable on the official colour, which never changes (marketing,
- * 04/11/2026): white on the purple of « crise » (7.28:1, the dark ink gave 2.27), black on the red of « alerte renforcée »
+ * The text of a pill where the sheet's dark ink is not readable on the official colour, which never changes (wording
+ * validated on 04/11/2026): white on the purple of « crise » (7.28:1, the dark ink gave 2.27), black on the red of « alerte renforcée »
  * (5.46:1, the dark ink gave 4.30).
  */
 const DROUGHT_INK: Record<string, string> = { "alerte renforcée": "#000", crise: "#fff" };
@@ -1609,7 +1609,7 @@ const vigieauSays = (c: SecheresseAnswer["communes"][number], ressource: string)
   return e ? `<small class="note" style="display:block">VigiEau\u00a0: ${esc(e.vigieau)}</small>` : "";
 };
 
-/** /secheresse's stable text (marketing, 14/11/2026). */
+/** /secheresse's stable text (wording validated on 14/11/2026). */
 const SECHERESSE_LIRE = `<p>Quand la pluie manque, le préfet prend un arrêté qui limite certains usages de l'eau. La page reprend l'arrêté du préfet en vigueur, commune par commune.</p>
 <p><b>Quatre niveaux, du plus léger au plus strict :</b></p>
 <ul class="plain"><li><b>vigilance</b> : économiser l'eau ;</li>
@@ -1823,7 +1823,7 @@ export function coupuresPage(origin: string, data: Cached<CoupuresAnswer> | null
   const list = d
     ? d.avis.length
       ? `<ul class="zones">${[...d.avis].sort((x, y) => Number(!!y.ne_pas_boire) - Number(!!x.ne_pas_boire)).map(noticeCard).join("")}</ul>`
-      // « Pas d'avis », never « aucun avis », which reads as « no cut » (marketing, 22/11/2026), as the tool says it.
+      // « Pas d'avis », never « aucun avis », which reads as « no cut » (wording validated on 22/11/2026), as the tool says it.
       : `<p class="card">Pas d'avis de coupure récent ou à venir ${silent.length ? "sur les sites des distributeurs qui ont répondu" : "sur les sites lus"}. Une coupure peut être annoncée ailleurs, par la mairie par exemple.</p>`
     : `<p class="card">Les avis se chargent : rechargez la page dans quelques secondes.</p>`;
 
@@ -1886,17 +1886,17 @@ export function coupuresLive(data: Cached<CoupuresAnswer> | null): Live | undefi
 
 /**
  * The home page's tile: the bundled list, nothing to fetch. Not how many are reachable at any hour: alone on a tile, the
- * figure would read as an island poorly equipped; the page says it commune by commune (marketing).
+ * figure would read as an island poorly equipped; the page says it commune by commune.
  */
 export function daeLive(): Live {
   const communes = new Set(DAES.map((d) => d.commune)).size;
-  // The number and the word never apart, the word never cut (marketing, 04/11/2026).
+  // The number and the word never apart, the word never cut (wording validated on 04/11/2026).
   return { valeur: `${nombre(DAES.length)}\u00a0<span class="nw">défibrillateurs</span>`, detail: `dans les ${communes} communes, avec leur accès · Géo'DAE du ${esc(dayMonth(DAE_BUILT))}`, entier: true };
 }
 
 /**
  * The four accesses in short, by reach (tools/dae.ts): the same words in the list by commune and in « Autour de moi ».
- * Reserved, with whom to ask: in an emergency, the staff can bring it (marketing).
+ * Reserved, with whom to ask: in an emergency, the staff can bring it.
  */
 export const ACCES = ["dehors, 24 h/24", "24 h/24", "horaires du lieu", "accès réservé · demander à l'accueil"];
 const shortAccess = (a: string) => ACCES[a.includes("toute heure") ? 0 : a.includes("24 h") ? 1 : a.includes("accès libre") || a.includes("extérieur") ? 2 : 3];
@@ -1939,7 +1939,7 @@ export function daePage(origin: string, data: Cached<DaeAnswer> | null, now = ne
   const markers = (d?.communes ?? []).map((c) => ({ lon: c.lon, lat: c.lat, label: String(c.nombre), name: `${c.commune}\u00a0: ${c.nombre} défibrillateurs`, round: true, color: COUNT_COLOR, quiet: true,
     place: c.commune, say: `${c.nombre} défibrillateur${c.nombre > 1 ? "s" : ""}`, href: `#${anchorId("c", c.commune)}` }));
 
-  // The first screen in the order of a rescue (marketing's words, 06/11/2026): the call, the button, the map, then the count.
+  // The first screen in the order of a rescue (the validated words, 06/11/2026): the call, the button, the map, then the count.
   // No « Domann out IA » here: in an emergency, every second counts (06/11/2026).
   const consigne = `<p class="lead"><b>Arrêt cardiaque : appelez le <a href="tel:15">15</a> ou le <a href="tel:112">112</a>, massez, et envoyez quelqu'un chercher un défibrillateur.</b> ${esc(DAE_SANS_FORMATION)}</p>`;
   const compte = d
@@ -1996,7 +1996,7 @@ ${script(AUTOUR_SCRIPT)}${ALLER}`;
 
 const MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
 
-/** A text escaped, each day with its month kept on one line (marketing), « Mardi <span class="jm">10 novembre</span> »,
+/** A text escaped, each day with its month kept on one line, « Mardi <span class="jm">10 novembre</span> »,
  *  « depuis le <span class="jm">1er novembre</span> 2026 » (a day's title, /carburants, /trafic): .jm is nowrap in the
  *  style sheet, but on a small screen with the text enlarged (under 19.9 em), where « 10 novembre » can be wider than
  *  the line: there the month goes to the next line whole rather than being cut at a letter. The one rule for the pages'

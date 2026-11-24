@@ -23,7 +23,7 @@ ORDER = list(DAYS)
 
 
 def pair(a, b, minutes):
-    """Two times of a span as kit.md writes them (src/tools/format.ts, paire): « 6 h » and « 12 h », or both with their
+    """Two times of a span as the brand kit writes them (src/tools/format.ts, paire): « 6 h » and « 12 h », or both with their
     minutes when one time of the market has some, any day, « 06:00 » and « 12:00 » (minutees)."""
     if not minutes:
         return [f"{int(x.split(':')[0])}\u00a0h" for x in (a, b)]

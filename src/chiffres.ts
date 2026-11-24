@@ -1,6 +1,6 @@
 /**
  * rundata.re en chiffres: the page /chiffres and the block `chiffres` of sources_donnees count the same things, in
- * marketing's words (25 October 2026), validated by the user. Every figure is counted by the code, never written by
+ * the validated words (25 October 2026), validated by the user. Every figure is counted by the code, never written by
  * hand, and exact: what the code holds (the sources, their producers and licences, the tools, the lists bundled with
  * the site) at each view, at no cost; what only the sources know (stations read, trails closed, events to come, sites
  * that do not answer…) in one copy shared by every data center, `web:chiffres`, built by the scheduled event every hour
@@ -50,7 +50,7 @@ export const EVENEMENTS_KEY = "web:chiffres:evenements";
  * Each category of the menu (web/categories.ts) and the sources it shows, by id, and how often its quickest source is
  * read again at most, in minutes: that source's cache (`de`, src/providers). None for a domain whose sources are lists
  * bundled with the site, read again at each version of it; `question` for one read at each question (an address). A rate
- * not known here (its source not read, without its key) is left out, never « — » (marketing).
+ * not known here (its source not read, without its key) is left out, never « — ».
  */
 export interface Domaine {
   categorie: string;
@@ -124,7 +124,7 @@ export const DOMAINES: Domaine[] = [
   { categorie: "terrain", sources: ids("ban_geocodage", "cadastre_apicarto", "gpu_zone_urba", "gpu_ppr", "georisques", "dvf_cerema", "dvf_etalab", "ign_altimetrie", "ign_bdtopo", "ign_photos_aeriennes", "anil_loyers", "arcep_connexion", "anfr_observatoire_mobile", "anfr_installations_5w"), question: true },
 ];
 
-/** Counted, never named here: pitonlive.com, an unofficial site, said only beside the official sources (marketing). */
+/** Counted, never named here: pitonlive.com, an unofficial site, said only beside the official sources. */
 const NON_NOMMES = new Set(["pitonlive"]);
 
 /** « toutes les 5 min », « chaque heure », « toutes les 6 h », « chaque jour ». */
@@ -293,7 +293,7 @@ export const aLHeure = (d: Date) => localTime(d).replace(" ", " à ");
 const nombre = (c: Compte | undefined) => (c ? { nombre: c.nombre, compte_le: aLHeure(new Date(c.le)) } : undefined);
 
 /**
- * The words after « {N} événements dans les deux semaines qui viennent, », marketing's (26/10): the one or two agendas
+ * The words after « {N} événements dans les deux semaines qui viennent, », the validated ones (26/10): the one or two agendas
  * counted without, the events proposed on rundata.re apart (« dont le site n'a pas répondu » would be false for them).
  * The linked associations' agenda, read from the database too, is not named: no site of theirs was asked.
  */
@@ -307,7 +307,7 @@ export function sansAgendas(noms: string[]): string {
   return lus ? `${lus}, ni les événements proposés sur rundata.re pour le moment` : "sans les événements proposés sur rundata.re pour le moment";
 }
 
-/** Past SANS_MAX agendas missing: « d'après le dernier compte complet de rundata.re, le 26/10 à 06:00 » (marketing, 26/10). */
+/** Past SANS_MAX agendas missing: « d'après le dernier compte complet de rundata.re, le 26/10 à 06:00 » (wording validated on 26/10). */
 const dernierComplet = (c: Compte) => `d'après le dernier compte complet de rundata.re, le ${aLHeure(new Date(c.le))}`;
 
 /**
@@ -420,7 +420,7 @@ export type Inventaire = GroupeDeSources[];
 const pluriel = (n: number, un: string, des: string) => `${n} ${n > 1 ? des : un}`;
 
 /**
- * sources_donnees' summary, in marketing's words: « rundata.re lit 71 sources publiques, dont 52 sous licence
+ * sources_donnees' summary, in the validated words: « rundata.re lit 71 sources publiques, dont 52 sous licence
  * ouverte, de 48 producteurs\u00a0; 28 outils, une page du jour pour chacune des 24 communes\u00a0; 3 sites publics sans réponse en ce
  * moment (voir sites_sans_reponse). Compté le 26/10 à 08:00 : https://rundata.re/chiffres ».
  */

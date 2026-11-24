@@ -379,7 +379,7 @@ describe("confidence of the forecast days (ECMWF ensemble)", () => {
     expect(html).toContain(`<p>Confiance : <b>forte</b></p></li>`);
     expect(html).not.toContain("s&#39;accordent (1,2");
     expect(html).not.toContain(`title="les scénarios`);
-    // What the confidence says is on /meteo only: here, one line and its link (marketing, 14/11/2026).
+    // What the confidence says is on /meteo only: here, one line and its link (wording validated on 14/11/2026).
     expect(html).not.toContain("accord entre les 51 scénarios");
     expect(html).toContain(`<p class="note">Plus l'échéance est lointaine, moins la prévision est sûre\u00a0: <a href="/meteo#confiance">comment rundata.re l'indique →</a></p>`);
   });

@@ -1458,7 +1458,7 @@ describe("agenda", () => {
     // Two sites read, the oldest first, each with its hour.
     expect(rienAnnonce([{ site: "site de la commune de Cilaos", lu_le: "2026-10-23T22:00:00Z" }, { site: "agenda de l'office", lu_le: "2026-10-24T04:00:00Z" }]))
       .toBe("le site de la commune de Cilaos, lu le 24/10 à 02:00, et le agenda de l'office, lu le 24/10 à 08:00, n'en annoncent aucun");
-    // The pages' copy: the commune's tile says the site read, in marketing's words.
+    // The pages' copy: the commune's tile says the site read, in the validated words.
     const page = await buildAgenda(cache(), NOW);
     expect(page.sites_lus?.["Saint-André"]).toEqual([{ site: "site de la commune de Saint-André", lu_le: NOW.toISOString() }]);
     const empty = { value: { ...page, evenements: [] }, fetchedAt: NOW, stale: false };
@@ -1512,7 +1512,7 @@ describe("agenda", () => {
     expect((await agenda(cache(), undefined, undefined, undefined, NOW)).isError).toBe(true);
   });
 
-  it("no longer reads reunion.fr, its terms forbid it: said for the whole island and the big fêtes, in marketing's words", async () => {
+  it("no longer reads reunion.fr, its terms forbid it: said for the whole island and the big fêtes, in the validated words", async () => {
     const hosts: string[] = [];
     vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
       hosts.push(new URL(url).hostname);
@@ -1937,7 +1937,7 @@ describe("agenda", () => {
   });
 
   it("shows the hours of a row within its day", () => {
-    // kit.md: « 18 h–23 h », both with their minutes when one has some, « 20 h » on the hour.
+    // the brand kit: « 18 h–23 h », both with their minutes when one has some, « 20 h » on the hour.
     expect(agendaHours("samedi 24/10 de 18:00 à 23:00")).toBe("18\u00a0h–23\u00a0h");
     expect(agendaHours("samedi 24/10 de 18:30 à 23:00")).toBe("18:30–23:00");
     expect(agendaHours("samedi 24/10 à 20:00")).toBe("20\u00a0h");

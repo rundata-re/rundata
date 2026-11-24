@@ -44,7 +44,7 @@ const DESCRIPTION_MAX = 152;
 export const aCommune = a;
 export const deCommune = de;
 
-// The texts of the page, worded by marketing.
+// The texts of the page, worded for the site.
 // Each of the commune's two pages says its role (UX review of 04/11/2026, words validated on 06/11): this
 // one the day, /communes/<commune> the lasting record.
 export const titleOf = (p: PlacePage) =>
@@ -73,13 +73,13 @@ function vigilanceLevel(maintenant: string): string {
   return maintenant.startsWith(head) && end > 0 ? maintenant.slice(head.length, end) : "";
 }
 /**
- * The banner's colour for a level, the highest named (kit.md): red for red and violet, the kit's orange for orange (never
+ * The banner's colour for a level, the highest named (the brand kit): red for red and violet, the kit's orange for orange (never
  * red, which would read as the red alert), the site's alert colour otherwise.
  */
 export const levelClass = (s: string) => (/\b(rouge|violette?)\b/.test(s) ? ' class="rouge"' : /\borange\b/.test(s) ? ' class="orange"' : "");
 
 /**
- * The top of /aujourdhui, what asks to act first (marketing, UX review of 04/11/2026): the water not to drink, the
+ * The top of /aujourdhui, what asks to act first (UX review of 04/11/2026): the water not to drink, the
  * vigilance above green with the zone of Météo-France, never the commune, the cyclone alert in its official words.
  * Nothing when there is nothing; orange and red in their own colours (levelClass).
  */
@@ -104,7 +104,7 @@ export function stationCommune(nom: string): string | undefined {
   return id ? Object.entries(INSEE).find(([, code]) => code === id.slice(0, 5))?.[0] : undefined;
 }
 
-/** Then a short line by subject, its label in bold, absent when its data is missing (marketing, 04/11/2026). */
+/** Then a short line by subject, its label in bold, absent when its data is missing (wording validated on 04/11/2026). */
 export function dayLines(p: PlacePage, r: Resume): string {
   const line = (label: string, text: string) => `<li><b>${label}\u00a0:</b> ${text}</li>`;
   const m = r.meteo;
@@ -279,7 +279,7 @@ export function aujourdhuiPage(origin: string, p: PlacePage, r: Resume, at: Cach
     ? card("news", `Actualités ${deCommune(p.nom)}`, r.actualites.length ? `<ul class="plain">${r.actualites.map(li).join("")}</ul>` : `<p>Rien de nouveau qui nomme ${esc(p.nom)} ces dernières heures dans les médias lus.</p>`, "/actualites")
     : "";
   // No notice read: « pas d'avis », never « aucune coupure », with who publishes the notices read (the mairie, the
-  // CIREST, else the distributor) and when, as on /coupures-eau/<commune> (marketing, 22/11/2026). The mairie is not that
+  // CIREST, else the distributor) and when, as on /coupures-eau/<commune> (wording validated on 22/11/2026). The mairie is not that
   // elsewhere when the notices read are its own.
   const noCut = (c: NonNullable<typeof r.coupures_eau>) => {
     const who = c.publie_par ?? c.distributeur;

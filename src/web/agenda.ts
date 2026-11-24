@@ -29,7 +29,7 @@ const AGENDA_WEEKEND = 7;
 type AgendaRow = AgendaAnswer["ce_week_end"][number];
 const longDay = (day: string) => new Date(`${day}T12:00:00Z`).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
 
-/** The hours of a row within its day, as kit.md writes them: « 14 h–18 h », « 19:30 », « 20 h », « jusqu'au dimanche 25/10 ». */
+/** The hours of a row within its day, as the brand kit writes them: « 14 h–18 h », « 19:30 », « 20 h », « jusqu'au dimanche 25/10 ». */
 export function agendaHours(q: string): string {
   const min = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3));
   const span = /de (\d\d:\d\d) à (\d\d:\d\d)$/.exec(q);

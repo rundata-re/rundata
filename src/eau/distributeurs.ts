@@ -82,7 +82,7 @@ export const LIENS: Record<string, { par: string; site: string; libelle: string 
  * sites of Petite-Île and Cilaos since 20/11/2026 (MAIRIES).
  */
 /**
- * A commune whose notices are not read, with a text of its own on where they are published (marketing): the official
+ * A commune whose notices are not read, with a text of its own on where they are published: the official
  * source's home page linked only, never a page of its site, with the page's lead and its distributor's card. Its page then has something of its own to show, and stays
  * in the search engines and the sitemap (web/coupures.ts indexable).
  * - Les Avirons: CISE Réunion, edited by Saur, whose terms allow a link to the home page only (art. 8) and forbid
@@ -104,7 +104,7 @@ export const SOURCE = data.source;
 
 /**
  * A distributor named in a sentence of a page: RECIL, as the ARS names it, without a spelled-out form anywhere, says what
- * it is instead (marketing, 04/11/2026).
+ * it is instead (wording validated on 04/11/2026).
  */
 export const nomDit = (d: Distributeur) => (d.nom === "RECIL" ? "RECIL, le distributeur d'eau de Cilaos (d'après l'ARS)," : d.nom);
 

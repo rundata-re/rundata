@@ -187,7 +187,7 @@ describe("the power cuts the mairies relay", () => {
     sources: [],
   };
 
-  it("says each notice in marketing's words, and never that there is no cut", () => {
+  it("says each notice in the validated words, and never that there is no cut", () => {
     const [sm, , sp, ci] = copy.avis;
     expect(sentence(sm, NOW)).toBe(
       "Dernier avis de coupure d'électricité publié par la mairie de Sainte-Marie le 21/10 : coupure programmée le lundi 26/10 de 09:00 à 15:00, secteurs Rue des Jésuites, Rue Médard\u00a0; le mardi 27/10 de 09:30 à 12:00, secteur Chemin Conteur.",
@@ -233,7 +233,7 @@ describe("the power cuts the mairies relay", () => {
     expect(html).toContain('<li class="warn">Coupure en cours selon la mairie de Saint-Philippe');
   });
 
-  it("is a shared copy refreshed every two hours, shown on /electricite under marketing's header", () => {
+  it("is a shared copy refreshed every two hours, shown on /electricite under the validated header", () => {
     const every = SHARED.find((s) => s.key === "web:courant")!.every as (last: unknown) => number;
     // Every 30 minutes while a mairie followed does not answer.
     expect([every({ ...copy, indisponibles: [] }), every({ ...copy, indisponibles: ["Sainte-Marie"] })]).toEqual([120, 30]);
@@ -363,7 +363,7 @@ describe("Saint-André's PDF letters of EDF", () => {
     expect(avis[1]).toMatchObject({ nature: "information", creneaux: [], publie: "2026-10-20T09:00:00.000Z" });
   });
 
-  it("says each letter in marketing's words, the upload never as the day of cut", () => {
+  it("says each letter in the validated words, the upload never as the day of cut", () => {
     expect(sentence(avis[0], NOW)).toBe("Coupure d'électricité annoncée par EDF à Saint-André le lundi 02/11 : heures et secteurs dans l'avis publié par la mairie");
     expect(sentence(avis[1], NOW)).toBe("Avis de coupure d'EDF publié par la mairie de Saint-André le 20/10 : la date, les heures et les secteurs sont dans l'avis");
     // A letter of July, its cut long gone: its upload's day only.

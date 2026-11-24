@@ -106,7 +106,7 @@ export interface Marker {
 }
 
 /**
- * A commune of the map and its bubble (carte-points.ts, marketing's charter of the maps): its name, then `say`, what the
+ * A commune of the map and its bubble (carte-points.ts, the brand charter of the maps): its name, then `say`, what the
  * map shows of it. `href`, where it leads (the card of its zone, its page): without it, the bubble alone (a commune
  * without a station of /velos).
  */
@@ -184,7 +184,7 @@ const onPlace = (m: Marker, at: [number, number]) => {
  * their own size (the rain's, meteo-carte.ts). `avoid`: the dots of other places that stay where they are, each with
  * its radius, its white edge included (the rain's small dots): a mark leaves them free as it leaves a place, with as much
  * air, unless it then covers more of them, a place, or its own once it has left it; where none is free, it covers the
- * fewest (marketing's review n° 457).
+ * fewest (the validated review n° 457).
  */
 export function apart(
   markers: Marker[], widths = markers.map((m) => markSize(m)[0]), aside = 1, heights = markers.map((m) => markSize(m)[1]),
@@ -664,10 +664,10 @@ function roadsLayer(frame?: number[]): string {
   return `<g class="rd" aria-hidden="true"><defs>${def("rd-d", d)}${def("rd-a", a)}</defs>${use("rd-d", d, " dp")}${use("rd-a", a, "")}</g>`;
 }
 
-/** The island's map on a phone names these six (marketing): the prefecture, the sub-prefectures and the cirques. */
+/** The island's map on a phone names these six: the prefecture, the sub-prefectures and the cirques. */
 const SIX = new Set(["Saint-Denis", "Saint-Paul", "Saint-Pierre", "Saint-Benoît", "Cilaos", "Salazie"]);
 
-/** A name's size on screen, in px, on a phone (marketing's charter, § 2.4): a commune's, any other place's. NOMS_SCRIPT gives a commune 14 px on a map
+/** A name's size on screen, in px, on a phone (the brand charter, § 2.4): a commune's, any other place's. NOMS_SCRIPT gives a commune 14 px on a map
  * 400 px wide or more; at 14 px on a phone, the points of /enfants left one of the six names out of four. */
 const namePx = (rank: number) => (rank ? 11 : 12);
 
@@ -685,7 +685,7 @@ const EDGE = 6;
  * coast, never on another, and on the island's map up to 6 times its size from its town, beyond 3 facing it (AROUND, coastNear()). On the island's map, a phone names only the six (SIX), while it shows the island nearly whole: zoomed in twice or more (a sector's map opened on its trails), NOMS_SCRIPT places the others as on a wide screen. `within`: the commune of the map
  * (`commune`), the places of importance 2 named only inside it, those of importance 3 only if far from all else
  * (isolated()), and the commune's own name always, first, at the free place inside it or off its coast nearest its
- * centre if none around is free (marketing). This is the placement for a phone and without a script: NOMS_SCRIPT does it again at the
+ * centre if none around is free. This is the placement for a phone and without a script: NOMS_SCRIPT does it again at the
  * map's real size, after each zoom. `hide`: none shown until then, for a map whose points the server does not know (`top`).
  */
 function namesLayer(opts: {
@@ -698,7 +698,7 @@ function namesLayer(opts: {
   const all = (routes.noms as [string, number, number, number][])
     .filter(([, rank, x, y]) => (opts.close || !rank) && x >= fx && x <= fx + fw && y >= fy && y <= fy + fh)
     .filter(([, rank, x, y]) => rank < 2 || !opts.within || (inRing(x, y, opts.within) && (rank === 2 || isolated(x, y))));
-  // A name once in a frame (marketing): the most important of the places so named, then the nearest the centre.
+  // A name once in a frame: the most important of the places so named, then the nearest the centre.
   const [cx, cy] = opts.centre ?? [fx + fw / 2, fy + fh / 2];
   const far = ([, , x, y]: [string, number, number, number]) => (x - cx) ** 2 + (y - cy) ** 2;
   const best = new Map<string, [string, number, number, number]>();
@@ -718,10 +718,10 @@ function namesLayer(opts: {
     const fs = namePx(rank) * u;
     const half = (nom.length * EM * fs) / 2 + 2 * u;
     const boxAt = ([dx, dy]: [number, number]): Box => [x + dx - half, y + dy - fs * 0.6 - 2 * u, x + dx + half, y + dy + fs * 0.6 + 2 * u];
-    // A commune's name, never on another commune (marketing): its middle inside its own, the commune of the map's whole
+    // A commune's name, never on another commune: its middle inside its own, the commune of the map's whole
     // inside it, or at sea off its coast.
     const ring = rank ? undefined : LAND[COMMUNES.get(nom) ?? -1]?.ring;
-    // On the island's map, a commune's name stands for its town (marketing): up to 6 times its size from it, beyond 3
+    // On the island's map, a commune's name stands for its town: up to 6 times its size from it, beyond 3
     // times facing it, and at sea only where the nearest coast is the commune's.
     const isle = !opts.close && !!ring;
     const fits = (d: [number, number], far = false) => {
@@ -732,7 +732,7 @@ function namesLayer(opts: {
       if (far && !facesOwn([x + d[0], y + d[1]], [x, y], ring, fs / 2)) return false;
       const sea = () => towardsOwn([x + d[0], y + d[1]], [x, y], ring, fs / 2) && (!isle || coastNear(x + d[0], y + d[1], fs / 2).has(COMMUNES.get(nom)!));
       if (own(nom, rank)) return [[b[0], b[1]], [b[2], b[1]], [b[0], b[3]], [b[2], b[3]]].every(([px, py]) => inRing(px, py, ring)) || (offCoast(b) && sea());
-      // Another commune's name, on the whole of it (marketing): its middle and half of it or more on its commune, or at
+      // Another commune's name, on the whole of it: its middle and half of it or more on its commune, or at
       // sea off its coast. Measured on 9 points across by 3 up and down.
       return mostlyOn([x + d[0] - half + 2 * u, y + d[1] - fs * 0.6, x + d[0] + half - 2 * u, y + d[1] + fs * 0.6], ring, sea);
     };
@@ -778,7 +778,7 @@ function namesLayer(opts: {
 const r2 = (v: number) => Math.round(v * 100) / 100;
 
 /**
- * Where a name may stand (marketing): on its place, then beside it on the right, on the left, above, below, then
+ * Where a name may stand: on its place, then beside it on the right, on the left, above, below, then
  * aslant, then the same a little further, clear of a station on its place. Each `[a, b, c]`: across, `a` half its
  * width and `b` its size; up and down, `c` its size. The same in NOMS_SCRIPT.
  */
@@ -798,7 +798,7 @@ const FAR = Array.from({ length: 12 }, (_, k) => (k + 1) / 4).flatMap((g) => {
 });
 
 /**
- * Where a commune's name may stand on the island's map (marketing), its middle half its size apart each time: the
+ * Where a commune's name may stand on the island's map, its middle half its size apart each time: the
  * nearest its town first, up to 6 times its size from it; beyond 3 times (NEAR, in half sizes squared), only facing its
  * town (facesOwn()). Further, it is not shown at that width. The same in NOMS_SCRIPT.
  */
@@ -870,7 +870,7 @@ function towardsOwn(from: [number, number], to: [number, number], ring: [number,
 }
 
 /**
- * Whether a name faces its commune's town (marketing): from its middle towards the town, the first land met, its middle's
+ * Whether a name faces its commune's town: from its middle towards the town, the first land met, its middle's
  * own if on land, is the commune's.
  */
 function facesOwn(from: [number, number], to: [number, number], ring: [number, number][], step: number): boolean {
@@ -878,7 +878,7 @@ function facesOwn(from: [number, number], to: [number, number], ring: [number, n
 }
 
 /**
- * Whether a name's box is on its commune (marketing): of 9 points across by 3 up and down, its middle and 14 or more on
+ * Whether a name's box is on its commune: of 9 points across by 3 up and down, its middle and 14 or more on
  * the commune, or at sea when `sea()` says it is off the commune's coast.
  */
 function mostlyOn(b: Box, ring: [number, number][], sea: () => boolean): boolean {
@@ -895,7 +895,7 @@ function mostlyOn(b: Box, ring: [number, number][], sea: () => boolean): boolean
 }
 
 /**
- * The communes of the coast nearest a point at sea (marketing: a name at sea off its own coast, by the eye, not only on
+ * The communes of the coast nearest a point at sea (the validated rule: a name at sea off its own coast, by the eye, not only on
  * the way to its town): those met first on circles around it, `step` wider each time, up to 12 steps.
  */
 function coastNear(x: number, y: number, step: number): Set<number> {
@@ -968,8 +968,8 @@ export function ownIds(parts: string[]): string[] {
  * FAR for a commune or a big quarter), a commune's name on it, its middle and 14 of 27 points of it, or at sea off its coast (`home`, the outlines
  * of `#isl` by `data-k`), the commune's own name (`data-c`) after the big ones if nothing around its place is free
  * (`look`), and on the island's map (`data-i`) a commune's name up to 6 times its size from its town, beyond 3 facing it (`face`), at sea only
- * where the nearest coast is the commune's (`town`, AROUND), as the server does for a phone. First the summits (`peaks`), whatever the map's width a mark 13 px wide and its name and height in 12 px (marketing's charter, § 2.4), the name below the summit, else above, on the right, on the
- * left, then aslant on either side, the first that touches no point; else, inside the frame (never cut by its edge: « Piton de la Fournaise » at 1280, marketing's review of 31/10), the one that covers the least of the lines and dots and no marker's shape; else the name is not shown, the summit's mark is, as a name that would cover a marker (« 3 070 m » under « 13,1 », review n° 457); the name
+ * where the nearest coast is the commune's (`town`, AROUND), as the server does for a phone. First the summits (`peaks`), whatever the map's width a mark 13 px wide and its name and height in 12 px (the brand charter, § 2.4), the name below the summit, else above, on the right, on the
+ * left, then aslant on either side, the first that touches no point; else, inside the frame (never cut by its edge: « Piton de la Fournaise » at 1280, the validated review of 31/10), the one that covers the least of the lines and dots and no marker's shape; else the name is not shown, the summit's mark is, as a name that would cover a marker (« 3 070 m » under « 13,1 », review n° 457); the name
  * moves, never the station. What is hidden takes no room (the wind's pills under the temperatures, the summits'
  * names on a phone). Again when the map changes size, when a map zooms (its viewBox) and when a tab
  * changes the points shown. A map put in the page later (laterMap()) is placed when it comes. Marks drawn smaller than
@@ -1180,7 +1180,7 @@ export function islandMap(opts: {
     ? `<use href="#isl" class="land"/>${reliefImage("isl-clip")}` +
       (opts.fond ? finLayer(esc(opts.fond)) + `<g id="fd-${esc(opts.fond)}" class="fd"></g>` : "")
     : `<use href="#isl" class="land"/>${fills}`;
-  // The six names on every map of the whole island, the maps in colours (fills) too (marketing's charter, § 2.4).
+  // The six names on every map of the whole island, the maps in colours (fills) too (the brand charter, § 2.4).
   const names = opts.names ?? namesLayer({ frame: [0, 0, W, H], unit: W / PHONE_PX, busy, hide: !!opts.top, first: opts.first });
   return `<svg class="map${terrain ? " terrain" : ""}" viewBox="0 0 ${W} ${H}" ${role} aria-label="${esc(opts.label)}">` +
     `<defs><g id="isl">${paths}</g>${terrain ? `<clipPath id="isl-clip">${paths}</clipPath>` : ""}</defs>` +

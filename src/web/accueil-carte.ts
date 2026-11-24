@@ -1,6 +1,6 @@
 /**
  * The island at the top of the home page (the user's choice, 10/11/2026): one square label per subject around the
- * island, each tied by a track to the real place it speaks of, over the island's relief. The look is marketing's
+ * island, each tied by a track to the real place it speaks of, over the island's relief. The look is the validated
  * « Lagon » (each subject in its colour, bends rounded, the places as hubs in a dashed ring, the coast's lagoon glow);
  * the placement is the « Circuit » layout (labels on the edges, tracks horizontal, vertical or at 45°, none crossing another).
  * A phone and a wide screen each have their layout, the island drawn once (reliefDefs()).
@@ -143,7 +143,7 @@ export interface Sujet {
   lu: string;
 }
 
-/** Marketing's colours (« Lagon »), light on the night of the hero in both themes; red for an alert only. */
+/** The validated colours (« Lagon »), light on the night of the hero in both themes; red for an alert only. */
 const COLOURS: Record<Id, string> = {
   sortie: "#fdba74", sentiers: "#86efac", routes: "#93c5fd", mer: "#7dd3fc", volcan: "#c4b5fd", velos: "#5eead4", meteo: "#e2e8f0", air: "#fcd34d",
   elec: "#f0abfc",
@@ -163,7 +163,7 @@ const AIR_NAMES = ["", "bon", "moyen", "dégradé", "mauvais", "très mauvais", 
 const iso = (d: Date | string) => (typeof d === "string" ? d : d.toISOString());
 const plural = (n: number, one: string, many: string) => (n > 1 ? many : one);
 const dayOf = (ymd: string) => `${ymd.slice(8, 10)}/${ymd.slice(5, 7)}`;
-/** « à HH:MM » when it was read today in La Réunion, else « le JJ/MM à HH:MM » (marketing). */
+/** « à HH:MM » when it was read today in La Réunion, else « le JJ/MM à HH:MM ». */
 const when = (at: string, now: Date) => {
   const day = (d: Date) => new Date(d.getTime() + 4 * 3600_000).toISOString().slice(0, 10);
   return day(new Date(at)) === day(now) ? `à\u00a0${hm(at)}` : leAt(at);
@@ -174,7 +174,7 @@ const placeOf = (name: string): P | undefined => {
 };
 /** A forest road's number in the ONF's names: « Route Forestière de la Scierie (RF58) ». */
 const roadCode = (s: string) => /RF ?0*(\d+)/.exec(s)?.[1];
-/** At most three words of a title (marketing): the rest is in the bubble. */
+/** At most three words of a title: the rest is in the bubble. */
 const words3 = (s: string) => {
   const w = s.split(" ").filter(Boolean);
   if (w.length <= 3) return w.join(" ");
@@ -199,7 +199,7 @@ function meteo(h: HomeLive, now: Date): Sujet | undefined {
     // The label says it is not the whole island: « 3 stations », Météo-France being in the bubble (too wide beside it).
     id: "meteo", k: "Météo", src: `${l.length} ${plural(l.length, "station", "stations")}`, value: range, color: COLOURS.meteo, href: HREF.meteo, temp: true, pousse: true,
     pts: l.map((s) => project(s.lon, s.lat) as P),
-    // The bubble adds what the label has not (marketing): each station's value.
+    // The bubble adds what the label has not: each station's value.
     tip: { place: l.map((s) => `${shortName(s.nom)} ${thin(`${fr(Math.round(s.temperature!))} °C`)}`).join(" · "), value: "", detail: `mesurées ${when(times[0], now)}${times.length > 1 && hm(times[0]) !== hm(times[times.length - 1]) ? ` et ${hm(times[times.length - 1])}` : ""} par Météo-France` },
     lu: times[times.length - 1],
   };
@@ -231,7 +231,7 @@ function sortie(h: HomeLive, now: Date): Sujet | undefined {
   const local = new Date(now.getTime() + 4 * 3600_000).toISOString();
   const [today, time] = [local.slice(0, 10), local.slice(11, 16)];
   const tomorrow = new Date(now.getTime() + 28 * 3600_000).toISOString().slice(0, 10);
-  // After 21 h, tomorrow's; after 17 h, the evening's; else the day's (marketing): the first still to come, never one
+  // After 21 h, tomorrow's; after 17 h, the evening's; else the day's: the first still to come, never one
   // cancelled or put off.
   const late = time >= "21:00";
   const day = late ? tomorrow : today;
@@ -260,7 +260,7 @@ function sortie(h: HomeLive, now: Date): Sujet | undefined {
 
 /** A day of the corals' grid older than this is not said: NOAA publishes a day about 2 days after, its mirror misses some. */
 const CORAUX_MAX_JOURS = 5;
-/** « Coraux : pas de stress thermique (NOAA) », NOAA's level near the beach (marketing); none without a recent day. */
+/** « Coraux : pas de stress thermique (NOAA) », NOAA's level near the beach; none without a recent day. */
 function corauxDe(m: SeaNow, now: Date): string | undefined {
   const c = m.coraux;
   if (!c || !NIVEAUX[c.niveau] || now.getTime() - Date.parse(`${c.jour}T12:00:00Z`) > CORAUX_MAX_JOURS * 86_400_000) return undefined;
@@ -269,7 +269,7 @@ function corauxDe(m: SeaNow, now: Date): string | undefined {
 }
 /** « mesurée par satellite le 13/11 à 13:49 (NOAA) », or the day alone for a day's mean. */
 const measured = (m: SeaNow, now: Date) => `mesurée par satellite ${m.heure ? when(m.heure, now) : `le ${dayOf(m.jour)}`} (NOAA)`;
-/** The bubble of a beach: the corals' level, then the water there with its pass (marketing); without the corals, the water. */
+/** The bubble of a beach: the corals' level, then the water there with its pass; without the corals, the water. */
 function seaTip(m: SeaNow, now: Date): Sujet["tip"] {
   const reef = corauxDe(m, now);
   return reef
@@ -294,7 +294,7 @@ function mer(h: HomeLive, now: Date): Sujet | undefined {
   };
 }
 
-/** « RF58 Scierie » for « Route Forestière de la Scierie (RF58) » (marketing); a name of another shape, whole. */
+/** « RF58 Scierie » for « Route Forestière de la Scierie (RF58) »; a name of another shape, whole. */
 function shortRoad(r: string): string {
   const i = r.lastIndexOf(" (RF");
   const code = i < 0 ? undefined : roadCode(r.slice(i));
@@ -314,7 +314,7 @@ function agendaOf(source: string | undefined): string {
   const of = lower.startsWith("le ") ? `du ${name.slice(3)}` : lower.startsWith("les ") ? `des ${name.slice(4)}` : /^[aeiouyéèêàâîôûh]/i.test(name) ? `d'${name}` : `de ${name}`;
   return `d'après l'agenda ${of}`;
 }
-/** From « dégradé » Air's label has a track; up to 3 communes, the bubble names them, past that it counts them (marketing). */
+/** From « dégradé » Air's label has a track; up to 3 communes, the bubble names them, past that it counts them. */
 const AIR_TRACE = 3;
 const AIR_PAR_NOM = 3;
 /** « (ozone) », « (ozone et particules PM10) »: the pollutants of communes, the most named first. */
@@ -374,7 +374,7 @@ function air(h: HomeLive, now: Date): Sujet | undefined {
   return {
     id: "air", k: "Air", src: "prévu (Atmo)", value, color: COLOURS.air, href: HREF.air, pts: place ? [place] : [],
     tip: {
-      // Where it is the worst first, then why (marketing): the communes by name up to 3, else how many.
+      // Where it is the worst first, then why: the communes by name up to 3, else how many.
       place: best !== worst ? worstOf(l, name) : l.length === 24 ? `${name(worst)}${why(at)} sur toute l'île` : cause(l),
       value: "",
       detail: `indice ATMO prévu par Atmo Réunion${diffused(h.air!.value.diffusion, now)}`,
@@ -791,7 +791,7 @@ function trimmed(ps: P[], discs: P[], r = DISC): P[] {
   return out.length >= 2 ? out : [];
 }
 
-/** A line through points, its bends rounded like a path's (marketing's « Lagon »). */
+/** A line through points, its bends rounded like a path's (the validated « Lagon »). */
 function soft(ps: P[], r = 16): string {
   const n = (v: number) => Math.round(v * 10) / 10;
   if (ps.length < 3) return ps.map((p, i) => `${i ? "L" : "M"}${n(p[0])} ${n(p[1])}`).join("");
@@ -994,7 +994,7 @@ function tempMarkers(h: HomeLive, now: Date): Marker[] {
 const GLOW = `<filter id="hm-glow" filterUnits="userSpaceOnUse" x="-600" y="-600" width="2400" height="2400"><feGaussianBlur stdDeviation="3.5" result="b"/>` +
   `<feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`;
 
-/** « Sources : … » of the subjects shown (marketing): only those on the map. */
+/** « Sources : … » of the subjects shown: only those on the map. */
 const SOURCES: Record<Id, string> = {
   volcan: "OVPF-IPGP, préfecture", routes: "ONF", sentiers: "ONF", sortie: "agendas des mairies et des salles", mer: "NOAA", air: "Atmo Réunion",
   velos: "Altervélo", meteo: "Météo-France", elec: "EDF",

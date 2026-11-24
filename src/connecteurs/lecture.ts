@@ -96,7 +96,7 @@ export async function lireUne(now = new Date(), apres?: () => Promise<void>): Pr
     return { connexion: c.id, issue: "lu", evenements: lus.length, ecrits: changes.length, effaces };
   } catch (err) {
     if (err instanceof AccesRefuse) {
-      // Refused by the platform: nothing kept, the address told (its words, marketing's).
+      // Refused by the platform: nothing kept, the address told (its words, the validated ones).
       await d.run("DELETE FROM connexions WHERE id = ?", c.id);
       if (c.email) await connexions.envoyer(c.email, connexions.messageRetire(c.nom, p?.nom ?? c.plateforme, "plateforme"));
       await apres?.().catch(() => {});

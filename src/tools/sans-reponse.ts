@@ -42,7 +42,7 @@ function site(l: Public) {
 /** sites_sans_reponse: the public sites that do not answer, all of them or those `quoi` names. */
 export async function sitesSansReponse(cache: Cache, quoi?: string, now = new Date()) {
   const e = await etat(cache, now).catch((err: unknown) => (console.error("sites sans réponse : liste illisible", why(err)), undefined));
-  // No list read: never « no site », the page's words (marketing).
+  // No list read: never « no site », the page's words.
   if (!e) return text({ avertissement: "liste non lue pour l'instant\u00a0: réessayer plus tard", page: `${SITE_URL}${PATH}` });
   const { lignes, passage, lu, pasRelue } = e;
   const all = publiques(lignes);

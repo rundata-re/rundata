@@ -336,7 +336,7 @@ const km = (x: number) => String(x).replace(".", ",");
 const state = (r: onf.Route) => `${r.circulation}${r.cause ? ` (${r.cause})` : ""}`;
 
 /**
- * The forest roads asked, in marketing's words: the island counts roads, not the
+ * The forest roads asked, in the validated words: the island counts roads, not the
  * pieces of the map; a road asked by its name gives each piece with its length when they are not in the same state.
  */
 function roadsAnswer(asked: RoadsAsked, routes: onf.Route[], common: Record<string, unknown>, fireSentence: string) {
@@ -404,7 +404,7 @@ const COMMON = {
 };
 
 /**
- * The ONF's reception areas of a zone or along a trail (traces/aires.ts), the nearest first, in marketing's words: each
+ * The ONF's reception areas of a zone or along a trail (traces/aires.ts), the nearest first, in the validated words: each
  * under the ONF's name, codes and all, never said to be for camping or a picnic unless its name says so. `ou`: where,
  * as the summary says it (« à moins de 4 km de Maïdo », « dans la commune de Saint-Paul »).
  */
@@ -747,7 +747,7 @@ export async function sentiersRandonnee(cache: Cache, lieu: string | undefined, 
       parts.push(n ? `${n} itinéraire${n > 1 ? "s" : ""} complet${n > 1 ? "s" : ""} avec trace GPS correspond${n > 1 ? "ent" : ""} à la longueur ou au dénivelé demandés.` : "Aucun itinéraire complet avec trace ne correspond à la longueur ou au dénivelé demandés : voir les sentiers ouverts de la zone, à combiner.");
     }
     // Around a precise place the nearest open trails, in a cirque or a commune the first by name: past OPEN_MAX, the
-    // answer says how many there are, in which order, and where the whole list is (words of marketing, 26/10/2026).
+    // answer says how many there are, in which order, and where the whole list is (words validated on 26/10/2026.
     const from = zone.from;
     const kept = openNames.filter((nom) => {
       const t = traces.SENTIERS[nom];

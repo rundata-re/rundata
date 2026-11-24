@@ -119,7 +119,7 @@ export function traficPage(origin: string, data: Cached<TraficAnswer> | null, no
   }).join("")}</ul>
   <p class="note">Les routes du volcan, du Maïdo et de Bébour-Bélouve, et toutes celles que l'ONF interdit à la circulation${rf.mise_a_jour ? `, d'après sa carte mise à jour le ${esc(dayOf(rf.mise_a_jour))}` : ""}. <a href="/sentiers">Sentiers fermés</a>.</p></div>`;
 
-  // The Enclos in its short form, never « ouvert » (marketing); the trails, place by place, on /volcan.
+  // The Enclos in its short form, never « ouvert »; the trails, place by place, on /volcan.
   const enclosNow = d?.enclos && enclosShort(d.enclos);
   const enclos = enclosNow
     ? `<div class="card">${icon("volcano")}<h3>Volcan : accès à l'Enclos</h3><p><b>${esc(enclosNow.valeur)}</b> (${esc(enclosNow.source)}). <a href="/volcan#monter">${esc(TITRE)} →</a></p></div>`

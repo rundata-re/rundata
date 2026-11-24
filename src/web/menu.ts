@@ -1,7 +1,7 @@
 /**
  * The menu in five groups, and the field « Aller à une rubrique, une commune ou un lieu » of the home page (the
- * mock-up and marketing's words of 04/11/2026, which the user approved). The field leads to a page, it does not search
- * the pages' content: it matches the start of the names of the pages and of a short list of other words (marketing's),
+ * mock-up and the validated words of 04/11/2026, which the user approved). The field leads to a page, it does not search
+ * the pages' content: it matches the start of the names of the pages and of a short list of other words (the validated ones),
  * in the browser, with nothing asked of the server. A word typed is never shown as the name of a page.
  */
 import { CATEGORIES } from "./categories.js";
@@ -35,7 +35,7 @@ const PAGE: Record<string, Entree> = {
 
 export const COMMUNES: Entree = { key: "communes", nom: "Communes", path: "/communes", icon: "pin" };
 
-/** The five groups, in marketing's order; « Communes » leads them, out of any group. */
+/** The five groups, in the validated order; « Communes » leads them, out of any group. */
 export const GROUPES: { nom: string; entrees: Entree[] }[] = [
   { nom: "Sécurité", entrees: [cat("vigilance"), cat("cyclones"), cat("crues"), cat("volcan"), cat("feux"), cat("dae")] },
   { nom: "Météo et mer", entrees: [cat("meteo"), PAGE.carte, cat("historique"), cat("mer"), PAGE.baignade, cat("air")] },
@@ -48,14 +48,14 @@ export const GROUPES: { nom: string; entrees: Entree[] }[] = [
   { nom: "Sortir", entrees: [cat("agenda"), cat("sentiers"), PAGE.fermes, cat("sport"), PAGE.associations, cat("peche")] },
 ];
 
-/** Under the group « Sécurité »: the three cyclone pages (marketing). */
+/** Under the group « Sécurité »: the three cyclone pages. */
 export const CYCLONE = [
   { nom: "kit", path: "/kit-cyclone" },
   { nom: "alerte", path: "/alerte-cyclone" },
   { nom: "école fermée ?", path: "/ecoles-cyclone" },
 ];
 
-/** The field's words, marketing's (04/11/2026). */
+/** The field's words, the validated ones (04/11/2026). */
 export const CHAMP = {
   libelle: "Aller à une rubrique, une commune ou un lieu",
   exemple: "Ex. : Cilaos, carburants, plage",
@@ -67,7 +67,7 @@ export const CHAMP = {
 };
 
 /**
- * Other words that lead to a page (marketing's list, static and short): what is typed, matched at the start of a word,
+ * Other words that lead to a page (the validated list, static and short): what is typed, matched at the start of a word,
  * without accents or capitals, and the pages it leads to.
  */
 export const SYNONYMES: [string[], string[]][] = [
@@ -135,7 +135,7 @@ export function cibles(avecAssociations: boolean): [string, string, string[]][] 
 
 /**
  * The field's script: on each key, the pages whose name or other words start with what is typed (at the start of any
- * of their words), eight at most, as links; none, marketing's sentence with the connector's link. The words typed are
+ * of their words), eight at most, as links; none, the validated sentence with the connector's link. The words typed are
  * set as text, never as markup.
  */
 export function champScript(avecAssociations: boolean): string {

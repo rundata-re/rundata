@@ -155,7 +155,7 @@ export const ARS_COUPURE = "https://www.lareunion.ars.sante.fr/system/files/2024
 export const AFTER_CUT = "D'après l'ARS La Réunion, quand l'eau revient au robinet après une coupure, elle peut être impropre à la consommation pendant plusieurs heures\u00a0: ne pas la boire ni s'en servir pour préparer les repas, préférer l'eau en bouteille, et la garder pour la toilette, les WC et le ménage. Quand un avis dit de ne pas boire l'eau, suivre les consignes de cet avis.";
 
 const COMMON = {
-  // Worded by marketing: never « pas de coupure » where the sources say nothing.
+  // Worded for the site: never « pas de coupure » where the sources say nothing.
   couverture: `Avis lus pour ${enumeration(lues())} (Dionéo, runéo, Eaux de La Possession, La Créole, la CIREST pour ses six communes, CISE Réunion par la ville de Sainte-Marie et par la commune des Avirons, Derichebourg Aqua OI par la commune de Saint-Leu, Sudéau par la commune de Saint-Philippe, par la ville du Tampon et par la ville de Saint-Joseph, la SPL Sources et Eaux par la ville de Petite-Île, la ville de Cilaos, La Créole aussi par la ville de Trois-Bassins)\u00a0: une coupure que ces sources n'annoncent pas n'apparaît pas ici. Ailleurs, voir la mairie ou le distributeur.`,
   a_savoir: `${AFTER_CUT} Source\u00a0: le dépliant «\u00a0Coupure d'eau\u00a0» de l'ARS La Réunion, ${ARS_COUPURE}. La conformité de l'eau du robinet d'après les analyses de l'ARS : qualite_eau.`,
 };
@@ -181,7 +181,7 @@ export function compteAvis(avis: { titre: string; coupure?: unknown; ne_pas_boir
   return { coupures, autres: avis.length - coupures - ne_pas_boire, ne_pas_boire };
 }
 
-/** A feed that did not answer at the last read, said in marketing's words (tools/injoignable.ts), with its page. */
+/** A feed that did not answer at the last read, said in the validated words (tools/injoignable.ts), with its page. */
 export interface FluxMuet extends Injoignable {
   /** « de la CIREST ». */
   de: string;
@@ -323,7 +323,7 @@ export async function coupuresEau(cache: Cache, lieu: string | undefined, now = 
   // Its distributor's notices are read (src/eau/distributeurs.ts), or some notice names it.
   const dist = distributeur(commune);
   const covered = !!dist?.avis || all.some((n) => n.communes.includes(commune));
-  // Not read: the distributor the ARS names, as on the commune's page (worded by marketing); none named, the plain sentence.
+  // Not read: the distributor the ARS names, as on the commune's page (worded for the site); none named, the plain sentence.
   const unread = covered ? undefined : dist;
   // Shared between distributors (src/eau/distributeurs.ts): each with its networks, as the ARS gives them, and whose
   // notices are read; none chosen.
@@ -338,7 +338,7 @@ export async function coupuresEau(cache: Cache, lieu: string | undefined, now = 
   const lus = dist?.avis ? { publie_par: dist.par ?? dist.nom, distributeur: dist.partage && dist.par ? undefined : dist.nom, lien: dist.site! } : undefined;
   // No notice found: the distributor and where its notices are, never the bare « aucun avis » (a question on Cambuston
   // was answered without naming the CIREST nor O2LEST).
-  // « Pas d'avis » with where it was looked for and when, never « aucun avis », which reads as « no cut » (marketing).
+  // « Pas d'avis » with where it was looked for and when, never « aucun avis », which reads as « no cut ».
   const lu = `, lu le ${published({ publie: readAt.toISOString() } as notices.Avis).replace(/^(\d\d\/\d\d)\/\d{4}/, "$1")}`;
   // The mairie named as elsewhere, unless the notices read are its own (Cilaos, Sainte-Marie…).
   // Its mairie's site read, and its distributor's own site where it publishes its notices (Les Avirons, GUIDES_AVIS):
@@ -361,7 +361,7 @@ export async function coupuresEau(cache: Cache, lieu: string | undefined, now = 
   // The notices the résumé lists: every one but the one not to drink the water, said before them.
   const cuts = mine.filter((n) => n !== dry);
   const resume = [
-    // Always first, in its own words, never among the notices counted (the server's safety rule, worded by marketing).
+    // Always first, in its own words, never among the notices counted (the server's safety rule, worded for the site).
     dry ? drySaid(dry, commune) : "",
     cuts.length
       ? `${cuts.length} avis récent${cuts.length > 1 ? "s" : ""} ou à venir ${a(commune)}\u00a0: ${resumeAvis(cuts, now)}.`

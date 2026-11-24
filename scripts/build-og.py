@@ -10,12 +10,12 @@ And for each section a 4:5 picture (1080×1350, `<key>-4x5.<hash>.png`, `png_4x5
 Instagram, and one of the share picture (`png_4x5` in src/web/og.json): the texts above the map. No page links them in
 its meta tags.
 
-All are marketing's track A (identite/og/gen.py, chosen by the user on 04/11/2026): the night gradient of the site's
+All are track A (chosen by the user on 04/11/2026): the night gradient of the site's
 band, the lockup alone (public/logo/, no page address), the section's name with « 974 » in Bricolage Grotesque
 (public/font/titres-1.woff2), its line, and the real map drawn as contour lines every 100 m, from the IGN's altitudes
 (RGE ALTI, Licence Ouverte 2.0, scripts/build-courbes.py, committed in scripts/og/): the whole island, bleeding off the
 right edge of a 1200×630, or the Piton de la Fournaise close up for the volcano. Vigilance and cyclones say
-Météo-France's sentence (kit.md, « Vigilance et cyclone »). Texts in Inter (scripts/og/inter.woff2, SIL Open Font
+Météo-France's sentence (the brand kit, « Vigilance et cyclone »). Texts in Inter (scripts/og/inter.woff2, SIL Open Font
 License 1.1).
 Each page is an HTML page shot by headless Chrome, then cut to the exact size and saved on a palette of 256 colours,
 dithered, by libvips: a third of the size, the gradient unchanged to the eye. A 1200×630 over 300 KB, or a 4:5 over 320 KB, stops the build. A
@@ -37,9 +37,9 @@ W, H = 1200, 630
 # The 4:5 picture of a post on Instagram.
 W45, H45 = 1080, 1350
 CHROME = os.environ.get("CHROME") or str(Path.home() / ".cache/ms-playwright/chromium-1140/chrome-linux/chrome")
-# The kit's texts (marketing: identite/kit.md).
+# The kit's texts (the brand kit).
 THEMES = "Sorties · randos · météo · routes"
-# Météo-France's sentence, word for word, on the vigilance's and the cyclones' pictures (kit.md).
+# Météo-France's sentence, word for word, on the vigilance's and the cyclones' pictures (the brand kit).
 MF_VIGILANCE = "Consulter le site officiel de Météo-France|vigilance.meteofrance.fr"
 MF_CYCLONE = "Consulter le site officiel de Météo-France|meteofrance.re/fr/cyclone"
 
@@ -118,7 +118,7 @@ def titre(name):
 
 
 def page(zone, name, line, size, top, extra="", mf="", italic=False, tall=False):
-    """Track A (marketing, identite/og/gen.py): the map, the lockup alone, then the name, its line and the third line.
+    """Track A: the map, the lockup alone, then the name, its line and the third line.
     Météo-France's sentence is at the bottom left; in 4:5 the map takes the bottom, the sentence goes under the line,
     and the texts have a column of 936 px instead of 600."""
     w, h, col = (W45, H45, 936) if tall else (W, H, 600)
@@ -173,7 +173,7 @@ def rubrique(key, name, line, tall=False):
 
 
 def alt(key, name, line):
-    """What the picture shows, in sentences (marketing): the map and its source, then the texts as written."""
+    """What the picture shows, in sentences: the map and its source, then the texts as written."""
     said = lambda t: t.replace("|", " ")
     text = f"Symbole rundata.re et {ZONE_ALT['fournaise' if key == 'volcan' else 'ile']} (altitudes IGN RGE ALTI)\u00a0: {said(name)}. {said(line)}"
     if key in INFO:
@@ -193,7 +193,7 @@ def shoot(tmp, name, html, w=W, h=H):
                     f"--screenshot={raw}", src.as_uri()], check=True, capture_output=True)
     subprocess.run(["vips", "crop", str(raw), f"{png}[palette,Q=100,dither=1,effort=10,strip]", "0", "0", str(w), str(h)], check=True)
     data = png.read_bytes()
-    # A preview fetched by a messaging app on a phone: 300 KB at most (data-run, 04/11/2026); an Instagram post, 320 KB.
+    # A preview fetched by a messaging app on a phone: 300 KB at most (04/11/2026); an Instagram post, 320 KB.
     limit = LIMIT45 if (w, h) == (W45, H45) else LIMIT
     if len(data) > limit:
         raise SystemExit(f"{name}: {len(data) // 1024} KB, over {limit // 1024} KB")

@@ -1,7 +1,7 @@
 /**
  * The stable text of a head page (/coupures-eau, /bus, /sentiers, /meteo, /carburants, /secheresse, the communes):
- * « Comment lire cette page », then « Questions fréquentes », after the page's data. Marketing's words
- * (marketing/seo-pages-tete-1411.md, 14/11/2026): how to read the page, where each figure comes from and how often it is
+ * « Comment lire cette page », then « Questions fréquentes », after the page's data. The validated words
+ * (wording validated on 14/11/2026): how to read the page, where each figure comes from and how often it is
  * read, what rundata.re brings together that no source shows alone, and the questions people ask, with their answer.
  * The figures in it (how many distributors, networks, trails) come from the data at render: a sentence whose figure is
  * missing is left out whole, never written with a gap.

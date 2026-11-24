@@ -19,8 +19,8 @@ const find = (p: carburants.Prix, re: RegExp) => p.produits.find((x) => re.test(
 
 const say = (s: string) => jourMois(keep(s));
 
-// The texts of the page, worded by marketing.
-// The title in the words people type (« prix essence reunion », « prix gazole 974 »; marketing, 24/11/2026), with the
+// The texts of the page, worded for the site.
+// The title in the words people type (« prix essence reunion », « prix gazole 974 »; wording validated on 24/11/2026), with the
 // month of the prices the description gives; in fewer words when a long month would not fit. No GNR: the prefect does
 // not set its price, as the page says.
 const TITLE_MAX = 60;
@@ -32,11 +32,11 @@ export function titleOf(p: carburants.Prix | undefined): string {
 
 /**
  * « Prix de l'essence à La Réunion en octobre 2026 : sans plomb 2,00 €/L, gazole (gasoil) 1,80 €/L, gaz 20,81 € la
- * bouteille. Prix maximum du préfet. » (marketing, 24/11/2026): « gasoil » as people type it, and no gap with last
+ * bouteille. Prix maximum du préfet. » (wording validated on 24/11/2026): « gasoil » as people type it, and no gap with last
  * month's prices, which the page's first line gives.
  */
 /**
- * The stable text (marketing, 14/11/2026), in place of the card « Des prix maximum, les mêmes dans toute l'île ». « Les
+ * The stable text (wording validated on 14/11/2026), in place of the card « Des prix maximum, les mêmes dans toute l'île ». « Les
  * stations l'affichent en général tel quel » left out: nothing published says what the stations display.
  */
 const LIRE = `<p>À La Réunion, le préfet fixe chaque mois les <b>prix maximum</b> des carburants et de la bouteille de gaz, par un arrêté. Ils tiennent compte des cours internationaux, du taux de change et du fret. Ils s'appliquent le 1er du mois, dans toutes les stations de l'île : aucune ne peut vendre plus cher.</p>

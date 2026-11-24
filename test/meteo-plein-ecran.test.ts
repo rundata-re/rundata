@@ -155,7 +155,7 @@ describe("/meteo's map in its full screen (the user, 10/11/2026: « une meilleur
   });
 });
 
-describe("the legends of /meteo's map with « Stations amateur » ticked (marketing, 10/11/2026)", () => {
+describe("the legends of /meteo's map with « Stations amateur » ticked (wording validated on 10/11/2026)", () => {
   const legend = (l: string) => {
     const at = svg.indexOf(`<span class="lg lg-${l}`);
     return svg.slice(at, svg.indexOf('<span class="rj-lg">', at));

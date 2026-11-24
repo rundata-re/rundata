@@ -190,7 +190,7 @@ describe("the map of every station on /meteo", () => {
     // Gillot, alone, on its place; the two others each tied to theirs, under every pill, in the wind's layer only.
     expect(rects).toContainEqual(project(GILLOT.lon, GILLOT.lat).map(Math.round));
     const ties = html.match(/<g class="l-v wt" aria-hidden="true">(.*?)<\/g>/)![1];
-    // A white line on a night edge, and a white dot on the place (marketing).
+    // A white line on a night edge, and a white dot on the place.
     expect(ties.match(/<line class="o" /g)).toHaveLength(2);
     expect(ties.match(/<line class="i" /g)).toHaveLength(2);
     for (const s of [pointe, trou]) expect(ties).toContain(`<circle cx="${project(s.lon, s.lat)[0]}" cy="${project(s.lon, s.lat)[1]}" r="9"/>`);
@@ -505,7 +505,7 @@ describe("the page /meteo with every station", () => {
     expect(html).toContain("Pour chaque commune, les cirques, le volcan et les plages : la mesure de la station qui représente le mieux le lieu (proche, à une altitude voisine, du même versant) et la prévision sur 7 jours, aujourd'hui compris");
     // Both under one licence, written once after them.
     expect(html).toContain(esc("IGN, RGE ALTI, pour les altitudes des couleurs estimées, Météo-France, lame d'eau radar, pour la pluie estimée (Licence Ouverte 2.0)"));
-    // The replay bar (marketing's words): hidden without a script, no length chosen, its script asked on a first touch.
+    // The replay bar (the validated words): hidden without a script, no length chosen, its script asked on a first touch.
     expect(html).toContain(`<div class="rj" data-rejeu="${rejeuScriptPath()}" data-fin="${ALL.reduce((m, x) => (x.time > m ? x.time : m), "")}" hidden><div class="tabs" role="radiogroup" aria-labelledby="rjd-n"><span class="tabs-n" id="rjd-n">Revoir :</span>` +
       `<input type="radio" name="rjd" id="rjd-6h" value="6h"><label for="rjd-6h">6\u00a0h</label><input type="radio" name="rjd" id="rjd-24h" value="24h"><label for="rjd-24h">24\u00a0h</label>` +
       `<input type="radio" name="rjd" id="rjd-7j" value="7j"><label for="rjd-7j">7\u00a0jours</label></div><button type="button" class="rj-b" aria-label="Lire les 6\u00a0dernières heures">▶ Lire</button>` +
@@ -542,7 +542,7 @@ describe("the page /meteo with every station", () => {
     // The hatches' sentence comes after a hatched square, styled by the page, which ties it to the hatches on the map.
     expect(METEO_SCRIPT).toContain(`w.append(i,"\u00a0"+BW);el.append(" ",w,bad.slice(BW.length+1))`);
     expect(METEO_SCRIPT).toContain(`BW="Hachures",BAD=" "+BW+"\u00a0: zones que le radar voit mal, où la pluie peut être manquée."`);
-    // Said from 100 land cells seen badly only (marketing's choice, 2/11/2026); the hatches are drawn from the first.
+    // Said from 100 land cells seen badly only (the validated choice, 2/11/2026); the hatches are drawn from the first.
     expect(HACHURES_DITES).toBe(100);
     expect(METEO_SCRIPT).toContain(`bad=enough(L,j.mal_vu,${HACHURES_DITES})?BAD:"";`);
     // 300 cells, the first 200 on land: sea cells seen badly do not count.
@@ -642,7 +642,7 @@ describe("the replay bar's own script", () => {
     expect(rejeuScriptPath()).toMatch(/^\/meteo\/rejeu-\w+\.js$/);
   });
 
-  it("says marketing's words, plays in 12 s (24 s over 24 hours and 7 days), and never says « temps réel » nor « prévision »", () => {
+  it("says the validated words, plays in 12 s (24 s over 24 hours and 7 days), and never says « temps réel » nor « prévision »", () => {
     const js = rejeuScript();
     expect(() => new Function(js)).not.toThrow();
     for (const words of [`"❚❚ Pause"`, `"↻ Relire"`, `"▶ Lire"`, `"Mettre en pause"`, `"Relire"`, `"Chargement…"`, `"Lire la journée du "`, `"Lire les 24 dernières heures"`, `"Lire les 7 derniers jours"`,
@@ -811,7 +811,7 @@ return blend(bad(A),za,A===Z,f,tr&&tr.map(([j,w])=>[bad(j),w]),O)};`);
     expect(t62.map(([e]) => e)).toEqual([5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60]);
     for (const [e, w] of t62) expect(w).toBeCloseTo(1 - (62 - e) / W, 6);
     // A whole play, frame by frame: a zone is on the map only if the radar saw it badly on an image of the hour before
-    // the time shown, that time in (marketing, 31/10/2026); and the zone of the image shown is all there.
+    // the time shown, that time in (wording validated on 31/10/2026); and the zone of the image shown is all there.
     for (let T = at(2); T < at(120); T += 6e4 / 7) {
       const i = Math.floor(T / at(5)), a = IMG[i] * 6e4, z = IMG[i + 1] * 6e4, f = (T - a) / (z - a);
       const s = shownAt(T, { a: { t: a }, z: { t: z }, f }, "p");
@@ -829,7 +829,7 @@ return blend(bad(A),za,A===Z,f,tr&&tr.map(([j,w])=>[bad(j),w]),O)};`);
     near(veils(A, Z, 0.75, [[old, 0.4], [A, 0.9]])!, [0.9, 0.5, 0.4]);
     near(veils(Z, Z, 0, [[A, 0.5]])!, [0.5, 1, 0]);
     expect(veils({ a: [0, 0, 0] }, { a: [0, 0, 0] }, 0.5, [[{ a: [0, 0, 0] }, 1]])).toBeNull();
-    // The legend says how long before the time shown (marketing's words, a no-break space between figure and unit).
+    // The legend says how long before the time shown (the validated words, a no-break space between figure and unit).
     expect(METEO_SCRIPT).toContain(`const ago=${ago};`);
     expect([30, 60, 120, 240].map(ago)).toEqual(["au cours des 30\u00a0minutes précédentes", "au cours de l'heure précédente", "au cours des 2\u00a0heures précédentes", "au cours des 4\u00a0heures précédentes"]);
   });
@@ -912,7 +912,7 @@ describe("the rain's edges, its drops and the wind", () => {
     expect(meteoVariant("M2", false)).toContain(`hush=()=>!false&&!!RJ.on`);
   });
 
-  it("says what the drops show and the wind they follow, in marketing's words; none when they are left out", () => {
+  it("says what the drops show and the wind they follow, in the validated words; none when they are left out", () => {
     const words = (verb: string) => `const gd=(all)=>(all?!true:hush())?"":"Les gouttes sont un effet visuel\u00a0: plus la pluie est forte, plus elles sont nombreuses et grosses"+(all?", et elles ${verb} dans le sens du vent estimé d'après les anémomètres de Météo-France les plus proches, mesuré chaque heure. Loin de tout anémomètre, ou quand le vent de l'heure n'est pas connu, elles tombent droit.":WT==null?". Le vent de cette heure n'est pas connu\u00a0: elles tombent droit.":
 ", et elles ${verb} dans le sens du vent estimé d'après les anémomètres "+(WT==="live"?"les plus proches, à leur dernière mesure.":"de Météo-France les plus proches, à "+hm(new Date(WT).toISOString())+".")+" Loin de tout anémomètre, elles tombent droit.");`;
     expect(METEO_SCRIPT).toContain(words("vont"));
@@ -1014,7 +1014,7 @@ describe("the rain's edges, its drops and the wind", () => {
     let line = 0;
     for (let x = 0; x < g * 4; x++) if (px(x, 6 * 4 + 1)[0] === 9) line++;
     expect(line).toBeGreaterThan(0);
-    // In the replay of 6 and 24 hours, under the radar, never over 7 days; its legend and word as marketing wrote them.
+    // In the replay of 6 and 24 hours, under the radar, never over 7 days; its legend and word as validated.
     const js = rejeuScript();
     expect(js).toContain(`zone=${pluvioZone},pzBands=${pluvioBands}`);
     expect(js).toContain(`"r":${PLUVIO_KM / KM},"a":${PLUVIO_ALT_M},"m":12.5`);

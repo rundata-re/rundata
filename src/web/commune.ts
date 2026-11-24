@@ -258,7 +258,7 @@ function buses(p: PlacePage, data: Cached<CommuneData> | null | undefined, now: 
   // Its departures not read (the source failed, or no stop was found): never « pas de départ », which would be wrong.
   if (!b) return { live: empty(`Horaires des bus absents de la lecture ${readAt(data.fetchedAt, now).de}.`) };
   const left = stillToCome(b.departs, data.fetchedAt, now).slice(0, 4);
-  // The stop named links its page (marketing, 22/11/2026), same words; a copy made before the pages were kept has none.
+  // The stop named links its page (wording validated on 22/11/2026), same words; a copy made before the pages were kept has none.
   const page = (b.gare ? b.arrets.find((s) => s.page) : b.arrets[0])?.page;
   const link = (words: string) => (page ? `<a href="${STOP_PATH}/${esc(page)}">${words}</a>` : words);
   const where = b.gare ? `à ${link(`la gare ${esc(de(p.nom))}`)}` : `près du centre, arrêt ${link(esc(b.arrets[0].nom))}`;
@@ -299,7 +299,7 @@ function bikes(data: Cached<CommuneData> | null | undefined, g: Porte, now: Date
   const stations = `${list.length} station${list.length > 1 ? "s" : ""}`;
   const at = readOn(data!.fetchedAt, now);
   if (now.getTime() - data!.fetchedAt.getTime() > BIKES_STALE_MS)
-    // The instruction first, and never cut: a description may be, not what to do (marketing, 31/10).
+    // The instruction first, and never cut: a description may be, not what to do (wording validated on 31/10).
     return { live: { valeur: stations, detail: `Rechargez la page dans quelques secondes\u00a0: vélos libres comptés ${at}.`, entier: true } };
   const total = list.filter((s) => !s.etat || s.etat === "dépôt impossible en ce moment").reduce((n, s) => n + s.velos_electriques + (s.trottinettes ?? 0), 0);
   return {
@@ -464,7 +464,7 @@ function scrutin(s: elections.Scrutin): string {
 export const electionsPath = (p: PlacePage) => elections.chemin(p.slug);
 
 /**
- * The commune's elections (vie/elections.ts), on their own page (/communes/<commune>/elections, words by marketing,
+ * The commune's elections (vie/elections.ts), on their own page (/communes/<commune>/elections, words for the site,
  * 20/11/2026): a card a type, a folded block a scrutin, newest first, round by round, then its participation since the
  * file's first year. The ministry's figures and its order of the panels, whatever the result: no political nuance, no
  * colour, no bar, nothing in bold, no « élu » nor « en tête », no link to a candidate.
@@ -492,7 +492,7 @@ function votes(p: PlacePage): string {
 }
 
 /**
- * On the commune's page, its own summary (marketing, 20/11/2026): the participation in the 1st round of its latest
+ * On the commune's page, its own summary (wording validated on 20/11/2026): the participation in the 1st round of its latest
  * scrutin, against the island's, no candidate named; then the link to its elections page.
  */
 function votesSummary(p: PlacePage): string {
@@ -562,7 +562,7 @@ function rents(p: PlacePage): Live | undefined {
   const c = loyers.ofCommune(p.nom);
   const f = c?.appartement;
   if (!f) return undefined;
-  // Marketing's words (26/10), the ANIL's mention word for word.
+  // The validated words (26/10), the ANIL's mention word for word.
   return {
     valeur: esc(loyers.m2(f.loyer_m2)),
     detail: `appartement type de ${loyers.SURFACE.appartement}\u00a0m², non meublé, charges comprises, d'après les annonces du 3e trimestre ${loyers.MILLESIME}` +
@@ -620,7 +620,7 @@ function connexion(p: PlacePage): Live | undefined {
   const c = internet.ofCommune(p.nom);
   if (!c) return undefined;
   const next = internet.TECHNOS.filter((t) => t !== "fibre" && c[t]).sort((x, y) => c[y]! - c[x]!)[0];
-  // Marketing's words (26/10): « éligible » with « ce qui ne veut pas dire raccordés », never « fibré » nor « couvert ».
+  // The validated words (26/10): « éligible » with « ce qui ne veut pas dire raccordés », never « fibré » nor « couvert ».
   return {
     valeur: esc(internet.pct(internet.part(c, "fibre"))),
     detail: `des logements et locaux professionnels sont éligibles à la fibre au ${internet.dateLongue()}, ce qui ne veut pas dire raccordés` +
@@ -640,7 +640,7 @@ function antennas(p: PlacePage, hs?: Cached<sitesHs.Copie> | null): Live | undef
   // The ANFR never writes « en service » for the 5G: its most advanced state there is « techniquement opérationnel ».
   const g5 = supports.filter((s) => antennes.generations(s, "operationnel").has("5")).length;
   const ops = antennes.OPERATEURS.map((o) => [o, supports.filter((s) => s.ops[o]).length] as const).filter(([, n]) => n);
-  // Marketing's words (29/10): the ANFR's « supports », declared, never « couverture ».
+  // The validated words (29/10): the ANFR's « supports », declared, never « couverture ».
   return {
     valeur: `${nombre(supports.length)}`,
     // One support may carry several operators: « Orange sur 2 », never a sum.
@@ -735,7 +735,7 @@ const texteDe = (slug: string) => TEXTES[slug]?.map((x) => `<p class="lead">${es
 
 /**
  * The commune's open procurement notices, from the copy of /marches-publics, with the link that opens that page on the
- * commune (marketing, 22/11/2026): « 4 avis ouverts aux réponses à Saint-Paul, d'après le BOAMP lu à 14:05 ». Without a
+ * commune (wording validated on 22/11/2026): « 4 avis ouverts aux réponses à Saint-Paul, d'après le BOAMP lu à 14:05 ». Without a
  * notice of the commune, or without a list read, no tile.
  */
 function marchesTile(p: PlacePage, c: Cached<MarchesAnswer> | null | undefined, now: Date): { href: string; live: Live } | undefined {
@@ -788,7 +788,7 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
     },
     ...(marches ? [{ icon: "building", nom: "Marchés publics", href: marches.href, sr: aCommune(p.nom), live: marches.live, foot: `<a href="${marches.href}">Les voir →</a>` }] : []),
     // The commune's waste collection, street by street, where the TCO's calendars are read (vie/collecte.ts): before the
-    // recycling centres, as it serves every week (marketing, 24/11/2026). The page was two clicks away, by /collecte.
+    // recycling centres, as it serves every week (wording validated on 24/11/2026). The page was two clicks away, by /collecte.
     ...(collecte.COMMUNES.includes(p.nom)
       ? [{
         icon: "calendar", nom: "Collecte des déchets", href: `/collecte/${collecte.communeSlug(p.nom)}`, sr: aCommune(p.nom),
@@ -813,10 +813,10 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
     ...(children(p) ? [{ icon: "kids", nom: "Enfants", href: enfantsPath(p), live: children(p) }] : []),
     ...(lieux ? [{ icon: "landmark", nom: "À découvrir", ...lieux, full: true }] : []),
     { icon: "calendar", nom: "Soleil et calendrier", href: "/calendrier", live: sunTimes(p, l.calendrier, now) },
-    // The fiche of an address of the commune (web/terrain.ts), the commune prefilled, besides the assistant (marketing, 20/11).
+    // The fiche of an address of the commune (web/terrain.ts), the commune prefilled, besides the assistant (wording validated on 20/11).
     { icon: "map", nom: "Terrain et risques", question: `Mon adresse ${a(p.nom)} est-elle en zone inondable ?`, foot: `<a href="/terrain?commune=${p.slug}">La fiche d'une adresse →</a> · <a href="/mcp">Demandez à votre IA →</a>`, wide: true },
   ];
-  // Figures of a year or a quarter, out of the grid that says « en ce moment » (marketing, 26/10).
+  // Figures of a year or a quarter, out of the grid that says « en ce moment » (wording validated on 26/10).
   const habiter: Tile[] = [
     ...(rents(p) ? [{ icon: "key", nom: "Loyers d'annonce", live: rents(p), foot: `<a href="${loyers.SOURCE.url}" rel="noopener">La carte des loyers de l'ANIL</a>` }] : []),
     ...(connexion(p) ? [{ icon: "wifi", nom: "Fibre", live: connexion(p), foot: `<a href="https://maconnexioninternet.arcep.fr/" rel="noopener">Votre adresse sur Ma connexion internet</a>` }] : []),

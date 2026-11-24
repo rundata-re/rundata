@@ -2,7 +2,7 @@
  * The cloud sea of the Hauts: where a place in the Hauts or a summit stands against the cloud layer of a morning, from
  * the AROME model's cloud base and top over its cell (providers/arome.ts). « Est-ce dégagé au Maïdo demain matin ? »
  * The cloud sea forms in the morning and rises: the morning is told as two windows, 6–9 h and 9–12 h, which are two
- * steps of the forecast. A forecast, never a measurement, said on every surface with its caveat. Marketing's words.
+ * steps of the forecast. A forecast, never a measurement, said on every surface with its caveat. The validated words.
  *
  * The sky of the night too, from 18 h to 6 h, for everyone: below the Hauts by the cloud cover over the place, in the
  * Hauts against the cloud layer, as in the morning (« le ciel sera dégagé ce soir au Maïdo pour les étoiles ? »).

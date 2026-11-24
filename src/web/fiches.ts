@@ -23,7 +23,7 @@ export function agendaEnd(r: Pick<Row, "date" | "quand">): string | undefined {
 
 /** The register's key in the durable store, its one writer buildAgenda (web/data.ts). */
 export const FICHES = "evenements:fiches";
-/** How long an event over keeps its page (marketing, 20/11/2026). */
+/** How long an event over keeps its page (wording validated on 20/11/2026). */
 export const PASSE_JOURS = 30;
 /** How long its key is remembered after that, its address answering 410 rather than 404. */
 export const PARTI_JOURS = 365;

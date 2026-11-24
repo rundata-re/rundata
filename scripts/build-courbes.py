@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Build scripts/og/courbes-<zone>.svg: the contour lines drawn on the share pictures (scripts/build-og.py), the island's
-and the Piton de la Fournaise's every 100 m, with the coast drawn thicker (marketing, track A, 04/11/2026).
+and the Piton de la Fournaise's every 100 m, with the coast drawn thicker (track A, 04/11/2026).
 
 Source: IGN, RGE ALTI (Licence Ouverte 2.0), from the Géoplateforme WMS as raw 32-bit floats, on a grid of a few hundred
 cells a side: the lines of a picture 1 200 px wide, not of a map. The grid is smoothed twice (mean of the 3×3 cells),

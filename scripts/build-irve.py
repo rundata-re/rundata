@@ -43,7 +43,7 @@ def opened(r):
 
 
 def hhmm(t, minutes):
-    """The kit's hours (marketing/identite/kit.md, « Heures »): « 18\u00a0h » for a round hour, « 09:15 » when one of the
+    """The kit's hours (the brand kit, « Heures »): « 18\u00a0h » for a round hour, « 09:15 » when one of the
     station's hours has minutes, so that a station has one way of writing them."""
     h, m = t.split(":")
     return t if minutes else f"{int(h)}\u00a0h"

@@ -612,7 +612,7 @@ const FEEDS: Feed[] = [
 
 /**
  * Each medium's site, as the list of the sites that do not answer names it (sans-reponse.ts): its short name, the one
- * people know (« Clicanoo »), its headlines in the news as what is missing (words by marketing, 21/11/2026), and the
+ * people know (« Clicanoo »), its headlines in the news as what is missing (words for the site, 21/11/2026), and the
  * address read, where the morning's recheck asks it.
  */
 export const HOTES_MEDIAS = Object.fromEntries(FEEDS.map((f) => {

@@ -2,7 +2,7 @@
  * A bus line's page (/bus/ligne/<network>/<line>, 24/11/2026): its stops in order in each direction, each leading to its
  * page and its next departures, and the starts of its trips of the day, from the timetables its network publishes (GTFS,
  * Licence Ouverte), as the transports tool tells a line (tools/transports.ts `lineDay`). Built at each view, never kept,
- * as a stop's page; out of the sitemap, which keeps marketing's list (web/sitemap-gardees.ts).
+ * as a stop's page; out of the sitemap, which keeps the validated list (web/sitemap-gardees.ts).
  */
 import * as transit from "../providers/transit.js";
 import { lineDay } from "../tools/transports.js";

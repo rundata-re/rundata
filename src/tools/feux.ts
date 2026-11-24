@@ -1,7 +1,7 @@
 /**
  * The words said of the fires seen by satellite (providers/feux.ts), the same in the tools and on the pages: the
- * label of every point, the emergency numbers on every surface, and what a quiet day does not prove (worded by
- * marketing).
+ * label of every point, the emergency numbers on every surface, and what a quiet day does not prove (worded for
+ * the site).
  */
 import { de } from "../articles.js";
 import { distanceKm, localTime } from "../geo.js";

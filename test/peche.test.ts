@@ -27,7 +27,7 @@ describe("the rules of recreational fishing, day by day", () => {
     // The page and the tool say it; asked about another day, the tool counts from that day.
     const now = new Date("2026-11-24T04:00:00Z");
     expect(pechePage(O, undefined, now)).toContain("Fermeture dans 7 jours, le mardi 1er décembre.");
-    // In the tool, where species follow one another, the sentence names its species (marketing, 24/11/2026).
+    // In the tool, where species follow one another, the sentence names its species (wording validated on 24/11/2026).
     expect(JSON.stringify(answer(pecheLoisir("langouste", undefined, now)))).toContain("Fermeture de la pêche à la langouste dans 7 jours, le mardi 1er décembre.");
     expect(answer(pecheLoisir(undefined, undefined, now)).resume).toContain("langouste, pas de fermeture aujourd'hui (fermeture de la pêche à la langouste dans 7 jours, le mardi 1er décembre)");
     expect(JSON.stringify(answer(pecheLoisir("anguille", "2027-01-31", now)))).toContain("Fermeture de la pêche à l'anguille marbrée le lendemain, le lundi 1er février.");
@@ -139,7 +139,7 @@ describe("the tool peche_loisir", () => {
 });
 
 describe("/peche", () => {
-  it("shows today's species with their state, the tables, the lagoons and the texts, in marketing's words", () => {
+  it("shows today's species with their state, the tables, the lagoons and the texts, in the validated words", () => {
     const html = pechePage(O, undefined, NOW);
     expect(html).toContain(`<title>${TITLE}</title>`);
     expect(html).toContain('<h1>Pêche de loisir à La Réunion <span class="n974">974</span></h1>');

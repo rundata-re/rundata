@@ -1,5 +1,5 @@
 /**
- * A site that did not answer at the last read, in marketing's words (marketing/sites-muets-3ter.md): it is neither gone
+ * A site that did not answer at the last read, in the validated words: it is neither gone
  * nor empty. With what was read before kept, the hour of that read; without, that the read failed. Never « fermé »,
  * « vide », « ne publie pas », and never why it is silent: we do not know.
  *

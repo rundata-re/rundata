@@ -461,7 +461,7 @@ describe("fraicheur", () => {
     expect(instantOf("2026-11-03", now)).toBe(Date.parse("2026-11-03T00:00:00+04:00"));
   });
 
-  it("names each source served from its last copy, in marketing's words, and the rest only when it is up to date", () => {
+  it("names each source served from its last copy, in the validated words, and the rest only when it is up to date", () => {
     const now = new Date("2026-10-25T23:00:00+04:00");
     const t = (hhmm: string) => Date.parse(`2026-10-25T${hhmm}:00+04:00`);
     const nom = (id: string) => ({ la1ere: "Réunion La 1ère (actualité sportive)", ffhb: "FFHB" })[id];

@@ -547,7 +547,7 @@ export const pageRow = (_now?: Date) => (d: Departure): PageRow => {
 };
 
 /** « à l'heure », « 5 min de retard », « 2 min d'avance ». */
-// marketing's words, the participle agreeing with the noun before it.
+// the validated words, the participle agreeing with the noun before it.
 const delayText = (m: number) => (m === 0 ? "à l'heure, annoncé en direct" : m > 0 ? `retard de ${fr(m)} min annoncé en direct` : `avance de ${fr(-m)} min annoncée en direct`);
 
 /** The departure as the tool gives it, with where its trip comes from and goes, and where its bus is. */
@@ -1295,7 +1295,7 @@ export async function tripRun(net: string, local: number, trip: string, jour: nu
 const BUSIEST = new Map<string, Promise<{ nom: string; page: string; lignes: number; departs: number }[]>>();
 
 /**
- * The stops of a commune most served (marketing, 22/11/2026): by their number of lines, then by their departures of the
+ * The stops of a commune most served (wording validated on 22/11/2026): by their number of lines, then by their departures of the
  * day, all networks of a page together. Among its indexed pages when it has at least `n` of them (the busy ones: the
  * build keeps those with 2 lines and 60 buses on a Tuesday), else among all. Two reads of the database, the passes of
  * those stops and the trips of their patterns (some hundred rows for Saint-Denis), once a day per isolate and commune.
@@ -1338,7 +1338,7 @@ export function busiestStops(commune: string, now: Date, n = 5) {
 /**
  * The lines that stop at a page's stops, each once, with the terminus of each of its patterns passing there, in the
  * order of the timetables (« O2 vers Gare de St-Pierre et Gare de St-Denis »), whatever the day: what the stop's page
- * says of it durably (marketing, 22/11/2026). A pattern ending at the stop itself goes nowhere from there: its terminus
+ * says of it durably (wording validated on 22/11/2026). A pattern ending at the stop itself goes nowhere from there: its terminus
  * is left out.
  * Read from the passes the page already reads, with no other request.
  */

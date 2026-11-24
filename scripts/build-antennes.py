@@ -36,7 +36,7 @@ STATES = {"En service": "service", "Techniquement opérationnel": "operationnel"
 # The broadcast systems kept, as the site names them.
 BROADCAST = {"FM": "fm", "RDF DVB-T": "tnt", "RDF T-DAB": "dab"}
 # The broadcast stations' operator (table SUP_EXPLOITANT) kept only when it is TDF: the Arcom, written as the operator of
-# the DAB+ stations, assigns the frequencies and runs no transmitter (marketing, 29/10); « Site privé » and « Réseau privé » never.
+# the DAB+ stations, assigns the frequencies and runs no transmitter (wording validated on 29/10); « Site privé » and « Réseau privé » never.
 NAMED = {"TDF"}
 last = {}
 

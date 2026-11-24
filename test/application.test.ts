@@ -16,7 +16,7 @@ const BROWSER = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
 const get = (path: string) => new Request(`https://rundata.re${path}`, { headers: { accept: BROWSER } });
 const text = async (path: string) => (await handle(get(path), new Cache())).text();
 
-// /application (27/10/2026): the steps of every browser to put the site on the home screen, marketing's words.
+// /application (27/10/2026): the steps of every browser to put the site on the home screen, the validated words.
 describe("/application, rundata.re on the home screen", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", async () => {

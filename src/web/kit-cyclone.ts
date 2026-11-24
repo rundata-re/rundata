@@ -1,7 +1,7 @@
 /**
  * /kit-cyclone: what to have at home and what to do before a cyclone, as the prefecture's plan says it (dispositif
  * spécifique ORSEC Cyclones, arrêté 2026-182, p. 16-17), quoted page by page. The plan gives no fuller list of the kit
- * and no telephone numbers: nothing is added. Built from the plan alone, no source is read. Worded by marketing.
+ * and no telephone numbers: nothing is added. Built from the plan alone, no source is read. Worded for the site.
  */
 import type { Alerte } from "./data.js";
 import { lineHtml, PDF, q, type Line } from "./alerte-cyclone.js";
@@ -15,7 +15,7 @@ const H1 = "Que faut-il avoir chez soi pour un cyclone ?";
 const META = "Kit d'urgence, réserves, plein du véhicule, centre d'hébergement : ce que le plan ORSEC Cyclones de la préfecture demande de préparer à La Réunion (974).";
 const LEAD = "Ce que le dispositif ORSEC Cyclones de la préfecture (arrêté 2026-182) demande de préparer avant un cyclone, cité page par page.";
 
-// Who acts for the patients at high vital risk, in the plan's words (marketing).
+// Who acts for the patients at high vital risk, in the plan's words.
 export const VITAL = "Dialyse, respirateur, oxygène à domicile : en pré-alerte, le plan demande aux prestataires de soins à domicile et aux centres de dialyse de prendre « contact individuellement avec les patients dont ils ont la charge » (p. 24)";
 
 /** The plan's words, by moment: the start of the season, the pré-alerte, the orange alert. */

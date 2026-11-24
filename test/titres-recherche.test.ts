@@ -7,7 +7,7 @@ import { collectePage } from "../src/web/collecte.js";
 import { cruesPage } from "../src/web/crues.js";
 import { sentiersPage } from "../src/web/sentiers.js";
 
-// Four pages titled in the words people type (marketing, 24/11/2026: « onf sentiers fermés », « vigicrue reunion »,
+// Four pages titled in the words people type (wording validated on 24/11/2026: « onf sentiers fermés », « vigicrue reunion »,
 // « prix essence reunion », « collecte des déchets saint-paul 2026 »): their title and their description say first what
 // the page holds.
 const O = "https://rundata.re";

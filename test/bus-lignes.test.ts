@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { handle } from "../src/app.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 import * as transit from "../src/providers/transit.js";
@@ -79,6 +79,13 @@ describe("the transports tool asked with `lieu`, or with nothing", () => {
   const rpc = (args: unknown) =>
     new Request(`${O}/mcp`, { method: "POST", headers: { "content-type": "application/json", accept: "application/json, text/event-stream" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "transports", arguments: args } }) });
   const call = async (args: unknown) => (await (await handle(rpc(args), new Cache())).json()) as { result: { isError?: boolean; content: { text: string }[] } };
+  // The tool reads the clock: at NOW (07:30 in La Réunion), not at the hour the suite runs (24/11/2026: red after 20:30,
+  // no departure left at Saint-Pierre's station that evening).
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOW);
+  });
+  afterEach(() => vi.useRealTimers());
 
   it("takes the place as the stop, as the other tools take it", async () => {
     const asLieu = await call({ lieu: "Gare de St-Pierre" });

@@ -15,7 +15,7 @@ import { a, heure, tranche } from "../tools/format.js";
 import { agendaEnd, fichePath } from "./fiches.js";
 import { type AgendaAnswer, type Alerte } from "./data.js";
 import { fenetre } from "./map.js";
-import { brut, href, html, type Html, type Valeur } from "./html.js";
+import { brut, href, html, type Html, permis, type Valeur } from "./html.js";
 import { eventsMap } from "./evenements-carte.js";
 import { reprise } from "./ouvrir-donnees.js";
 import { adressesCoupables, ask, FOLD_ROWS, folded, layout, type Live, readAt } from "./pages.js";
@@ -161,12 +161,12 @@ export function agendaEvents(rows: AgendaRow[]): object[] {
         name: r.lieu ?? r.commune,
         address: { "@type": "PostalAddress", addressLocality: r.commune, addressRegion: "La Réunion", addressCountry: "RE" },
       },
-      ...(r.lien ? { url: r.lien } : {}),
+      ...(r.lien && permis(r.lien) ? { url: r.lien } : {}),
       description: eventSummary(r),
       ...organizer(r),
       ...offer(r),
       // The credit OpenAgenda gives, as its creator and its credit line; no copyright notice nor licence page it does not give.
-      ...(r.image ? { image: { "@type": "ImageObject", url: r.image.url, author: { "@type": "Organization", name: r.image.auteur }, creator: { "@type": "Organization", name: r.image.auteur }, creditText: r.image.auteur, license: LICENCE_OUVERTE } } : {}),
+      ...(r.image && permis(r.image.url) ? { image: { "@type": "ImageObject", url: r.image.url, author: { "@type": "Organization", name: r.image.auteur }, creator: { "@type": "Organization", name: r.image.auteur }, creditText: r.image.auteur, license: LICENCE_OUVERTE } } : {}),
     })));
 }
 
@@ -231,8 +231,10 @@ function offer(r: AgendaRow): { offers?: object; isAccessibleForFree?: true } {
     .map((m) => Number(m[1].replace(",", ".")));
   const prices = [...new Set([...amounts, ...(libre.test(prix) ? [0] : [])])].sort((x, y) => x - y);
   if (!prices.length) return {};
+  // The address of its offer, as the event's: never one whose scheme a link may not have (html.ts permis).
+  const lien = r.billetterie ?? r.lien;
   const more = {
-    ...((r.billetterie ?? r.lien) ? { url: r.billetterie ?? r.lien } : {}),
+    ...(lien && permis(lien) ? { url: lien } : {}),
     ...(r.statut === "complet" ? { availability: "https://schema.org/SoldOut" } : {}),
   };
   const offers = prices.length === 1

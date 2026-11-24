@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { esc } from "../src/web/map.js";
-import { brut, echappe, href, Html, html } from "../src/web/html.js";
+import { brut, echappe, href, Html, html, permis } from "../src/web/html.js";
 
 const PIEGE = `<script>alert(1)</script>"'&`;
 
@@ -73,6 +73,11 @@ describe("href, the address of a link", () => {
       "file:///etc/passwd",
       "inconnu:x",
     ]) expect(href(u).toString(), JSON.stringify(u)).toBe("#");
+  });
+
+  it("says by permis() the same of an address given in JSON (the structured data's url)", () => {
+    for (const u of ["https://rundata.re/evenements", "/bus", "mailto:contact@rundata.re", "tel:+262262000000"]) expect(permis(u), u).toBe(true);
+    for (const u of ["javascript:alert(1)", " JavaScript:alert(1)", "java\tscript:alert(1)", "data:text/html,x", "inconnu:x"]) expect(permis(u), JSON.stringify(u)).toBe(false);
   });
 
   it("goes in html as it is, being already escaped", () => {

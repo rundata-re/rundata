@@ -54,8 +54,16 @@ const SCHEMES = new Set(["http", "https", "mailto", "tel", "geo", "sms"]);
  * characters before it, so `java\tscript:` and ` javascript:` are read as they would be, before the scheme is looked at.
  */
 export function href(url: string): Html {
+  return new Html(permis(url) ? echappe(url) : "#");
+}
+
+/**
+ * Whether `url` may be given as a link: an address of the site, or one whose scheme is listed in SCHEMES, read as the
+ * browser reads it (see href). Also for an address given in JSON, such as the structured data's `url`, which search
+ * engines follow.
+ */
+export function permis(url: string): boolean {
   const lu = url.replace(/[\t\n\r]/g, "").replace(/^[\u0000- ]+/, "");
   const scheme = /^([a-z][a-z0-9+.-]*):/i.exec(lu)?.[1].toLowerCase();
-  if (scheme !== undefined && !SCHEMES.has(scheme)) return new Html("#");
-  return new Html(echappe(url));
+  return scheme === undefined || SCHEMES.has(scheme);
 }

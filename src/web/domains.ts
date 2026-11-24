@@ -1941,6 +1941,12 @@ export function eauPage(origin: string, data: Cached<EauAnswer> | null, now = ne
       place: s.site, say: q ? `qualité ${q} au dernier prélèvement` : "pas de résultat", href: `#${anchorId("b", s.site)}` };
   });
 
+  // The beaches whose round, on the map, would cover another's point or most of a line (apart()): listed under it.
+  const outside: Marker[] = [];
+  const offMap = (list: Marker[]) => list.length
+    ? `<p class="note hors" style="color:var(--on-night-muted)">Pas sur la carte, faute de place autour : ${list.map((m) => `<a href="${esc(m.href!)}">${esc(m.place ?? m.name)}</a> (${esc(m.say ?? m.label)})`).join(", ")}.</p>`
+    : "";
+
   const sites = bathOld
     ? `<p class="card">${esc(silentBath(bathRead(d!)))}</p>`
     : d
@@ -1965,9 +1971,9 @@ export function eauPage(origin: string, data: Cached<EauAnswer> | null, now = ne
     ${ask(`Dlo lé bon pou bengn La Rényon ? Gèt si ${url} é di amwin pou la plaj l'Ermitaz é pou dlo robinè Sin-Pyèr.`,
       `L'eau est-elle bonne pour se baigner à La Réunion ? Lis ${url} et dis-moi pour la plage de l'Hermitage et l'eau du robinet à Saint-Pierre.`)}
   </div>
-  <figure class="card mapcard">${islandMap({ markers, apart: true, listed: true, label: "Carte de La Réunion (974) : la qualité de l'eau au dernier prélèvement de chaque plage et bassin contrôlé" })}
+  <figure class="card mapcard">${islandMap({ markers, apart: true, outside, listed: true, label: "Carte de La Réunion (974) : la qualité de l'eau au dernier prélèvement de chaque plage et bassin contrôlé" })}
   <figcaption class="note" style="color:var(--on-night-muted)">${legende(["bonne", "moyenne", "mauvaise"].map((q): Cle => ({ forme: "rond", couleur: WATER_COLOR[q], texte: WATER_MARK[q], dit: q })),
-    firstSample && lastSample ? esc(`Qualité au dernier prélèvement de l'ARS, ${firstSample === lastSample ? `le ${dayFr(lastSample)}` : `du ${dayFr(firstSample).slice(0, 5)} au ${dayFr(lastSample)}`}.`) : undefined)}</figcaption></figure>
+    firstSample && lastSample ? esc(`Qualité au dernier prélèvement de l'ARS, ${firstSample === lastSample ? `le ${dayFr(lastSample)}` : `du ${dayFr(firstSample).slice(0, 5)} au ${dayFr(lastSample)}`}.`) : undefined)}</figcaption>${offMap(outside)}</figure>
 </div>`;
 
   const body = `<section aria-labelledby="h-baignade">

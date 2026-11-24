@@ -188,7 +188,125 @@ const onPlace = (m: Marker, at: [number, number]) => {
  */
 export function apart(
   markers: Marker[], widths = markers.map((m) => markSize(m)[0]), aside = 1, heights = markers.map((m) => markSize(m)[1]),
-  avoid: [number, number, number][] = [],
+  avoid: [number, number, number][] = [], out?: number[],
+): [number, number][] {
+  if (!out) return layout(markers, widths, aside, heights, avoid);
+  // The same places give the same map: worked out once per isolate (some 100 ms for /eau's 26 sites), not per request.
+  const key = JSON.stringify([markers.map((m) => [m.lon, m.lat]), widths, heights, aside, avoid]);
+  const known = PLACED.get(key);
+  if (known) {
+    out.push(...known.out);
+    return known.at.map(([x, y]) => [x, y]);
+  }
+  const at = placeAll(markers, widths, aside, heights, avoid, out);
+  if (PLACED.size > 20) PLACED.clear();
+  PLACED.set(key, { at: at.map(([x, y]) => [x, y]), out: [...out] });
+  return at;
+}
+
+const PLACED = new Map<string, { at: [number, number][]; out: number[] }>();
+
+function placeAll(
+  markers: Marker[], widths: number[], aside: number, heights: number[], avoid: [number, number, number][], out: number[],
+): [number, number][] {
+  // 24/11/2026 (/eau online, the review of the site): the last pass left Citerne Quarante Six's point under the round of Saint-Leu's town
+  // centre, and two lines under each other's round, as if their rounds were tied together. With `out`, no mark covers
+  // another place's point, and each line is seen over half its length at least: the mark that breaks it the most is left
+  // off the map (its index in `out`, for the page to list it under the map), and the others placed again without it.
+  const kept = markers.map((_, i) => i);
+  for (;;) {
+    const [m, w, h] = [kept.map((i) => markers[i]), kept.map((i) => widths[i]), kept.map((i) => heights[i])];
+    const at = layout(m, w, aside, h, avoid);
+    // A mark at fault first tries the places around its own, nearest first, where it breaks nothing and none else does.
+    for (let pass = 0; pass < 3; pass++) {
+      const before = misplaced(m, at, w, h);
+      if (!before.some(Boolean)) break;
+      for (let i = 0; i < m.length; i++) {
+        const base = misplaced(m, at, w, h);
+        if (!base[i]) continue;
+        const [x0, y0] = project(m[i].lon, m[i].lat);
+        const tried = at.map((o): [number, number] => [o[0], o[1]]);
+        const fault = faultOf(m, tried, w, h);
+        const free = (q: [number, number]) => {
+          if (q[0] < w[i] / 2 + GAP || q[0] > W - w[i] / 2 - GAP || q[1] < h[i] / 2 + GAP || q[1] > H - h[i] / 2 - GAP) return false;
+          if (at.some((o, k) => k !== i && Math.abs(o[0] - q[0]) < (w[i] + w[k]) / 2 + GAP && Math.abs(o[1] - q[1]) < (h[i] + h[k]) / 2 + GAP &&
+            (w[i] !== h[i] || w[k] !== h[k] || Math.hypot(o[0] - q[0], o[1] - q[1]) < (w[i] + w[k]) / 2 + GAP))) return false;
+          // Only the lines it now passes over may be hidden more: the others' faults stay as they are.
+          tried[i] = q;
+          const r = Math.max(w[i], h[i]) / 2;
+          const ok = !fault(i) && m.every((_, k) => k === i || toSegment(q, project(m[k].lon, m[k].lat), at[k]) >= r || fault(k) <= base[k]);
+          tried[i] = at[i];
+          return ok;
+        };
+        const r = Math.max(w[i], h[i]) / 2;
+        let found: [number, number] | undefined;
+        for (let d = r + DOT; d <= 8 * r && !found; d += r / 2) {
+          for (let a = 0; a < 36 && !found; a++) {
+            const q: [number, number] = [Math.round(x0 + d * Math.cos((a * Math.PI) / 18)), Math.round(y0 + d * Math.sin((a * Math.PI) / 18))];
+            if (free(q)) found = q;
+          }
+        }
+        if (found) at[i] = found;
+      }
+    }
+    const faults = misplaced(m, at, w, h);
+    const worst = faults.reduce((a, f, k) => (f > faults[a] ? k : a), 0);
+    if (!faults[worst]) {
+      const all = markers.map((m) => project(m.lon, m.lat));
+      kept.forEach((i, k) => (all[i] = at[k]));
+      return all;
+    }
+    out.push(kept[worst]);
+    out.sort((a, b) => a - b);
+    kept.splice(worst, 1);
+  }
+}
+
+/**
+ * For each mark drawn at `at`: how many other places' points it covers (each with its white ring, 12), and 1 more if its
+ * line, from its place to its edge, is hidden under other marks over more than half its length.
+ */
+function misplaced(markers: Marker[], at: [number, number][], w: number[], h: number[]): number[] {
+  const fault = faultOf(markers, at, w, h);
+  return markers.map((_, i) => fault(i));
+}
+
+/** misplaced() for one mark at a time, `at` read when it is asked (apart() tries places for a mark in it). */
+function faultOf(markers: Marker[], at: [number, number][], w: number[], h: number[]): (i: number) => number {
+  const places = markers.map((m) => project(m.lon, m.lat));
+  // Whether `[x, y]` is under mark k, `pad` around it: a disc for a round mark, its box for the others.
+  const under = (k: number, [x, y]: [number, number], pad: number) => {
+    const [dx, dy] = [x - at[k][0], y - at[k][1]];
+    return w[k] === h[k] ? Math.hypot(dx, dy) < w[k] / 2 + pad : Math.abs(dx) < w[k] / 2 + pad && Math.abs(dy) < h[k] / 2 + pad;
+  };
+  return (i: number) => {
+    const covered = places.filter((q, j) => j !== i && under(i, q, 12)).length;
+    if (onPlace(markers[i], at[i])) return covered;
+    // The line from its place to its mark's edge (a disc's; a box's, about its half height).
+    const [x0, y0] = places[i];
+    const d = Math.hypot(at[i][0] - x0, at[i][1] - y0);
+    const len = d - Math.min(w[i], h[i]) / 2;
+    if (len <= 0) return covered;
+    const steps = 40;
+    let seen = 0;
+    for (let s = 0; s < steps; s++) {
+      const t = ((s + 0.5) / steps) * (len / d);
+      const pt: [number, number] = [x0 + (at[i][0] - x0) * t, y0 + (at[i][1] - y0) * t];
+      if (!markers.some((_, k) => k !== i && under(k, pt, 0))) seen++;
+    }
+    return covered + (seen * 2 < steps ? 1 : 0);
+  };
+}
+
+/** How far `q` is from the segment from `a` to `b`. */
+const toSegment = (q: [number, number], a: [number, number], b: [number, number]) => {
+  const [dx, dy] = [b[0] - a[0], b[1] - a[1]];
+  const t = dx || dy ? Math.max(0, Math.min(1, ((q[0] - a[0]) * dx + (q[1] - a[1]) * dy) / (dx * dx + dy * dy))) : 0;
+  return Math.hypot(q[0] - a[0] - t * dx, q[1] - a[1] - t * dy);
+};
+
+function layout(
+  markers: Marker[], widths: number[], aside: number, heights: number[], avoid: [number, number, number][],
 ): [number, number][] {
   const places = markers.map((m) => project(m.lon, m.lat));
   const p = places.map(([x, y]): [number, number] => [x, y]);
@@ -840,6 +958,11 @@ export function islandMap(opts: {
   /** Pills that would cover each other moved apart, each tied to its place (apart()). */
   apart?: boolean;
   /**
+   * With `apart`: the markers that cannot be placed without covering another place's point or most of a line are left
+   * off the map and put here, for the page to list them under it (/eau's beaches, 24/11/2026).
+   */
+  outside?: Marker[];
+  /**
    * Markers in layers, one shown at a time by the page's CSS (`ly-<id>`, chosen by radio buttons, without a script):
    * the island drawn once for all of them; `on`, the one shown by default. Each layer is moved apart on its own, with
    * `apart`.
@@ -886,8 +1009,12 @@ export function islandMap(opts: {
   const zones = opts.links ? zoneLinks(opts.links, !!opts.names, opts.listed) : "";
   // What the names of places must not touch (namesLayer()).
   const busy: Box[] = [];
-  const draw = (list: Marker[]) => {
-    const at = opts.apart ? apart(list) : undefined;
+  const draw = (all: Marker[]) => {
+    const out: number[] | undefined = opts.outside ? [] : undefined;
+    const placed = opts.apart ? apart(all, undefined, undefined, undefined, undefined, out) : undefined;
+    const list = all.filter((_, i) => !out?.includes(i));
+    const at = placed?.filter((_, i) => !out?.includes(i));
+    if (out) opts.outside!.push(...out.map((i) => all[i]));
     // Around where each marker is drawn: apart() may have moved it.
     const radii = hitRadii(list, at);
     list.forEach((m, i) => {

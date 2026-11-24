@@ -250,6 +250,7 @@ function placeAll(
       }
     }
     untangle(m, at, w, h);
+    clearLines(m, at, w, h);
     const faults = misplaced(m, at, w, h);
     const worst = faults.reduce((a, f, k) => (f > faults[a] ? k : a), 0);
     if (!faults[worst]) {
@@ -324,6 +325,90 @@ function untangle(m: Marker[], at: [number, number][], w: number[], h: number[])
       }
     }
     if (!swapped) break;
+  }
+}
+
+/** Whether mark i's line, from its place to its mark's edge, passes under another mark at all. */
+function lineUnder(markers: Marker[], at: [number, number][], w: number[], h: number[], i: number): boolean {
+  if (onPlace(markers[i], at[i])) return false;
+  const [x0, y0] = project(markers[i].lon, markers[i].lat);
+  const d = Math.hypot(at[i][0] - x0, at[i][1] - y0);
+  const len = d - Math.min(w[i], h[i]) / 2;
+  const steps = 40;
+  for (let s = 0; len > 0 && s < steps; s++) {
+    const t = ((s + 0.5) / steps) * (len / d);
+    const [x, y] = [x0 + (at[i][0] - x0) * t, y0 + (at[i][1] - y0) * t];
+    if (markers.some((_, k) => {
+      if (k === i) return false;
+      const [dx, dy] = [x - at[k][0], y - at[k][1]];
+      return w[k] === h[k] ? Math.hypot(dx, dy) < w[k] / 2 : Math.abs(dx) < w[k] / 2 && Math.abs(dy) < h[k] / 2;
+    })) return true;
+  }
+  return false;
+}
+
+/** For each mark drawn at `at`: 1 when its line passes under another mark at all (lineUnder()). */
+const linesUnder = (markers: Marker[], at: [number, number][], w: number[], h: number[]) =>
+  markers.map((_, i) => (lineUnder(markers, at, w, h, i) ? 1 : 0));
+
+/** For each mark drawn at `at`: how many other marks' lines its line crosses, each from its place to its mark. */
+function crossings(m: Marker[], at: [number, number][]): number[] {
+  const places = m.map((x) => project(x.lon, x.lat));
+  const tied = m.map((x, i) => !onPlace(x, at[i]));
+  const side = (a: [number, number], b: [number, number], c: [number, number]) => Math.sign((b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]));
+  return m.map((_, i) => m.filter((_, j) => j !== i && tied[i] && tied[j] &&
+    side(places[i], at[i], places[j]) * side(places[i], at[i], at[j]) < 0 && side(places[j], at[j], places[i]) * side(places[j], at[j], at[i]) < 0).length);
+}
+
+/**
+ * A line that passes under another mark, even seen over half its length, its mark moved where it passes under none, when
+ * such a place is free around its own: no mark covers more, no line is hidden, crosses or passes under a mark more than
+ * before; else a mark over the line moved off it, on the same terms. Where none is, the marks stay: a cost, never a fault that leaves a mark off the map (24/11/2026, /eau online:
+ * the Ermitage sud embouchure's line under the round of Trou d'Eau).
+ */
+function clearLines(m: Marker[], at: [number, number][], w: number[], h: number[]) {
+  const places = m.map((x) => project(x.lon, x.lat));
+  // Whether mark k's shape lies over some of i's line.
+  const over = (k: number, i: number) => {
+    const [x0, y0] = places[i];
+    const d = Math.hypot(at[i][0] - x0, at[i][1] - y0);
+    const len = d - Math.min(w[i], h[i]) / 2;
+    for (let s = 0; len > 0 && s < 40; s++) {
+      const t = ((s + 0.5) / 40) * (len / d);
+      const [dx, dy] = [x0 + (at[i][0] - x0) * t - at[k][0], y0 + (at[i][1] - y0) * t - at[k][1]];
+      if (w[k] === h[k] ? Math.hypot(dx, dy) < w[k] / 2 : Math.abs(dx) < w[k] / 2 && Math.abs(dy) < h[k] / 2) return true;
+    }
+    return false;
+  };
+  for (let i = 0; i < m.length; i++) {
+    if (!lineUnder(m, at, w, h, i)) continue;
+    const [f0, c0, u0] = [misplaced(m, at, w, h), crossings(m, at), linesUnder(m, at, w, h)];
+    // The line's own mark first, then each mark over the line, each around its own place.
+    for (const j of [i, ...m.map((_, k) => k).filter((k) => k !== i && over(k, i))]) {
+      const [x0, y0] = places[j];
+      const r = Math.max(w[j], h[j]) / 2;
+      const free = (q: [number, number]) => {
+        if (q[0] < w[j] / 2 + GAP || q[0] > W - w[j] / 2 - GAP || q[1] < h[j] / 2 + GAP || q[1] > H - h[j] / 2 - GAP) return false;
+        if (at.some((o, k) => k !== j && Math.abs(o[0] - q[0]) < (w[j] + w[k]) / 2 + GAP && Math.abs(o[1] - q[1]) < (h[j] + h[k]) / 2 + GAP &&
+          (w[j] !== h[j] || w[k] !== h[k] || Math.hypot(o[0] - q[0], o[1] - q[1]) < (w[j] + w[k]) / 2 + GAP))) return false;
+        const tried = at.map((o, k): [number, number] => (k === j ? q : o));
+        // The line itself first, the cheapest to tell and the one that rules out most places.
+        if (lineUnder(m, tried, w, h, i)) return false;
+        const [f, c, u] = [misplaced(m, tried, w, h), crossings(m, tried), linesUnder(m, tried, w, h)];
+        return m.every((_, k) => f[k] <= f0[k] && c[k] <= c0[k] && (k === i || u[k] <= u0[k]));
+      };
+      let found: [number, number] | undefined;
+      for (let d = r + DOT; d <= 8 * r && !found; d += r / 2) {
+        for (let a = 0; a < 36 && !found; a++) {
+          const q: [number, number] = [Math.round(x0 + d * Math.cos((a * Math.PI) / 18)), Math.round(y0 + d * Math.sin((a * Math.PI) / 18))];
+          if (free(q)) found = q;
+        }
+      }
+      if (found) {
+        at[j] = found;
+        break;
+      }
+    }
   }
 }
 

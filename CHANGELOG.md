@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Mardi 24 novembre 2026
 
+- Carte de la qualité de l'eau des plages : moins de traits passent sous le rond d'une autre plage.
 - Coupures d'eau : les avis publiés par la ville de Saint-Joseph et par la commune des Avirons sont lus, avec le lien de chaque avis.
 - Journée d'une commune : la température de la mer mesurée à la bouée de Saint-Pierre, avec son heure, avant celle du satellite.
 - Mer : son histoire jour par jour, la houle des bouées depuis 1996 et la température depuis 2003, avec records et même jour chaque année.

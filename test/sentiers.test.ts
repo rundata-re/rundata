@@ -342,11 +342,12 @@ describe("sentiers de randonnée", () => {
     expect(b.aires_accueil.aires[0]).toEqual({ nom: "Site du Maïdo", distance_km: 0.2, carte: expect.stringMatching(/^https:\/\/www\.openstreetmap\.org\/\?mlat=-21\.\d+&mlon=55\.\d+/) });
     expect(b.aires_accueil.a_savoir).toBe("Aires d'accueil de l'ONF, sous le nom que leur donne sa carte des sentiers (mise à jour le 20/05/2026), codes compris : « RF » désigne une route forestière, et « pk » le point kilométrique sur cette route. La carte ne dit pas ce qu'on trouve sur chaque aire, ni ce qu'on a le droit d'y faire (camper, faire du feu) : se renseigner auprès de l'ONF.");
     expect(b.sources.map((s: { source: string }) => s.source).join()).toContain("Aires d'accueil des forêts (ONF La Réunion)");
-    // A commune: those of the commune (Cilaos, a cirque, takes the cirque's).
+    // A commune: those of the commune's outline (Cilaos, a cirque, takes the cirque's); the three of the RF des Tamarins
+    // by the Ravine Saint-Gilles are in Saint-Paul, which the nearest place gave to Les Trois-Bassins.
     const paul = body(await sentiersRandonnee(cache(), "Saint-Paul", NOW));
-    expect(paul.aires_accueil).toMatchObject({ ou: "dans la commune de Saint-Paul", nombre: 52 });
+    expect(paul.aires_accueil).toMatchObject({ ou: "dans la commune de Saint-Paul", nombre: 55 });
     expect(paul.aires_accueil).not.toHaveProperty("rayon_km");
-    expect(paul.resume).toContain(" 52 aires d'accueil de l'ONF dans la commune de Saint-Paul (voir aires_accueil).");
+    expect(paul.resume).toContain(" 55 aires d'accueil de l'ONF dans la commune de Saint-Paul (voir aires_accueil).");
     const cilaos = body(await sentiersRandonnee(cache(), "Cilaos", NOW));
     expect(cilaos.aires_accueil).toMatchObject({ ou: "dans le cirque de Cilaos", rayon_km: 6, nombre: 29 });
     // A trail asked by its name, with no place: those within 300 m of it (the École normale passes the Côteau Monique).

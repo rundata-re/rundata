@@ -3029,7 +3029,7 @@ export function noticeCard(n: CoupuresAnswer["avis"][number]): string {
   const span = n.coupure ? periodeCoupure(n.coupure) : "";
   const cut = n.coupure && span ? `<p><b>${esc(n.coupure.de && n.coupure.a ? span : span.charAt(0).toUpperCase() + span.slice(1))}</b>${n.coupure.etat ? ` <span class="note">(${esc(n.coupure.etat)})</span>` : ""}</p>` : "";
   return `<li class="card${n.ne_pas_boire ? " warn" : ""}"><h3>${n.ne_pas_boire ? "Ne pas boire l'eau · " : ""}${nobreak(n.communes.join(", "))} <span class="note">${nobreak(n.distributeur)}, ${dateOfNotice(n)}</span></h3>` +
-    `<p>${esc(n.titre)}</p>${n.precision ? `<p class="note">${esc(n.precision)}</p>` : ""}${cut}${n.secteurs_complets ? `<p class="note">Secteurs : ${esc(sectorsSaid(n.secteurs))}</p>` : ""}` +
+    `<p>${esc(n.titre)}</p>${n.precision ? `<p class="note">${esc(n.precision)}</p>` : ""}${cut}${n.secteurs_complets ? `<p class="note">Secteurs : ${esc(sectorsSaid(n.secteurs))}</p>` : n.lieu ? `<p class="note">Lieu : ${esc(n.lieu)}</p>` : ""}` +
     `<p class="note">${nobreak(n.texte)}${n.lien ? ` <a href="${esc(n.lien)}" rel="noopener">${n.extrait_coupe && !n.secteurs_complets ? "Les secteurs concernés dans l'avis complet" : "L'avis complet"}<span class="sr"> : ${esc(n.communes.join(", "))}</span> →</a>` : ""}</p></li>`;
 }
 

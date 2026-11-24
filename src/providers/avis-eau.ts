@@ -27,6 +27,7 @@ import { localTime } from "../geo.js";
 import { type SourceInfo, why } from "../types.js";
 import { unlessSpent } from "../budget.js";
 import { unstyled } from "../typographie.js";
+import { casse } from "../tools/casse.js";
 
 export const SOURCE: SourceInfo = {
   id: "avis_eau",
@@ -82,6 +83,11 @@ export interface Avis {
   secteurs: string[];
   /** Whether `secteurs` is the notice's whole list; false also when no list was found. */
   secteurs_complets: boolean;
+  /**
+   * The one place a notice without a list names in its sentence (« sur la rue des Salins », « sur le secteur de
+   * Bernica »): said beside its title, never as a whole list (La Créole, 25/11/2026: two notices with the same title).
+   */
+  lieu?: string;
   /** The water should not be drunk (« ne pas boire », « eau embouteillée ou bouillie »). */
   ne_pas_boire: boolean;
   texte: string;
@@ -381,12 +387,23 @@ const CREOLE_STREET_MAX = 100;
  * the start (else after the notice's date). Else both from one day written with its two hours (« le mercredi 4 novembre
  * 2026, de 8h à 15h »), only when the notice writes one such day. No other end is guessed (« en fin de matinée »).
  */
+/**
+ * The place a notice names in its sentence, after « sur » (« sur la rue des Salins. », « sur le secteur de Bernica : »):
+ * a street, a road or a sector, up to the end of the sentence or a colon. Nothing when it names none.
+ */
+export function lieuDit(texte: string): string | undefined {
+  const m = /\bsur (?:la |le |l['’])?((?:rue|chemin|route|avenue|allée|impasse|boulevard|ruelle|sentier|secteur|quartier|lotissement)\b[^.:;\n]*)/i.exec(texte);
+  const lieu = m?.[1].replace(/\s+/g, " ").trim();
+  return lieu && lieu.length <= 80 ? lieu : undefined;
+}
+
 export function parseCreole(html: string): Avis[] {
   const box = /<div id="infos-flash">([\s\S]*?)<\/ul>/.exec(html)?.[1] ?? "";
   return [...box.matchAll(/<li>([\s\S]*?)<\/li>/g)].flatMap(([, li]) => {
     const date = /(\d\d\/\d\d\/\d{4})\s*-/.exec(li)?.[1];
     if (!date) return [];
-    const titre = strip(/<span class="text-uppercase">([\s\S]*?)<\/span>/.exec(li)?.[1] ?? "").trim();
+    // Written in capitals (« INTERRUPTION DE LA DISTRIBUTION », 25/11/2026): in the case of a sentence.
+    const titre = casse(strip(/<span class="text-uppercase">([\s\S]*?)<\/span>/.exec(li)?.[1] ?? "").trim());
     const body = lines(/<span>\s*([\s\S]*)<\/span>/.exec(li)?.[1] ?? "");
     const texte = body.replace(/\n+/g, " ");
     const start = /(\d\d\/\d\d\/\d{4}) à partir de (\d{1,2})h(\d\d)?/.exec(texte);
@@ -405,7 +422,11 @@ export function parseCreole(html: string): Avis[] {
       fin: tomorrow ? `${next}T${tomorrow[1].padStart(2, "0")}:${tomorrow[2] ?? "00"}` : span ? `${day}T${pad(span[6])}:${span[7] ?? "00"}` : undefined,
       // Its places are most often zones with their limits (« sa limite haute : le chemin de La Giroday … »): a list only
       // after « secteur suivant : », ended by its closing line.
-      ...sectorList(body, false, CREOLE_STREET_MAX),
+      ...(() => {
+        const list = sectorList(body, false, CREOLE_STREET_MAX);
+        const lieu = list.secteurs_complets ? undefined : lieuDit(texte);
+        return { ...list, ...(lieu ? { lieu } : {}) };
+      })(),
       ne_pas_boire: drinkSaid(titre, texte),
       ...cut(body),
       lien: CREOLE.url,

@@ -11,7 +11,7 @@ import { why } from "../types.js";
 import { slugify } from "../web/places.js";
 import { deNom } from "../articles.js";
 import { a, credits, enumeration, notFound, placeBlock, text } from "./format.js";
-import { type Injoignable, injoignable } from "./injoignable.js";
+import { type Injoignable, injoignable, when as luLe } from "./injoignable.js";
 import { copieAncienne, VOIR_EAU } from "./copie-ancienne.js";
 
 const RECENT_DAYS = 5;
@@ -77,7 +77,7 @@ export function noticeSaid(n: notices.Avis, now: Date): string {
   const more = streets.length - VOIES_AU_RESUME;
   const where = streets.length
     ? ` (${streets.slice(0, VOIES_AU_RESUME).join(", ")}${more > 0 ? ` et ${more} autre${more > 1 ? "s" : ""} voie${more > 1 ? "s" : ""}` : ""})`
-    : "";
+    : n.lieu ? ` (${n.lieu})` : "";
   return `${n.titre}${cut ? `, ${cut}` : `, avis du ${publishedShort(n)}`}${where}`;
 }
 
@@ -127,6 +127,8 @@ export function noticeRow(n: notices.Avis, now: Date, current = n.ne_pas_boire) 
     secteurs_complets: n.secteurs_complets,
     // The same words as the page: « Secteurs : … Chemin Pinguet et les voies adjacentes ».
     secteurs_dits: n.secteurs_complets && n.secteurs.length ? notices.sectorsSaid(n.secteurs) : undefined,
+    // The one place named in its sentence, when it has no list: never a whole list (secteurs_complets stays false).
+    lieu: n.lieu,
     ne_pas_boire: (n.ne_pas_boire && current) || undefined,
     forme: n.forme,
     extrait_coupe: n.extrait_coupe,
@@ -177,19 +179,35 @@ export interface FluxMuet extends Injoignable {
   /** « de la CIREST ». */
   de: string;
   site: string;
+  /** When its notices still given were read (« 24/10 08:00 »); none kept: absent. */
+  lu_a?: string;
 }
 
 /** The feeds that did not answer at the last read: their notices kept, or their read said failed. */
 export function muets(c: Cached<notices.Flux[]>, now: Date): FluxMuet[] {
-  return c.value.filter((f) => f.muet).map((f) => ({ ...injoignable(`le site ${f.de}`, f.lu_a, localTime(c.fetchedAt), now), de: f.de, site: f.site }));
+  return c.value.filter((f) => f.muet).map((f) => ({ ...injoignable(`le site ${f.de}`, f.lu_a, localTime(c.fetchedAt), now), de: f.de, site: f.site, ...(f.lu_a ? { lu_a: f.lu_a } : {}) }));
 }
 
-/** The silent feed that reads a commune's notices, if it is one: its distributor's site (src/eau/distributeurs.ts). */
-export function muetPour<T extends { site: string }>(list: T[] | undefined, commune: string): T | undefined {
+/**
+ * The silent feed that reads a commune's notices, if it is one: its distributor's site (src/eau/distributeurs.ts). With
+ * the commune's notices kept (`avis`) and the hour of that read, said for the commune: none of them, what the read held
+ * (« pas d'avis de coupure récent ou à venir à Saint-Pierre »), never « Ce qui suit peut avoir changé » with nothing
+ * after it (24/11/2026); some, « ces avis », wherever they are said.
+ */
+export function muetPour<T extends { site: string; texte?: string; court?: string; de?: string; lu_a?: string }>(list: T[] | undefined, commune: string, avis?: number): T | undefined {
   const site = distributeur(commune)?.site;
   if (!site || !list) return undefined;
   const host = new URL(site).hostname;
-  return list.find((f) => new URL(f.site).hostname === host);
+  const f = list.find((x) => new URL(x.site).hostname === host);
+  if (!f?.lu_a || avis === undefined || !f.de) return f;
+  const at = luLe(f.lu_a);
+  return avis
+    ? { ...f, texte: `Lu ${at} : le site ${f.de} n'a pas répondu depuis. Ces avis peuvent avoir changé : voir son site.` }
+    : {
+      ...f,
+      texte: `Lu ${at} : pas d'avis de coupure récent ou à venir ${a(commune)} sur le site ${f.de}. Il n'a pas répondu depuis : pour un avis publié depuis, voir son site.`,
+      court: `pas d'avis lu ${at}, sans réponse depuis`,
+    };
 }
 
 /** How many notices an assistant gets with their excerpt; the next ones with their link (MAX_BYTES, 21/11/2026). */
@@ -318,7 +336,7 @@ export async function coupuresEau(cache: Cache, lieu: string | undefined, now = 
   // A distributor's own site, linked only (SITES_DISTRIBUTEURS): what the commune's page links.
   const siteDist = unread ? SITES_DISTRIBUTEURS[unread.nom] : undefined;
   // Its feed did not answer at the last read: its notices kept said so, or its read said failed, never « aucun avis ».
-  const mute = dist?.avis ? muetPour(silent, commune) : undefined;
+  const mute = dist?.avis ? muetPour(silent, commune, mine.length) : undefined;
   // The résumé names the distributor (`where`): the ARS credited beside the notices.
   const named = covered && !mine.length && !mute;
   // The notices the résumé lists: every one but the one not to drink the water, said before them.

@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Mardi 24 novembre 2026
 
+- Coupures d'eau : chaque avis dit le lieu qu'il nomme, et un site muet laisse lire ce que disait sa dernière lecture
 - Eau de baignade : chaque plage dit son classement par l'ARS, et Saint-Gilles-les-Bains donne ses propres plages
 - Assistants IA : les résultats des élections de chaque commune depuis 1999, tels que le ministère de l'Intérieur les publie.
 - Météo d'un lieu : les sources sont dites une seule fois, en fin de page, regroupées par licence.

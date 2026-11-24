@@ -121,6 +121,7 @@ import * as radarsFixes from "./routes/radars.js";
 import * as accidentsRoute from "./routes/accidents.js";
 import * as parcoursupFormations from "./vie/parcoursup.js";
 import * as electionsCommunes from "./vie/elections.js";
+import { electionsAnswer } from "./tools/elections.js";
 import * as ipsDepp from "./vie/ips.js";
 import { BDTOPO, PHOTOS } from "./providers/ign.js";
 import { sitesSansReponse } from "./tools/sans-reponse.js";
@@ -132,7 +133,7 @@ import * as peche from "./tools/peche.js";
 import * as cetaces from "./tools/cetaces.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.820";
+export const VERSION = "1.0.821";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -635,6 +636,24 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
       annotations: { ...READ_ONLY },
     },
     track("emploi", (args: { lieu?: string; mot_cle?: string }) => emploi(cache, args.lieu, args.mot_cle)),
+  );
+
+  server.registerTool(
+    "elections",
+    {
+      title: "Élections à La Réunion",
+      description:
+        "Résultats des élections dans une commune de La Réunion (974) depuis 1999, d'après le ministère de l'Intérieur : inscrits, votants, blancs, nuls, exprimés, " +
+        "voix de chaque candidat ou liste, participation. Les candidats sont dans l'ordre des panneaux, quel que soit le résultat : donner les voix telles quelles, sans nuance politique. " +
+        "Pour : « résultats des municipales à Saint-Paul ? », « participation à la présidentielle de 2022 à Cilaos ? ».",
+      inputSchema: {
+        lieu: z.string().max(TEXTE_MAX).optional().describe("Commune ou lieu (« Saint-Paul », « Cilaos »)."),
+        scrutin: z.string().max(TEXTE_MAX).optional().describe("Municipales, législatives, européennes, présidentielle, régionales, départementales, cantonales. Vide = le dernier."),
+        annee: z.number().int().min(1999).max(2100).optional().describe("Année (2022)."),
+      },
+      annotations: { ...READ_ONLY },
+    },
+    track("elections", async (args: { lieu?: string; scrutin?: string; annee?: number }) => electionsAnswer(args.lieu, args.scrutin, args.annee)),
   );
 
   server.registerTool(

@@ -426,7 +426,7 @@ function doctors(p: PlacePage): string {
 `;
 }
 
-const TOURS = ["1er tour", "2nd tour"];
+const TOURS = elections.TOURS;
 
 /** A block's figures, in the ministry's words and order; the abstention also as a share of the inscrits. */
 function figures(b: elections.Bloc): string {
@@ -453,7 +453,7 @@ function scrutin(s: elections.Scrutin): string {
 }
 
 /** The path of the commune's elections page. */
-export const electionsPath = (p: PlacePage) => `/communes/${p.slug}/elections`;
+export const electionsPath = (p: PlacePage) => elections.chemin(p.slug);
 
 /**
  * The commune's elections (vie/elections.ts), on their own page (/communes/<commune>/elections, words by marketing,
@@ -466,7 +466,7 @@ function votes(p: PlacePage): string {
   if (!types.length) return "";
   // The cantonales' note in one sentence; in full on /a-propos#cantonales, the same for every commune.
   const cards = types.map(({ type, scrutins }) => `<li class="card" data-k><h3>${esc(elections.TYPES[type].nom)}</h3>${scrutins.map(scrutin).join("")}${type === "cant"
-    ? `<p class="note">${esc("Aux cantonales, la moitié des cantons votait à chaque fois\u00a0: seuls les bureaux des cantons qui votaient sont comptés.")} <a href="/a-propos#cantonales">${esc("Pourquoi elles ne se comparent pas aux départementales →")}</a></p>`
+    ? `<p class="note">${esc(elections.CANTONALES)} <a href="/a-propos#cantonales">${esc("Pourquoi elles ne se comparent pas aux départementales →")}</a></p>`
     : ""}</li>`).join("");
   const series = elections.participation(p.nom);
   const serie = series.length
@@ -475,21 +475,9 @@ function votes(p: PlacePage): string {
     }</tbody></table></div><p class="note">${esc(`La participation ${aCommune(p.nom)} au 1er tour de chaque scrutin depuis ${elections.DEBUT}, sauf les cantonales, où seule une partie des cantons votait\u00a0: les votants et leur % des inscrits. Les bureaux de vote changent de périmètre d'une élection à l'autre\u00a0: la série est donnée pour la commune entière.`)}</p></details></li>`
     : "";
   const all = types.flatMap((x) => x.scrutins);
-  const split = [...new Set((Object.keys(elections.TYPES) as elections.Type[])
-    .filter((t) => all.some((s) => s.type === t && s.tours.some((b) => b.length > 1)))
-    .map((t) => `La commune est partagée entre plusieurs ${elections.TYPES[t].parties}\u00a0: les résultats sont donnés pour chacun${elections.TYPES[t].parties === "circonscriptions" ? "e" : ""}.`))];
-  const anonymes = all.some((s) => s.tours.some((b) => b.length > 1 && b.some((x) => !x.lieu)))
-    ? ["Quand le fichier ne nomme pas la circonscription ou le canton, les bureaux sont regroupés par leurs candidats."]
-    : [];
-  const anciens = [
-    ...(all.some((s) => s.tours.some((b) => b.some((x) => x.lignes.some((l) => l.panneau === null))))
-      ? [`Sans panneaux dans le fichier (${all.filter((s) => s.tours[0]![0]!.lignes.some((l) => l.panneau === null)).sort((x, y) => y.annee - x.annee).map((s) => s.nom).join(", ")}), les listes sont dans l'ordre alphabétique.`]
-      : []),
-    ...(all.some((s) => s.tours.some((b) => b.some((x) => x.blancs === null))) ? ["Jusqu'en 2015, le fichier compte les blancs avec les nuls."] : []),
-  ];
   return `<section id="elections" aria-label="${esc(`Les scrutins ${aCommune(p.nom)}`)}">
   <ul class="zones top">${cards}${serie}</ul>
-  <p class="note">${esc(["Les candidats et les listes sont dans l'ordre des panneaux (N°), celui du ministère, quel que soit le résultat, avec leurs voix et leur % des exprimés. Les nuances politiques ne sont pas reprises.", ...anciens, ...split, ...anonymes].join(" "))}</p>
+  <p class="note">${esc([elections.ORDRE, ...elections.notes(all)].join(" "))}</p>
   <p class="sources">Source\u00a0: ${credits([{ ...credit(elections.SOURCE), source: elections.SOURCE.attribution }])}, jeu mis à jour le ${esc(elections.MIS_A_JOUR.split("-").reverse().join("/"))}.</p>
 </section>
 `;

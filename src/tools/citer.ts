@@ -45,6 +45,8 @@ const PAGES: Record<string, string> = {
   coupures_eau: "/coupures-eau",
   defibrillateurs: "/defibrillateurs",
   peche_loisir: "/peche",
+  // A commune asked: its own elections page, named by the answer (`page`).
+  elections: "/communes",
   sport: "/sport",
   cyclones: "/cyclones",
   crues_rivieres: "/crues",

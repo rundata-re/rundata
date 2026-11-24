@@ -908,6 +908,9 @@ export async function agenda(cache: Cache, lieu?: string, quand?: string, quoi?:
   });
   const failed = got.filter((g) => !g.value && !g.agenda.planifie).map((g) => g.agenda.nom);
   const unread = nonLus(got, res?.lieu.commune);
+  const muettes = mairiesMuettes(got, now);
+  const muette = commune ? muettes.find((x) => x.commune === commune) : undefined;
+  const sansEvenement = (commune ? (muette ? [muette] : []) : muettes).map((x) => x.phrase);
   // The proposed events alone are not an agenda that answers: there may be none.
   if (got.every((g) => !g.value || (DE_LA_BASE.has(g.agenda.id) && !g.value.value.length))) {
     return { ...text({ erreur: "Les agendas ne répondent pas pour le moment.", indisponible: failed }), isError: true };
@@ -945,7 +948,8 @@ export async function agenda(cache: Cache, lieu?: string, quand?: string, quoi?:
     partly ? `${commune} : ${partly.partiel}${besides(commune!)}` : "",
     // Its own site read, none announced: said with the hour of the read, so that « aucun » is not taken for a commune
     // not read (Saint-Louis, 17/11/2026). Not with a genre asked: the site may announce another kind.
-    commune && !n && !what ? rienAnnonce(sitesLus(got, commune)) : "",
+    // Nothing to come at all, every site of its mairie read: said so, dated, rather than for the period only.
+    commune && !n && !what ? muette?.phrase ?? rienAnnonce(sitesLus(got, commune)) : "",
     commune && !n && all.length ? `${all.length} ailleurs sur l'île` : "",
     !n && market ? MARCHES_REGULIERS : "",
     // Said in the summary, not only in `indisponible`: a partial list must not be read as the whole of it.
@@ -989,7 +993,9 @@ export async function agenda(cache: Cache, lieu?: string, quand?: string, quoi?:
     non_lus: unread.length ? unread.map((x) => `${x.nom} : ${x.etat}`) : undefined,
     // Where a commune's site is not read until it agrees: to be said with the answer.
     non_repris: nonRepris,
-    couverture: place ? COUVERTURE : COUVERTURE_OUTIL,
+    // The mairies read that announce nothing to come (mairiesMuettes): the commune's, or the island's.
+    mairies_sans_evenement: sansEvenement.length ? sansEvenement : undefined,
+    couverture: place ? `${COUVERTURE}${muettes.length ? ` ${((s) => s[0].toUpperCase() + s.slice(1))(muettes.map((x) => x.phrase).join("\u00a0; "))}.` : ""}` : COUVERTURE_OUTIL,
     a_savoir: A_SAVOIR,
     sources: credits(credited),
     // For the pages only (`place`): when the oldest of the agendas served was read, the time /evenements says, as the
@@ -1043,6 +1049,31 @@ export const luLe = (iso: string) => {
 export function rienAnnonce(sites: { site: string; lu_le: string }[]): string {
   if (!sites.length) return "";
   return `${sites.map((x) => `le ${x.site}, lu ${luLe(x.lu_le)},`).join(" et ")} n'en annonce${sites.length > 1 ? "nt" : ""} aucun`;
+}
+
+/**
+ * The mairies whose own sites were all read and announce no event to come, whatever the period asked: « la mairie de
+ * Sainte-Marie n'annonce aucun événement en ce moment (dernière lecture le 24/11 à 08:30) », the same sentence in the
+ * tool and on /evenements (rule 3 sexies), with the oldest of those reads. Told from the reads only, never from a list:
+ * a site that failed, whose copy is no longer served or left to the next question keeps its own message (rule 3 ter),
+ * and the sentence goes by itself as soon as the mairie announces an event. A commune none of whose sites is read has none.
+ */
+export function mairiesMuettes(got: Got[], now: Date): { commune: string; phrase: string }[] {
+  const here = new Date(now.getTime() + 4 * 3600_000).toISOString().slice(0, 16);
+  const by = new Map<string, Got[]>();
+  for (const g of got) if (g.agenda.commune && g.agenda.site_commune) by.set(g.agenda.commune, [...(by.get(g.agenda.commune) ?? []), g]);
+  const out: { commune: string; phrase: string }[] = [];
+  for (const [commune, gs] of by) {
+    if (gs.some((g) => !g.value || g.nonServie || g.remise)) continue;
+    const toCome = gs.some((g) => g.value!.value.some((e) => e.seances.some((s) => {
+      const end = s.fin ?? s.debut;
+      return end.length > 10 ? end >= here : end >= here.slice(0, 10);
+    })));
+    if (toCome) continue;
+    const at = new Date(Math.min(...gs.map((g) => g.value!.fetchedAt.getTime()))).toISOString();
+    out.push({ commune, phrase: `la mairie ${de(commune)} n'annonce aucun événement en ce moment (dernière lecture ${luLe(at)})` });
+  }
+  return out.sort((x, y) => x.commune.localeCompare(y.commune, "fr"));
 }
 
 /** An agenda served, as a read of the answer: its own time, never left out as reference data (`lentes`). */

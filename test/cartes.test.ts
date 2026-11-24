@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import baignades from "../src/eau/baignades.json" with { type: "json" };
 import { COMMON } from "../src/tools/eau.js";
 import type { EauAnswer, HistoriqueAnswer, SeaData } from "../src/web/data.js";
 import { eauPage, historiquePage } from "../src/web/domains.js";
@@ -25,6 +26,23 @@ describe("the maps of the pages read from a bundle or a database", () => {
     expect(mapLinks(page)[1].label).toBe("Bassin Manapany : qualité moyenne au dernier prélèvement, voir le détail");
     expect(deadAnchors(page)).toEqual([]);
     expect(doubleIds(page)).toEqual([]);
+  });
+
+  it("draws every bathing site's round apart on /eau, none over another", () => {
+    // 24/11/2026: the ARS's 26 sites at their places, seven on the 15 km of coast from Boucan Canot to the Pointe des Trois
+    // Roches, four in Saint-Pierre: the rounds covered each other and their mark (✓) could not be read.
+    const value = {
+      baignades: baignades.sites.map((s) => ({ site: s.nom, commune: s.commune, lon: s.lon, lat: s.lat, qualite_dernier_prelevement: "bonne", dernier_prelevement: "15/09/2026", derniers_prelevements: [], mauvais_sur_12_mois: 0 })),
+      communes: [],
+      lu: NOW.toISOString(),
+      a_savoir: COMMON,
+      sources: [],
+    } as unknown as EauAnswer;
+    const page = eauPage("https://rundata.re", cached(value), NOW);
+    const rounds = [...page.matchAll(/<circle class="sh" cx="(-?\d+)" cy="(-?\d+)" r="(\d+)"/g)].map((m) => m.slice(1, 4).map(Number));
+    expect(rounds).toHaveLength(baignades.sites.length);
+    const over = rounds.flatMap(([x, y, r], i) => rounds.slice(i + 1).filter(([u, v, q]) => Math.hypot(u - x, v - y) < r + q).map(() => i));
+    expect(over).toEqual([]);
   });
 
   it("lead each station of the rain map to its row on /historique", () => {

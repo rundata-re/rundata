@@ -80,6 +80,27 @@ describe("the banner on every page of the site", () => {
     }
   });
 
+  it("is on pages kept a minute at most, as the others: an alert raised or lifted is never an hour late in a browser", async () => {
+    const orange = bulletin(4, () => -1, 3);
+    const get = async (path: string) => (await site(new Request(`https://rundata.re${path}`), cacheWith(orange), () => {}, NOW))!;
+    const sitemap = await (await get("/sitemap.xml")).text();
+    const paths = [...sitemap.matchAll(/<loc>https:\/\/rundata\.re([^<]*)<\/loc>/g)].map((m) => m[1] || "/");
+    // Out of the sitemap: the app, the stops' search, the trip planner, a commune's elections.
+    paths.push(APPLI, "/bus/arret?q=gare", "/bus/itineraire", "/communes/saint-pierre/elections");
+    const long: string[] = [];
+    let banners = 0;
+    for (const path of paths) {
+      const r = await get(path);
+      expect(r, path).not.toBeNull();
+      if (!(await r.text()).includes('<div class="alerte vg')) continue;
+      banners++;
+      const age = Number(/max-age=(\d+)/.exec(r.headers.get("cache-control") ?? "")?.[1] ?? Infinity);
+      if (!(age <= 60) && r.headers.get("cache-control") !== "no-store") long.push(`${path} ${r.headers.get("cache-control")}`);
+    }
+    expect(banners).toBeGreaterThan(200);
+    expect(long).toEqual([]);
+  }, 120_000);
+
   it("is said by vigilance_meteo for the zone, never for the commune", async () => {
     const r = JSON.parse((await vigilanceMeteo(cacheWith(bulletin(4, () => -1, 3)), "Saint-Pierre", NOW)).content[0].text);
     expect(r.resume).toContain("zone Sud (où se trouve Saint-Pierre) : orange fortes pluies / orages");

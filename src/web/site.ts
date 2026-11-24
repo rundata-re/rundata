@@ -172,10 +172,16 @@ import { UV_HEADERS, UV_PATH, uvMoufia } from "./uv-moufia.js";
 import { partageVideo, VIDEO_PATH } from "./partage-video.js";
 import { audience, TEAM } from "../metrics.js";
 
+/**
+ * How long a browser keeps a page with the vigilance's banner: a minute, as the live pages. A banner raised or lifted is
+ * never an hour late, on a page of fixed text either (test/vigilance-partout.test.ts, 24/11/2026).
+ */
+const BANNER_MAX_AGE = 60;
+
 const HTML = {
   "content-type": "text/html; charset=utf-8",
-  // Short: the live block changes every few minutes; the data behind it has its own cache.
-  "cache-control": "public, max-age=60",
+  // Short: the live block changes every few minutes, and the vigilance's banner with it; the data behind it has its own cache.
+  "cache-control": `public, max-age=${BANNER_MAX_AGE}`,
   "x-content-type-options": "nosniff",
   "referrer-policy": "strict-origin-when-cross-origin",
 };
@@ -833,7 +839,7 @@ async function pages(request: Request, cache: Cache, background: Background, now
   }
   // The schools, bundled (vie/ecoles.ts), built once: nothing read but the vigilance's banner. The collège of an address
   // is found in the browser, in the commune's file of public/carte-scolaire/, which never reaches the Worker.
-  if (path === ECOLES || path === `${ECOLES}/`) return new Response(annuaireEcolesPage(origin, await alerte(cache, background, now)), { headers: { ...HTML, "cache-control": "public, max-age=3600" } });
+  if (path === ECOLES || path === `${ECOLES}/`) return new Response(annuaireEcolesPage(origin, await alerte(cache, background, now)), { headers: { ...HTML } });
   // The plan's list, nothing read but the vigilance's banner.
   if (path === "/kit-cyclone" || path === "/kit-cyclone/") {
     const a = await alerte(cache, background, now);
@@ -846,7 +852,7 @@ async function pages(request: Request, cache: Cache, background: Background, now
     const commune = COMMUNES.find((p) => p.slug === url.searchParams.get("commune"));
     const adresse = terrainAsked(url.searchParams.get("adresse") ?? "", commune);
     const [r, a] = await Promise.all([adresse ? ficheDonnees(cache, adresse, now) : undefined, alerte(cache, background, now)]);
-    return new Response(terrainPage(origin, adresse, r, commune, a), { headers: { ...HTML, "cache-control": adresse ? "no-store" : "public, max-age=300" } });
+    return new Response(terrainPage(origin, adresse, r, commune, a), { headers: { ...HTML, "cache-control": adresse ? "no-store" : HTML["cache-control"] } });
   }
   if (path === "/peche" || path === "/peche/") {
     const a = await alerte(cache, background, now);
@@ -965,10 +971,10 @@ async function pages(request: Request, cache: Cache, background: Background, now
       const meteo = c ? await cache.peek<PlaceData>(`web:lieu:${c.slug}`, now.getTime() - FRESH_SECONDS * 1000).catch(() => undefined) : undefined;
       return page(path, () => fichePage(origin, r, data!, meteo?.value, a), data, background, [rebuild(cache, d.key, () => d.build(cache, now))]);
     }
-    if ("passee" in issue) return new Response(fichePassee(origin, issue.passee, a), { headers: { ...HTML, "cache-control": "public, max-age=3600" } });
+    if ("passee" in issue) return new Response(fichePassee(origin, issue.passee, a), { headers: { ...HTML } });
     if (issue.statut === 503) return new Response(ficheAttente(origin, path, a), { status: 503, headers: { ...HTML, "cache-control": "no-store", "retry-after": "30" } });
     if (issue.statut === 404) return (await missing());
-    return new Response(ficheTerminee(origin, path, a), { status: 410, headers: { ...HTML, "cache-control": "public, max-age=3600" } });
+    return new Response(ficheTerminee(origin, path, a), { status: 410, headers: { ...HTML } });
   }
   const domain = DOMAINS[path.replace(/(.)\/$/, "$1")];
   if (domain) {
@@ -1021,14 +1027,14 @@ async function pages(request: Request, cache: Cache, background: Background, now
   }
   if (path === "/presse" || path === "/presse/") {
     // Its live counts are read from copies already here: a few minutes in browsers is enough.
-    return new Response(pressePage(origin, await pressFigures(cache), await alerte(cache, background, now)), { headers: { ...HTML, "cache-control": "public, max-age=300" } });
+    return new Response(pressePage(origin, await pressFigures(cache), await alerte(cache, background, now)), { headers: { ...HTML } });
   }
   if (path === "/carburants" || path === "/carburants/") {
     const [data, a] = await Promise.all([carburants.prix(cache, now).catch(() => null), alerte(cache, background, now)]);
     return page(path, (live) => carburantsPage(origin, live ? data : null, now, a), data, background);
   }
   if (path === "/nouveautes" || path === "/nouveautes/") {
-    return new Response(nouveautesPage(origin, await alerte(cache, background, now)), { headers: { ...HTML, "cache-control": "public, max-age=3600" } });
+    return new Response(nouveautesPage(origin, await alerte(cache, background, now)), { headers: { ...HTML } });
   }
   // With the vigilance's banner, and so as short-lived as the others: a calm lagoon must not stay above an alert.
   if (path === BAIGNADE || path === `${BAIGNADE}/`) {
@@ -1037,51 +1043,51 @@ async function pages(request: Request, cache: Cache, background: Background, now
   }
   // Who makes the site, and the connector's page for a browser (app.ts sends only those here): nothing read but the vigilance's banner.
   if (path === "/a-propos" || path === "/a-propos/") {
-    return new Response(aProposPage(origin, await alerte(cache, background, now)), { headers: { ...HTML, "cache-control": "public, max-age=3600" } });
+    return new Response(aProposPage(origin, await alerte(cache, background, now)), { headers: { ...HTML } });
   }
   // The map of layers (web/carte.ts): built once, nothing read but the vigilance's banner; its layers are asked by its script.
-  if (path === CARTE || path === `${CARTE}/`) return new Response(cartePage(origin, await alerte(cache, background, now)), { headers: { ...HTML, "cache-control": "public, max-age=900" } });
+  if (path === CARTE || path === `${CARTE}/`) return new Response(cartePage(origin, await alerte(cache, background, now)), { headers: { ...HTML } });
   // The antennas, bundled (vie/antennes.ts), and the copy of the mobile sites out of service (one read, kept an hour in
   // the data center's cache), with the vigilance's banner.
   if (path === ANTENNES || path === `${ANTENNES}/`) {
     const [hs, a] = await Promise.all([sitesHs.sites(cache), alerte(cache, background, now)]);
-    return new Response(antennesPage(origin, hs, now, a), { headers: { ...HTML, "cache-control": "public, max-age=900" } });
+    return new Response(antennesPage(origin, hs, now, a), { headers: { ...HTML } });
   }
   // The datasets of transport.data.gouv.fr the site reads (the MMTIS access point's request of 13/11/2026): the same.
   if (path === JEUX_TRANSPORT) {
-    return new Response(transportDonneesPage(origin, await alerte(cache, background, now)), { headers: { ...HTML, "cache-control": "public, max-age=3600" } });
+    return new Response(transportDonneesPage(origin, await alerte(cache, background, now)), { headers: { ...HTML } });
   }
   // The one page in English: nothing read but the vigilance's banner, as /valeurs.
   if (path === EN || path === `${EN}/`) {
-    return new Response(enPage(origin, await alerte(cache, background, now)), { headers: { ...HTML, "cache-control": "public, max-age=3600" } });
+    return new Response(enPage(origin, await alerte(cache, background, now)), { headers: { ...HTML } });
   }
   // What rundata.re stands for: nothing read but the vigilance's banner, as /a-propos.
   if (path === VALEURS || path === `${VALEURS}/`) {
-    return new Response(valeursPage(origin, await alerte(cache, background, now)), { headers: { ...HTML, "cache-control": "public, max-age=3600" } });
+    return new Response(valeursPage(origin, await alerte(cache, background, now)), { headers: { ...HTML } });
   }
   // The Android app's trial version: never indexed (noindex in the page and in its header), out of the sitemap, linked
   // from nowhere on the site. Its file is the GitHub pre-release's asset; the short address follows the version.
   if (path === APPLI) {
-    return new Response(appliPage(origin, await alerte(cache, background, now)), { headers: { ...HTML, "cache-control": "public, max-age=3600", "x-robots-tag": "noindex" } });
+    return new Response(appliPage(origin, await alerte(cache, background, now)), { headers: { ...HTML, "x-robots-tag": "noindex" } });
   }
   if (path === APK_PATH) return new Response(null, { status: 302, headers: { location: APK_URL, "cache-control": "public, max-age=300", "x-robots-tag": "noindex" } });
   // How to put the site on the home screen, browser by browser: the same.
   if (path === APPLICATION || path === `${APPLICATION}/`) {
-    return new Response(applicationPage(origin, await alerte(cache, background, now)), { headers: { ...HTML, "cache-control": "public, max-age=3600" } });
+    return new Response(applicationPage(origin, await alerte(cache, background, now)), { headers: { ...HTML } });
   }
   // The guide to publishing one's information openly: the same.
   if (path === GUIDE || path === `${GUIDE}/`) {
-    return new Response(ouvrirDonneesPage(origin, await alerte(cache, background, now)), { headers: { ...HTML, "cache-control": "public, max-age=3600" } });
+    return new Response(ouvrirDonneesPage(origin, await alerte(cache, background, now)), { headers: { ...HTML } });
   }
   // The companies' and bodies' space: the same, in noindex and out of the sitemap until it is announced (DISCRETE).
   if (path === ENTREPRISES || path === `${ENTREPRISES}/`) {
-    return new Response(entreprisesPage(origin, await alerte(cache, background, now)), { headers: { ...HTML, "cache-control": "public, max-age=3600" } });
+    return new Response(entreprisesPage(origin, await alerte(cache, background, now)), { headers: { ...HTML } });
   }
   // rundata.re en chiffres: what the code counts, and the last copy of what the sources do (chiffres.ts); never a source.
   if (path === CHIFFRES || path === `${CHIFFRES}/`) {
     const [copie, a] = await Promise.all([cache.peek<Copie>(CHIFFRES_KEY).catch(() => undefined), alerte(cache, background, now)]);
     const sources = toutesLesSources();
-    return new Response(chiffresPage(origin, chiffres(sources, copie, now, toolCount(cache)), inventaire(sources), a), { headers: { ...HTML, "cache-control": "public, max-age=900" } });
+    return new Response(chiffresPage(origin, chiffres(sources, copie, now, toolCount(cache)), inventaire(sources), a), { headers: { ...HTML } });
   }
   // The sites that do not answer: their rows read at most every 15 minutes (sans-reponse.ts), whatever the visits.
   if (path === SANS_REPONSE || path === `${SANS_REPONSE}/`) {
@@ -1090,16 +1096,16 @@ async function pages(request: Request, cache: Cache, background: Background, now
     // Not kept by the browsers for 15 minutes when the list was not read: the next visit asks again. Kept as long as the
     // copy is good (a minute during the recheck's half hour, sans-reponse.ts `fraicheur`): a page seen at 06:01 is not
     // shown again until 06:16 (23/11/2026).
-    return new Response(sansReponsePage(origin, e?.lignes ?? [], e?.passage, a, lecture), { headers: { ...HTML, "cache-control": lecture ? "no-store" : `public, max-age=${sansReponseFraicheur(now)}` } });
+    return new Response(sansReponsePage(origin, e?.lignes ?? [], e?.passage, a, lecture), { headers: { ...HTML, "cache-control": lecture ? "no-store" : `public, max-age=${Math.min(BANNER_MAX_AGE, sansReponseFraicheur(now))}` } });
   }
   if (path === "/mcp" || path === "/mcp/") {
-    return new Response(connecteurPage(origin, await alerte(cache, background, now)), { headers: { ...HTML, "cache-control": "public, max-age=3600", vary: "accept" } });
+    return new Response(connecteurPage(origin, await alerte(cache, background, now)), { headers: { ...HTML, vary: "accept" } });
   }
   if (path === "/llms.txt") {
     return new Response(llmsTxt(origin), { headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "public, max-age=86400", "x-content-type-options": "nosniff" } });
   }
   if (path === "/confidentialite" || path === "/conditions") {
-    return new Response(legalPage(origin, path.slice(1) as "confidentialite" | "conditions", await alerte(cache, background, now)), { headers: { ...HTML, "cache-control": "public, max-age=3600" } });
+    return new Response(legalPage(origin, path.slice(1) as "confidentialite" | "conditions", await alerte(cache, background, now)), { headers: { ...HTML } });
   }
   // The radar's rain for /meteo's map, asked by its script: data, not a page.
   if (path === PLUIE_RADAR) return rainGrid(cache);
@@ -1177,7 +1183,7 @@ async function pages(request: Request, cache: Cache, background: Background, now
     const p = pageOf(elec[1]!);
     const html = p?.commune ? electionsPage(origin, p, await alerte(cache, background, now)) : undefined;
     return html
-      ? new Response(html, { headers: { ...HTML, "cache-control": "public, max-age=3600" } })
+      ? new Response(html, { headers: { ...HTML } })
       : (await missing());
   }
   if (path.startsWith("/communes/")) {
@@ -1200,14 +1206,12 @@ async function pages(request: Request, cache: Cache, background: Background, now
   // The search for a journey: the form alone, or the journeys read from the timetables at each search (web/itineraire.ts).
   if (path === ITINERAIRE_PATH || path === `${ITINERAIRE_PATH}/`) {
     const asked = askedOf(url.searchParams);
-    if (!asked) return new Response(itinerairePage(origin, undefined, await alerte(cache, background, now), now), { headers: { ...HTML, "cache-control": "public, max-age=300" } });
+    if (!asked) return new Response(itinerairePage(origin, undefined, await alerte(cache, background, now), now), { headers: { ...HTML } });
     if (!transit.enabled()) return new Response(itinerairePage(origin, { asked, quand: "", indisponible: true, de: endOf(asked.de), a: endOf(asked.a) }, await alerte(cache, background, now), now), { status: 503, headers: { ...HTML, "cache-control": "no-store", "retry-after": "60" } });
     const started = Date.now();
     const r = await answer(asked, now);
     if (r.search) console.log(`trajet en bus : ${r.search.lectures.requetes} lectures D1, ${r.search.lectures.lignes} lignes, ${r.search.trajets.length} trajets, ${Date.now() - started} ms${r.search.trop_large ? ", trop large" : ""}`);
-    // A search for now changes with the minute; one for a given day and time, only with the timetables.
-    const age = asked.jour && asked.heure ? 300 : 60;
-    return new Response(itinerairePage(origin, r, await alerte(cache, background, now), now), { status: r.indisponible ? 503 : 200, headers: { ...HTML, "cache-control": r.indisponible ? "no-store" : `public, max-age=${age}` } });
+    return new Response(itinerairePage(origin, r, await alerte(cache, background, now), now), { status: r.indisponible ? 503 : 200, headers: { ...HTML, "cache-control": r.indisponible ? "no-store" : HTML["cache-control"] } });
   }
   // A stop's page, and the search for one: read from the timetables at each view, never kept (web/arret.ts).
   if (path === STOP_PATH || path === `${STOP_PATH}/`) {
@@ -1217,7 +1221,7 @@ async function pages(request: Request, cache: Cache, background: Background, now
     const found = searchStops(q);
     // One stop: its page at once.
     if (found.length === 1) return new Response(null, { status: 302, headers: { location: `${STOP_PATH}/${found[0].slug}`, "cache-control": "public, max-age=300" } });
-    return new Response(searchPage(origin, q, found, await alerte(cache, background, now)), { headers: { ...HTML, "cache-control": "public, max-age=300" } });
+    return new Response(searchPage(origin, q, found, await alerte(cache, background, now)), { headers: { ...HTML } });
   }
   if (path.startsWith(`${STOP_PATH}/`)) {
     const p = transit.stopPages().get(path.slice(STOP_PATH.length + 1).replace(/\/$/, ""));

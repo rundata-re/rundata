@@ -1309,7 +1309,9 @@ describe("agenda", () => {
     expect(html).toContain('<h2 id="h-couv">');
     const tool = body(await agenda(c, "Saint-Philippe", undefined, undefined, NOW));
     const page = body(await agenda(c, "Saint-Philippe", undefined, undefined, NOW, undefined, false, true));
-    expect([tool.couverture, page.couverture]).toEqual([COUVERTURE_OUTIL, COUVERTURE]);
+    // The page's, its whole list, then the mairies read that announce nothing to come, if any (mairiesMuettes).
+    expect(tool.couverture).toBe(COUVERTURE_OUTIL);
+    expect(page.couverture.startsWith(COUVERTURE)).toBe(true);
     // The sites not taken stay in non_repris, the same in both.
     expect(tool.non_repris).toBe(page.non_repris);
     // The sources: those of the events shown, licence and attribution with them; the page keeps every agenda read.
@@ -1409,6 +1411,40 @@ describe("agenda", () => {
     const b = body(await agenda(cache(), "Saint-André", "2026-11-28", undefined, NOW));
     expect(b.nombre).toBe(0);
     expect(b.sources.map((x: { attribution?: string }) => x.attribution)).toContain("Ville de Saint-André");
+  });
+
+  it("says a mairie whose sites were all read and announce nothing to come, dated, on the tool and /evenements alike (24/11/2026)", async () => {
+    // Sainte-Marie's two sites, both read by the scheduled event: its agenda (Tribe) answers with no event, and its news
+    // with no post. Both read: the sentence, with the oldest of the two reads.
+    const real = globalThis.fetch;
+    vi.stubGlobal("fetch", (url: string, init?: RequestInit) => (/ville-saintemarie\.re\/wp-json\/wp\/v2\/posts/.test(String(url)) ? Promise.resolve(new Response("[]"))
+      : /ville-saintemarie\.re\/wp-json\/tribe/.test(String(url)) ? real(url, init) : Promise.resolve(new Response("", { status: 503 }))));
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    const c = cache();
+    await refreshPlanned(c, NOW);
+    err.mockRestore();
+    vi.stubGlobal("fetch", real);
+    const phrase = "la mairie de Sainte-Marie n'annonce aucun événement en ce moment (dernière lecture le 24/10 à 08:00)";
+    const b = body(await agenda(c, "Sainte-Marie", "2026-11-28", undefined, NOW));
+    expect(b.resume).toBe(`Aucun événement trouvé à Sainte-Marie samedi 28/11\u00a0; ${phrase}\u00a0; 9 ailleurs sur l'île.`);
+    expect(b.mairies_sans_evenement).toEqual([phrase]);
+    // The whole island: the same sentence, apart; and on the page, in what is covered.
+    expect(body(await agenda(c, undefined, undefined, undefined, NOW)).mairies_sans_evenement).toEqual([phrase]);
+    expect(body(await agenda(c, undefined, undefined, undefined, NOW, 1000, false, true)).couverture).toContain(` La mairie de Sainte-Marie n'annonce aucun événement en ce moment (dernière lecture le 24/10 à 08:00).`);
+  });
+
+  it("never says a mairie announces nothing when one of its sites failed, nor where events are to come (24/11/2026)", async () => {
+    // Sainte-Marie's news not read (503): its message of failure stays, no sentence.
+    const c = await plannedCache();
+    const b = body(await agenda(c, "Sainte-Marie", "2026-11-28", undefined, NOW));
+    expect(JSON.stringify(b)).not.toContain("n'annonce aucun événement en ce moment");
+    expect(b.mairies_sans_evenement).toBeUndefined();
+    // Saint-André's feed has events to come, though none on that day: the sentence of the day, never « en ce moment ».
+    const s = body(await agenda(c, "Saint-André", "2026-11-28", undefined, NOW));
+    expect(s.resume).toContain("n'en annonce aucun");
+    expect(s.resume).not.toContain("en ce moment");
+    // A commune no site of which is read keeps its sentence (Les Avirons).
+    expect(body(await agenda(c, "Les Avirons", undefined, undefined, NOW)).resume).toContain("ni la mairie des Avirons ni une salle de la commune ne publient d'agenda lisible");
   });
 
   it("says a commune's own site read with nothing announced, with the hour of its read, on the tool and its tile (23/11/2026)", async () => {

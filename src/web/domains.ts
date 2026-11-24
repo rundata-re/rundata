@@ -13,6 +13,7 @@ import { BULLETIN_QUOTIDIEN, CAMERAS_OVPF, depthText, enImages, enImagesApres, I
 import { type Ligne, NIVEAUX, TITRE, VERSION } from "../tools/volcan-acces.js";
 import { PATH as SANS_REPONSE } from "./sans-reponse.js";
 import { adresseCoupable, adresseTexte } from "./adresse.js";
+import { cable } from "./commune-texte.js";
 import { SOMMET } from "../providers/seismes.js";
 import { sectorsSaid } from "../providers/avis-eau.js";
 import * as onf from "../providers/sentiers.js";
@@ -1341,10 +1342,13 @@ export function busPage(origin: string, data: Cached<BusData> | null, now = new 
   const d = data?.value;
   const url = `${origin}/bus`;
   const lines = d?.reseaux.reduce((n, r) => n + r.lignes, 0) ?? 0;
+  // The bus networks served, without the cable car the sentence names after them (« 7 réseaux de bus et le téléphérique »
+  // counted it among them before, 24/11/2026).
+  const bus = d?.reseaux.filter((r) => !cable(r.nom)).length ?? 0;
 
   const status = !d
     ? `<p class="lead">${HORAIRES_CHARGENT}</p>`
-    : `<div class="now"><span class="big">${d.reseaux.length}</span><p>réseaux de bus et le téléphérique de Saint-Denis : <b>${esc(fr(lines))} lignes</b>, de Car Jaune qui fait le tour de l'île aux bus de chaque commune.</p></div>`;
+    : `<div class="now"><span class="big">${bus}</span><p>réseaux de bus et le téléphérique de Saint-Denis : <b>${esc(fr(lines))} lignes</b>, de Car Jaune qui fait le tour de l'île aux bus de chaque commune.</p></div>`;
 
   const networks = d
     ? `<ul class="plain">${d.reseaux.map((r) => `<li><b>${esc(r.nom)}</b> : ${esc(fr(r.lignes))} ligne${r.lignes > 1 ? "s" : ""} <span class="note">· ${esc(r.exploitant)}</span></li>`).join("")}</ul>`
@@ -1395,7 +1399,7 @@ export function busPage(origin: string, data: Cached<BusData> | null, now = new 
 </section>
 ${d?.alertes?.length ? `<section aria-labelledby="h-trafic"><h2 id="h-trafic">Info trafic</h2><div class="card">${alertList(d.alertes)}<p class="note">Publié par les réseaux dans leur flux en direct, repris tel quel.</p></div></section>` : ""}
 ${linesList()}
-${texteStable(busLire(d ? d.reseaux.length : undefined, d ? lines : undefined), busFaq())}
+${texteStable(busLire(d ? bus : undefined, d ? lines : undefined), busFaq())}
 ${connectorCta("transports", "les bus de l'île")}`;
 
   return layout(origin, { title, description, path: "/bus", jsonld: [crumbs(origin, "Bus", "/bus"), webPage(origin, "/bus", title, description, data), faqPage(busFaq())], alerte, iaAside: true }, band, body);

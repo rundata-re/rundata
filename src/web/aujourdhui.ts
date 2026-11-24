@@ -225,6 +225,12 @@ const li = (x: { titre: string; lien?: string; quand?: string; media?: string })
  * `mairie`: the office as the commune's copy has it, for its position (« Y aller »), which the summary, also the tool's
  * answer, does not give.
  */
+/** « ouvre à 8\u00a0h (jusqu'à 16\u00a0h) » as « <b>ouvre à 8\u00a0h</b> <span class="note">(jusqu'à 16\u00a0h)</span> ». */
+const mairieEtat = (etat: string) => {
+  const [verbe, suite] = etat.split(/ (?=\()/);
+  return `<b>${esc(verbe)}</b>${suite ? ` <span class="note">${esc(suite)}</span>` : ""}`;
+};
+
 export function aujourdhuiPage(origin: string, p: PlacePage, r: Resume, at: Cached<unknown> | null, alerte?: Alerte, mairie?: annuaire.Office | null): string {
   const g = porte(alerte);
   const path = `/aujourdhui/${p.slug}`;
@@ -255,7 +261,9 @@ export function aujourdhuiPage(origin: string, p: PlacePage, r: Resume, at: Cach
     r.calendrier?.vacances_scolaires ? `<li>${esc(r.calendrier.vacances_scolaires)} en cours · <a href="/calendrier">le calendrier →</a></li>` : "",
     `<li>Soleil : lever ${esc(r.soleil.lever)}, coucher ${esc(r.soleil.coucher)}</li>`,
     // Closed all day: said once, « fermée aujourd'hui », never « fermée » then its hours « fermée aujourd'hui ».
-    r.mairie ? `<li>Mairie : <b>${r.mairie.jour_ferie ? "sans doute fermée, jour férié" : r.mairie.ouverte === null ? "horaires absents de l'annuaire" : r.mairie.horaires_aujourd_hui === MAIRIE_FERMEE ? MAIRIE_FERMEE : r.mairie.ouverte ? "ouverte" : "fermée"}</b>${r.mairie.horaires_aujourd_hui && r.mairie.horaires_aujourd_hui !== MAIRIE_FERMEE ? ` <span class="note">${esc(r.mairie.horaires_aujourd_hui)}</span>` : ""}${r.mairie.telephone ? ` · ${telephoneTexte(r.mairie.telephone)}` : ""}${mairie ? ` ${g.aller({ nom: mairie.nom, lat: mairie.lat ?? NaN, lon: mairie.lon ?? NaN, adresse: mairie.adresse }, "mairie")}${notePosition(mairie)}` : ""}</li>` : "",
+    // Closed at this hour on a day it opens: the tool's sentence, its verb in bold and its hours after it (24/11/2026).
+    r.mairie?.etat ? `<li>Mairie : ${mairieEtat(r.mairie.etat)}${r.mairie.telephone ? ` · ${telephoneTexte(r.mairie.telephone)}` : ""}${mairie ? ` ${g.aller({ nom: mairie.nom, lat: mairie.lat ?? NaN, lon: mairie.lon ?? NaN, adresse: mairie.adresse }, "mairie")}${notePosition(mairie)}` : ""}</li>`
+    : r.mairie ? `<li>Mairie : <b>${r.mairie.jour_ferie ? "sans doute fermée, jour férié" : r.mairie.ouverte === null ? "horaires absents de l'annuaire" : r.mairie.horaires_aujourd_hui === MAIRIE_FERMEE ? MAIRIE_FERMEE : r.mairie.ouverte ? "ouverte" : "fermée"}</b>${r.mairie.horaires_aujourd_hui && r.mairie.horaires_aujourd_hui !== MAIRIE_FERMEE ? ` <span class="note">${esc(r.mairie.horaires_aujourd_hui)}</span>` : ""}${r.mairie.telephone ? ` · ${telephoneTexte(r.mairie.telephone)}` : ""}${mairie ? ` ${g.aller({ nom: mairie.nom, lat: mairie.lat ?? NaN, lon: mairie.lon ?? NaN, adresse: mairie.adresse }, "mairie")}${notePosition(mairie)}` : ""}</li>` : "",
   ].filter(Boolean).join("");
 
   const c = r.circulation;

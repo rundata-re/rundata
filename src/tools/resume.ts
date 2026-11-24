@@ -71,7 +71,7 @@ import {
 import { anchorOf } from "../web/decheteries.js";
 import { coastal, meteoPath, PAGES, pageOf, type PlacePage, PRINCIPAL, slugify } from "../web/places.js";
 import { luLe, occurrences, repris, rienAnnonce, silentOf, sourcesServies } from "./agenda.js";
-import { HORAIRES_A_SAVOIR, hoursOn, openNow } from "./annuaire.js";
+import { etatDit, HORAIRES_A_SAVOIR, hoursOn, openNow } from "./annuaire.js";
 import { priceLine } from "./carburants.js";
 import { ecoles, resumeLine } from "./ecoles.js";
 import { compteAvis, muetPour } from "./coupures.js";
@@ -660,6 +660,8 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
           ouverte: ferie ? null : open,
           jour_ferie: ferie ? holidayText(ferie) : undefined,
           horaires_aujourd_hui: ferie ? undefined : hoursOn(mairie, now) ?? (open === null ? undefined : MAIRIE_FERMEE),
+          // Closed at this hour on a day it opens: when it opens, reopens or closed, as the page says it.
+          etat: ferie ? undefined : etatDit(mairie, now),
           adresse: mairie.adresse,
           telephone: mairie.telephone,
           avertissement: HORAIRES_A_SAVOIR,

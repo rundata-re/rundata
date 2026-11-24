@@ -13,6 +13,9 @@ import * as elections from "../vie/elections.js";
 import { esc } from "./map.js";
 import type { Faq } from "./texte-stable.js";
 
+/** A cable car is not a bus network: after them, in lower case (« et le téléphérique Papang », marketing, 22/11/2026). */
+export const cable = (nom: string) => /^Téléphérique\b/.test(nom);
+
 export const COMMUNE_LIRE = "<p>En haut, ce qui change dans la journée, chaque donnée avec son heure et sa source : météo mesurée, vigilance, mer, eau, bus, mairie ouverte ou non. Plus bas, ce qui change rarement : écoles, médecins, loyers, fibre, élections. Chaque bloc renvoie à la page de l'île pour son thème.</p>";
 
 /** « A, B et C ». */
@@ -40,8 +43,6 @@ export function communeFaq(commune: string, slug: string, desservis: { nom: stri
   const jaune = reseaux.some((n) => n.nom === "Car Jaune");
   const locaux = reseaux.filter((n) => n.nom !== "Car Jaune");
   if (locaux.length) {
-    // A cable car is not a bus network: after them, in lower case (« et le téléphérique Papang », marketing, 22/11/2026).
-    const cable = (nom: string) => /^Téléphérique\b/.test(nom);
     const dits = [...locaux.filter((n) => !cable(n.nom)).map((n) => n.nom), ...(jaune ? ["le Car Jaune"] : [])];
     const cables = locaux.filter((n) => cable(n.nom)).map((n) => `le ${n.nom.replace(/^T/, "t")}`);
     // Counted as before, without the Car Jaune: « Le réseau Kar'Ouest et le Car Jaune », « Les réseaux Citalis et le Car

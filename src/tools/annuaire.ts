@@ -7,7 +7,7 @@ import * as annexesSd from "../vie/mairies-annexes.js";
 import { why } from "../types.js";
 import { pageOf, slugify } from "../web/places.js";
 import { carburantsAnswer, FUEL } from "./carburants.js";
-import { credits, de, fr, minutees, notFound, text, tranche } from "./format.js";
+import { credits, de, fr, minutees, notFound, paire, text, tranche } from "./format.js";
 import { COLLECTION, collecteAnswer } from "./collecte.js";
 import { decheteriesAnswer, WASTE } from "./decheteries.js";
 import { crechesAnswer, NURSERY } from "./creches.js";
@@ -90,6 +90,38 @@ export function hoursOn(o: annuaire.Office, now: Date): string | undefined {
   const all = withMinutes(o);
   return h?.plages.length ? h.plages.map(([d, f]) => span(d, f, all)).join(" et ") : undefined;
 }
+
+/**
+ * A closed office's state at `now`, its hours with it, so that they never read as the span it is closed (« fermée
+ * 8\u00a0h–16\u00a0h » read « fermée de 8\u00a0h à 16\u00a0h » before 8 h, 24/11/2026), in marketing's words: « ouvre à
+ * 8\u00a0h (jusqu'à 16\u00a0h) », « ouvre à 08:00 (jusqu'à 12:00, puis 12:45–16:30) », « rouvre à 12:45 (jusqu'à 16:30) »,
+ * « fermée depuis 16:30 », its true closing. One writing of the hours for the whole line (withMinutes()). Undefined when
+ * it is open, closed all day or without hours: said otherwise.
+ */
+export function etatFerme(o: annuaire.Office, now: Date): { etat: string; suite?: string } | undefined {
+  if (openNow(o, now) !== false) return undefined;
+  const local = new Date(now.getTime() + 4 * 3600_000);
+  const day = local.getUTCDay();
+  const h = o.horaires.find((x) => {
+    const [d0, d1] = [DAYS.indexOf(x.de), DAYS.indexOf(x.a)];
+    return d0 >= 0 && d1 >= 0 && (d0 <= d1 ? day >= d0 && day <= d1 : day >= d0 || day <= d1);
+  });
+  if (!h?.plages.length) return undefined;
+  const all = withMinutes(o);
+  const at = (x: number) => paire(x, x, all)[0];
+  const spans = h.plages.map(([d, f]) => [m(d), m(f)] as [number, number]).sort((x, y) => x[0] - y[0]);
+  const t = local.getUTCHours() * 60 + local.getUTCMinutes();
+  const i = spans.findIndex(([d]) => d > t);
+  if (i < 0) return { etat: `fermée depuis ${at(spans[spans.length - 1][1])}` };
+  const rest = spans.slice(i + 1).map(([d, f]) => tranche(d, f, all));
+  return { etat: `${i ? "rouvre" : "ouvre"} à ${at(spans[i][0])}`, suite: `(jusqu'à ${at(spans[i][1])}${rest.length ? `, puis ${rest.join(" et ")}` : ""})` };
+}
+
+/** The same as one sentence, the tool's (resume_du_jour, mairie.etat): word for word the page's line. */
+export const etatDit = (o: annuaire.Office, now: Date) => {
+  const e = etatFerme(o, now);
+  return e && (e.suite ? `${e.etat} ${e.suite}` : e.etat);
+};
 
 /**
  * Keeps the offices whose kind of service holds every word asked (« CPAM » for the CGSS's offices, whose name does not

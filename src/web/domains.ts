@@ -48,7 +48,7 @@ import * as feux from "../providers/feux.js";
 import { COMMUNES as BIKE_COMMUNES } from "../tools/velos.js";
 import { lienJeux } from "./transport-donnees.js";
 import { agendaEnd, fichePath } from "./fiches.js";
-import { LATE_MIN, OUVERT_ONF, ROAD_NEAR_M, type ActualitesAnswer, type AgendaAnswer, type AirAnswer, type Alerte, type BorneStation, type BornesAnswer, type BusData, type GareNow, type CalendrierAnswer, type CoupuresAnswer, type CruesAnswer, type CruesStation, type CyclonesAnswer, type DaeAnswer, type EauAnswer, type ElectriciteAnswer, type Enclos, type HikeCard, type HistoriqueAnswer, type HourlyAnswer, type RandonneesAnswer, type SecheresseAnswer, type SentiersAnswer, type SportAnswer, type TraceAnswer, type TraficAnswer, type TrailItem, type VeloStation, type VelosAnswer, type VolcanAnswer } from "./data.js";
+import { LATE_MIN, OUVERT_ONF, ROAD_NEAR_M, type ActualitesAnswer, type AgendaAnswer, type AirAnswer, type Alerte, type BorneStation, type BornesAnswer, type BusData, type GareNow, type CalendrierAnswer, type CoupuresAnswer, lusLe, type CruesAnswer, type CruesStation, type CyclonesAnswer, type DaeAnswer, type EauAnswer, type ElectriciteAnswer, type Enclos, type HikeCard, type HistoriqueAnswer, type HourlyAnswer, type RandonneesAnswer, type SecheresseAnswer, type SentiersAnswer, type SportAnswer, type TraceAnswer, type TraficAnswer, type TrailItem, type VeloStation, type VelosAnswer, type VolcanAnswer } from "./data.js";
 import { ageMinutes, daysApart, localTime } from "../geo.js";
 import { agendasNonLus, mediasNonLus } from "../tools/injoignable.js";
 import { FAST_KW, RECHARGEPEI } from "../tools/bornes.js";
@@ -3130,7 +3130,7 @@ export function coupuresPage(origin: string, data: Cached<CoupuresAnswer> | null
   const status = !d
     ? loading("Les avis des distributeurs")
     : copieBandeau(copieAncienne("eau", data!.fetchedAt, now, "page"), esc(VOIR_EAU)) +
-      noticesHead(d.avis, "", dry, silent.length && d.avis.length ? "" : leAt(data!.fetchedAt), silent.length > 0) +
+      noticesHead(d.avis, "", dry, silent.length && d.avis.length ? "" : leAt(lusLe(data!)), silent.length > 0) +
       silent.map((f) => `<p class="note">${silentText(f)}</p>`).join("");
 
   const list = d
@@ -3162,7 +3162,7 @@ export function coupuresPage(origin: string, data: Cached<CoupuresAnswer> | null
     { forme: "aplat", couleur: WATER_CUT.calme, dit: CALME },
     ...(mute.size ? [{ forme: "aplat" as const, couleur: WATER_CUT.muet, dit: SANS_REPONSE_LUE }] : []),
     { forme: "aplat", couleur: WATER_CUT.nonLu, dit: SITE_NON_LU },
-  ], d && data ? esc(`Avis des distributeurs, lus ${readAt(data.fetchedAt, now).a}.`) : undefined)}</figcaption></figure>
+  ], d && data ? esc(`Avis des distributeurs, lus ${readAt(new Date(lusLe(data)), now).a}.`) : undefined)}</figcaption></figure>
 </div>`;
 
   const body = `<section aria-labelledby="h-coupures-eau">

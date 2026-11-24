@@ -12,7 +12,7 @@ import { copieAncienne, VOIR_EAU } from "../tools/copie-ancienne.js";
 import { de, deNom } from "../articles.js";
 import { faqPage, type Faq } from "./texte-stable.js";
 import { a } from "../tools/format.js";
-import type { Alerte, CoupuresAnswer, DernierAvis, EauAnswer, SecheresseAnswer } from "./data.js";
+import { type Alerte, type CoupuresAnswer, type DernierAvis, type EauAnswer, lusLe, type SecheresseAnswer } from "./data.js";
 import { cycloneWater } from "./eau-cyclone.js";
 import { copieBandeau, afterCutNote, afterCutShort, connectorAsk, describe, droughtBadge, loading, nobreak, noticeCard, noticesHead, silentText, sourcesNote, tapCard, webPage } from "./domains.js";
 import { esc, islandMap } from "./map.js";
@@ -126,7 +126,7 @@ export function waterLive(p: PlacePage, w: WaterCopies): Live | undefined {
   const valeur = x.dry ? "Eau à ne pas boire" : cuts ? plural(cuts, "avis de coupure", "avis de coupure") : x.avis.length ? plural(x.avis.length, "avis sur l'eau", "avis sur l'eau") : x.muet ? "Site sans réponse" : x.distributeur?.avis ? "Pas de coupure annoncée" : "Site pas lu";
   const detail = [
     // When its notices were read, unless its site did not answer: that says its own hour.
-    x.muet ? esc(x.muet.court) : x.distributeur?.avis || x.avis.length ? `avis lus ${esc(leAt(w.coupures.fetchedAt))}` : "",
+    x.muet ? esc(x.muet.court) : x.distributeur?.avis || x.avis.length ? `avis lus ${esc(leAt(lusLe(w.coupures)))}` : "",
     x.distributeur ? (x.distributeur.partage ? `distributeurs ${esc(x.distributeur.partage.par.map((d) => d.nom).join(" et "))}` : `distributeur ${esc(x.distributeur.nom)}`) : "",
     x.secheresse ? `sécheresse : ${esc(x.secheresse.eau_du_robinet ?? "aucune restriction")}` : "",
     x.robinet ? (x.robinet.non_conformes_6_mois ? `robinet : ${plural(x.robinet.non_conformes_6_mois, "analyse non conforme", "analyses non conformes")} en 6 mois` : x.robinet.analyses_6_mois ? "robinet : analyses conformes" : "") : "",
@@ -167,7 +167,7 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
   const url = `${origin}${path}`;
   const x = waterOf(p.nom, w);
   const dist = x.distributeur;
-  const at = w.coupures ? leAt(w.coupures.fetchedAt) : "";
+  const at = w.coupures ? leAt(lusLe(w.coupures)) : "";
   const by = [...new Set(x.avis.map((n) => n.distributeur))].join(", ") || dist?.nom || "le distributeur";
   const where = a(p.nom);
   // Who publishes the notices read (the CIREST, a mairie), else the distributor; a mairie only linked to (LIENS).
@@ -193,7 +193,7 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
   const noNotice = (e = (t: string) => t) => `Pas d'avis de coupure récent ou à venir publié par ${e(publisher!)}${publisher!.includes(p.nom) ? "" : ` ${e(where)}`}, lu ${e(at)}.`;
   // Not read again for a while (tools/copie-ancienne.ts): said first, the publisher's site and the mairie's linked when
   // known (marketing, 23/11/2026); the mairie alone when the notices read are its own.
-  const ancienne = w.coupures && (dist?.avis || x.avis.length) ? copieAncienne("eau", w.coupures.fetchedAt, now, "page") : undefined;
+  const ancienne = w.coupures && (dist?.avis || x.avis.length) ? copieAncienne("eau", new Date(lusLe(w.coupures)), now, "page") : undefined;
   const siteDe = (nom: string, href?: string) => (href ? `<a href="${esc(href)}" rel="noopener">${esc(nom)}</a>` : esc(nom));
   const pubSite = dist?.avis ? dist.site : siteDist ?? undefined;
   // « de <a>La Créole</a> », the article out of the link (marketing: « Voir le site de runéo ou de la mairie »).

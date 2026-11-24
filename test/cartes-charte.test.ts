@@ -61,6 +61,11 @@ describe("the charter of the maps", () => {
       communes: [], lu: NOW.toISOString(), a_savoir: COMMON, sources: [],
     } as unknown as EauAnswer), NOW));
     expect(eau).toContain('<circle r="34" fill="#e3262d"/><text y="11">!</text></svg>mauvaise</span>');
+    // Each white mark over 4.5:1 on its disc (ROND, carte-legende.ts), on the map as in the legend.
+    expect(eau).toContain('<circle r="34" fill="#237534"/><text y="11">✓</text></svg>bonne</span>');
+    expect(eau).toContain('<circle r="34" fill="#c2410c"/><text y="11">~</text></svg>moyenne</span>');
+    expect(eau).toMatch(/r="34" fill="#237534"\/><text x="[\d.]+" y="[\d.]+" class="mv">✓<\/text>/);
+    expect(eau).not.toMatch(/fill="#(?:2b8a3e|e8590c|868e96)"/);
     // The white edge that parts a mark from the map must not paint over the ring of a station with no recent measure.
     expect(CSS).toContain(".mlg circle:not([stroke]),.mlg rect,.mlg path{stroke:#fff;stroke-width:5}");
     expect(eau).toContain('<span class="mls">Qualité au dernier prélèvement de l&#39;ARS, du 14/10 au 20/10/2026.</span>');

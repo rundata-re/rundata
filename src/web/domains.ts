@@ -62,7 +62,7 @@ import { ACCORD as ACCORD_TRACE } from "../providers/cmrs-trace.js";
 import { GRAPHES_SCRIPT, graphes } from "./historique-graphes.js";
 import { avisLe, basinMap, TRACES, TRACES_SCRIPT, TRACES_SOURCES, ZONE_SOURCE } from "./cyclones-bassin.js";
 import { esc, fenetre, hikesMap, islandMap, laterMap, type Marker, profile, traceMap, type ZoneLink } from "./map.js";
-import { type Cle, COUNT_COLOR, legende } from "./carte-legende.js";
+import { type Cle, COUNT_COLOR, legende, ROND } from "./carte-legende.js";
 import { eventsMap } from "./evenements-carte.js";
 import { anneeSection, filieresSection, installationsLegend, installationsList, installationsMap, installationsReplay, productionChart } from "./electricite-carte.js";
 import { reprise } from "./ouvrir-donnees.js";
@@ -1459,7 +1459,7 @@ export function velosPage(origin: string, data: Cached<VelosAnswer> | null, now 
     if (!at.length) return [];
     const n = c.velos_disponibles, said = `${n} vélo${n > 1 ? "s" : ""} disponible${n > 1 ? "s" : ""}`;
     return [{ lon: at.reduce((x, s) => x + s.lon!, 0) / at.length, lat: at.reduce((x, s) => x + s.lat!, 0) / at.length, label: String(n),
-      name: `${c.commune} : ${said}`, round: true, color: n ? "#2b8a3e" : "#868e96", quiet: true, place: c.commune, say: said, href: `#${anchorId("c", c.commune)}` }];
+      name: `${c.commune} : ${said}`, round: true, color: n ? ROND.vert : ROND.gris, quiet: true, place: c.commune, say: said, href: `#${anchorId("c", c.commune)}` }];
   });
   const byCommune = d
     ? `<ul class="zones">${BIKE_COMMUNES.map((c) => {
@@ -1490,8 +1490,8 @@ export function velosPage(origin: string, data: Cached<VelosAnswer> | null, now 
   <figcaption class="note" style="color:var(--on-night-muted)">${legende([
     { forme: "aplat", couleur: "var(--zone-on)", dit: "commune desservie par Altervélo" },
     ...(markers.length ? [
-      { forme: "rond" as const, couleur: "#2b8a3e", texte: "3", dit: "vélos disponibles dans la commune" },
-      { forme: "rond" as const, couleur: "#868e96", texte: "0", dit: "aucun vélo disponible" },
+      { forme: "rond" as const, couleur: ROND.vert, texte: "3", dit: "vélos disponibles dans la commune" },
+      { forme: "rond" as const, couleur: ROND.gris, texte: "0", dit: "aucun vélo disponible" },
     ] : []),
   ],
     d && data ? esc(`Vélos disponibles d'après les stations, relevé ${readAt(data.fetchedAt, now).de}.`) : undefined)}</figcaption></figure>
@@ -1781,7 +1781,7 @@ export function bornesPage(origin: string, data: Cached<BornesAnswer> | null, no
     const lon = mine.reduce((n, s) => n + s.lon, 0) / mine.length;
     const lat = mine.reduce((n, s) => n + s.lat, 0) / mine.length;
     const free = mine.reduce((n, s) => n + s.libres, 0);
-    return { lon, lat, label: String(free), name: `${c.commune}\u00a0: ${free} libre${free > 1 ? "s" : ""} sur ${c.points}`, round: true, color: free ? "#2b8a3e" : "#868e96", quiet: true,
+    return { lon, lat, label: String(free), name: `${c.commune}\u00a0: ${free} libre${free > 1 ? "s" : ""} sur ${c.points}`, round: true, color: free ? ROND.vert : ROND.gris, quiet: true,
       place: c.commune, say: `${free} point${free > 1 ? "s" : ""} de charge libre${free > 1 ? "s" : ""} sur ${c.points}`, href: `#${anchorId("c", c.commune)}` };
   });
 
@@ -1815,8 +1815,8 @@ export function bornesPage(origin: string, data: Cached<BornesAnswer> | null, no
   </div>
   <figure class="card mapcard">${islandMap({ markers, apart: true, listed: true, label: "Carte de La Réunion (974) : les points de charge libres, commune par commune" })}
   <figcaption class="note" style="color:var(--on-night-muted)">${legende([
-    { forme: "rond", couleur: "#2b8a3e", texte: "3", dit: "points de charge libres dans la commune" },
-    { forme: "rond", couleur: "#868e96", texte: "0", dit: "aucun libre" },
+    { forme: "rond", couleur: ROND.vert, texte: "3", dit: "points de charge libres dans la commune" },
+    { forme: "rond", couleur: ROND.gris, texte: "0", dit: "aucun libre" },
   ], data ? adressesCoupables(`D'après les opérateurs de recharge (transport.data.gouv.fr)${d?.etat_jusqu_a ? `, état jusqu'${leAt(new Date(d.etat_jusqu_a)).replace(/^le /, "au ")}` : ""}, lu ${leAt(data.fetchedAt)}.`, true) : undefined)}</figcaption></figure>
 </div>`;
 
@@ -1856,7 +1856,7 @@ export function bornesLive(data: Cached<BornesAnswer> | null, now = new Date()):
 
 // ---------------------------------------------------------------- qualité de l'eau
 
-const WATER_COLOR: Record<string, string> = { bonne: "#2b8a3e", moyenne: "#e8590c", mauvaise: "#e3262d" };
+const WATER_COLOR: Record<string, string> = { bonne: ROND.vert, moyenne: ROND.orange, mauvaise: "#e3262d" };
 const WATER_MARK: Record<string, string> = { bonne: "✓", moyenne: "~", mauvaise: "!" };
 const dayFr = (iso: string) => iso.slice(0, 10).split("-").reverse().join("/");
 
@@ -1935,7 +1935,7 @@ export function eauPage(origin: string, data: Cached<EauAnswer> | null, now = ne
   const markers = [...bains].sort((a, b) => rank(a.qualite_dernier_prelevement) - rank(b.qualite_dernier_prelevement)).map((s) => {
     const q = s.qualite_dernier_prelevement ?? "";
     // Every name in the bubble only: written on the map, the sites to watch were cut by its frame.
-    return { lon: s.lon, lat: s.lat, label: WATER_MARK[q] ?? "?", name: q ? `${s.site}\u00a0: ${q}` : s.site, round: true, color: WATER_COLOR[q] ?? "#868e96", quiet: true,
+    return { lon: s.lon, lat: s.lat, label: WATER_MARK[q] ?? "?", name: q ? `${s.site}\u00a0: ${q}` : s.site, round: true, color: WATER_COLOR[q] ?? ROND.gris, quiet: true,
       place: s.site, say: q ? `qualité ${q} au dernier prélèvement` : "pas de résultat", href: `#${anchorId("b", s.site)}` };
   });
 

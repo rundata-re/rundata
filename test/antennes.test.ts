@@ -15,11 +15,11 @@ const parse = (c: string) => [...c.matchAll(/([a-z])(\d*)(?:\+(\d+))?/g)].map((m
 
 describe("the antennas of the island (ANFR)", () => {
   it("bundles every mobile support of the island with its operators, and the FM, TNT and DAB+ supports", () => {
-    // Counted on the files of 22/10/2026 (mobile) and 30/09/2026 (over 5 W), as the study of 29/10 did.
-    expect(antennes.MOBILE_DU).toBe("2026-10-22");
-    expect(antennes.RADIO_DU).toBe("2026-09-30");
-    expect(antennes.SUPPORTS).toHaveLength(1151);
-    expect(Object.fromEntries(antennes.OPERATEURS.map((o) => [o, antennes.SUPPORTS.filter((s) => s.ops[o]).length]))).toEqual({ Orange: 396, "SFR Réunion": 409, Free: 297, Zeop: 279 });
+    // Counted on the files of 19/11/2026 (mobile) and 31/10/2026 (over 5 W), rebuilt on 24/11 (the study of 29/10 had 1 151).
+    expect(antennes.MOBILE_DU).toBe("2026-11-19");
+    expect(antennes.RADIO_DU).toBe("2026-10-31");
+    expect(antennes.SUPPORTS).toHaveLength(1156);
+    expect(Object.fromEntries(antennes.OPERATEURS.map((o) => [o, antennes.SUPPORTS.filter((s) => s.ops[o]).length]))).toEqual({ Orange: 398, "SFR Réunion": 410, Free: 300, Zeop: 279 });
     const sum = (k: "fm" | "tnt" | "dab") => antennes.EMETTEURS.reduce((n, e) => n + (e[k] ?? 0), 0);
     expect([antennes.EMETTEURS.length, sum("fm"), sum("tnt"), sum("dab")]).toEqual([173, 276, 38, 9]);
     for (const x of [...antennes.SUPPORTS, ...antennes.EMETTEURS]) {
@@ -41,7 +41,7 @@ describe("the antennas of the island (ANFR)", () => {
     // The Barachois, Saint-Denis.
     const r = antennas(55.4481, -20.8789);
     expect(r.ligne).toBe("13 supports d'antennes mobiles à moins de 500 m, le plus proche à 170 m (ANFR)");
-    expect(r.bloc.antennes_mobiles).toMatchObject({ fichier_du: "22/10/2026", supports: 13 });
+    expect(r.bloc.antennes_mobiles).toMatchObject({ fichier_du: "19/11/2026", supports: 13 });
     expect(r.bloc.antennes_mobiles.plus_proches[0]).toEqual({
       distance_m: 170,
       hauteur_m: 30,
@@ -49,7 +49,7 @@ describe("the antennas of the island (ANFR)", () => {
       operateurs: [{ operateur: "SFR Réunion", en_service: "2G, 3G, 4G", techniquement_operationnel: "5G" }],
     });
     expect(r.bloc.antennes_mobiles.plus_proches).toHaveLength(5);
-    expect(r.bloc.radio_et_television).toEqual({ fichier_du: "30/09/2026", supports: 0, plus_proches: [] });
+    expect(r.bloc.radio_et_television).toEqual({ fichier_du: "31/10/2026", supports: 0, plus_proches: [] });
     expect(r.bloc.note).toContain("ce n'est ni l'état du réseau en ce moment, ni la couverture");
     expect(r.bloc.note).toContain("Pour la 5G, l'ANFR n'emploie pas «\u00a0en service\u00a0»\u00a0: son état le plus avancé est «\u00a0techniquement opérationnel\u00a0».");
     expect(r.bloc.note).toContain("Free et SFR Réunion sont déclarés sous les noms Telco OI et SRR.");
@@ -72,7 +72,7 @@ describe("the antennas of the island (ANFR)", () => {
     const start = page.indexOf('<section aria-labelledby="h-habiter">');
     const habiter = page.slice(start, page.indexOf("</section>", start));
     expect(habiter).toContain(
-      '<h3><a href="/antennes">Antennes</a></h3><p class="tv">7</p><p class="td all">supports d\'antennes mobiles dans la commune, déclarés à l\'ANFR au 22 octobre 2026, dont 5 avec la 5G techniquement opérationnelle · Orange sur 2, SFR Réunion sur 4, Free sur 1, Zeop sur 1 · 6 supports d\'émetteurs de radio ou de télévision de plus de 5\u00a0W (FM, TNT, DAB+) · ANFR</p>',
+      '<h3><a href="/antennes">Antennes</a></h3><p class="tv">7</p><p class="td all">supports d\'antennes mobiles dans la commune, déclarés à l\'ANFR au 19 novembre 2026, dont 5 avec la 5G techniquement opérationnelle · Orange sur 2, SFR Réunion sur 4, Free sur 1, Zeop sur 1 · 6 supports d\'émetteurs de radio ou de télévision de plus de 5\u00a0W (FM, TNT, DAB+) · ANFR</p>',
     );
     expect(habiter).not.toMatch(/couvert|couverture|exposition/);
     expect(page).toContain(antennes.SOURCE_MOBILE.nom);
@@ -82,7 +82,7 @@ describe("the antennas of the island (ANFR)", () => {
     const html = antennesPage("https://rundata.re");
     expect(html).toContain("<title>Antennes 4G, 5G, TNT et radio · La Réunion (974)</title>");
     // Counted from the files, never written: the next file changes them.
-    expect(html).toContain("<p class=\"lead\">1\u202f151 supports d&#39;antennes mobiles déclarés à l&#39;ANFR au 22 octobre 2026, et 173 supports d&#39;émetteurs de radio et de télévision au 30 septembre 2026.</p>");
+    expect(html).toContain("<p class=\"lead\">1\u202f156 supports d&#39;antennes mobiles déclarés à l&#39;ANFR au 19 novembre 2026, et 173 supports d&#39;émetteurs de radio et de télévision au 31 octobre 2026.</p>");
     // Two rows of boxes that combine, several at once, and the colours, one; their values are the page's address
     // (« #orange+free-4g+5g »).
     const row = (n: string, type: string) => [...html.matchAll(new RegExp(`<input type="${type}" name="${n}" id="${n}-[a-z0-9-]+" value="([a-z0-9-]*)"`, "g"))].map((m) => m[1]);
@@ -93,21 +93,21 @@ describe("the antennas of the island (ANFR)", () => {
     expect(html).toContain('<div class="tabs aqtabs r-ac" role="radiogroup" aria-label="Couleur">');
     // Without the script, the filters stay hidden and every mobile support is drawn, coloured by operator.
     expect(html).toContain('<div class="antf" hidden>');
-    expect([...html.matchAll(/<circle class="s k[a-z0-9]( r)?" cx/g)]).toHaveLength(1151);
+    expect([...html.matchAll(/<circle class="s k[a-z0-9]( r)?" cx/g)]).toHaveLength(1156);
     expect([...html.matchAll(/<circle class="e h" cx/g)]).toHaveLength(173);
     // One count, for what the map shows: without the script, every mobile support.
     const legends = [...html.matchAll(/<span class="lg">([^<]+)<\/span>/g)].map((m) => m[1].replace(/&#39;/g, "'"));
-    expect(legends).toEqual(["1\u202f151 supports d'antennes mobiles affichés, dont 1\u202f134 avec au moins une antenne active et 17 en projet seulement."]);
+    expect(legends).toEqual(["1\u202f156 supports d'antennes mobiles affichés, dont 1\u202f134 avec au moins une antenne active et 22 en projet seulement."]);
     // The script's count for some choices, from the same looks: one operator, one or two generations, several of each.
     const codes = antennes.SUPPORTS.map((s) => parse(code(s)));
     const count = (o: string[], g: string[]) => {
       const l = codes.map((d) => look(d, o, g, "o")).filter((x) => x !== null);
       return phrase(l.filter((x) => !x[0]).length, l.filter((x) => x[0]).length, 0, g);
     };
-    expect(count(["o"], [])).toBe("396 supports d'antennes mobiles affichés, dont 392 avec au moins une antenne active et 4 en projet seulement.");
+    expect(count(["o"], [])).toBe("398 supports d'antennes mobiles affichés, dont 392 avec au moins une antenne active et 6 en projet seulement.");
     // The 5G alone, as the ANFR says it; with another generation, « active », as the legend says.
-    expect(count([], ["5"])).toBe("782 supports d'antennes mobiles affichés, dont 683 avec au moins une antenne 5G techniquement opérationnelle et 99 en projet seulement.");
-    expect(count(["o"], ["5"])).toBe("351 supports d'antennes mobiles affichés, dont 332 avec au moins une antenne 5G techniquement opérationnelle et 19 en projet seulement.");
+    expect(count([], ["5"])).toBe("789 supports d'antennes mobiles affichés, dont 683 avec au moins une antenne 5G techniquement opérationnelle et 106 en projet seulement.");
+    expect(count(["o"], ["5"])).toBe("353 supports d'antennes mobiles affichés, dont 332 avec au moins une antenne 5G techniquement opérationnelle et 21 en projet seulement.");
     expect(count(["o", "f"], ["4", "5"])).toMatch(/^\d+ supports d'antennes mobiles affichés, dont \d+ avec au moins une antenne 4G ou 5G active( et \d+ en projet seulement)?\.$/);
     // Two operators show at least what each shows alone.
     const n = (o: string[], g: string[]) => codes.filter((d) => look(d, o, g, "o") !== null).length;

@@ -452,7 +452,7 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | calendrier | providers/calendrier |
 | velos_libre_service | providers/velos |
 | maree | providers/arome, providers/calendrier, providers/ensemble, providers/maregraphes, providers/mf-auth, providers/openmeteo, providers/uv-mesure, providers/uv |
-| annuaire_services_publics | providers/annuaire, providers/carburants, providers/marches-publics, providers/tco |
+| annuaire_services_publics | providers/annuaire, providers/carburants, providers/marches-publics, providers/tco, providers/terrain |
 | restrictions_eau | providers/vigieau |
 | bornes_recharge | providers/irve |
 | qualite_air | providers/air-mesures, providers/atmo, providers/capteurs |

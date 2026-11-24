@@ -14,7 +14,8 @@ rebuilds the list. A bus stop is a case or not: only a new case fails. A gap of 
 said, and fails the step: no gap is read from a missing source.
 
 Usage: python3 -I scripts/verifier-positions.py --verifier      # compare with the reference, exit 1 on a new gap
-       python3 -I scripts/verifier-positions.py --ecrire        # rewrite the reference with today's gaps
+       python3 -I scripts/verifier-positions.py --ecrire        # rewrite the reference with today's gaps, and the town
+                                                                # halls of src/places/mairies-osm.json
 """
 import argparse
 import csv
@@ -36,6 +37,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 REFERENCE = ROOT / "scripts" / "positions-reference.json"
+# Each commune's town hall in OpenStreetMap (ODbL), which the site gives instead of the annuaire's point when the two lie
+# more than 300 m apart and the Base adresse nationale agrees with OSM (src/providers/annuaire.ts); rewritten by --ecrire.
+MAIRIES_OSM = ROOT / "src" / "places" / "mairies-osm.json"
 UA = (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()
 TIMEOUT = 90
 
@@ -161,6 +165,9 @@ def commune_de(nom):
     return norm(("le " if m.group(2) == "du " else "") + m.group(3))
 
 
+HOTELS = {}  # by commune: its town hall in OSM nearest its point, as ecarts_centres() found it (lon, lat, osm id)
+
+
 def ecarts_centres():
     communes = [p for p in json.loads((ROOT / "src" / "places" / "gazetteer.json").read_text())["places"] if p["type"] == "commune"]
     mairies = {}
@@ -179,6 +186,7 @@ def ecarts_centres():
             ecarts[c["nom"]] = {"ecart_m": None, "mairie": "aucune mairie de ce nom dans OSM"}
             continue
         lon, lat, osm = min(found, key=lambda m: km(c["lon"], c["lat"], m[0], m[1]))
+        HOTELS[c["nom"]] = (lon, lat, osm)
         m = round(km(c["lon"], c["lat"], lon, lat) * 1000)
         if m > ECART_CENTRE_M:
             ecarts[c["nom"]] = {"ecart_m": m, "mairie": osm}
@@ -391,6 +399,14 @@ def main():
             sys.exit("\n".join(erreurs))
         REFERENCE.write_text(json.dumps(out, ensure_ascii=False, indent=1, sort_keys=True) + "\n")
         print(f"référence écrite : {REFERENCE.relative_to(ROOT)}")
+        jour = time.strftime("%Y-%m-%d", time.gmtime(time.time() + 4 * 3600))  # the day at La Réunion (UTC+4, no DST)
+        MAIRIES_OSM.write_text(json.dumps({
+            "construit": jour,
+            "source": "OpenStreetMap, amenity=townhall (Overpass), annexes exclues",
+            "licence": "ODbL 1.0",
+            "mairies": {c: {"lon": round(lon, 6), "lat": round(lat, 6), "osm": osm} for c, (lon, lat, osm) in sorted(HOTELS.items())},
+        }, ensure_ascii=False, indent=1) + "\n")
+        print(f"hôtels de ville écrits : {MAIRIES_OSM.relative_to(ROOT)} ({len(HOTELS)})")
         return
 
     ref = json.loads(REFERENCE.read_text())

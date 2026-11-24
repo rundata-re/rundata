@@ -87,7 +87,9 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // A mairie's site not read said « rundata.re ne sait pas ce qu'il annonce », never « nous » (23/11/2026).
   // Its water card says where a distributor not read publishes its notices, never « not read » (23/11/2026).
   // The commune of a station, a sensor or a trail given by a point, from its outline (24/11/2026).
-  commune: 33,
+  // Its mairie and justice at the point of OpenStreetMap or the Base adresse nationale when the annuaire's is far from
+  // the address, with « Position d'après … » (position_annuaire, 24/11/2026); the journée of the commune reads this copy.
+  commune: 34,
   // A La Créole notice with the hours and the streets it writes (« de 8h à 15h », « secteur suivant : »).
   // A commune whose water the ARS shares between distributors read when one of them is (L'Étang-Salé, runéo's notices).
   // What to know after a cut in the words of the ARS La Réunion's leaflet, with its link (14/11/2026).
@@ -312,6 +314,9 @@ export const SOURCE_REVISION: Readonly<Record<string, number>> = {
   // change of how they are read reads them again at the deploy (test/eau-revisions.test.ts).
   eau: 1,
   vigieau: 1,
+  // The annuaire's offices (annuaire:<insee>:<search>, annuaire:justice) at the point of OpenStreetMap or the Base adresse
+  // nationale when the annuaire's is far from the address, with `position_annuaire` (24/11/2026).
+  annuaire: 1,
 };
 
 /** The revision of the source whose entry is kept under `key`: its own, else its first part's; for a bundle's entry, its entry's. */

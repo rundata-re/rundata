@@ -582,7 +582,7 @@ describe("fiche terrain, a street without a land registry code", () => {
 describe("a place asked by its name, not its address", () => {
   const cache = () => new Cache(new MemoryStore(), () => NOW.getTime());
 
-  it("takes a commune's town hall from the directory, its building and address said, without the address base", async () => {
+  it("takes a commune's town hall from the directory, its building and address said, the address base only checking its point", async () => {
     files = { ...files, lannuaire: "annuaire-mairie-saint-leu.json", geocodage: "geocode-mairie-saint-leu.json" };
     const b = body(await ficheLieu(cache(), "mairie de Saint-Leu", NOW));
     expect(b.lieu).toMatchObject({
@@ -594,7 +594,9 @@ describe("a place asked by its name, not its address", () => {
     });
     expect(b.avertissement).toBeUndefined();
     expect(b.resume).not.toContain("Chemin de la Mairie");
-    expect(urls.some((u) => u.includes("geocodage"))).toBe(false);
+    // The address base read once, for the directory's addresses together (annuaire.placed()), never for the words
+    // asked: its answer is no CSV here, and the directory's point stays, the base not credited.
+    expect(urls.filter((u) => u.includes("geocodage"))).toEqual(["https://data.geopf.fr/geocodage/search/csv"]);
     expect(JSON.stringify(b.sources)).toContain("Annuaire de l'administration");
     expect(JSON.stringify(b.sources)).not.toContain("Base adresse nationale");
   });

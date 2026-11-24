@@ -5,7 +5,7 @@
  * category page (web/site.ts), so a page costs a few reads.
  */
 import { TEXTES } from "./communes-textes.js";
-import { porte, type Porte, SHEET as ALLER } from "./aller.js";
+import { notePosition, porte, type Porte, SHEET as ALLER } from "./aller.js";
 import type { Cached } from "../cache.js";
 import { ageMinutes, localTime } from "../geo.js";
 import { normalize } from "../places/resolve.js";
@@ -679,7 +679,7 @@ function justice(data: Cached<CommuneData> | null | undefined, g: Porte, now: Da
   const go = g.aller({ nom: o.nom, lat: o.lat ?? NaN, lon: o.lon ?? NaN, adresse: o.adresse });
   return {
     live: { valeur: n ? `${n} dans la commune` : "Aucun dans la commune", detail: esc(`${where}${o.nom}, ${o.adresse}`) },
-    more: `<p class="note">${esc(`${j.km != null ? `à ${j.km} km à vol d'oiseau · ` : ""}${hours}`)}${tel}</p>${go ? `<p class="ya">${go}</p>` : ""}`,
+    more: `<p class="note">${esc(`${j.km != null ? `à ${j.km} km à vol d'oiseau · ` : ""}${hours}`)}${tel}</p>${go ? `<p class="ya">${go}${notePosition(o)}</p>` : ""}`,
   };
 }
 
@@ -743,7 +743,7 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
       icon: "building",
       nom: "Mairie",
       live: mairie,
-      ...(toHall || quartiers ? { more: `${toHall ? `<p class="ya">${toHall}</p>` : ""}${quartiers}` } : {}),
+      ...(toHall || quartiers ? { more: `${toHall ? `<p class="ya">${toHall}${notePosition(o!)}</p>` : ""}${quartiers}` } : {}),
       ...(quartiers ? { full: true } : {}),
       question: `La mairie ${de(p.nom)} est ouverte ?`,
       foot: fiche ? `${lienNom(fiche, "Fiche service-public.fr", ' rel="noopener"')}` : `<a href="/mcp">Demandez à votre IA →</a>`,

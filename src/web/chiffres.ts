@@ -18,6 +18,8 @@ const H1 = "rundata.re en chiffres";
 // Without « · rundata.re »: the name is already its first word, and the preview names the site (og:site_name).
 const TITLE = "rundata.re en chiffres\u00a0: sources, producteurs, licences";
 const CHAPEAU = "Ce que rundata.re lit pour vous, compté en direct\u00a0: les sources publiques, leurs producteurs et leurs licences, ce qui est couvert sur l'île et ce qui manque encore. Chaque chiffre mène à sa page.";
+/** The search engines' shorter one, in their 160 signs (marketing, 24/11/2026). */
+const DESCRIPTION = "Ce que rundata.re lit pour vous, compté en direct\u00a0: les sources publiques, leurs producteurs et licences, ce qui est couvert sur l'île et ce qui manque encore.";
 
 const n = (x: number) => x.toLocaleString("fr-FR").replace(/\s/g, "\u00a0");
 
@@ -119,5 +121,5 @@ export function chiffresPage(origin: string, c: Chiffres, inv: Inventaire, alert
   <p>Né en octobre 2026\u00a0: <a href="/nouveautes">${n(c.nouveautes)} nouveautés publiées</a>.</p>
   <p>Compté le ${esc(c.compte_le)}, à partir des sources que lit rundata.re. Une source manque\u00a0? Dites-le avec le formulaire en bas de page.</p>
 </section>`;
-  return layout(origin, { title: TITLE, description: CHAPEAU, path: PATH, jsonld: [crumbs(origin, H1, PATH), webPage(origin, PATH, TITLE, CHAPEAU, null)], alerte }, band, body);
+  return layout(origin, { title: TITLE, description: DESCRIPTION, path: PATH, jsonld: [crumbs(origin, H1, PATH), webPage(origin, PATH, TITLE, DESCRIPTION, null)], alerte }, band, body);
 }

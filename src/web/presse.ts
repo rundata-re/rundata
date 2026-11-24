@@ -167,7 +167,7 @@ export function pressePage(origin: string, figures: Figure[], alerte?: Alerte): 
 </section>`;
 
   const title = "Presse : communiqué, chiffres clés et visuels · rundata.re";
-  const description = "Espace presse de rundata.re : le communiqué, les chiffres clés en direct et des visuels libres d'utilisation avec la mention rundata.re. Contact : contact@rundata.re.";
+  const description = "Espace presse de rundata.re : le communiqué, les chiffres clés en direct et des visuels à reprendre avec la mention rundata.re. Contact : contact@rundata.re.";
   const crumbs = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",

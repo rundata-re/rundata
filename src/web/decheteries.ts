@@ -26,8 +26,10 @@ export function descriptionOf(sites: dech.SiteNow[]): string {
   // The newest update by its time, said with its day (« le 05/11 à 05:07 »).
   const fresh = sites.filter((s) => s.a_jour && s.mis_a_jour).map((s) => s.mis_a_jour!).sort((x, y) => (x.split(" ")[1] ?? "").localeCompare(y.split(" ")[1] ?? ""));
   const at = fresh.length ? ` ${leJour(fresh[fresh.length - 1])}` : "";
-  const text = (at: string) => `Déchèteries de La Réunion (974)${at} : où déposer déchets verts, encombrants, gravats, dans toute l'île ; bennes pleines en direct dans l'Ouest (TCO).`;
-  return text(at).length <= DESCRIPTION_MAX ? text(at) : text("");
+  // With the time, in fewer words (marketing, 24/11/2026): the whole sentence and the time made 162 signs, never shown.
+  const full = `Déchèteries de La Réunion (974)${at} : où déposer déchets verts, encombrants, gravats ; bennes pleines en direct dans l'Ouest (TCO).`;
+  const short = "Déchèteries de La Réunion (974) : où déposer déchets verts, encombrants, gravats, dans toute l'île ; bennes pleines en direct dans l'Ouest (TCO).";
+  return at && full.length <= DESCRIPTION_MAX ? full : short;
 }
 
 function siteCard(s: dech.SiteNow, g: Porte): string {

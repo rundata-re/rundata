@@ -21,6 +21,18 @@ const full = (nom: string) => ({
 });
 
 describe("the page of a commune's day", () => {
+  it("says the sea at the buoy first, then the satellite, on the same line", () => {
+    const p = pageOf("saint-pierre")!;
+    const mer = copy({
+      plages: [{ nom: "Terre-Sainte", commune: "Saint-Pierre", lon: 55.48, lat: -21.34, valeur: 25.2, jour: "2026-10-23" }],
+      bouees: [{ t: NOW.getTime() - 3_600_000, nature: "mesure", bouee: "Saint-Pierre (large)", reseau: "Candhis (Cerema)", mesuree_a: "24/10 14:10", temperature_eau: "25,8\u00a0°C" }],
+      sources: [],
+    });
+    const html = aujourdhuiPage("https://rundata.re", p, resume(p, { ...full(p.nom), mer } as never, NOW), null);
+    const ligne = /<li>Mer :.*?<\/li>/.exec(html)?.[0] ?? "";
+    expect(ligne).toMatch(/^<li>Mer : <b>25,8.°C<\/b> <span class="note">bouée Saint-Pierre \(large\) du Cerema, à \d+ km, à 14:10<\/span>, satellite.: <b>25.°C<\/b>/);
+  });
+
   it("names the commune with the right preposition, in titles that fit", () => {
     expect(COMMUNES.map((p) => aCommune(p.nom))).toEqual(expect.arrayContaining(["au Port", "au Tampon", "aux Avirons", "aux Trois-Bassins", "à l'Entre-Deux", "à L'Étang-Salé", "à La Possession", "à Saint-Paul"]));
     // The same in every sentence of the site and the tools (articles.ts), and « de » elided before a vowel.

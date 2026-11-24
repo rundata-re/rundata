@@ -80,13 +80,14 @@ import { when } from "./injoignable.js";
 import { SITE_URL } from "./citer.js";
 import * as elus from "../vie/elus.js";
 import { PERIMEE_MIN, perimeeTexte } from "./electricite.js";
-import { a, ailleurs, credits, de, fourchette, le, notFound, placeBlock, placeWarning, show, text, when as measuredAt } from "./format.js";
+import { a, ailleurs, credits, de, fourchette, fr, le, notFound, placeBlock, placeWarning, show, text, when as measuredAt } from "./format.js";
 import { coastText, cyclone, cycloneOn, forZone, zoneLevels, zoneShort, zoneText } from "./vigilance.js";
 import { instant, type InfoRow } from "./actualites.js";
 import { ENDS as LITTORAL_ENDS, forSummary, littoral, NONE as LITTORAL_NONE } from "./littoral.js";
 import { enTete, fit, mieux } from "./representativeness.js";
 import { amateur, natureStation, NETWORKS, OLD_MINUTES, stationCommune } from "./meteo.js";
-import { SEA_SOURCES } from "./mer.js";
+import { BOUEE_MAX_KM, SEA_SOURCES } from "./mer.js";
+import * as candhis from "../providers/candhis.js";
 import { alerteVolcan, releaseDay } from "../web/volcan-alerte.js";
 
 // How old an announcement of the route du Littoral may be to be told in a summary.
@@ -304,8 +305,8 @@ function vigilance(p: PlacePage, v: mf.Vigilance, now: Date) {
   };
 }
 
-/** The water's temperature off the commune, and the sources of that copy (the sea's page, or else the weather page's). */
-function sea(p: PlacePage, mer: SeaData | undefined, place: PlaceData | undefined) {
+/** The satellite's water temperature off the commune, and the sources of that copy (the sea's page, or else the weather page's). */
+function seaSatellite(p: PlacePage, mer: SeaData | undefined, place: PlaceData | undefined) {
   const beaches = mer?.plages.filter((b) => b.commune === p.nom && b.valeur != null) ?? [];
   if (beaches.length) {
     const v = beaches.map((b) => b.valeur!);
@@ -315,6 +316,42 @@ function sea(p: PlacePage, mer: SeaData | undefined, place: PlaceData | undefine
   }
   const m = place?.mer?.mesure;
   return m ? { row: { temperature_eau: m.temperature_eau, jour_mesure: m.jour_mesure, mesure: "satellite, au large" }, sources: seaSources(place!.mer!.sources) } : undefined;
+}
+
+/**
+ * The nearest Candhis buoy of /mer's copy that measured the water within candhis.MESURE_MAX_HOURS, at most BOUEE_MAX_KM
+ * from the commune, as temperature_mer takes it (tools/mer.ts); its distance from the commune's place.
+ */
+function seaBuoy(p: PlacePage, mer: SeaData | undefined, now: Date) {
+  const at = new Map(candhis.BOUEES.map((b) => [b.nom, b]));
+  return (mer?.bouees ?? [])
+    .flatMap((b) => {
+      const pos = at.get(b.bouee);
+      if (!b.temperature_eau || !pos?.lon || !pos.lat || now.getTime() - b.t > candhis.MESURE_MAX_HOURS * 3_600_000) return [];
+      const km = distanceKm(p.place.lon, p.place.lat, pos.lon, pos.lat);
+      return km <= BOUEE_MAX_KM ? [{ b, km }] : [];
+    })
+    .sort((x, y) => x.km - y.km)[0];
+}
+
+/**
+ * The water's temperature off the commune: the buoy first when one measures near it, then the satellite (marketing's
+ * rule of 24/11/2026: « la bouée d'abord quand elle mesure », the satellite said as such); the satellite alone else.
+ */
+function sea(p: PlacePage, mer: SeaData | undefined, place: PlaceData | undefined, now: Date) {
+  const sat = seaSatellite(p, mer, place);
+  const near = seaBuoy(p, mer, now);
+  if (!near) return sat;
+  const row = {
+    temperature_eau: near.b.temperature_eau!,
+    mesure: `bouée ${near.b.bouee} du Cerema, à ${fr(Math.round(near.km))} km, à ${near.b.mesuree_a.split(" ").pop()}`,
+    bouee: near.b.bouee,
+    reseau: near.b.reseau,
+    distance_km: Math.round(near.km * 10) / 10,
+    mesuree_a: near.b.mesuree_a,
+    ...(sat ? { satellite: sat.row } : {}),
+  };
+  return { row, sources: credits([candhis.SOURCE]).concat(sat?.sources ?? []) };
 }
 
 const SATELLITES = SEA_SOURCES.map((x) => x.nom);
@@ -496,7 +533,7 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
   const c = l.calendrier?.value;
   const v = l.vigilance ? vigilance(commune, l.vigilance.value, now) : undefined;
   // Without the sea's page, the weather page's own reading of the sea, when it has one: then the sea is not left out.
-  const seaPart = coastal(commune) ? sea(commune, l.mer?.value, l.meteo?.value) : undefined;
+  const seaPart = coastal(commune) ? sea(commune, l.mer?.value, l.meteo?.value, now) : undefined;
   const mer = seaPart?.row;
   const out = mer ? leftOut.filter((x) => x.partie !== SEA) : leftOut;
   // Held today, then those open all week, then those whose days no source gives, with the town hall's page.

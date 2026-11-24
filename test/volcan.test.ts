@@ -283,3 +283,15 @@ describe("volcano", () => {
     expect(image.resume).toContain("Dernière éruption : du 13 février au 12 avril 2026, selon l'OVPF");
   });
 });
+
+describe("the OVPF's cameras", () => {
+  it("are linked in the answer and on /volcan, their pictures never shown", async () => {
+    const lien = "https://www.ipgp.fr/volcanoweb/reunion/html_static_webcam/cameras-ovpf.html";
+    const r = JSON.parse((await volcanSeismes(cacheWith(), NOW)).content[0].text);
+    expect(r.cameras_ovpf).toEqual({ texte: "Les caméras de l'OVPF en direct", lien });
+    for (const html of [volcanPage("https://rundata.re", { value: r, fetchedAt: NOW, stale: false }, NOW), volcanPage("https://rundata.re", null, NOW)]) {
+      expect(html).toContain(`<p><a href="${lien}">Les caméras de l&#39;OVPF en direct</a> (sur le site de l'observatoire).</p>`);
+      expect(html).not.toMatch(/<img[^>]+ipgp\.fr/);
+    }
+  });
+});

@@ -7,7 +7,7 @@
 import { BILLETTERIES } from "../http.js";
 import { enLigne } from "./associations-drapeau.js";
 import { OVPF, OVPF_FACEBOOK, PREFECTURE } from "../providers/volcan.js";
-import { BULLETIN_QUOTIDIEN, depthText, enImages, enImagesApres, IMAGE_APRES, IMAGE_LUE_APRES, givenAt, JOURS_SUIVANTS, type Jour, jusquALecture, LOCALISES, LOCALISES_LIEN, LU_DANS_L_IMAGE, NIVEAU_ILLISIBLE, NON_ANNONCEE, NON_LU, ORSEC_BAN, ovpfNiveau, pitonLines, VIGILANCE_ENCLOS } from "../tools/volcan.js";
+import { BULLETIN_QUOTIDIEN, CAMERAS_OVPF, depthText, enImages, enImagesApres, IMAGE_APRES, IMAGE_LUE_APRES, givenAt, JOURS_SUIVANTS, type Jour, jusquALecture, LOCALISES, LOCALISES_LIEN, LU_DANS_L_IMAGE, NIVEAU_ILLISIBLE, NON_ANNONCEE, NON_LU, ORSEC_BAN, ovpfNiveau, pitonLines, VIGILANCE_ENCLOS } from "../tools/volcan.js";
 import { type Ligne, NIVEAUX, TITRE, VERSION } from "../tools/volcan-acces.js";
 import { PATH as SANS_REPONSE } from "./sans-reponse.js";
 import { adresseCoupable, adresseTexte } from "./adresse.js";
@@ -68,7 +68,7 @@ import { cloudSeaLink, type Summit, weatherForTrace } from "./liens.js";
 import { LINE as BAIGNADE_LINE } from "./baignade.js";
 import { T as FERRY } from "../tools/ferries.js";
 import { BUILT as DAE_BUILT, DAES } from "../providers/dae.js";
-import { SANS_FORMATION as DAE_SANS_FORMATION } from "../tools/dae.js";
+import { SANS_FORMATION as DAE_SANS_FORMATION, SE_FORMER as DAE_SE_FORMER } from "../tools/dae.js";
 import DAE_LIST from "../dae/liste.json" with { type: "json" };
 import * as atmo from "../providers/atmo.js";
 import { adressesCoupables, anchorId, ask, credits, CYCLONE_SCALE, dayMonth, DESCRIPTION_MAX, empty, FOLD_ROWS, folded, icon, ISLAND, layout, type Live, lue, leAt, duAt, leJour, duJour, officielHtml, readAt, SITE, vg } from "./pages.js";
@@ -524,6 +524,7 @@ export function volcanPage(origin: string, data: Cached<VolcanAnswer> | null, no
   const measured = `<section id="seismes" aria-labelledby="h-volcan">
   <div class="sec-h"><p class="eyebrow">En ce moment</p><h2 id="h-volcan">${a ? "Séismes sous le volcan" : "L'Enclos et les séismes"}</h2></div>
   ${d ? `${a ? quakes : `<div class="two">${enclos}${quakes}</div>`}${a ? "" : warnings(d.avertissements)}${data ? sourcesNote(d.sources, data) : ""}` : `<p class="card">Les données du volcan se chargent : rechargez la page dans quelques secondes.</p>`}
+  <p><a href="${esc(CAMERAS_OVPF.lien)}">${esc(CAMERAS_OVPF.texte)}</a> (sur le site de l'observatoire).</p>
 </section>
 `;
   const body = `${monter}${official}${measured}${a ? mediaSection(news) : ""}${before}${a ? `<section aria-label="Demandez à votre IA"><div class="card">${question}</div></section>` : ""}
@@ -3265,6 +3266,7 @@ export function daePage(origin: string, data: Cached<DaeAnswer> | null, now = ne
   <div class="sec-h"><p class="eyebrow">Commune par commune</p><h2 id="h-dae">Où sont les défibrillateurs</h2>
   <p>Ceux qu'on peut atteindre à toute heure d'abord (à l'extérieur ou ouverts 24 h/24), puis ceux en accès libre aux heures d'ouverture du lieu. La liste est déclarée par les exploitants : un appareil peut avoir été déplacé.</p></div>
   ${list}
+  <p>${esc(DAE_SE_FORMER.texte.split(" : ")[0])} : <a href="${esc(DAE_SE_FORMER.lien)}">${esc(DAE_SE_FORMER.texte.split(" : ")[1])}</a>.</p>
   <p class="note">Source : Géo'DAE, base nationale des défibrillateurs (ministère chargé de la santé), Licence Ouverte 2.0.</p>
 </section>
 ${connectorCta("defibrillateurs", "les défibrillateurs")}

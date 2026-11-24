@@ -101,6 +101,11 @@ export function ipgpMuet(l: Public, lus: { bluesky: boolean; prefecture: boolean
 const TROP_FAIBLES = "Les séismes trop faibles pour être localisés ne sont pas comptés ici\u00a0: l'OVPF les compte dans son bulletin quotidien.";
 export const BULLETIN_QUOTIDIEN = "https://www.ipgp.fr/volcanoweb/reunion/Bulletin_quotidien/bulletin.html";
 /**
+ * The OVPF's cameras on the volcano (9 pictures, refreshed on its site): linked only, never shown here, the IPGP's legal
+ * notice asking a licence even for a free service open to all (read on 24/11/2026). In the answer and on /volcan.
+ */
+export const CAMERAS_OVPF = { texte: "Les caméras de l'OVPF en direct", lien: "https://www.ipgp.fr/volcanoweb/reunion/html_static_webcam/cameras-ovpf.html" };
+/**
  * Worded by marketing, under the counts: the catalogue holds the located events only, far fewer in a seismic crisis.
  * What the counts are, never compared with a figure read in an image (marketing, 26/10/2026). Split around « bulletin
  * quotidien » (data-run): the note says it once, the bulletin linked on /volcan, its address after it in the answer.
@@ -480,6 +485,7 @@ export async function volcanSeismes(cache: Cache, now = new Date(), detail = tru
       ...(given && { communique_prefecture: { niveau: given.niveau, titre: given.titre, lien: given.lien, jour: given.jour } }),
       source: "préfecture de La Réunion (communiqués) et OVPF-IPGP (publications)",
     },
+    cameras_ovpf: CAMERAS_OVPF,
     // In the short answer, the last COURT_ALERTES here, no longer in the summary.
     alertes_precedentes: { ...historique.precedentes(alertes, detail ? undefined : COURT_ALERTES), ...(!detail && newer && { plus_recente: newer }) },
     // The release's PDF stays out of the answer until what it is read for is shown (ovpf-pdf.ts, SHOW).

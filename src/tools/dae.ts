@@ -104,6 +104,13 @@ export function etage(s: string | undefined): string | undefined {
 /** Said after the emergency call, in the tool and on /defibrillateurs. */
 export const SANS_FORMATION = "Il s'utilise sans formation : il guide par la voix et ne délivre un choc que si c'est nécessaire.";
 
+/**
+ * Where to learn first aid (PSC1): the Protection civile's page, whose search lists sessions in La Réunion. Linked only:
+ * its legal notice reserves all rights, so nothing of it is copied (read on 24/11/2026). In the answer and on
+ * /defibrillateurs.
+ */
+export const SE_FORMER = { texte: "Se former aux premiers secours (PSC1) : Protection civile", lien: "https://formations.protection-civile.org/formation-psc/" };
+
 export const URGENCE =
   "Arrêt cardiaque : appeler le 15 (SAMU) ou le 112, commencer tout de suite le massage cardiaque et envoyer quelqu'un chercher le défibrillateur. " +
   SANS_FORMATION;
@@ -150,7 +157,7 @@ export function byCommune() {
 
 export function defibrillateurs(lieu: string | undefined) {
   // The day the list was rebuilt from the national file, the date of what is said (tools/fraicheur.ts).
-  const common = { urgence: URGENCE, mis_a_jour: BUILT.split("-").reverse().join("/"), sources: credits([SOURCE]) };
+  const common = { urgence: URGENCE, se_former: SE_FORMER, mis_a_jour: BUILT.split("-").reverse().join("/"), sources: credits([SOURCE]) };
   if (!lieu?.trim()) {
     const communes = byCommune();
     return text({

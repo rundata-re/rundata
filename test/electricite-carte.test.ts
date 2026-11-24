@@ -163,9 +163,27 @@ describe("the section « Les filières »", () => {
 
   it("names the biggest installations by their commune and MW, a name only where the register gives one", () => {
     expect(sec).toContain("les plus grandes\u00a0: 211\u00a0MW au Port, 99,5\u00a0MW à Saint-André, 59 et 51,8\u00a0MW à Saint-Louis.");
-    expect(sec).toContain("249\u00a0MW installés en 7\u00a0<span>installations</span>\u00a0: 41\u00a0MW à Saint-Pierre, quatre de 40\u00a0MW à La Possession, deux de 24\u00a0MW à Sainte-Marie.");
+    // La Possession's two turbines, each in the register twice, said two; Sainte-Marie's three lines of 24 MW as the
+    // register gives them, none of them known as a duplicate.
+    expect(sec).toContain("193\u00a0MW installés en 6\u00a0<span>installations</span>\u00a0: 41\u00a0MW à Saint-Pierre, deux de 40\u00a0MW à La Possession, trois de 24\u00a0MW à Sainte-Marie.");
     expect(sec).toContain("8,2\u00a0MW à Saint-André (« P.LO5H-CENTRALE HYDRAULIQUE DE PONT-DU-LOUP-3 », le seul nom que donne le registre), 4,6\u00a0MW à l'Entre-Deux.");
     expect(Object.values(data.grandes).flat().filter((g) => "nom" in g)).toHaveLength(1);
+  });
+
+  it("counts once the big installations the register gives twice, and only those known", () => {
+    // The groups scripts/build-installations.py merged (doublons()), checked one by one against the CRE (Port Est, Le Gol
+    // A) and the operators' pages (24/11/2026). A new group fails here: a human looks at it before it is said.
+    expect(data.doublons_fusionnes).toEqual([
+      { commune: "La Possession", filiere: "thermique non renouvelable", mw: 40, mises_en_service: ["2002-01-01", "2002-01-01"] },
+      { commune: "La Possession", filiere: "thermique non renouvelable", mw: 40, mises_en_service: ["2009-01-01", "2009-01-01"] },
+      { commune: "Le Port", filiere: "bioénergies", mw: 211, mises_en_service: ["2012-12-12", "2013-10-01"] },
+      { commune: "Saint-Louis", filiere: "bioénergies", mw: 59, mises_en_service: ["1995-01-01", "1996-01-01"] },
+      { commune: "Sainte-Rose", filiere: "hydraulique", mw: 26.14, mises_en_service: ["1989-01-01", "1989-01-01"] },
+    ]);
+    const mw = (commune: string, filiere: string) => data.communes.find((c) => c.commune === commune)!.filieres.find((f) => f.nom === filiere)!.mw;
+    expect(mw("Le Port", "bioénergies")).toBe(211);
+    expect(mw("La Possession", "thermique non renouvelable")).toBe(80);
+    expect(mw("Sainte-Rose", "hydraulique")).toBe(127.54);
   });
 
   it("gives each filière's share over the 24 hours, the batteries in none, and leaves the year to the chart's script", () => {

@@ -40,7 +40,7 @@ import * as ffck from "./providers/ffck.js";
 import * as radar from "./providers/radar.js";
 import * as vigilanceCarte from "./providers/vigilance-carte.js";
 import * as mf from "./providers/vigilance.js";
-import { detecter } from "./alertes-etat.js";
+import { detecter, type Changement } from "./alertes-etat.js";
 import type { VolcanAnswer } from "./web/data.js";
 import * as vigilanceEpisodes from "./providers/vigilance-episodes.js";
 import * as cmrsCarte from "./providers/cmrs-carte.js";
@@ -79,6 +79,7 @@ import { cheminMasque } from "./chemin-secret.js";
 import { plage } from "./web/plage.js";
 import { sansIndex } from "./web/noindex.js";
 import * as abonnements from "./push/abonnements.js";
+import * as envoiAlertes from "./push/envoi.js";
 import * as alertesPush from "./web/alertes.js";
 import { configurer as configurerAlertes, enLigne as alertesEnLigne } from "./web/alertes-drapeau.js";
 import { GARDE_TAPEE, gardeTapee } from "./providers/terrain.js";
@@ -562,6 +563,8 @@ export default {
     // The AROME grids first; then, with what is left of the invocation, the shared page copies that are due, and the
     // forecast's ensemble with what they left.
     // The radar's history waits for the Météo-France token only, never for the slow reads after it (web/pluie-retro.ts).
+    // The changes the alerts follow, found with the copies below and sent after them (push/envoi.ts).
+    let changements: Changement[] = [];
     let tokenDone = () => {};
     const token = new Promise<void>((r) => (tokenDone = r));
     // Its own budget, enough for every copy that is due: past it a subrequest is refused here (budget.ts).
@@ -587,12 +590,12 @@ export default {
       // Last, with what is left: the agendas read only here.
       const agendas = kv ? await refreshPlanned(c).catch((err) => (console.error("agendas planifiés impossibles", why(err)), null)) : null;
       await Promise.all(held);
-      // The alerts a push would follow, from the copies just kept (alertes-etat.ts): a log line a run when one would go,
-      // nothing sent. The copies whole, so that a stale or late one is not read. One KV read, one write only when the
-      // state changes.
+      // The alerts a push follows, from the copies just kept (alertes-etat.ts): a log line a run when one goes, sent
+      // below once the alerts are open, else nothing sent. The copies whole, so that a stale or late one is not read.
+      // One KV read, one write only when the state changes.
       if (kv) {
         const [vig, vol] = await Promise.all([c.peek<mf.Vigilance>(mf.KEY), c.peek<VolcanAnswer>("web:volcan")]).catch(() => [undefined, undefined] as const);
-        await detecter(kv, vig, vol, new Date()).catch((err) => console.error("alertes push (essai) : état impossible", why(err)));
+        changements = await detecter(kv, vig, vol, new Date(), console.log, alertesEnLigne()).catch((err) => (console.error("alertes push : état impossible", why(err)), []));
       }
       const copies = { written: [...first.written, ...after.written], left: [...first.left, ...after.left] };
       return { arome, aromeUsed, stations, copies, agendas };
@@ -609,6 +612,13 @@ export default {
       .catch((err) => console.error("préchargement impossible", why(err)));
     ctx.waitUntil(reads);
     const now = new Date();
+    // The alerts on the phone, once open: this run's changes, then the next batch of the message going out, in a budget
+    // of their own (push/envoi.ts). Closed (production until the flag), nothing here.
+    if (kv && alertesEnLigne()) {
+      ctx.waitUntil(reads.then(() => counted(envoiAlertes.ENVOI_BUDGET, () => envoiAlertes.passage(changements, kv, now)))
+        .then(({ value, used }) => value && console.log(`envoi des alertes : ${JSON.stringify(value)}, sous-requêtes : ${used}`))
+        .catch((err) => console.error("envoi des alertes impossible", why(err))));
+    }
     // Every 15 minutes, at 5, 20, 35 and 50 past the hour: La Réunion's part of the national file of the charging points
     // (about 9 Mo), once the reads above are done, so that the file is never in memory with their copies.
     if (kv && irve.refreshDue(now)) {

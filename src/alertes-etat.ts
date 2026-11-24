@@ -1,8 +1,9 @@
 /**
- * The alerts a push to the phones would follow, read from the copies the site already keeps: Météo-France's vigilance
- * (its zones, and the island's cyclone alert) and /volcan's copy (the ORSEC level). For now nothing is sent: the
- * scheduled event writes one log line a run when something would go, so that how often a push would go, and how many
- * would be false, is read in the Worker's logs over weeks before any phone rings.
+ * The alerts a push to the phones follows, read from the copies the site already keeps: Météo-France's vigilance
+ * (its zones, and the island's cyclone alert) and /volcan's copy (the ORSEC level). The scheduled event writes one log
+ * line a run when something would go; while the alerts are closed (web/alertes-drapeau.ts) nothing is sent, so that how
+ * often a push would go, and how many would be false, is read in the Worker's logs before any phone rings. Open, the
+ * changes go to push/envoi.ts, which sends them.
  *
  * What would be sent, in one message a run however many changes:
  * - vigilance: a zone and phenomenon whose highest colour of the bulletin reaches orange, or rises above what was
@@ -38,6 +39,16 @@ export const FIN_EPISODE_MS = 12 * 3_600_000;
 /** The calm levels of the ORSEC volcano plan, said as one: no push between them. */
 const CALME = "Vigilance";
 
+/** One change a push says: its subject, its key in D1 (push/envoi.ts: sent once), its words, and whether it is urgent. */
+export interface Changement {
+  sujet: "vigilance" | "cyclone" | "volcan";
+  /** Proper to the change and to the copy it was read in: two events that read the same copy make the same key. */
+  cle: string;
+  texte: string;
+  /** « Urgency: high » for the push services: red and above, the cyclone, the volcano. */
+  urgent: boolean;
+}
+
 export interface EtatAlertes {
   /** « zone|phénomène » → the highest colour already said in its episode, and the last bulletin at orange or above. */
   vigilance?: Record<string, { c: number; vu: string }>;
@@ -67,9 +78,10 @@ const zoneDe = (zone: string) => (mf.ZONES[zone] ?? zone).split(" :")[0];
 const niveauDit = (n: string) => (n.startsWith(CALME) ? CALME : n);
 
 /** One run's changes on the state before it: the new state, and what a push would say, in the log's words. */
-export function suivre(avant: EtatAlertes | undefined, vigilance: Cached<mf.Vigilance> | null | undefined, volcan: Cached<VolcanAnswer> | null | undefined, now: Date): { etat: EtatAlertes; dits: string[] } {
+export function suivre(avant: EtatAlertes | undefined, vigilance: Cached<mf.Vigilance> | null | undefined, volcan: Cached<VolcanAnswer> | null | undefined, now: Date): { etat: EtatAlertes; dits: string[]; changements: Changement[] } {
   const etat: EtatAlertes = structuredClone(avant ?? {});
-  const dits: string[] = [];
+  const changements: Changement[] = [];
+  const dire = (sujet: Changement["sujet"], cle: string, texte: string, urgent = true) => void changements.push({ sujet, cle: `${sujet}:${cle}`, texte, urgent });
 
   const v = frais(vigilance);
   const premier = etat.emise === undefined;
@@ -85,7 +97,7 @@ export function suivre(avant: EtatAlertes | undefined, vigilance: Cached<mf.Vigi
         if (Number(id) === mf.CYCLONE || c < SEUIL) continue;
         const cle = `${zone}|${id}`;
         const deja = vus[cle]?.c ?? 0;
-        if (c > deja && !premier) dits.push(`vigilance ${mf.colour(c)} ${(mf.PHENOMENA[Number(id)] ?? `phénomène ${id}`).toLowerCase()}, ${zoneDe(zone)}`);
+        if (c > deja && !premier) dire("vigilance", `${v.emise}:${zone}:${id}:${c}`, `vigilance ${mf.colour(c)} ${(mf.PHENOMENA[Number(id)] ?? `phénomène ${id}`).toLowerCase()}, ${zoneDe(zone)}`, c > SEUIL);
         vus[cle] = { c: Math.max(c, deja), vu: v.emise };
       }
     }
@@ -96,7 +108,7 @@ export function suivre(avant: EtatAlertes | undefined, vigilance: Cached<mf.Vigi
     const periods = v.zones[mf.ISLAND]?.[mf.CYCLONE];
     const cyclone = periods && cycloneOn(periods, now) ? cycloneNow(periods, now) : -1;
     if (!premier && etat.cyclone !== undefined && cyclone !== etat.cyclone) {
-      dits.push(cyclone < 2 ? "alerte cyclonique levée" : `alerte cyclonique ${mf.cycloneName(cyclone)}`);
+      dire("cyclone", `${v.emise}:${cyclone}`, cyclone < 2 ? "alerte cyclonique levée" : `alerte cyclonique ${mf.cycloneName(cyclone)}`);
     }
     etat.cyclone = cyclone;
     etat.emise = v.emise;
@@ -113,13 +125,14 @@ export function suivre(avant: EtatAlertes | undefined, vigilance: Cached<mf.Vigi
     else if (vu.niveau === dit.niveau && vu.eruption === dit.eruption) delete etat.volcanAttente;
     else if (etat.volcanAttente?.niveau === vu.niveau && etat.volcanAttente.eruption === vu.eruption) {
       // Seen in two copies in a row: said.
-      if (vu.eruption && !dit.eruption) dits.push(`volcan : éruption en cours (${vu.niveau})`);
-      else if (vu.niveau !== dit.niveau) dits.push(vu.niveau === CALME ? `volcan : fin de l'alerte (${CALME})` : `volcan : ${vu.niveau} (était ${dit.niveau})`);
+      const cle = `${lu}:${vu.niveau}:${vu.eruption ? "eruption" : "calme"}`;
+      if (vu.eruption && !dit.eruption) dire("volcan", cle, `volcan : éruption en cours (${vu.niveau})`);
+      else if (vu.niveau !== dit.niveau) dire("volcan", cle, vu.niveau === CALME ? `volcan : fin de l'alerte (${CALME})` : `volcan : ${vu.niveau} (était ${dit.niveau})`);
       etat.volcan = vu;
       delete etat.volcanAttente;
     } else etat.volcanAttente = vu;
   }
-  return { etat, dits };
+  return { etat, dits: changements.map((c) => c.texte), changements };
 }
 
 interface Kv {
@@ -134,12 +147,15 @@ function lire(x: unknown): EtatAlertes | undefined {
   return typeof e.volcan === "string" || (e.vigilance && Object.values(e.vigilance).some((c) => typeof c === "number")) ? undefined : (e as EtatAlertes);
 }
 
-/** One run: the state from the copies, one log line when a push would go, and the state written when it changed. */
-export async function detecter(kv: Kv, vigilance: Cached<mf.Vigilance> | null | undefined, volcan: Cached<VolcanAnswer> | null | undefined, now: Date, log: (ligne: string) => void = console.log): Promise<string[]> {
+/**
+ * One run: the state from the copies, one log line when a push goes (or would go, `ouvert` false: the alerts closed),
+ * and the state written when it changed. The changes, for push/envoi.ts.
+ */
+export async function detecter(kv: Kv, vigilance: Cached<mf.Vigilance> | null | undefined, volcan: Cached<VolcanAnswer> | null | undefined, now: Date, log: (ligne: string) => void = console.log, ouvert = false): Promise<Changement[]> {
   const avant = lire(await kv.get(ETAT_KEY, "json"));
-  const { etat, dits } = suivre(avant, vigilance, volcan, now);
-  // One line a run, as one message would go: the count of lines is the count of pushes.
-  if (dits.length) log(`alertes push (à blanc, rien n'est envoyé) : ${dits.join("\u00a0; ")}`);
+  const { etat, dits, changements } = suivre(avant, vigilance, volcan, now);
+  // One line a run, as one message goes: the count of lines is the count of pushes.
+  if (dits.length) log(`alertes push${ouvert ? "" : " (à blanc, rien n'est envoyé)"} : ${dits.join("\u00a0; ")}`);
   if (JSON.stringify(etat) !== JSON.stringify(avant ?? {})) await kv.put(ETAT_KEY, JSON.stringify(etat));
-  return dits;
+  return changements;
 }

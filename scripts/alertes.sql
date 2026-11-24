@@ -17,3 +17,14 @@ CREATE TABLE IF NOT EXISTS alertes_envoyees (
   cle TEXT PRIMARY KEY,
   envoyee TEXT NOT NULL
 );
+-- alertes_en_cours: the message being sent, a row at most (id 1): its changes' words, the pages and urgency they give,
+-- when it was made, and the last subscription it reached (endpoint, in their order; "" before the first). The
+-- scheduled event sends 2 000 subscriptions an event and moves `apres` on before it sends, so that two events never
+-- take the same batch (push/envoi.ts). Deleted once every subscription is reached, or past 6 h. No personal data
+-- besides `apres`, a subscription's address already kept in abonnements.
+CREATE TABLE IF NOT EXISTS alertes_en_cours (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  changements TEXT NOT NULL,
+  depuis TEXT NOT NULL,
+  apres TEXT NOT NULL
+);

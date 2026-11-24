@@ -88,6 +88,7 @@ import rubriques from "./og-rubriques.json" with { type: "json" };
 import { NOUVEAUTES } from "../nouveautes.js";
 import { nouveautesPage } from "./nouveautes.js";
 import { bathingPage, PATH as BAIGNADE } from "./baignade.js";
+import { buildMerHistorique, KEY as MER_HISTORIQUE_KEY, merHistoriquePage, PATH as MER_HISTORIQUE } from "./mer-historique.js";
 import { carburantsPage } from "./carburants.js";
 import { collectePage, communeOf } from "./collecte.js";
 import { decheteriesPage } from "./decheteries.js";
@@ -465,6 +466,8 @@ export const DOMAINS: Record<string, { key: string; build: (cache: Cache, now: D
   "/cyclones": { key: "web:cyclones", build: buildCyclones, page: cyclonesPage },
   "/crues": { key: "web:crues", build: buildCrues, page: cruesPage },
   "/historique": { key: "web:historique", build: buildHistorique, page: historiquePage },
+  // The sea's history from D1 (web/mer-historique.ts): its summary kept 6 hours, the page's copy built from it.
+  [MER_HISTORIQUE]: { key: MER_HISTORIQUE_KEY, build: buildMerHistorique, page: merHistoriquePage },
   "/evenements": { key: "web:agenda", build: buildAgenda, page: agendaPage },
   // Parts of the events page's copy, with their own title for what people search.
   "/evenements/ce-week-end": { key: "web:agenda", build: buildAgenda, page: weekendPage },

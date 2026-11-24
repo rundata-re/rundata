@@ -830,6 +830,9 @@ const DOMAIN_PAGES: Record<string, Page> = {
   "/crues": { subrequests: 30, cpuMs: 120, from: ["src/tools/crues.ts", "src/tools/actualites.ts"], basis: "estimé" },
   // 15 measured, and before noon the day before kept by the scheduled event, read with the hours of Saint-Denis (KV).
   "/historique": { subrequests: 16, cpuMs: 70, from: ["src/tools/historique.ts"], basis: "estimé" },
+  // The sea's history: built from the summary of the archive, kept 6 hours in the data center (tools/mer-historique.ts);
+  // to make it, two reads of D1, its points and every year (some 190 rows, about 1 MB of JSON in all), parsed and summed up.
+  "/mer/historique": { subrequests: 4, cpuMs: 150, from: ["src/web/mer-historique.ts", "src/tools/mer-historique.ts", "src/providers/mer-historique.ts"], d1: { d1Calls: 2, d1RowsRead: 200 }, basis: "estimé" },
   "/evenements": { subrequests: 54, cpuMs: 200, from: ["src/tools/agenda.ts"] },
   "/evenements/ce-week-end": { subrequests: 36, cpuMs: 230, from: ["src/tools/agenda.ts"], what: "comme /evenements, une partie de sa copie" },
   "/evenements/concerts": { subrequests: 36, cpuMs: 230, from: ["src/tools/agenda.ts"], what: "comme /evenements, une partie de sa copie" },
@@ -998,7 +1001,9 @@ const TOOLS: Record<string, { subrequests: number; cpuMs: number; what?: string;
   qualite_eau: { subrequests: 15, cpuMs: 90, file: "eau" },
   // 14, and 5 from the code for the corals' grid, as /mer; 7 for the figures of 30 days: the buoys' series from KV, and
   // the satellite's 30 days off four beaches once a day (four requests, the cache read and write).
-  temperature_mer: { subrequests: 26, cpuMs: 60, file: "mer" },
+  // 26, and with `historique` or `date` the sea's history: its summary (two reads of D1 when not kept, as
+  // /mer/historique) and that day in every year (one read, every row of the archive scanned, its one day taken out).
+  temperature_mer: { subrequests: 29, cpuMs: 60, file: "mer", d1: { d1Calls: 3, d1RowsRead: 400 }, basis: "code" },
   // A trip asked (« A vers B »): its journeys, as /bus/itineraire, three reads of the database and five when the next three
   // hours have none, at most ROWS_MAX (tools/itineraire.ts) rows, then, when none is found, the departures at its start.
   transports: { subrequests: 13, cpuMs: 80, file: "transports", d1: { d1Calls: 7, d1RowsRead: 2840 }, basis: "code" },

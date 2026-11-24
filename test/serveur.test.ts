@@ -151,7 +151,9 @@ describe("the server's instructions", () => {
     // sentences and three arguments. The cap follows the size measured, it is no allowance: a tool added pays its words.
     // 41 425 the same day with the places in crèche in annuaire_services_publics (a few words of its description): no tool
     // answered « crèche », which had a page.
-    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(41_425);
+    // 41 835 the same day with the sea's past in temperature_mer (two arguments, date and historique, and one sentence):
+    // no tool answered « la mer était à combien le 15/03/2019 ? », which /mer/historique shows.
+    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(41_835);
     for (const t of tools) expect(t.description.length, t.name).toBeLessThanOrEqual(2_000);
   });
 

@@ -134,5 +134,6 @@ export function courbesSection(c: (Courbes & { satellite_lu?: string }) | undefi
   ${sat ? `<h3>Température de surface vue par le satellite, au large de quatre plages</h3><div class="hg crbs">${sat}</div>
   <p class="note">Analyse quotidienne par satellite de NOAA Coral Reef Watch (CoralTemp), qui comble les trous laissés par les nuages\u00a0: une estimation au large, pas une mesure à la plage. ${esc(crwSerie.REFERENCE)}</p>
   <p class="note">Source\u00a0: ${esc(crwSerie.SOURCE.attribution)} (${esc(crwSerie.SOURCE.licence)})${c.satellite_lu ? `, lu ${esc(leQuand(Date.parse(c.satellite_lu)))}` : ""}.</p>` : ""}
+  <p><a href="/mer/historique">Les années d'avant\u00a0: l'histoire de la mer, ses records et le même jour chaque année →</a></p>
 </section>`;
 }

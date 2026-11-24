@@ -59,6 +59,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded by marketing): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-24T15:40:00+04:00", texte: "Mer\u00a0: son histoire jour par jour, la houle des bouées depuis 1996 et la température depuis 2003, avec records et même jour chaque année." },
   { date: "2026-11-24T15:07:00+04:00", texte: "Agenda\u00a0: les fêtes de l'Est que la CIREST annonce (Dipavali, Détakali, Jours de Feu), y compris à Sainte-Rose et à Salazie." },
   { date: "2026-11-24T15:01:00+04:00", texte: "Événements\u00a0: les contes, la magie et les marionnettes ont chacun leur genre, sur la page et dans l'outil IA, au lieu d'être dits «\u00a0cirque\u00a0»." },
   { date: "2026-11-24T14:55:00+04:00", texte: "Coupures d'eau\u00a0: les avis de Sudéau publiés par la ville du Tampon sont lus, avec le lien de chaque avis." },

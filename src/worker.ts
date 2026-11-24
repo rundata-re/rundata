@@ -48,6 +48,7 @@ import * as cmrsTrace from "./providers/cmrs-trace.js";
 import * as feux from "./providers/feux.js";
 import * as transit from "./providers/transit.js";
 import * as climat from "./providers/climat.js";
+import * as merHistorique from "./providers/mer-historique.js";
 import * as avis from "./avis.js";
 import * as limite from "./limite.js";
 import { refusRobot } from "./robots.js";
@@ -397,6 +398,9 @@ function setup(env: Env): Cache {
     climatDb && { all: async <T>(sql: string, ...params: unknown[]) => (await climatDb.prepare(sql).bind(...params).all<T>()).results },
     hourlyDb && { all: async <T>(sql: string, ...params: unknown[]) => (await hourlyDb.prepare(sql).bind(...params).all<T>()).results },
   );
+  // The sea's history, in the same database: the Candhis buoys since 1996 and the satellite since 2003 (scripts/mer.sql,
+  // the current year by .github/workflows/mer.yml). An empty archive until its tables are imported.
+  merHistorique.configure(climatDb && { all: async <T>(sql: string, ...params: unknown[]) => (await climatDb.prepare(sql).bind(...params).all<T>()).results });
   // The feedback of the tool donner_avis and of the site's form: one row each (scripts/avis.sql).
   const avisDb = env.AVIS;
   // Counted as every D1 call: an invocation's calls to the bound services are limited together (budget.ts).

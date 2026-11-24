@@ -1,0 +1,58 @@
+# The sea's history (/mer/historique, temperature_mer's `historique`): every morning, the current year of the four
+# beaches' satellite temperature (NOAA Coral Reef Watch CoralTemp, four requests to PacIOOS's ERDDAP) and of the buoy
+# that publishes now (Candhis getCampTR, one request, with the key CANDHIS_API_KEY; skipped without it) goes to the D1
+# database rundata-climat, merged day by day with the rows already there (scripts/build-mer.py --recent). Only the rows
+# that changed are written: some 5 a day (D1 allows 100 000 a day for the whole account), 0 when the job runs again
+# the same day. The years before were imported once, by hand, with the same script (--brut).
+name: Histoire de la mer
+
+on:
+  schedule:
+    # 06:30 UTC, 10:30 at La Réunion. CoralTemp comes late: on 24/11/2026 at 10:50 UTC, ERDDAP's last day was 22/11.
+    # The job takes the days that are there; the next morning's run adds the others.
+    - cron: "30 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mer
+  cancel-in-progress: true
+
+jobs:
+  annee:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      WRANGLER_SEND_METRICS: "false"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: The rows of this year as D1 has them
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        # Before the import the table is missing: no rows, the job writes the schema and this year. Any other failure
+        # stops the job: without the rows before, the buoy's year would be rewritten with only its last weeks.
+        run: |
+          if ! npx wrangler d1 execute rundata-climat --remote --json -y \
+            --command "SELECT source, point, annee, data FROM mer_jour WHERE annee >= CAST(strftime('%Y', 'now', '+4 hours', '-7 days') AS INTEGER)" \
+            > avant.json 2> erreur.txt; then
+            cat erreur.txt avant.json
+            grep -q "no such table" erreur.txt avant.json && echo "[]" > avant.json || exit 1
+          fi
+      - name: This year from the sources
+        env:
+          CANDHIS_API_KEY: ${{ secrets.CANDHIS_API_KEY }}
+        run: python3 -I scripts/build-mer.py --recent --avant avant.json --out mer-jour.sql
+      - name: Into D1
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: npx wrangler d1 execute rundata-climat --remote --file mer-jour.sql -y

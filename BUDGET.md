@@ -244,6 +244,7 @@ Chacune a sa propre minuterie (wrangler.jsonc), dans sa propre invocation, avec 
 | /cyclones | la page /cyclones | à chaque vue |  | 32 | 2 | 2 |  |  |  | 50 | mesuré |
 | /crues | la page /crues | à chaque vue |  | 36 | 4 | 3 |  |  |  | 120 | estimé |
 | /historique | la page /historique | à chaque vue |  | 16 |  |  |  |  |  | 70 | estimé |
+| /mer/historique | la page /mer/historique | à chaque vue |  | 4 |  |  | 2 | 200 |  | 150 | estimé |
 | /evenements | la page /evenements | à chaque vue |  | 54 |  |  |  |  |  | 200 | mesuré |
 | /evenements/ce-week-end | comme /evenements, une partie de sa copie | à chaque vue |  | 36 |  |  |  |  |  | 230 | mesuré |
 | /evenements/concerts | comme /evenements, une partie de sa copie | à chaque vue |  | 36 |  |  |  |  |  | 230 | mesuré |
@@ -264,7 +265,7 @@ Chacune a sa propre minuterie (wrangler.jsonc), dans sa propre invocation, avec 
 | fiche_terrain | l'outil fiche_terrain | à chaque vue |  | 38 |  |  |  |  |  | 100 | estimé |
 | prevision_meteo | l'outil prevision_meteo : la prévision de chaque maille d'Open-Meteo gardée dans KV jusqu'au calcul suivant du modèle (toutes les 6 h), une écriture par maille demandée et par calcul, 4 par jour et par maille au plus | à chaque vue |  | 34 | 7 | 7 |  |  |  | 100 | mesuré |
 | qualite_eau | l'outil qualite_eau | à chaque vue |  | 17 | 1 | 1 |  |  |  | 90 | mesuré |
-| temperature_mer | l'outil temperature_mer | à chaque vue |  | 26 |  |  |  |  |  | 60 | mesuré |
+| temperature_mer | l'outil temperature_mer | à chaque vue |  | 29 |  |  | 3 | 400 |  | 60 | code |
 | transports | l'outil transports | à chaque vue |  | 13 |  |  | 7 | 2 840 |  | 80 | code |
 | cyclones | l'outil cyclones | à chaque vue |  | 18 | 2 | 2 |  |  |  | 70 | mesuré |
 | actualites | l'outil actualites | à chaque vue |  | 10 |  |  |  |  |  | 180 | mesuré |
@@ -307,7 +308,7 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | web:air | providers/air-mesures, providers/atmo, providers/capteurs |
 | mer:satellites | providers/acspo, providers/modis |
 | mer:passages | providers/viirs |
-| web:mer | providers/acspo, providers/arome, providers/calendrier, providers/candhis, providers/coraux, providers/crw-serie, providers/ensemble, providers/houle, providers/mf-auth, providers/modis, providers/openmeteo, providers/uv-mesure, providers/uv, providers/viirs |
+| web:mer | providers/acspo, providers/arome, providers/calendrier, providers/candhis, providers/coraux, providers/crw-serie, providers/ensemble, providers/houle, providers/meteor-oi, providers/mf-auth, providers/modis, providers/openmeteo, providers/uv-mesure, providers/uv, providers/viirs |
 | web:sport | connecteurs/helloasso, providers/actualites, providers/agenda, providers/avis-eau, providers/ffck, providers/salles, providers/sport-avis, providers/sport |
 | web:calendrier | providers/calendrier |
 | metar | providers/metar |
@@ -386,7 +387,7 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | /meteo/rejeu-jour-*.json | providers/meteofrance, providers/meteor-oi, providers/mf-auth, providers/radar |
 | /meteo/rejeu-7j.json | providers/meteofrance, providers/meteor-oi, providers/mf-auth, providers/radar |
 | /electricite/historique.json | providers/avis-eau, providers/coupures-courant, providers/edf |
-| /mer | providers/acspo, providers/arome, providers/calendrier, providers/candhis, providers/coraux, providers/crw-serie, providers/ensemble, providers/houle, providers/maregraphes, providers/mf-auth, providers/modis, providers/openmeteo, providers/uv-mesure, providers/uv, providers/viirs |
+| /mer | providers/acspo, providers/arome, providers/calendrier, providers/candhis, providers/coraux, providers/crw-serie, providers/ensemble, providers/houle, providers/maregraphes, providers/meteor-oi, providers/mf-auth, providers/modis, providers/openmeteo, providers/uv-mesure, providers/uv, providers/viirs |
 | /randonnees/* | providers/feux, providers/sentiers, providers/traces |
 | /sentiers/* | providers/feux, providers/sentiers, providers/traces |
 | /bus/arret/* | providers/actualites, providers/avis-eau, providers/calendrier, providers/gtfsrt |
@@ -424,6 +425,7 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | /cyclones | providers/actualites, providers/avis-eau, providers/cmrs-carte, providers/cmrs-trace, providers/cyclones, providers/feux, providers/mf-auth, providers/prefecture, providers/vigilance |
 | /crues | providers/actualites, providers/avis-eau, providers/vigicrues |
 | /historique | providers/meteor-oi |
+| /mer/historique | connecteurs/helloasso, providers/acspo, providers/actualites, providers/agenda, providers/air-mesures, providers/annuaire, providers/arome, providers/arretes-travaux, providers/atmo, providers/avis-eau, providers/baignades, providers/calendrier, providers/candhis, providers/capteurs, providers/carburants, providers/cmrs-carte, providers/cmrs-trace, providers/coraux, providers/coupures-courant, providers/cpf, providers/crw-serie, providers/cyclones, providers/eaupotable, providers/edf, providers/emploi, providers/ensemble, providers/feux, providers/ffck, providers/ffvl, providers/gtfsrt, providers/houle, providers/irve, providers/marches-publics, providers/maregraphes, providers/metar, providers/meteofrance, providers/meteor-oi, providers/mf-auth, providers/modis, providers/openmeteo, providers/prefecture, providers/radar, providers/salles, providers/seismes, providers/sentiers, providers/sites-hs, providers/sport-avis, providers/sport, providers/tco, providers/terrain, providers/traces, providers/uv-mesure, providers/uv, providers/velos, providers/vigicrues, providers/vigieau, providers/vigilance, providers/viirs, providers/volcan |
 | /evenements | connecteurs/helloasso, providers/actualites, providers/agenda, providers/avis-eau, providers/ffck, providers/salles, providers/sport-avis, providers/sport |
 | /evenements/ce-week-end | connecteurs/helloasso, providers/actualites, providers/agenda, providers/avis-eau, providers/ffck, providers/salles, providers/sport-avis, providers/sport |
 | /evenements/concerts | connecteurs/helloasso, providers/actualites, providers/agenda, providers/avis-eau, providers/ffck, providers/salles, providers/sport-avis, providers/sport |
@@ -439,7 +441,7 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | fiche_terrain | providers/annuaire, providers/terrain |
 | prevision_meteo | providers/arome, providers/calendrier, providers/ensemble, providers/mf-auth, providers/openmeteo, providers/uv-mesure, providers/uv |
 | qualite_eau | providers/arretes-travaux, providers/avis-eau, providers/baignades, providers/eaupotable |
-| temperature_mer | providers/acspo, providers/arome, providers/calendrier, providers/candhis, providers/coraux, providers/crw-serie, providers/ensemble, providers/houle, providers/mf-auth, providers/modis, providers/openmeteo, providers/uv-mesure, providers/uv, providers/viirs |
+| temperature_mer | providers/acspo, providers/arome, providers/calendrier, providers/candhis, providers/coraux, providers/crw-serie, providers/ensemble, providers/houle, providers/meteor-oi, providers/mf-auth, providers/modis, providers/openmeteo, providers/uv-mesure, providers/uv, providers/viirs |
 | transports | providers/actualites, providers/avis-eau, providers/calendrier, providers/gtfsrt |
 | cyclones | providers/actualites, providers/avis-eau, providers/cmrs-carte, providers/cmrs-trace, providers/cyclones, providers/feux, providers/mf-auth, providers/prefecture, providers/vigilance |
 | actualites | providers/actualites, providers/avis-eau |

@@ -7,6 +7,9 @@ import * as coraux from "../providers/coraux.js";
 import * as cetaces from "./cetaces.js";
 import * as crwSerie from "../providers/crw-serie.js";
 import { courbes, historiqueBlock } from "./mer-courbes.js";
+import * as merHistoire from "./mer-historique.js";
+import * as merArchive from "../providers/mer-historique.js";
+import { parseDate } from "./historique.js";
 import * as houle from "../providers/houle.js";
 import * as modis from "../providers/modis.js";
 import * as viirs from "../providers/viirs.js";
@@ -566,12 +569,43 @@ export async function corauxBlock(cache: Cache, near?: { lon: number; lat: numbe
   };
 }
 
+/** The history the tool was asked for (`historique`, or a past `date`): the same summary as /mer/historique. */
+export interface Histoire {
+  historique?: boolean;
+  /** A past day: « 2010-03-15 », « 15/03/2010 », « 15/03 ». */
+  date?: string;
+}
+
+export async function histoireMer(cache: Cache, now: Date, near: { lon: number; lat: number } | undefined, h?: Histoire) {
+  if (!h?.historique && !h?.date?.trim()) return undefined;
+  const today = merHistoire.aujourdhui(now);
+  let jour: string | undefined;
+  if (h.date?.trim()) {
+    const d = /^(\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2}(\/\d{4})?)$/.test(h.date.trim()) ? parseDate(h.date, false, today) : null;
+    if (!d) return { erreur: "Date non comprise\u00a0: écrire « 2010-03-15 » ou « 15/03/2010 »." };
+    if (d >= today) return { erreur: "Pas d'historique pour aujourd'hui ni pour un jour à venir\u00a0: la mesure du jour est dans ce bloc mesure ou sur_30_jours, la houle à venir dans etat_de_la_mer." };
+    jour = d;
+  }
+  try {
+    const r = (await merHistoire.resume(cache, now)).value;
+    const valeurs = jour && r.importe ? (await merArchive.memeJour(cache, jour.slice(5))).value : undefined;
+    return merHistoire.historiqueBlock(r, near, BOUEE_MAX_KM, jour && valeurs ? { jour, valeurs } : undefined);
+  } catch (err) {
+    console.error("historique de la mer indisponible:", why(err));
+    return { etat: "Historique de la mer momentanément indisponible.", page: "https://rundata.re/mer/historique" };
+  }
+}
+
+const histoireSources = (b: Awaited<ReturnType<typeof histoireMer>>) =>
+  b && "bouees" in b ? [...(b.bouees.length ? [merArchive.SOURCE_CANDHIS] : []), ...(b.satellite.length ? [merArchive.SOURCE_CRW] : [])] : [];
+
 /** `withCoraux`: false for a place's page (web/data.ts), whose copy shows no corals and does not pay for their read. */
-export async function temperatureMer(cache: Cache, lieu: string | undefined, now = new Date(), withCoraux = true) {
+export async function temperatureMer(cache: Cache, lieu: string | undefined, now = new Date(), withCoraux = true, h?: Histoire) {
   if (!lieu?.trim()) {
     const [gs, ps, w, reef, buoys, serie, crw] = await Promise.all([copiedGrids(cache, now), copiedPasses(cache, now), wavesNow(cache), withCoraux ? corauxBlock(cache) : null, boueesLues(cache, now), withCoraux ? serieLue(cache) : null, withCoraux ? serieSatellite(cache) : null]);
     const t = gs.length || ps ? tourOf(gs, now, TOUR, ps) : null;
     const histo = historiqueBlock(courbes(serie, crw, undefined, now));
+    const passe = await histoireMer(cache, now, undefined, h);
     if (!t && !w && !reef && !buoys.length) return unavailable();
     const measuredWaves = buoys.map((b) => releveBlock(b));
     const at = TOUR.map((n) => resolvePlace(n)!.lieu).map((p) => ({ p, v: w ? wavesAt(w.value, p.lon, p.lat, now) : null }));
@@ -601,10 +635,12 @@ export async function temperatureMer(cache: Cache, lieu: string | undefined, now
       ...(reef ? { coraux: reef } : {}),
       // The figures of « En courbes » on /mer, the same.
       ...(histo ? { sur_30_jours: histo } : {}),
+      // Asked for: the years before, as /mer/historique says them.
+      ...(passe ? { historique: passe } : {}),
       // The rules of approach of whales and dolphins, from the decrees in the code: nothing read.
       cetaces: cetaces.cetacesBlock(now),
       couverture: coverage(),
-      sources: credits([...(t?.used.map((g) => g.source) ?? []), ...(measuredWaves.length || histo?.bouees ? [candhis.SOURCE] : []), ...models.map((m) => m.source), requin.SOURCE, ...(reef || histo?.satellite ? [coraux.SOURCE] : []), cetaces.SOURCE]),
+      sources: credits([...(t?.used.map((g) => g.source) ?? []), ...(measuredWaves.length || histo?.bouees ? [candhis.SOURCE] : []), ...models.map((m) => m.source), requin.SOURCE, ...(reef || histo?.satellite ? [coraux.SOURCE] : []), cetaces.SOURCE, ...histoireSources(passe)]),
       // The oldest day measured among the points, not when rundata.re read the grids: what the answer's freshness says.
       jour_mesure: points.flatMap((p) => ("jour_mesure" in p && p.jour_mesure ? [p.jour_mesure] : [])).sort()[0],
     });
@@ -620,6 +656,7 @@ export async function temperatureMer(cache: Cache, lieu: string | undefined, now
   const m = gs.length || ps ? reading(r.lieu, gs, now, ps) : null;
   const v = w ? waveBlock(w, r.lieu, now) : null;
   const histo = m || v ? historiqueBlock(courbes(serie, crw, undefined, now), r.lieu, BOUEE_MAX_KM, distanceKm) : undefined;
+  const passe = await histoireMer(cache, now, r.lieu, h);
   const temperature = m
     ? `Eau de mer près ${de(r.lieu.nom)}\u00a0: ${m.mesure.temperature_eau}, mesurée par satellite ` +
       `(${measuredOn(m.mesure, now)}${"satellite" in m.mesure ? `, ${m.mesure.satellite}` : ""}, point de mesure à ${fr(m.mesure.distance_km)} km).`
@@ -654,10 +691,12 @@ export async function temperatureMer(cache: Cache, lieu: string | undefined, now
     ...((m || v) && reef ? { coraux: reef } : {}),
     // On the coast only too: the figures of « En courbes » on /mer near the place.
     ...(histo ? { sur_30_jours: histo } : {}),
+    // Asked for: the years before near the place, as /mer/historique says them.
+    ...(passe ? { historique: passe } : {}),
     // On the coast only too: the rules of approach of whales and dolphins.
     ...(m || v ? { cetaces: cetaces.cetacesBlock(now) } : {}),
     couverture: coverage(),
-    sources: credits([...(m ? [m.grid.source] : gs.map((g) => g.source)), ...(buoy ? [candhis.SOURCE] : []), ...(v ? [v.model.source] : []), ...(m || v ? [requin.SOURCE] : []), ...((m || v) && reef || histo?.satellite ? [coraux.SOURCE] : []), ...(m || v ? [cetaces.SOURCE] : []), ...(histo?.bouees && !buoy ? [candhis.SOURCE] : [])]),
+    sources: credits([...(m ? [m.grid.source] : gs.map((g) => g.source)), ...(buoy ? [candhis.SOURCE] : []), ...(v ? [v.model.source] : []), ...(m || v ? [requin.SOURCE] : []), ...((m || v) && reef || histo?.satellite ? [coraux.SOURCE] : []), ...(m || v ? [cetaces.SOURCE] : []), ...(histo?.bouees && !buoy ? [candhis.SOURCE] : []), ...histoireSources(passe)]),
   });
 }
 

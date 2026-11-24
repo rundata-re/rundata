@@ -62,7 +62,7 @@ def main():
         time.sleep(0.5)
     OUT.write_text(json.dumps({
         "construit": date.today().isoformat(),
-        "source": "ARS La Réunion, contrôle sanitaire des eaux distribuées (Hub'Eau), Licence Ouverte 2.0",
+        "source": "ARS La Réunion, contrôle sanitaire des eaux distribuées (Hub'Eau)",
         "communes": communes,
         "plusieurs": several,
     }, ensure_ascii=False, indent=1) + "\n")

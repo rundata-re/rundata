@@ -149,6 +149,34 @@ describe("qualité de l'eau", () => {
     expect(body(await qualiteEau(cache(), "Grand Fond", "baignade", NOW)).baignade.sites.map((r: { site: string }) => r.site)).toEqual(["Plage de Boucan Canot", "Plage des Roches Noires"]);
   });
 
+  it("says, for a commune with tap water and bathing, each sentence once and the samples' gap once", async () => {
+    vi.stubGlobal("fetch", async (url: string) => {
+      const u = new URL(url);
+      if (u.hostname === "baignades.sante.gouv.fr") {
+        return new Response(fixture(`baignade_974000709_${u.searchParams.get("annee")}.html`, "latin1"), { headers: { "content-type": "text/html; charset=ISO-8859-1" } });
+      }
+      const p = u.searchParams;
+      if (p.get("code_commune") !== "97416") return new Response(JSON.stringify({ count: 0, data: [] }));
+      const file = u.pathname.endsWith("communes_udi") ? "udi_97416.json"
+        : p.get("code_parametre") === "1449" ? "ecoli_97416.json"
+        : p.has("conformite_limites_bact_prelevement") ? "nc_bact_97416.json" : "nc_pc_97416.json";
+      return new Response(fixture(file), { headers: { "content-type": "application/json" } });
+    });
+    const late = new Date("2026-11-24T04:00:00Z");
+    const r = await qualiteEau(cache(), "Saint-Pierre", undefined, late);
+    const b = body(r);
+    expect(b.eau_du_robinet.reseaux).toHaveLength(13);
+    expect(b.baignade.sites).toHaveLength(5);
+    // The parts' sentences are the answer's resume: said there, not again in each part.
+    expect(b.resume).toMatch(/^Eau du robinet à Saint-Pierre : 13 réseaux/);
+    expect(b.eau_du_robinet).not.toHaveProperty("resume");
+    expect(b.baignade).not.toHaveProperty("resume");
+    // The gap of each site is in its row; the resume says it once for the five.
+    expect(b.resume.split("Aucun prélèvement publié").length + b.resume.split("aucun prélèvement publié").length - 2).toBe(1);
+    expect(b.resume).toMatch(/Pour les 5 sites\u00a0: aucun prélèvement publié par l'ARS depuis le \d\d\/\d\d\/2026 \(\d+ semaines\), ni aucun pour la saison commencée le 01\/10\/2026\.$/);
+    expect(b.baignade.sites.every((s: { prelevements_en_retard?: string }) => s.prelevements_en_retard)).toBe(true);
+  });
+
   it("lists a commune's networks, those with a problem first", async () => {
     const b = body(await qualiteEau(cache(), "eau du robinet à Saint-Pierre", undefined, NOW));
     expect(b.eau_du_robinet.reseaux).toHaveLength(13);
@@ -179,6 +207,12 @@ describe("qualité de l'eau", () => {
     expect(two.endsWith(` Pour les deux sites\u00a0: aucun prélèvement publié par l'ARS depuis le 15/09/2026 (5 semaines), ni aucun pour la saison commencée le 01/10/2026.`)).toBe(true);
     expect(two).toMatch(/^Plage de l'Hermitage centre : [^:]+\. Plage de l'Hermitage nord : /);
     // Gaps of their own: each beside its beach.
+    // Gaps of different dates, each in its site's sentence already: said once, with the range of weeks.
+    const older = { ...row, site: "Plage de l'Hermitage nord", dernier_prelevement: "08/09/2026", prelevements_en_retard: "Aucun prélèvement publié par l'ARS depuis le 08/09/2026 (6 semaines), ni aucun pour la saison commencée le 01/10/2026." };
+    const mixed = bathSentences([row, older, { ...row, site: "Plage de Trou d'Eau" }]);
+    expect(mixed.split("ucun prélèvement publié")).toHaveLength(2);
+    expect(mixed.endsWith(` Pour les 3 sites\u00a0: aucun prélèvement publié par l'ARS depuis le dernier de chacun (5 à 6 semaines), ni aucun pour la saison commencée le 01/10/2026.`)).toBe(true);
+    expect(mixed).toContain("au dernier prélèvement (08/09/2026)");
     const other = bathSentences([row, { ...row, site: "Plage de l'Hermitage nord", prelevements_en_retard: undefined }]);
     expect(other).toBe(`${bathSentences([row])} ${bathSentences([{ ...row, site: "Plage de l'Hermitage nord", prelevements_en_retard: undefined }])}`);
     expect(b.a_savoir.eau_de_baignade).toBe(noteBaignade(true));

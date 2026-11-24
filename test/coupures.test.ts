@@ -288,6 +288,11 @@ describe("coupures d'eau", () => {
     const [commune, list] = all.find(([c, l]) => l.some((n) => !value.avis.some((x) => x.titre === n.titre && x.communes.includes(c))))!;
     const past = list.find((n) => !value.avis.some((x) => x.titre === n.titre && x.communes.includes(commune)))!;
     const html = coupuresCommunePage("https://rundata.re", PAGES.find((x) => x.commune && x.nom === commune)!, { coupures }, NOW);
+    // Its sources: each distributor named once (in its terms), the ARS's licence once.
+    const sources = html.slice(html.indexOf('<p class="sources">'));
+    expect(sources.slice(0, sources.indexOf("</p>")).split("Eaux de La Possession")).toHaveLength(2);
+    expect(sources).toContain("contrôle sanitaire des eaux distribuées (Hub&#39;Eau) (Licence Ouverte Etalab 2.0)");
+    expect(sources).not.toContain("Licence Ouverte 2.0 (");
     const block = html.slice(html.indexOf("<h3>Derniers avis publiés"));
     expect(block.slice(0, block.indexOf("</ul>"))).toContain(past.lien ? `<a href="${past.lien}" rel="noopener">` : past.titre.slice(0, 10));
     expect(block.slice(0, block.indexOf("</ul>"))).toMatch(/publié le \d{2}\/\d{2}\/\d{4}/);
@@ -663,7 +668,7 @@ describe("coupures d'eau", () => {
     const t = await coupuresEau(cache(), "Le Tampon", NOW);
     const b = body(t);
     expect(b.resume).toBe("Pas d'avis en ligne lisible pour Le Tampon : rundata.re ne lit pas les avis de coupure de Sudéau, qui y distribue l'eau. Voir le site de Sudéau, rubrique «\u00a0L'eau dans ma commune\u00a0»\u00a0: https://www.sudeau.re/, ou la mairie.");
-    expect(b.distributeur).toEqual({ nom: "Sudéau", site: "https://www.sudeau.re/", d_apres: "ARS La Réunion, contrôle sanitaire des eaux distribuées (Hub'Eau), Licence Ouverte 2.0" });
+    expect(b.distributeur).toEqual({ nom: "Sudéau", site: "https://www.sudeau.re/", d_apres: "ARS La Réunion, contrôle sanitaire des eaux distribuées (Hub'Eau)" });
     expect(b.contact).toBe("Le numéro d'urgence du distributeur (fuite, coupure non annoncée) est sur la facture d'eau\u00a0; la mairie : https://rundata.re/communes/le-tampon");
     // The distributor named is the ARS's, and no notice is used: its sanitary control alone is credited and cited.
     expect(b.sources.map((s: { source: string }) => s.source)).toEqual(["Contrôle sanitaire de l'eau du robinet (ARS La Réunion, via Hub'Eau)"]);

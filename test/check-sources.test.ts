@@ -152,6 +152,12 @@ describe("the daily check of the sources", () => {
   it("checks the size of each answer, the vigilance and the cyclones apart", () => {
     expect(Object.keys(MAX_BYTES).filter((k) => !TOOLS.some((c) => c.point === k))).toEqual([]);
     expect(TOOLS.filter((c) => !(c.point in MAX_BYTES)).map((c) => c.point)).toEqual(["vigilance_meteo", "cyclones"]);
+    // The answers of 13 to 33 KB read on 23/11/2026, each with the place that made it the biggest.
+    expect(TOOLS.find((c) => c.point === "annuaire_services_publics (enfants, Saint-Denis)")?.args).toEqual({ quoi: "enfants", lieu: "Saint-Denis" });
+    expect(TOOLS.find((c) => c.point === "qualite_eau (Saint-Paul)")?.args).toEqual({ lieu: "Saint-Paul" });
+    expect(TOOLS.find((c) => c.point === "sentiers_randonnee (île)")?.args).toEqual({});
+    expect(TOOLS.find((c) => c.point === "resume_du_jour (Saint-Denis)")?.args).toEqual({ lieu: "Saint-Denis" });
+    for (const k of ["qualite_eau (Saint-Paul)", "sentiers_randonnee (île)", "resume_du_jour (Saint-Denis)"]) expect(SUIT_LES_DONNEES.has(k), k).toBe(true);
     const big = { resume: "x".repeat(40_000) };
     expect(motifs("volcan_seismes", big)).toContain("réponse de 40\u00a0Ko, au-delà de 11\u00a0Ko");
     expect(motifs("volcan_seismes", { resume: "x".repeat(10_000) }).some((m) => m.startsWith("réponse de"))).toBe(false);

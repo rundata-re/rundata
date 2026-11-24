@@ -235,10 +235,18 @@ export function sansPrelevement(last: string | undefined, now: Date): string | u
  */
 export function bathSentences(rows: Omit<ReturnType<typeof siteRow>, "derniers_prelevements">[]): string {
   const gap = rows[0]?.prelevements_en_retard;
-  const shared = rows.length > 1 && !!gap && rows.every((r) => r.prelevements_en_retard === gap);
-  if (!shared) return rows.map((r) => bathSentence(r)).join(" ");
   const pour = rows.length === 2 ? "les deux sites" : `les ${rows.length} sites`;
-  return `${rows.map((r) => bathSentence(r, false)).join(" ")} Pour ${pour}\u00a0: ${gap.charAt(0).toLowerCase()}${gap.slice(1)}`;
+  const shared = rows.length > 1 && !!gap && rows.every((r) => r.prelevements_en_retard === gap);
+  if (shared) return `${rows.map((r) => bathSentence(r, false)).join(" ")} Pour ${pour}\u00a0: ${gap.charAt(0).toLowerCase()}${gap.slice(1)}`;
+  // Gaps of different dates (Saint-Paul's nine: the 15 and the 22/09, the same sentence nine times): each site's
+  // sentence has its last sample's date already, the gap is said once with its range of weeks.
+  const gaps = rows.map((r) => /^Aucun prélèvement publié par l'ARS depuis le \S+ \((\d+) semaines\)(.*)$/.exec(r.prelevements_en_retard ?? ""));
+  if (rows.length > 1 && gaps.every((g) => g && g[2] === gaps[0]![2])) {
+    const weeks = gaps.map((g) => Number(g![1]));
+    const lo = Math.min(...weeks), hi = Math.max(...weeks);
+    return `${rows.map((r) => bathSentence(r, false)).join(" ")} Pour ${pour}\u00a0: aucun prélèvement publié par l'ARS depuis le dernier de chacun (${lo === hi ? lo : `${lo} à ${hi}`} semaines)${gaps[0]![2]}`;
+  }
+  return rows.map((r) => bathSentence(r)).join(" ");
 }
 
 function bathSentence(row: Omit<ReturnType<typeof siteRow>, "derniers_prelevements">, gap = true): string {
@@ -401,6 +409,14 @@ export async function qualiteEau(cache: Cache, lieu: string | undefined, sujet?:
   for (const k of ["eau_du_robinet", "baignade"]) {
     const p = parts[k] as { resume?: string } | undefined;
     if (p?.resume) summary.push(p.resume);
+  }
+  // Both parts: their sentences are the answer's resume, said there once, not again in each part (Saint-Paul's were
+  // 2.3 KB twice).
+  if (summary.length > 1) {
+    for (const k of ["eau_du_robinet", "baignade"]) {
+      const p = parts[k] as { resume?: string; ne_repond_plus?: boolean } | undefined;
+      if (p && !p.ne_repond_plus) { const { resume: _r, ...rest } = p; parts[k] = rest; }
+    }
   }
   if (!summary.length) {
     return {

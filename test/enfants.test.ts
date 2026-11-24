@@ -137,10 +137,23 @@ describe("annuaire_services_publics, asked about children", () => {
     expect(b.resume).toMatch(/^\d+ lieux pour les enfants à Saint-Leu d'après les cartes ouvertes : \d+ aires de jeux, \d+ parcs et jardins, 1 piscine/);
     expect(b.lieux.every((l: { commune: string }) => l.commune === "Saint-Leu")).toBe(true);
     expect(b.lieux.find((l: { type: string }) => l.type === "Aires de jeux")).toMatchObject({ age_d_apres_la_source: false });
-    expect(b.page).toBe(`${O}/enfants#c-saint-leu`);
+    expect(b.page).toBe(`${O}/enfants/saint-leu`);
     expect(b.avertissements.join(" ")).toMatch(/monenfant\.fr/);
     expect(b.avertissements.join(" ")).toMatch(/evenements, quoi = « enfants »/);
     expect(b.sources.map((s: { source: string }) => s.source).join(" ")).toMatch(/OpenStreetMap/);
+  });
+
+  it("gives a commune with many places its nearest only, with their distance, all of them on its page", () => {
+    const b = body(enfantsAnswer("enfants", "Saint-Denis", NOW));
+    expect(b.resume).toMatch(/^\d{3} lieux pour les enfants à Saint-Denis d'après les cartes ouvertes : .+\. Ci-dessous les 15 plus proches de Saint-Denis\u00a0; tous sur la page de la commune\.$/);
+    expect(b.lieux).toHaveLength(15);
+    expect(b.lieux.every((l: { distance_km: number }) => l.distance_km >= 0)).toBe(true);
+    expect(b.lieux.map((l: { distance_km: number }) => l.distance_km)).toEqual([...b.lieux.map((l: { distance_km: number }) => l.distance_km)].sort((x, y) => x - y));
+    expect(b.page).toBe(`${O}/enfants/saint-denis`);
+    expect(JSON.stringify(b).length).toBeLessThan(9_000);
+    const jeux = body(enfantsAnswer("aire de jeux", "Saint-Denis", NOW));
+    expect(jeux.lieux).toHaveLength(15);
+    expect(jeux.resume).toMatch(/^\d+ aires de jeux à Saint-Denis .+ Ci-dessous les 15 plus proches/);
   });
 
   it("answers a kind asked alone, the nearest when the commune has none", () => {

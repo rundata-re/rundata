@@ -31,6 +31,7 @@ import * as rt from "../src/providers/gtfsrt.js";
 import * as transit from "../src/providers/transit.js";
 import { PRODUCTS as SEA_PRODUCTS } from "../src/tools/mer.js";
 import { buildAir, buildPlace } from "../src/web/data.js";
+import * as candhis from "../src/providers/candhis.js";
 import { pageOf } from "../src/web/places.js";
 import { aujourdhuiPage } from "../src/web/aujourdhui.js";
 
@@ -240,6 +241,28 @@ describe("the summary of a day", () => {
     expect(r3.mer?.temperature_eau).toBe("24,7 °C");
     expect(named(r3)).toContain(sat.nom);
     expect(named(r3)).not.toContain(houle.SOURCE.nom);
+  });
+
+  it("gives the sea measured at the buoy first, then the satellite, when a buoy within 25 km measured in the last 6 h", () => {
+    const named = (r: { sources: { source: string }[] }) => r.sources.map((x) => x.source);
+    const sat = SEA_PRODUCTS[0].source;
+    const PIERRE = pageOf("saint-pierre")!;
+    const plage = { nom: "Terre-Sainte", commune: "Saint-Pierre", lon: 55.48, lat: -21.34, valeur: 25.2, jour: "2026-10-23" };
+    const bouee = (heures: number) => ({
+      t: NOW.getTime() - heures * 3_600_000, nature: "mesure", bouee: "Saint-Pierre (large)", reseau: "Candhis (Cerema)", mesuree_a: "24/10 13:30", temperature_eau: "25,8 °C", hauteur_significative: "1,2 m",
+    });
+    const mer = (h: number) => copy({ plages: [...COPIES.mer.value.plages, plage], bouees: [bouee(h)], sources: credits([sat, candhis.SOURCE]) });
+    const r = resume(PIERRE, { ...COPIES, mer: mer(1) } as never, NOW);
+    expect(r.mer).toMatchObject({ temperature_eau: "25,8 °C", bouee: "Saint-Pierre (large)", reseau: "Candhis (Cerema)", mesuree_a: "24/10 13:30", satellite: { temperature_eau: "25 °C", mesure: "satellite" } });
+    expect(r.mer?.mesure).toMatch(/^bouée Saint-Pierre \(large\) du Cerema, à \d+ km, à 13:30$/);
+    expect(named(r)).toEqual(expect.arrayContaining([candhis.SOURCE.nom, sat.nom]));
+    // A buoy reading past 6 h, or a commune past 25 km: the satellite alone, as before, and no Candhis credited.
+    const old = resume(PIERRE, { ...COPIES, mer: mer(7) } as never, NOW);
+    expect(old.mer).toMatchObject({ temperature_eau: "25 °C", mesure: "satellite" });
+    expect(named(old)).not.toContain(candhis.SOURCE.nom);
+    const loin = resume(SAINT_PAUL, { ...COPIES, mer: mer(1) } as never, NOW);
+    expect(loin.mer).toMatchObject({ temperature_eau: "25 °C", au_large_de: ["Boucan Canot", "Hermitage"] });
+    expect(loin.mer).not.toHaveProperty("bouee");
   });
 
   it("credits no source of a part it leaves empty: no news, no bus alert, no other commune's power cut, no calendar (rule 3)", () => {

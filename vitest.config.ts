@@ -8,5 +8,5 @@ import { defineConfig } from "vitest/config";
 // most of the suite's time. A file whose modules differ from the others' (a vi.mock, every source agreed) loads its own
 // and drops them after it (test/modules-neufs.ts); what a file sets in a shared module, it sets back.
 export default defineConfig({
-  test: { setupFiles: ["test/sans-reseau.ts"], isolate: false, maxWorkers: process.env.CI ? undefined : 2 },
+  test: { setupFiles: ["test/fin-de-fichier.ts", "test/sans-reseau.ts"], isolate: false, maxWorkers: process.env.CI ? undefined : 2 },
 });

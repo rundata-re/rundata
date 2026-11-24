@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import { count, countRead, isScheduled, perInvocation } from "./budget.js";
+import { count, countRead, finDeFichier, isScheduled, perInvocation } from "./budget.js";
 import { noteSource } from "./lectures.js";
 import { UpstreamError } from "./types.js";
 
@@ -220,6 +220,17 @@ export function whenRead(f: typeof onRead) {
   onRead = f;
 }
 
+/**
+ * A read's signal: its delay, and in the tests the cut of a file already over (budget.ts `finDeFichier`), thrown at once
+ * when it has come.
+ */
+export function delai(ms: number): AbortSignal {
+  const cut = finDeFichier.coupure?.();
+  if (!cut) return AbortSignal.timeout(ms);
+  cut.throwIfAborted();
+  return AbortSignal.any([AbortSignal.timeout(ms), cut]);
+}
+
 async function get<T>(
   source: string,
   url: string,
@@ -239,7 +250,7 @@ async function get<T>(
   placed.getStore()?.();
   try {
     let res: Response;
-    const signal = AbortSignal.timeout(Math.max(timeoutMs, patience.getStore() ?? 0));
+    const signal = delai(Math.max(timeoutMs, patience.getStore() ?? 0));
     const unanswered = (err: unknown) => {
       const failed = new UpstreamError(source, err instanceof Error ? err.message : String(err));
       onFailure?.(source, url, failed);

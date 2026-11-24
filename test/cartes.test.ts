@@ -76,6 +76,15 @@ describe("the maps of the pages read from a bundle or a database", () => {
       return seen < steps / 2 ? [`${a.id} : ${seen} %`] : [];
     });
     expect(hidden).toEqual([]);
+    // 25/11/2026 (/eau online): four lines crossed on the west coast, Hermitage centre's and La Saline-les-Bains's
+    // nearly side by side, La Saline's under Hermitage centre's round. Two rounds whose lines cross swap their places.
+    const line = (a: (typeof rounds)[number]): [[number, number], [number, number]] => [point(a.id), [a.x, a.y]];
+    const cross = ([p, q]: [number, number][], [u, v]: [number, number][]) => {
+      const side = (a: [number, number], b: [number, number], c: [number, number]) => Math.sign((b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]));
+      return side(p, q, u) * side(p, q, v) < 0 && side(u, v, p) * side(u, v, q) < 0;
+    };
+    const crossed = rounds.flatMap((a, i) => rounds.slice(i + 1).filter((b) => cross(line(a), line(b))).map((b) => `${a.id} × ${b.id}`));
+    expect(crossed).toEqual([]);
   });
 
   it("lead each station of the rain map to its row on /historique", () => {

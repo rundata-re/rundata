@@ -36,6 +36,7 @@ import * as candhis from "./providers/candhis.js";
 import * as ffck from "./providers/ffck.js";
 import * as radar from "./providers/radar.js";
 import * as vigilanceCarte from "./providers/vigilance-carte.js";
+import * as vigilanceEpisodes from "./providers/vigilance-episodes.js";
 import * as cmrsCarte from "./providers/cmrs-carte.js";
 import * as cmrsTrace from "./providers/cmrs-trace.js";
 import * as feux from "./providers/feux.js";
@@ -344,6 +345,8 @@ function setup(env: Env): Cache {
     put: (key, value, ttl) => kv.put(key, value, ttl ? { expirationTtl: ttl } : undefined),
   };
   vigilanceCarte.configure(cartes, env.BROWSER);
+  // The bulletins above green, kept a year to replay a real episode in the tests (src/providers/vigilance-episodes.ts).
+  vigilanceEpisodes.configure(cartes);
   // The collège of an address (annuaire_services_publics): its commune's file, from the static assets. Counted as a
   // call to a bound service, which the platform's documentation neither counts nor exempts.
   const assets = env.ASSETS;

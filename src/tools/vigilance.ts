@@ -241,7 +241,7 @@ export async function vigilanceMeteo(cache: Cache, lieu: string | undefined, now
     emise: `${day(v.emise)} heure de La Réunion`,
     alerte_cyclonique: cyclone(v, now),
     feux_detectes: fireLine,
-    suivi_meteo_france: v.suivi.length ? v.suivi : undefined,
+    suivi_meteo_france: v.suivi.length ? v.suivi.map(({ domaine: _, ...t }) => t) : undefined,
     avertissements: [OFFICIAL, ...(cached.stale ? ["Météo-France momentanément injoignable : dernière vigilance connue."] : [])],
     carte_officielle: carteOfficielle(v.carte),
     consulter: mf.SOURCE.url,
@@ -298,5 +298,7 @@ export async function vigilanceMeteo(cache: Cache, lieu: string | undefined, now
     niveaux,
     vagues_submersion: coast.length ? coast.map(({ max: _, ...x }) => x) : "pas de vigilance particulière sur le littoral",
     ...common,
+    // The texts of the island, of its zone and of the coasts: never another land zone's.
+    suivi_meteo_france: common.suivi_meteo_france && v.suivi.filter((t) => !t.domaine || t.domaine === zone || !LAND_ZONES.includes(t.domaine)).map(({ domaine: _, ...t }) => t),
   });
 }

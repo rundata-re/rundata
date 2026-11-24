@@ -77,6 +77,20 @@ describe("the maps of the pages read from a bundle or a database", () => {
       return seen < steps / 2 ? [`${a.id} : ${seen} %`] : [];
     });
     expect(hidden).toEqual([]);
+    // 24/11/2026 (/eau online): the line of the Ermitage sud embouchure went under the round of Trou d'Eau, though seen over
+    // half its length, and four others under another round. A line passes under no round but its own where a free place
+    // exists, and no site leaves the map for it: five did before, two are left. Known limits, with no free place on this
+    // crowded coast (not regressions): Ermitage sud embouchure under Trou d'Eau, Pointe Trois Roches under La Saline.
+    const underOther = rounds.flatMap((a) => {
+      const [x0, y0] = point(a.id);
+      const d = Math.hypot(a.x - x0, a.y - y0);
+      const len = d - a.r;
+      if (len <= 0) return [];
+      const steps = 100;
+      return rounds.filter((b) => b.id !== a.id && Array.from({ length: steps }, (_, k) => ((k + 0.5) / steps) * (len / d))
+        .some((t) => Math.hypot(b.x - (x0 + (a.x - x0) * t), b.y - (y0 + (a.y - y0) * t)) < b.r)).map((b) => `${a.id} sous ${b.id}`);
+    });
+    expect(underOther.length, underOther.join(", ")).toBeLessThanOrEqual(2);
     // 25/11/2026 (/eau online): four lines crossed on the west coast, Hermitage centre's and La Saline-les-Bains's
     // nearly side by side, La Saline's under Hermitage centre's round. Two rounds whose lines cross swap their places.
     const line = (a: (typeof rounds)[number]): [[number, number], [number, number]] => [point(a.id), [a.x, a.y]];

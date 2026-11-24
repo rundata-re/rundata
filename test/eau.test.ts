@@ -10,6 +10,7 @@ import { bathSentences, COMMON, saisonSansPrelevement, noteBaignade, qualiteEau,
 import { distributeur } from "../src/eau/distributeurs.js";
 import { configure, gather } from "../src/eau/ile.js";
 import { withLectures } from "../src/lectures.js";
+import { TOOL_WAIT_MS } from "../src/server.js";
 import { fraicheur } from "../src/tools/fraicheur.js";
 import { eauPage } from "../src/web/domains.js";
 import { coupuresCommunePage, eauFaq, reseauxCommune, secheresseLigne } from "../src/web/coupures.js";
@@ -454,6 +455,47 @@ describe("qualité de l'eau", () => {
       configure(undefined);
       expect(body(await qualiteEau(cache(), "plage de l'Hermitage", "baignade", NOW)).erreur).toBe("Les données de qualité de l'eau ne répondent pas pour le moment.");
     } finally {
+      configure(undefined);
+    }
+  });
+
+  it("waits at most 8 s for a source in a tool call: past it, the island's copy with its time, or the part said missing", async () => {
+    // 22/11/2026: the ARS's site silent, qualite_eau answered in 20 and 28 s, an error, the assistants gone before it.
+    const live = body(await qualiteEau(cache(), "plage de l'Hermitage", undefined, NOW));
+    const [row] = live.baignade.sites;
+    const site = SITES.find((s) => s.nom === row.site)!;
+    const { prelevements_en_retard: _gap, ...kept } = row;
+    const served = globalThis.fetch;
+    // The ARS's site, then Hub'Eau, never answering; the other sources as before.
+    let hung = "baignades.sante.gouv.fr";
+    vi.stubGlobal("fetch", (url: string, init?: RequestInit) => (new URL(url).hostname === hung ? new Promise<Response>(() => undefined) : served(url, init)));
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    const timed = async (lieu: string, sujet?: "robinet" | "baignade") => {
+      let done = false;
+      const call = withLectures(() => qualiteEau(cache(), lieu, sujet, NOW), TOOL_WAIT_MS).finally(() => (done = true));
+      await vi.advanceTimersByTimeAsync(7_900);
+      const early = done;
+      await vi.advanceTimersByTimeAsync(200);
+      expect({ early, done }).toEqual({ early: false, done: true });
+      return body((await call).value);
+    };
+    try {
+      configure(async () => ({ lu: "2026-10-24T03:12:00.000Z", baignades: [{ ...kept, lon: site.lon, lat: site.lat }], communes: [] }));
+      const b = await timed("plage de l'Hermitage", "baignade");
+      expect(b.baignade.sites).toEqual([row]);
+      expect(b.baignade.copie).toBe("Le site de l'ARS ne répond pas\u00a0: résultats de la dernière lecture de rundata.re, le 24/10/2026 à 07:12 (heure de La Réunion).");
+      // No copy: the tap water said, the bathing said missing, not waited for.
+      configure(undefined);
+      const both = await timed("Saint-Pierre");
+      expect(both.eau_du_robinet.reseaux.length).toBeGreaterThan(0);
+      expect(both.indisponible).toEqual(["eau de baignade"]);
+      expect(both.resume).toMatch(/^Eau du robinet à Saint-Pierre : 13 réseaux.* Les résultats des plages et bassins \(site de l'ARS\) ne répondent pas pour le moment\u00a0: voir le site de l'ARS, ou l'affichage sur place\.$/);
+      // Hub'Eau the same.
+      hung = "hubeau.eaufrance.fr";
+      const tap = await timed("Saint-Pierre", "robinet");
+      expect(tap.erreur).toBe("Les données de qualité de l'eau ne répondent pas pour le moment.");
+    } finally {
+      vi.useRealTimers();
       configure(undefined);
     }
   });

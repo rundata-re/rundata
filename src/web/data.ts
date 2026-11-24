@@ -10,7 +10,7 @@ import * as nuages from "../tools/nuages.js";
 import type { CielDeNuit, MerDeNuages } from "../tools/nuages.js";
 import type { Jour } from "../tools/volcan.js";
 import * as arome from "../providers/arome.js";
-import { isScheduled, left, measured, unmeasured } from "../budget.js";
+import { isScheduled, left, measured, reserve, unmeasured } from "../budget.js";
 import { daysApart, distanceKm, localTime, sinceMidnight } from "../geo.js";
 import * as coraux from "../providers/coraux.js";
 import { type Cache, type Cached, stampOf } from "../cache.js";
@@ -407,33 +407,58 @@ function answer<T>(r: { content: { text: string }[]; isError?: boolean }): T | u
   return r.isError ? undefined : (JSON.parse(r.content[0].text) as T);
 }
 
-/** Measurements, then the sea, then the forecast, which sizes its downloads from the subrequests left. */
+/**
+ * What the measurements, the sea and « en chiffres » take, set aside from what the forecast sizes its downloads on while
+ * they are read beside it (budget.ts `reserve`): 23 or 24 for a cold read of the measurements and 6 for the sea at
+ * Saint-Paul, Saint-Pierre or Saint-Leu, and the figures' threshold (CHIFFRES_MIN_LEFT), each with a margin. With few
+ * subrequests left, the measurements come first, as when the forecast was read after them.
+ */
+const METEO_RESERVE = 30;
+const MER_RESERVE = 8;
+const CHIFFRES_RESERVE = 6;
+
+/**
+ * The measurements, the sea and the forecast read at the same time, then « en chiffres » from the measurements, beside
+ * the forecast; the « Repères du mois » beside them too. One after the other, a cold build took the sum of their reads:
+ * 4.8 s from here on 24/11/2026 (the FFVL's beacons 1.8 s, the sea 0.9 s, the forecast 1 s, Météo-France's stations
+ * 0.9 s), past the 4 s a person waits (WAIT_MS), who then got the page without its weather. Read together, a cold
+ * build of Saint-Pierre or Saint-Paul from here takes 2.4 to 3.6 s instead of 4.3 to 6.0 s, with the same subrequests.
+ * The forecast still sizes its downloads from the subrequests left, those of the others set aside for them.
+ */
 export async function buildPlace(cache: Cache, p: PlacePage, now = new Date()): Promise<PlaceData> {
   const out: PlaceData = {};
-  out.meteo = answer<MeteoAnswer>(await meteoActuelle(cache, p.lieu, now, "jour"));
-  if (coastal(p)) out.mer = answer<MerAnswer>(await temperatureMer(cache, p.lieu, now, false));
-  if (left() >= FORECAST_MIN_LEFT) {
+  const sea = coastal(p);
+  const aside = [sea ? reserve(MER_RESERVE) : undefined, reserve(CHIFFRES_RESERVE), reserve(METEO_RESERVE)];
+  const meteo = meteoActuelle(cache, p.lieu, now, "jour").then((r) => (out.meteo = answer<MeteoAnswer>(r))).finally(aside[2]);
+  const mer = sea ? temperatureMer(cache, p.lieu, now, false).then((r) => void (out.mer = answer<MerAnswer>(r))).finally(aside[0]) : undefined;
+  const prevision = (async () => {
+    if (left() < FORECAST_MIN_LEFT) return;
     try {
       out.prevision = answer<PrevisionAnswer>(await previsionMeteo(cache, p.lieu, undefined, now));
     } catch (err) {
       console.error(`page ${p.slug} : prévision indisponible`, why(err));
     }
-  }
-  if (left() >= CHIFFRES_MIN_LEFT) {
+  })();
+  const chiffres = meteo.then(async (m) => {
+    aside[1]!();
+    if (left() < CHIFFRES_MIN_LEFT) return;
     try {
-      out.chiffres = await buildChiffres(cache, { nom: p.nom, lon: p.place.lon, lat: p.place.lat, altitude_m: p.place.altitude_m, commune: p.commune ? p.nom : p.place.commune }, out.meteo, now);
+      out.chiffres = await buildChiffres(cache, { nom: p.nom, lon: p.place.lon, lat: p.place.lat, altitude_m: p.place.altitude_m, commune: p.commune ? p.nom : p.place.commune }, m, now);
     } catch (err) {
       console.error(`page ${p.slug} : chiffres indisponibles`, why(err));
     }
-  }
-  if (left() >= REPERES_MIN_LEFT) {
+  }, () => aside[1]!());
+  const reperes = (async () => {
+    if (left() < REPERES_MIN_LEFT) return;
     try {
       const r = await reperesMois(cache, p.place, now);
       if (r) out.reperes = r;
     } catch (err) {
       console.error(`page ${p.slug} : repères indisponibles`, why(err));
     }
-  }
+  })();
+  // The measurements and the sea fail the build as before (a page keeps its last copy); the rest never throws.
+  await Promise.all([meteo, mer, prevision, chiffres, reperes]);
   if (!out.meteo && !out.prevision) throw new Error(`aucune donnée pour ${p.nom}`);
   return out;
 }

@@ -372,6 +372,32 @@ describe("home page", () => {
 });
 
 describe("place pages", () => {
+  it("read the measurements, the sea and the forecast at the same time, not one after the other", async () => {
+    // Each source answers in 40 ms. Read one after the other, a cold build of a coastal place's weather took the
+    // measurements' time, then the sea's, then the forecast's: 4.8 s from here, with the FFVL's beacons alone at 1.8 s
+    // (24/11/2026), past the 4 s a person waits (WAIT_MS).
+    const seen: { url: string; start: number; end: number }[] = [];
+    vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
+      overLimit();
+      const start = performance.now();
+      await new Promise((r) => setTimeout(r, 40));
+      seen.push({ url: String(url), start, end: performance.now() });
+      return upstream(String(url), init);
+    });
+    const p = pageOf("saint-paul")!;
+    const built = await counted(PAGE_BUDGET, () => buildPlace(isolate(), p, NOW));
+    expect(built.value.meteo).toBeDefined();
+    expect(built.value.mer).toBeDefined();
+    expect(built.value.prevision).toBeDefined();
+    const first = (re: RegExp) => Math.min(...seen.filter((x) => re.test(x.url)).map((x) => x.start));
+    const balises = seen.filter((x) => x.url.includes("data.gouv.fr/api/1/datasets/r/047b2ab9"));
+    expect(balises.length).toBeGreaterThan(0);
+    const mesures = Math.max(...balises.map((x) => x.end));
+    expect(first(/marine-api\.open-meteo/)).toBeLessThan(mesures);
+    expect(first(/air-quality-api\.open-meteo/)).toBeLessThan(mesures);
+    expect(built.used).toBeLessThanOrEqual(PAGE_BUDGET);
+  });
+
   it("one per commune and per famous place, all resolved", () => {
     expect(PAGES.filter((p) => p.commune)).toHaveLength(24);
     expect(pageOf("cilaos")?.place.nom).toBe("Cilaos");

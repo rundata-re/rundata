@@ -756,7 +756,7 @@ describe("coupures d'eau", () => {
     expect(sp.contact).toBeUndefined();
     expect(sp.sources).toHaveLength(1);
     // Each distributor's own terms, never « Information publique » for those whose terms forbid the reproduction.
-    expect(sp.sources[0].licence).toBe("Dionéo, runéo, Eaux de La Possession\u00a0: en attente d'accord. CIREST\u00a0: réutilisation libre en citant la source. Commune de Saint-Leu\u00a0: à fin d'information. La Créole, ville de Sainte-Marie\u00a0: aucune condition écrite. Saint-Philippe, Petite-Île, Cilaos, Trois-Bassins\u00a0: information publique des communes, reprise avec sa source et son lien");
+    expect(sp.sources[0].licence).toBe("Dionéo, runéo, Eaux de La Possession\u00a0: en attente d'accord. CIREST\u00a0: réutilisation libre en citant la source. Commune de Saint-Leu\u00a0: à fin d'information. La Créole, ville de Sainte-Marie\u00a0: aucune condition écrite. Saint-Philippe, Le Tampon, Petite-Île, Cilaos, Trois-Bassins\u00a0: information publique des communes, reprise avec sa source et son lien");
     // runéo's feed is read: no notice for Saint-Pierre is no cut announced.
     expect(body(await coupuresEau(cache(), "Saint-Pierre", NOW)).resume).toBe("Pas d'avis de coupure récent ou à venir à Saint-Pierre sur le site de runéo, lu le 24/10 à 08:00\u00a0: https://www.runeo.re/. D'après l'ARS, runéo y distribue l'eau. Une coupure peut être annoncée ailleurs, par la mairie par exemple.");
   });
@@ -1136,6 +1136,16 @@ describe("coupures d'eau", () => {
     // Read on their ville's site since 20/11/2026 (rule 3 bis), no longer only linked to.
     expect(page("cilaos")).toContain(`les avis de coupure publiés sur <a href="https://ville-cilaos.fr/?s=eau" rel="noopener">le site de la ville de Cilaos</a>`);
     expect(page("petite-ile")).toMatch(/Pas d'avis de coupure récent ou à venir publié par la ville de Petite-Île, lu le \d\d\/\d\d à \d\d:\d\d\. Une coupure peut être annoncée ailleurs\.</);
+    // 24/11/2026 (online): « publié par la ville du Tampon au Tampon », the commune said twice: « ville du Tampon » names
+    // Le Tampon without its article.
+    expect(page("le-tampon")).toMatch(/Pas d'avis de coupure récent ou à venir publié par la ville du Tampon, lu le \d\d\/\d\d à \d\d:\d\d\. Une coupure peut être annoncée ailleurs\.</);
+    // 24/11/2026: coupures_eau cited the ville du Tampon and Sudéau by it, its sources' terms did not; the page's sources line
+    // (the terms) says the same.
+    const tampon = coupures.value.sources.find((x: { licence: string }) => /Saint-Philippe/.test(x.licence))!;
+    expect(tampon.licence).toMatch(/Le Tampon/);
+    expect(tampon.attribution).toContain("ville du Tampon / Sudéau");
+    expect(page("le-tampon").match(/<p class="sources">.*?<\/p>/s)?.[0]).toContain("Saint-Philippe, Le Tampon, Petite-Île, Cilaos, Trois-Bassins\u00a0: information publique des communes");
+    for (const slug of ["saint-philippe", "petite-ile", "cilaos", "le-tampon", "les-trois-bassins"]) expect(page(slug)).not.toMatch(/publié par la (?:ville|commune) (?:de |du |d')\S+ (?:à|au|aux) /);
     // L'Étang-Salé: the ARS names runéo for 7 of its 8 networks and the mairie for one; runéo's notices are read.
     const es = page("l-etang-sale");
     expect(es).toContain("<p>D&#39;après l&#39;ARS, runéo distribue l&#39;eau de 7 réseaux sur 8 à L&#39;Étang-Salé, et la mairie celle du réseau Sources Nouvelles les Hauts.</p>");

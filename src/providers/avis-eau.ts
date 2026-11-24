@@ -39,8 +39,8 @@ export const SOURCE: SourceInfo = {
   licence:
     "Dionéo, runéo, Eaux de La Possession\u00a0: en attente d'accord. " +
     "CIREST\u00a0: réutilisation libre en citant la source. Commune de Saint-Leu\u00a0: à fin d'information. La Créole, ville de Sainte-Marie\u00a0: aucune condition écrite. " +
-    "Saint-Philippe, Petite-Île, Cilaos, Trois-Bassins\u00a0: information publique des communes, reprise avec sa source et son lien",
-  attribution: "Dionéo, runéo, Eaux de La Possession, La Créole, CIREST, ville de Sainte-Marie / CISE Réunion, commune de Saint-Leu / Derichebourg Aqua OI, commune de Saint-Philippe / Sudéau, ville de Petite-Île / SPL Sources et Eaux, ville de Cilaos, ville de Trois-Bassins / La Créole",
+    "Saint-Philippe, Le Tampon, Petite-Île, Cilaos, Trois-Bassins\u00a0: information publique des communes, reprise avec sa source et son lien",
+  attribution: "Dionéo, runéo, Eaux de La Possession, La Créole, CIREST, ville de Sainte-Marie / CISE Réunion, commune de Saint-Leu / Derichebourg Aqua OI, commune de Saint-Philippe / Sudéau, ville du Tampon / Sudéau, ville de Petite-Île / SPL Sources et Eaux, ville de Cilaos, ville de Trois-Bassins / La Créole",
   url: "https://www.cirest.fr/categorie/communique/communique-eau/",
 };
 

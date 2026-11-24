@@ -104,7 +104,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // A notice's place on its card (`lieu`); a silent feed said with what its last read held for the commune (24/11/2026).
   // With the hour the notices were read (avis_lus_le), said by the commune's page instead of the copy's (24/11/2026).
   // Le Tampon's notices, Sudéau's read on the town's site (24/11/2026).
-  coupures: 25,
+  // The ville du Tampon and Sudéau by it in the sources' terms and credit (24/11/2026).
+  coupures: 26,
   // Saint-André's notices read again, with its written agreement of 16/11/2026.
   // The notices of Cilaos, Saint-Philippe and Sainte-Suzanne read as the communes' public information (20/11/2026).
   // A notice written in the bold letters of Unicode read (Saint-André's of 19/11/2026, typographie.ts `unstyled`).

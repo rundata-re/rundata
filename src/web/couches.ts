@@ -6,8 +6,8 @@
  * (the point is the place itself, a place near it, or only its commune), and each object of its file carries them
  * again, with the time of its source, so that a file read alone says what it is. One file a source: OpenStreetMap is
  * under ODbL, and a file that mixed it with another source would be a derived database (the places for children are
- * three layers, one for each of their sources). Lists under the same Licence Ouverte may share one, each object naming its
- * own (the bike lanes and racks: the Région's, the Ville de Saint-Denis's and the CIVIS's).
+ * three layers, one for each of their sources; the bike lanes of Geovelo, from it, one apart from the Région's). Lists
+ * under the same Licence Ouverte may share one, each object naming its own (the Région's lanes and the CIVIS's racks).
  *
  * The fixed layers are the lists bundled with the server, as their pages show them: their file is built once per
  * isolate, with no read at all (no subrequest, no KV, no D1). The live layers read the last copy of their page, or of
@@ -28,6 +28,7 @@ import * as vigicrues from "../providers/vigicrues.js";
 import { etage } from "../tools/dae.js";
 import type { SourceInfo } from "../types.js";
 import * as enfants from "../vie/enfants.js";
+import * as geovelo from "../vie/velo-geovelo.js";
 import * as canyons from "../vie/canyons.js";
 import * as marmailles from "../vie/marmailles.js";
 import * as monuments from "../vie/monuments.js";
@@ -374,16 +375,16 @@ export function canyonsCouche(list: canyons.Canyon[], lu: string): CoucheJson {
 const jma = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
 
 /**
- * The bike lanes of the Région and of the Ville de Saint-Denis, drawn, and the bike racks of the CIVIS, each with its
- * source and the date of its list (none for the CIVIS's). What a list gives is said as given, never a lane said usable:
+ * The bike lanes of the Région, drawn, and the bike racks of the CIVIS, each with its source and the date of its list
+ * (none for the CIVIS's). What a list gives is said as given, never a lane said usable:
  * the Région's « Requalification » does not say if it is done (03/11).
  */
 export function veloCouche(voies: velo.Voie[], accroches: velo.Accroche[], lu: string): CoucheJson {
-  const listes: Record<velo.Liste, string> = { region: `liste du ${jma(velo.REGION_DU)}`, "saint-denis": "février 2023", civis: "sans date" };
+  const listes: Record<velo.Liste, string> = { region: `liste du ${jma(velo.REGION_DU)}`, civis: "sans date" };
   const deVoies = voies.map((v): Objet => {
     const [lon, lat] = velo.milieu(v);
     return {
-      nom: v.nom ?? v.type,
+      nom: v.type,
       commune: velo.communeOf(v),
       lon: r5(lon),
       lat: r5(lat),
@@ -394,11 +395,8 @@ export function veloCouche(voies: velo.Voie[], accroches: velo.Accroche[], lu: s
       infos: {
         source: velo.SOURCES[v.s].attribution,
         liste: listes[v.s],
-        ...(v.nom && { type: v.type }),
-        ...(v.sens && { sens: v.sens }),
         ...(v.annee && { annee: v.annee }),
         ...(v.requalification && { etat: "Requalification (d'après la Région)" }),
-        ...(v.provisoire && { etat: "provisoire d'après la Ville" }),
       },
     };
   });
@@ -412,7 +410,30 @@ export function veloCouche(voies: velo.Voie[], accroches: velo.Accroche[], lu: s
     heure: lu,
     infos: { source: velo.SOURCES.civis.attribution, liste: listes.civis, accroches: a.n },
   }));
-  return { id: "velo", nom: "Aménagements cyclables (Région Réunion, Ville de Saint-Denis) et accroches vélo (CIVIS)", nature: "fixe", precision: "adresse", source: velo.SOURCE, heure: lu, objets: [...deVoies, ...deAccroches] };
+  return { id: "velo", nom: "Aménagements cyclables (Région Réunion) et accroches vélo (CIVIS)", nature: "fixe", precision: "adresse", source: velo.SOURCE, heure: lu, objets: [...deVoies, ...deAccroches] };
+}
+
+/**
+ * The bike lanes of the whole island, Geovelo's from OpenStreetMap (ODbL): a file of their own, each lane its type, its
+ * source with the licence's attribution and the list's date. Never a lane said usable: the list has no state of the day.
+ */
+export function geoveloCouche(voies: geovelo.VoieGeovelo[], lu: string): CoucheJson {
+  const liste = `liste du ${jma(geovelo.LISTE_DU)}`;
+  const objets = voies.map((v): Objet => {
+    const [lon, lat] = geovelo.milieu(v);
+    return {
+      nom: v.type,
+      commune: communeAt(lon, lat),
+      lon: r5(lon),
+      lat: r5(lat),
+      nature: "fixe",
+      precision: "adresse",
+      heure: lu,
+      trace: tracer(geovelo.points(v)),
+      infos: { source: geovelo.SOURCE.attribution, liste },
+    };
+  });
+  return { id: "velo-osm", nom: "Pistes et bandes cyclables cartographiées dans OpenStreetMap (© les contributeurs d'OpenStreetMap, traitement Geovelo)", nature: "fixe", precision: "adresse", source: geovelo.SOURCE, heure: lu, objets };
 }
 
 /** The speed limits on the routes nationales, each piece drawn with its speed, its route and its year. */
@@ -503,7 +524,9 @@ export const COUCHES: Couche[] = [
     },
   },
   // Drawn as lines but the racks, both leading to /velos and /trafic: no page of their own.
-  { ...fixe({ id: "velo", nom: "Vélo", long: "Aménagements cyclables (Région Réunion, Ville de Saint-Denis) et accroches vélo (CIVIS)", theme: "deplacements", precision: "adresse", source: velo.SOURCE, page: "/velos", donnees: () => veloCouche(velo.VOIES, velo.ACCROCHES, velo.LU_LE) }), forme: "traces" },
+  { ...fixe({ id: "velo", nom: "Vélo", long: "Aménagements cyclables (Région Réunion) et accroches vélo (CIVIS)", theme: "deplacements", precision: "adresse", source: velo.SOURCE, page: "/velos", donnees: () => veloCouche(velo.VOIES, velo.ACCROCHES, velo.LU_LE) }), forme: "traces" },
+  // Its own file, under the ODbL (OpenStreetMap's, Geovelo's): drawn as lines, leading to /velos.
+  { ...fixe({ id: "velo-osm", nom: "Pistes cyclables (OpenStreetMap)", long: "Pistes et bandes cyclables cartographiées dans OpenStreetMap (© les contributeurs d'OpenStreetMap, traitement Geovelo)", theme: "deplacements", precision: "adresse", source: geovelo.SOURCE, page: "/velos", donnees: () => geoveloCouche(geovelo.VOIES, geovelo.LU_LE) }), forme: "traces" },
   { ...fixe({ id: "vitesses", nom: "Vitesses sur les routes nationales", long: "Limitations de vitesse sur les routes nationales (Région Réunion)", theme: "deplacements", precision: "adresse", source: vitesses.SOURCE, page: "/trafic", donnees: () => vitessesCouche(vitesses.TRONCONS, vitesses.LU_LE) }), forme: "traces" },
   ...(["osm", "data_es", "basilic"] as const).map((s) => {
     const id = `enfants-${s.replace("_", "-")}`;

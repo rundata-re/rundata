@@ -183,7 +183,7 @@ export const FICHES: Record<string, Fiche> = {
   caf_accueil_jeune_enfant: { famille: "licence_ouverte", producteurs: ["Caisse nationale des Allocations familiales"] },
   // The layers « Vélo » and « Vitesses sur les routes nationales » of /carte.
   region_voie_velo: { famille: "licence_ouverte", producteurs: ["Région Réunion"] },
-  saint_denis_pistes_cyclables: { famille: "licence_ouverte", producteurs: [commune("Saint-Denis")] },
+  geovelo_amenagements_cyclables: { famille: "odbl", producteurs: ["Geovelo", OSM] },
   civis_accroches_velo: { famille: "licence_ouverte", producteurs: ["CIVIS"] },
   region_vitesses_rn: { famille: "licence_ouverte", producteurs: ["Région Réunion"] },
   // Calendar, transport, trails.

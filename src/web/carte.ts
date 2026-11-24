@@ -36,6 +36,7 @@ import { communePath as enfantsPath } from "./enfants.js";
 import { CURSEUR_PAGE, curseurBar, curseurConf } from "./carte-curseur.js";
 import { pleinEcran } from "./plein-ecran.js";
 import * as velo from "../vie/velo.js";
+import * as geovelo from "../vie/velo-geovelo.js";
 import * as vitesses from "../vie/vitesses.js";
 import { script } from "./scripts-declares.js";
 
@@ -160,8 +161,12 @@ const DIT: Record<string, Dit> = {
     rubrique: "Enfants", court: "Conseil Général / AGORAH", unite: ["sentier", "sentiers"], organisme: "le Conseil Général et l'AGORAH",
   },
   velo: {
-    montre: `Les aménagements pour le vélo de la Voie vélo régionale et de la Ville de Saint-Denis (pistes, bandes, voies vertes, accotements…), nommés comme dans leurs listes, et les accroches vélo de la CIVIS. ${velo.RECENSE}`,
-    rubrique: "Vélos", court: "Région Réunion, Ville de Saint-Denis, CIVIS", unite: ["aménagement", "aménagements"], organisme: "la Région, la Ville de Saint-Denis et la CIVIS",
+    montre: `Les aménagements pour le vélo de la Voie vélo régionale (pistes, bandes, voies vertes, accotements…), nommés comme dans sa liste, et les accroches vélo de la CIVIS. ${velo.RECENSE}`,
+    rubrique: "Vélos", court: "Région Réunion, CIVIS", unite: ["aménagement", "aménagements"], organisme: "la Région et la CIVIS",
+  },
+  "velo-osm": {
+    montre: geovelo.RECENSE,
+    rubrique: "Vélos", court: "OpenStreetMap, Geovelo", unite: ["aménagement", "aménagements"], organisme: "Geovelo, d'après les contributeurs d'OpenStreetMap",
   },
   vitesses: {
     montre: `La vitesse maximale autorisée sur chaque tronçon des routes nationales, d'après le Système d'information routier de la Région Réunion : plus le trait est foncé, plus elle est haute. ${vitesses.RELEVE}`,
@@ -185,7 +190,7 @@ const SOUS: Record<string, string> = { "enfants-osm": "OpenStreetMap", "enfants-
  * The order of drawing, from the bottom: the trails' lines, then the points from the most to the fewest, the rarest
  * and the stations' figures on top, so that a crowded layer never hides another. The rain is under the land's lines.
  */
-export const ORDRE = ["vitesses", "velo", "marmailles", "canyons", "sentiers", "rivieres", "enfants-basilic", "enfants-data-es", "enfants-osm", "defibrillateurs", "bornes", "monuments", "seismes", "stations"];
+export const ORDRE = ["vitesses", "velo", "velo-osm", "marmailles", "canyons", "sentiers", "rivieres", "enfants-basilic", "enfants-data-es", "enfants-osm", "defibrillateurs", "bornes", "monuments", "seismes", "stations"];
 
 /**
  * A view: its name on its button and in its address, what it shows (marketing's words), its layers, its frame (west,
@@ -371,7 +376,8 @@ else if(c.id==="defibrillateurs"){const t=i.horaires==="24 h/24, 7 j/7";p2=K.acc
 else if(c.id==="bornes"){const kw=" · jusqu'à "+dec(i.kw_max)+"\\u00a0kW"+(i.gratuit?" · gratuit":"")+(i.acces_reserve?" · accès réservé":"");
 if(i.libres!=null){const pts=nb(i.total)+(i.total>1?" points":" point"),parts=[i.occupes&&nb(i.occupes)+" occupé"+(i.occupes>1?"s":""),i.hors_service&&nb(i.hors_service)+" hors service",i.inconnus&&nb(i.inconnus)+" sans information"].filter(Boolean).join(", ");
 p2=(i.libres||i.occupes==null?(i.libres?nb(i.libres)+" libre"+(i.libres>1?"s":""):"aucun libre")+" sur "+nb(i.total):i.hors_service===i.total?"hors service ("+pts+")":i.inconnus===i.total?"état inconnu ("+pts+")":"aucun libre sur "+nb(i.total)+(i.hors_service||i.inconnus?" ("+parts+")":""))+kw;p3=src("état de "+hm(j.heure))}else{p2=un(i.points,["point de charge","points de charge"])+kw.replace(" · jusqu'à",", jusqu'à");p3=src("état non lu")}}
-else if(c.id==="velo"){p2=[i.type,i.sens,i.annee&&"mise en service en "+i.annee,i.etat,i.accroches&&un(i.accroches,["accroche vélo","accroches vélo"])].filter(Boolean).join(" · ");p3=i.source+", "+i.liste}
+else if(c.id==="velo"){p2=[i.type,i.annee&&"mise en service en "+i.annee,i.etat,i.accroches&&un(i.accroches,["accroche vélo","accroches vélo"])].filter(Boolean).join(" · ");p3=i.source+", "+i.liste}
+else if(c.id==="velo-osm"){p2="";p3=i.source+", "+i.liste+", ODbL"}
 else if(c.id==="vitesses"){p2=i.annee?"tronçon mis à jour en "+i.annee:"";p3=c.court}
 else if(c.id==="canyons"){p2=[i.type,i.signalement].filter(Boolean).join(" · ");p3=src("inventaire sans date")}
 else{p2=[i.type,i.adresse].filter(Boolean).join(" · ");p3=src("lue le "+jm(j.heure))}

@@ -26,6 +26,7 @@ import * as accueilJeuneEnfant from "./vie/creches.js";
 import * as lieuxRemarquables from "./vie/decouvrir.js";
 import * as sentiersMarmailles from "./vie/marmailles.js";
 import * as velo from "./vie/velo.js";
+import * as geovelo from "./vie/velo-geovelo.js";
 import * as vitessesRn from "./vie/vitesses.js";
 import * as medecinsAmeli from "./vie/medecins.js";
 import * as gardeArs from "./sante/garde.js";
@@ -137,7 +138,7 @@ import * as peche from "./tools/peche.js";
 import * as cetaces from "./tools/cetaces.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.918";
+export const VERSION = "1.0.920";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -285,7 +286,7 @@ export const toutesLesSources = (inactives = false) =>
     // The vie pratique's and the power cuts' (annuaire_services_publics, electricite).
     carburantsPrix.SOURCE, radarMf.SOURCE, radarsFixes.SOURCE, accidentsRoute.SOURCE, BDTOPO, PHOTOS, courantMairies.SOURCE, tcoDecheteries.SOURCE, decheteriesAdeme.ADEME, santeSources.FINESS, santeSources.ARS_GARDE, santeSources.SANTE_FR, gardeArs.PDSA, collecteTco.SOURCE, ...Object.values(lieuxEnfants.SOURCES), marchesOsm.OSM, ...Object.values(marchesOsm.MAIRIES), loyersAnil.SOURCE, ecolesAnnuaire.SOURCE, carteScolaire.SOURCE, parcoursupFormations.SOURCE, ipsDepp.SOURCE_IPS, ipsDepp.SOURCE_VA, medecinsAmeli.SOURCE, electionsCommunes.SOURCE, internetArcep.SOURCE, antennesAnfr.SOURCE_MOBILE, antennesAnfr.SOURCE_RADIO, sitesHs.SOURCE, monumentsMerimee.SOURCE, lieuxRemarquables.SOURCE, sentiersMarmailles.SOURCE, canyonsParc.SOURCE, mairiesAnnexesSd.SOURCE, accueilJeuneEnfant.SOURCE,
     // The bike lanes, the bike racks and the speeds of the routes nationales, of /carte only.
-    ...Object.values(velo.SOURCES), vitessesRn.SOURCE,
+    ...Object.values(velo.SOURCES), geovelo.SOURCE, vitessesRn.SOURCE,
     // The public sector's job offers and the formations eligible to the CPF (emploi), the public procurement notices (the
     // page /marches-publics).
     emploiSource.SOURCE, cpfFormations.SOURCE, marchesPublics.SOURCE,

@@ -82,6 +82,13 @@ export function noticeSaid(n: notices.Avis, now: Date): string {
 }
 
 /**
+ * Where the water is not to be drunk, said with every summary of a « ne pas boire » notice (a tile, a description, a
+ * résumé, the map): the notice's sectors, never the whole commune (24/11/2026, Saint-Benoît's tile and day).
+ */
+export const DANS_LES_SECTEURS = (notices = 1) => `dans les secteurs ${notices > 1 ? "des avis" : "de l'avis"}`;
+export const NE_PAS_BOIRE = (notices = 1) => `eau à ne pas boire ${DANS_LES_SECTEURS(notices)}`;
+
+/**
  * The notice not to drink the water, in the same words in coupures_eau, qualite_eau and on /eau (23/11/2026): who
  * publishes it, when, its title, and its sectors, so that it is never read as the whole commune's, nor as the ARS's.
  */
@@ -289,7 +296,7 @@ export async function coupuresEau(cache: Cache, lieu: string | undefined, now = 
     return text({
       avertissement,
       // The sites without an answer named once here, their words in `injoignable` (the page says them in full).
-      resume: (dry.length ? `Eau à ne pas boire en ce moment : ${dry.join(", ")}. ` : "") +
+      resume: (dry.length ? `Eau à ne pas boire en ce moment, ${DANS_LES_SECTEURS(dry.length)} : ${dry.join(", ")}. ` : "") +
         (live.length ? `${live.length} avis des distributeurs d'eau récents ou à venir.` : silent.length ? "" : "Pas d'avis de coupure récent ou à venir sur les sites lus. Une coupure peut être annoncée ailleurs, par la mairie par exemple.") +
         (complet ? silent.map((f) => ` ${f.texte}`).join("")
           : silent.length ? ` Sans réponse à la dernière lecture\u00a0: ${enumeration(silent.map((f) => f.de.replace(/^d(?:e (?:la |l'|les? )?|es )/, "")))}\u00a0: ce que chacun annonçait, dans injoignable.` : ""),

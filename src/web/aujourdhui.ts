@@ -18,7 +18,7 @@ import { connectorCta, courantItem, lienNom, silentItem, silentText, webPage } f
 import { adresseTexte, cheminTexte, telephoneTexte } from "./adresse.js";
 import { esc, fenetre, islandMap } from "./map.js";
 import { a, communeDite, de, fourchette } from "../tools/format.js";
-import { compteAvis, periodeCoupure } from "../tools/coupures.js";
+import { compteAvis, NE_PAS_BOIRE, periodeCoupure } from "../tools/coupures.js";
 import { ask, credits, icon, layout, officielHtml, SITE, thin, leJour } from "./pages.js";
 import type { PlacePage } from "./places.js";
 
@@ -166,18 +166,23 @@ export function descriptionOf(p: PlacePage, r: Resume): string {
   const events = r.evenements_du_jour ? r.evenements_du_jour.liste.length + (r.evenements_du_jour.autres ?? 0) : 0;
   // Only the notices that announce a cut: not one saying not to drink the water, nor a quality notice (compteAvis).
   const cuts = r.coupures_eau ? compteAvis(r.coupures_eau.avis).coupures : 0;
-  const dry = r.coupures_eau?.avis.some((n) => n.ne_pas_boire);
+  const dry = r.coupures_eau?.avis.filter((n) => n.ne_pas_boire).length ?? 0;
   const figures = [
-    dry ? "eau à ne pas boire" : "",
+    dry ? NE_PAS_BOIRE(dry) : "",
     t ? `${thin(t)} mesurés ${leJour(m!.heure_mesure)}` : "",
     events ? plural(events, "sortie") : "",
     cuts ? plural(cuts, "coupure d'eau", "coupures d'eau") : "",
   ].filter(Boolean);
   // Too long: the last figures left out first, the water not to drink kept as long as it fits.
   for (let n = figures.length; n > 0; n--) {
-    const long = `Aujourd'hui ${aCommune(p.nom)} (974) : ${figures.slice(0, n).join(", ")}. Eau, vigilance, routes, sorties : la journée de la commune.`;
+    const said = `Aujourd'hui ${aCommune(p.nom)} (974) : ${figures.slice(0, n).join(", ")}.`;
+    const long = `${said} Eau, vigilance, routes, sorties : la journée de la commune.`;
     if (long.length <= DESCRIPTION_MAX) return long;
+    // With the water not to drink, longer with its sectors: the closing words go before a figure.
+    if (dry && said.length <= DESCRIPTION_MAX) return said;
   }
+  // The water not to drink is never the figure left out: said alone, with its sectors.
+  if (dry) return `Aujourd'hui ${aCommune(p.nom)} (974) : ${NE_PAS_BOIRE(dry)}.`;
   return `La journée ${aCommune(p.nom)} (974) : eau, vigilance, météo, routes, sorties.`;
 }
 

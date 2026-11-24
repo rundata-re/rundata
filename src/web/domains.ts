@@ -52,7 +52,7 @@ import { LATE_MIN, OUVERT_ONF, ROAD_NEAR_M, type ActualitesAnswer, type AgendaAn
 import { ageMinutes, daysApart, localTime } from "../geo.js";
 import { agendasNonLus, mediasNonLus } from "../tools/injoignable.js";
 import { FAST_KW, RECHARGEPEI } from "../tools/bornes.js";
-import { AFTER_CUT, ARS_COUPURE, muetPour, periodeCoupure } from "../tools/coupures.js";
+import { AFTER_CUT, ARS_COUPURE, muetPour, NE_PAS_BOIRE, periodeCoupure } from "../tools/coupures.js";
 import { fuelSay, keep } from "../tools/carburants.js";
 import { SECTEURS as SECTEURS_RANDO, secteurNamed, type Secteur } from "../traces/secteurs.js";
 import island from "../places/island.json" with { type: "json" };
@@ -3107,7 +3107,7 @@ export function coupuresPage(origin: string, data: Cached<CoupuresAnswer> | null
   for (const c of d?.communes_suivies ?? []) {
     const nm = MAP_NAME.get(normalize(c));
     if (!nm) continue;
-    const [fill, say] = dry.includes(c) ? [WATER_CUT.dry, "eau à ne pas boire"]
+    const [fill, say] = dry.includes(c) ? [WATER_CUT.dry, NE_PAS_BOIRE()]
       : d!.avis.some((n) => n.communes.includes(c)) ? [WATER_CUT.avis, "avis en cours"]
       // Its feed silent, nothing kept: not known, never « aucun avis » (rule 3 ter).
       : muetPour(d!.injoignable, c) ? (mute.add(c), [WATER_CUT.muet, lower(SANS_REPONSE_LUE)])

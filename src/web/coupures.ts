@@ -7,7 +7,7 @@ import type { Cached } from "../cache.js";
 import { CIREST, distributeur, GUIDES_AVIS, LIENS, MAIRIES_AUSSI, nomDit, MAIRIE_SAINT_LEU, MAIRIE_SAINTE_MARIE, phrasePartage, SITES_DISTRIBUTEURS, SOURCE as DISTRIBUTEURS } from "../eau/distributeurs.js";
 import { ACCUEILS } from "../providers/agenda.js";
 import { CREOLE } from "../providers/avis-eau.js";
-import { compteAvis, muetPour } from "../tools/coupures.js";
+import { compteAvis, muetPour, NE_PAS_BOIRE } from "../tools/coupures.js";
 import { copieAncienne, VOIR_EAU } from "../tools/copie-ancienne.js";
 import { de, deNom } from "../articles.js";
 import { faqPage, type Faq } from "./texte-stable.js";
@@ -119,11 +119,13 @@ export function eauFaq(commune: string, c: EauAnswer["communes"][number] | undef
 }
 
 /** The commune's page's tile: a cut or not, its drought level, its tap water. */
+const upper = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
 export function waterLive(p: PlacePage, w: WaterCopies): Live | undefined {
   if (!w.coupures) return undefined;
   const x = waterOf(p.nom, w);
   const cuts = compteAvis(x.avis).coupures;
-  const valeur = x.dry ? "Eau à ne pas boire" : cuts ? plural(cuts, "avis de coupure", "avis de coupure") : x.avis.length ? plural(x.avis.length, "avis sur l'eau", "avis sur l'eau") : x.muet ? "Site sans réponse" : x.distributeur?.avis ? "Pas de coupure annoncée" : "Site pas lu";
+  const valeur = x.dry ? upper(NE_PAS_BOIRE()) : cuts ? plural(cuts, "avis de coupure", "avis de coupure") : x.avis.length ? plural(x.avis.length, "avis sur l'eau", "avis sur l'eau") : x.muet ? "Site sans réponse" : x.distributeur?.avis ? "Pas de coupure annoncée" : "Site pas lu";
   const detail = [
     // When its notices were read, unless its site did not answer: that says its own hour.
     x.muet ? esc(x.muet.court) : x.distributeur?.avis || x.avis.length ? `avis lus ${esc(leAt(lusLe(w.coupures)))}` : "",
@@ -303,13 +305,14 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
       // Its feed silent: the notices kept were read before this copy, and the page says when; here no hour, and only the
       // water not to drink, which is never dropped (cut first: the site that did not answer).
       ? x.dry
-        ? describe(`${p.nom} (974) : eau à ne pas boire selon le dernier avis lu ; le site ${x.muet.de} n'a pas répondu à la dernière lecture de rundata.re.`,
-            `${p.nom} (974) : eau à ne pas boire selon le dernier avis lu.`)
+        ? describe(`${p.nom} (974) : eau à ne pas boire dans les secteurs du dernier avis lu ; le site ${x.muet.de} n'a pas répondu à la dernière lecture de rundata.re.`,
+            `${p.nom} (974) : eau à ne pas boire dans les secteurs du dernier avis lu.`)
         : short
     : x.avis.length
       // Dated always: too long with a distributor's long name, without « avec les rues… », never without its date.
-      ? ((dated: string) => describe(`${dated}, avec les rues, les heures et les consignes.`, describe(`${dated}.`, short)))(
-          `${p.nom} (974) : ${x.dry ? "eau à ne pas boire ; " : ""}${plural(x.avis.length, "avis", "avis")} ${ofBy(by)} en cours ou à venir, ${x.avis.length > 1 ? "lus" : "lu"} ${at}`)
+      // The water not to drink never left out for the length: then said alone, with its sectors.
+      ? ((dated: string) => describe(`${dated}, avec les rues, les heures et les consignes.`, describe(`${dated}.`, x.dry ? `${p.nom} (974) : ${NE_PAS_BOIRE()}.` : short)))(
+          `${p.nom} (974) : ${x.dry ? `${NE_PAS_BOIRE()} ; ` : ""}${plural(x.avis.length, "avis", "avis")} ${ofBy(by)} en cours ou à venir, ${x.avis.length > 1 ? "lus" : "lu"} ${at}`)
       : dist?.avis && !x.muet
         // Too long, only « Sécheresse… » goes: the hour of reading always stays.
         ? describe(`${noNotice()} Sécheresse, eau du robinet et contact du distributeur.`, noNotice())

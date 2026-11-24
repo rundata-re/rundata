@@ -300,7 +300,7 @@ export function productionChart(j: Journee): string {
   const durees = `<div class="ech-d" role="group" aria-label="Durée du graphique" hidden><button type="button" aria-pressed="true" data-d="j1">24\u00a0h</button>` +
     `<button type="button" aria-pressed="false" data-d="j7" hidden>7\u00a0jours</button><button type="button" aria-pressed="false" data-d="j30" hidden>30\u00a0jours</button></div><p class="mls ech-dd" hidden></p>`;
   const source = `Production d'électricité de l'île sur 24\u00a0h, toutes les 5\u00a0minutes, estimée par EDF${j.mis_a_jour ? ` (mise à jour le ${esc(j.mis_a_jour.replace(" ", " à "))})` : ""}. Part renouvelable selon les filières d'EDF, sans les batteries.`;
-  const archive = `Moyennes par heure (7\u00a0jours) ou par 3\u00a0heures (30\u00a0jours), calculées par rundata.re d'après la production qu'EDF publie toutes les 5\u00a0minutes. EDF ne garde que les 24\u00a0dernières heures\u00a0: rundata.re les garde depuis le <span class="ech-dp"></span>.`;
+  const archive = `Moyennes par heure (7\u00a0jours) ou par 3\u00a0heures (30\u00a0jours), calculées par rundata.re d'après la production qu'EDF publie toutes les 5\u00a0minutes. EDF ne garde que les 24\u00a0dernières heures<span class="ech-depuis" hidden>\u00a0: rundata.re les garde depuis le <span class="ech-dp"></span></span>.`;
   // The points for the script, in whole MW: what it says is rounded the same. With each filière's MW when the copy has
   // them (`m`), and each group's MW installed (`i`), for the map's rounds: none in a copy kept before them.
   const mix = j.mix?.length === pts.length ? j.mix : undefined;
@@ -378,7 +378,7 @@ an.querySelector(".an-src").textContent="Bilan annuel publié par EDF SEI"+(a.mi
 const fy=(a)=>{const L=a.annees[a.annees.length-1];if(!(L.total>0))return;document.querySelectorAll(".fil-a").forEach((s)=>{const v=s.dataset.k.split(",").reduce((t,i)=>t+(L.filieres[+i]||0),0);s.replaceChildren(", ",el("b",null,nb(v/L.total*100,1)+"\\u00a0%")," en "+L.annee);s.hidden=false})};
 let asked=0;const ask=()=>{if(asked)return;asked=1;fetch(f.dataset.h).then((r)=>r.ok?r.json():{}).catch(()=>({})).then((h)=>{const pa=["j7","j30"].filter((n)=>h[n]&&h[n].depuis);["j7","j30"].forEach((n)=>{if(!h[n])return;D[n]=h[n];du.querySelector('[data-d="'+n+'"]').hidden=false});
 if(pa.length){dd.textContent=(pa.length>1?"7 et 30\\u00a0jours":DUREE[pa[0]])+"\\u00a0: depuis le "+dm(Date.parse(h[pa[0]].depuis))+", début de l'archive de rundata.re.";dd.hidden=false}
-if(h.j7||h.j30){du.hidden=false;if(h.depuis)note.querySelector(".ech-dp").textContent=dm(Date.parse(h.depuis))}if(h.annuel&&h.annuel.annees&&h.annuel.annees.length){if(an)year(h.annuel);fy(h.annuel)}})};
+if(h.j7||h.j30){du.hidden=false;if(h.depuis&&!isNaN(Date.parse(h.depuis))){const s=note.querySelector(".ech-depuis");s.querySelector(".ech-dp").textContent=dm(Date.parse(h.depuis));s.hidden=false}}if(h.annuel&&h.annuel.annees&&h.annuel.annees.length){if(an)year(h.annuel);fy(h.annuel)}})};
 if(window.IntersectionObserver){const o=new IntersectionObserver((e)=>{if(e.some((x)=>x.isIntersecting)){o.disconnect();ask()}},{rootMargin:"100% 0px"});o.observe(f)}else ask()};document.readyState==="loading"?addEventListener("DOMContentLoaded",go,{once:true}):go()})();`;
 
 /** Their style, in the page's sheet: the filières' and the areas' colours in each theme (wording validated on 31/10/2026). */

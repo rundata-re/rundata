@@ -8,6 +8,7 @@ import { STATIONS_974, VEILLE, type Veille } from "../src/providers/meteofrance-
 import * as meteorOi from "../src/providers/meteor-oi.js";
 import { LICENCES } from "../src/providers/autorisations.js";
 import { historiqueMeteo, nothing, parseDate, period, TODAY } from "../src/tools/historique.js";
+import { hourlyLead } from "../src/web/historique.js";
 import { resolvePlace } from "../src/places/resolve.js";
 import { pluieDabord } from "../src/tools/representativeness.js";
 
@@ -474,3 +475,15 @@ describe("MétéoR-OI's days", () => {
   });
 });
 
+
+describe("the hour by hour of /historique, said to the visitors", () => {
+  it("sends today to /meteo, never to the assistant's tool, and leaves the stations to the eyebrow and the note", () => {
+    // 24/11/2026, /historique online: « …sont dans meteo_actuelle (stations Météo-France, heure par heure) » shown as is.
+    const resume = `Heure par heure (station Chaudron, à 5,2 km ; Saint-Denis Gillot (aéroport), à 8,5 km) — 23/11 : pas de pluie. ${TODAY}`;
+    const lead = hourlyLead(resume);
+    expect(lead).not.toMatch(/meteo_actuelle|prevision_meteo|Heure par heure/);
+    expect(lead).toMatch(/^23\/11 : pas de pluie\. Aujourd'hui n'est pas encore dans cette archive/);
+    expect(lead).toContain('<a href="/meteo">la page Météo</a>.');
+    expect(hourlyLead("Heure par heure (station Chaudron, à 5,2 km) — 23/11 : pas de pluie.")).toBe("23/11 : pas de pluie.");
+  });
+});

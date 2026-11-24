@@ -46,6 +46,9 @@ describe("the 24 hours of /electricite", () => {
     expect(html).toContain("estimée par EDF (mise à jour le 31/10 à 05:15)");
     // The replay's bar waits for the script; the points it plays, in whole MW.
     expect(html).toMatch(/<div class="rj ech-rj" hidden>/);
+    // 24/11/2026: « rundata.re les garde depuis le . » before the archive's first hour was read; hidden until the script
+    // has a date to write in it.
+    expect(html).toContain('heures<span class="ech-depuis" hidden>\u00a0: rundata.re les garde depuis le <span class="ech-dp"></span></span>.');
     const ech = JSON.parse(html.match(/data-ech="([^"]+)"/)![1].replace(/&quot;/g, '"'));
     expect(ech.p).toEqual([[0, 268, 14, 284], [5, 269, 14, 281]]);
     // Each filière's whole MW, for the chart « Par filière » and the map's rounds, with each group's MW installed.

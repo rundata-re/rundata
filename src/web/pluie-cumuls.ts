@@ -1,7 +1,7 @@
 /**
  * /meteo's « Pluie tombée » (the user's « Ok go » of 01/11/2026 to the mock-up C): the rain fallen around a place, in mm,
  * since the start of its shower or over the last 1, 3, 6 or 24 hours. The radar's lame d'eau of each image of 5 minutes
- * (pluie-radar.ts, decodeMm), added up in the browser from CUMULS_PATH; the place's rain gauge, its round hours, beside
+ * (pluie-radar.ts, `mmChar`), added up in the browser from CUMULS_PATH; the place's rain gauge, its round hours, beside
  * it: the radar estimates, the gauge measures, and the measure is said first when there is one (`phrases`).
  * The shower around a place: going back from the last image, its rain within 2 km (any class, from 0.1 mm/h) after the
  * last hour without any. Shown by default while it rains there or ended less than 3 hours ago; otherwise the 24 hours.
@@ -19,7 +19,7 @@ const HOUR_MS = 3_600_000;
 /** The reach of a shower around a place, in km. */
 export const RAYON_KM = 2;
 /** The lengths one can choose, in hours. */
-export const DUREES_H = [1, 3, 6, 24] as const;
+const DUREES_H = [1, 3, 6, 24] as const;
 /** A shower ended less than this ago is still the default length. */
 export const FINIE_MS = 3 * HOUR_MS;
 /** The steps of the map's colours, in mm, and the colours, light and dark (the radar's on the map above). */

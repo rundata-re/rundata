@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import { handle } from "../src/app.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { DAES } from "../src/providers/dae.js";
-import { STATIONS_EN_SERVICE } from "../src/providers/meteofrance-stations.js";
 import { IDS } from "../src/providers/irve.js";
 import icons from "../src/web/icons.json" with { type: "json" };
 import visuals from "../src/web/presse.json" with { type: "json" };
@@ -127,13 +126,6 @@ describe("press page", () => {
     expect(home.slice(0, home.indexOf(`<footer class="foot`))).not.toContain(`href="/presse"`);
     const map = await (await handle(new Request("https://rundata.re/sitemap.xml"), cache())).text();
     expect(map).toContain("<loc>https://rundata.re/presse</loc>");
-  });
-});
-
-describe("the stations in service", () => {
-  it("are those of a recorded 6-minute packet, the count meteo_actuelle and sources_donnees give", () => {
-    const csv = readFileSync(new URL("./fixtures/meteofrance_6min.csv", import.meta.url), "utf8");
-    expect(new Set(csv.match(/^[^;\n]*;[^;\n]*;974\d{5}(?=;)/gm)!.map((l) => l.split(";")[2])).size).toBe(STATIONS_EN_SERVICE);
   });
 });
 

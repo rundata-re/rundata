@@ -468,7 +468,7 @@ const SCHEDULED: Entry[] = [
   // weighed 9 to 51 Ko, the 6 hours twice that. Without the image due (an error, a copy kept, an image late: 10 runs
   // of 461 in 38 hours from 29/10/2026 18:00), up to two more reads of the radar a minute apart, one subrequest and
   // about 32 ms each: 9 and 200 ms at most. Since 01/11/2026 each image of 5 minutes keeps its lame d'eau in mm besides
-  // (web/pluie-radar.ts, decodeMm), with no read or write more: +48 % on the images of the rainy 31/10/2026, so 7 Mo.
+  // (web/pluie-radar.ts, `mmChar`), with no read or write more: +48 % on the images of the rainy 31/10/2026, so 7 Mo.
   {
     id: "radar:6h",
     queue: "historique radar",

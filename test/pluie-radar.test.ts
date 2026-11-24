@@ -5,7 +5,26 @@ import { Cache, MemoryStore } from "../src/cache.js";
 import * as meteofrance from "../src/providers/meteofrance.js";
 import { project, W, H } from "../src/web/map.js";
 import { NODATA, parse, pixel, WINDOW, type RadarImage } from "../src/providers/radar.js";
-import { configure, decodeMm, GH, GW, grid, MM_CHARS, mmChar, PATH, rainGrid } from "../src/web/pluie-radar.js";
+import { configure, GH, GW, grid, MM_CHARS, MM_MIN, MM_STEP, mmChar, PATH, rainGrid } from "../src/web/pluie-radar.js";
+
+/**
+ * The lame d'eau in mm of each cell, read back as the browser does (pluie-cumuls.ts): 0 where `pluie` is « 0 », NaN
+ * where it is « . », its step elsewhere; null when `mm` is absent or not as long as the wet cells.
+ */
+function decodeMm(pluie: string, mm: string | undefined): Float64Array | null {
+  if (mm == null) return null;
+  const out = new Float64Array(pluie.length);
+  let n = 0;
+  for (let k = 0; k < pluie.length; k++) {
+    const c = pluie[k];
+    if (c === ".") out[k] = NaN;
+    else if (c !== "0") {
+      if (n >= mm.length) return null;
+      out[k] = MM_MIN * MM_STEP ** MM_CHARS.indexOf(mm[n++]);
+    }
+  }
+  return n === mm.length ? out : null;
+}
 import { derniere, rle, type Historique } from "../src/web/pluie-retro.js";
 
 // The real lame d'eau of 22/10/2026 05:35–05:40 UTC: almost dry over the island.

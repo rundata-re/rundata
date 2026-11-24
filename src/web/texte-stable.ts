@@ -60,5 +60,3 @@ export function faqPage(faq: Faq[]): object {
 }
 
 /** A paragraph, and a sentence that is said only with its figure: "" when the figure is missing. */
-export const p = (html: string) => `<p>${html}</p>`;
-export const avec = <T>(v: T | undefined | null, phrase: (v: T) => string) => (v === undefined || v === null ? "" : phrase(v));

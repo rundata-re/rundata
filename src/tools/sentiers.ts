@@ -188,7 +188,7 @@ export function trailsNamed(sentiers: onf.Sentier[], asked: string): onf.Sentier
 }
 
 /** Where an ONF trail's page and GPS trace are, with its climb, from the bundle. */
-export function trailTrace(nom: string) {
+function trailTrace(nom: string) {
   const t = traces.SENTIERS[nom];
   if (!t) return {};
   return {

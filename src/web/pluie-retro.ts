@@ -61,7 +61,7 @@ export interface Image {
   pluie: string;
   mal_vu: string;
   /**
-   * The lame d'eau of its 5 minutes in the cells with rain (pluie-radar.ts, decodeMm), for rain totals over hours;
+   * The lame d'eau of its 5 minutes in the cells with rain (pluie-radar.ts, `mmChar`), for rain totals over hours;
    * only the images of 5 minutes, since 01/11/2026: the 6 hours and the days (radar-semaine.ts).
    */
   mm?: string;

@@ -61,25 +61,6 @@ export function mmChar(mm: number): string {
 }
 
 /**
- * The lame d'eau in mm of each cell of an image of the history: 0 where `pluie` (unrle'd) is « 0 », NaN where it is
- * « . », its step elsewhere. Null when the image has none (`mm` absent, or not as long as its wet cells).
- */
-export function decodeMm(pluie: string, mm: string | undefined): Float64Array | null {
-  if (mm == null) return null;
-  const out = new Float64Array(pluie.length);
-  let n = 0;
-  for (let k = 0; k < pluie.length; k++) {
-    const c = pluie[k];
-    if (c === ".") out[k] = NaN;
-    else if (c !== "0") {
-      if (n >= mm.length) return null;
-      out[k] = MM_MIN * MM_STEP ** MM_CHARS.indexOf(mm[n++]);
-    }
-  }
-  return n === mm.length ? out : null;
-}
-
-/**
  * The radar's image on the map's grid: the strongest rain seen within each cell, its mean quality; with `lame`, the
  * mean lame d'eau of the cells with rain besides (`mm`).
  */

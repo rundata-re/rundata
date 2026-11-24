@@ -532,9 +532,6 @@ export function tripPath(d: Departure, withDay = true): string | undefined {
   return `${TRIP_PATH}/${d.reseau}/${d.pattern - n.first_pattern}/${encodeURIComponent(d.trip)}?${withDay ? `jour=${d.jour}&` : ""}arret=${stop}#arret-${stop}`;
 }
 
-/** La Réunion's date of `now`, as a service day (YYYYMMDD). */
-export const todayOf = (now: Date) => day(now).ymd;
-
 /** A departure as the pages keep it: the tool's row, and the page of its trip, without its day (tripPath). */
 export type PageRow = DepartureRow & { trajet?: string };
 // `now` is kept for the callers: the row no longer depends on the day it is made.
@@ -551,7 +548,7 @@ const delayText = (m: number) => (m === 0 ? "à l'heure, annoncé en direct" : m
 const toolRow = (d: Departure) => ({ ...departureRow(d), ...endsOf(d), ...(d.bus ? { position_du_bus: d.bus } : {}) });
 
 /** Where a departure's trip comes from and goes: the first and last stops of its pattern. */
-export function endsOf(d: Departure): { origine: string; terminus: string } | undefined {
+function endsOf(d: Departure): { origine: string; terminus: string } | undefined {
   const e = transit.ENDS[d.pattern];
   return e ? { origine: transit.stop(e[1]).nom, terminus: transit.stop(e[2]).nom } : undefined;
 }

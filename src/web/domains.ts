@@ -3909,7 +3909,7 @@ const clubsLink = () =>
 
 // What an event is, said in its schema.org description when its source gives no summary.
 const KIND: Record<string, string> = {
-  concert: "Concert", théâtre: "Théâtre", danse: "Spectacle de danse", humour: "Spectacle d'humour", cirque: "Cirque, conte ou magie",
+  concert: "Concert", théâtre: "Théâtre", danse: "Spectacle de danse", humour: "Spectacle d'humour", cirque: "Spectacle de cirque", conte: "Contes", magie: "Spectacle de magie", marionnettes: "Spectacle de marionnettes",
   soirée: "Soirée", festival: "Fête ou festival", marché: "Marché", cinéma: "Cinéma", enfants: "Sortie pour les enfants",
   exposition: "Exposition ou visite", sport: "Rendez-vous sportif", atelier: "Atelier ou rencontre",
 };
@@ -4027,7 +4027,7 @@ function offer(r: AgendaRow): { offers?: object; isAccessibleForFree?: true } {
 }
 
 // The kinds a visitor can keep, in the order of the select; only those in the list are offered.
-const GENRES: [string, string][] = [["concert", "Concerts"], ["théâtre", "Théâtre"], ["danse", "Danse"], ["humour", "Humour"], ["cirque", "Cirque, contes, magie"], ["soirée", "Soirées et clubbing"], ["festival", "Fêtes et festivals"], ["marché", "Marchés"], ["cinéma", "Cinéma"], ["enfants", "Pour les enfants"], ["exposition", "Expositions et visites"], ["sport", "Sport"], ["atelier", "Ateliers et rencontres"]];
+const GENRES: [string, string][] = [["concert", "Concerts"], ["théâtre", "Théâtre"], ["danse", "Danse"], ["humour", "Humour"], ["cirque", "Cirque"], ["conte", "Contes"], ["magie", "Magie"], ["marionnettes", "Marionnettes"], ["soirée", "Soirées et clubbing"], ["festival", "Fêtes et festivals"], ["marché", "Marchés"], ["cinéma", "Cinéma"], ["enfants", "Pour les enfants"], ["exposition", "Expositions et visites"], ["sport", "Sport"], ["atelier", "Ateliers et rencontres"]];
 const GENRE_SCRIPT = `(()=>{const f=document.getElementById("ef");if(!f)return;f.hidden=false;
 const run=()=>{const g=f.g.value;let n=0;document.querySelectorAll("#jours li[data-g]").forEach((li)=>{const ok=!g||li.dataset.g.split(" ").includes(g);li.hidden=!ok;if(ok)n++});
 document.querySelectorAll("#jours>ul>li.card").forEach((c)=>{c.hidden=!c.querySelector("li[data-g]:not([hidden])")});

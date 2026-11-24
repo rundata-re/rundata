@@ -23,7 +23,7 @@ describe("the collectors of the scheduled event", () => {
   it("are one table, their log lines word for word those the dashboards read", () => {
     expect(COLLECTEURS.map((c) => c.nom)).toEqual([
       "bouées Candhis", "calendrier FFCK", "indice UV mesuré", "mesures de l'air", "capteurs amateurs", "offres d'emploi",
-      "sites mobiles hors service", "formations CPF", "marchés publics",
+      "sites mobiles hors service", "formations CPF", "marchés publics", "série Candhis",
     ]);
     expect(new Set(COLLECTEURS.map((c) => c.cle)).size).toBe(COLLECTEURS.length);
     expect(dit(COLLECTEURS[1], { value: "2 pages", used: 3, reads: new Map([["ffck", 1]]) })).toBe("calendrier FFCK : 2 pages, sous-requêtes : 3, lectures : ffck 1");

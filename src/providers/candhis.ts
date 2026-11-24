@@ -180,6 +180,14 @@ export function parseListe(r: Reponse): string[] {
  * their header: Campagne, Date, then H1/3 or Hm0, Hmax, TH1/3 or T02, Dir. au pic or T. au pic, Etal. au pic, Temp. mer.
  */
 export function parseTR(r: Reponse): Mesure[] {
+  return rowsOf(r);
+}
+
+/**
+ * The rows of getCampListeTR (a column « Campagne ») or of getCampTR for the campaign `camp` (no such column), read by
+ * their header, oldest first: the API's order is not documented.
+ */
+function rowsOf(r: Reponse, camp?: string): Mesure[] {
   if (!ok(r) || !Array.isArray(r.results) || !Array.isArray(r.entete)) return [];
   const head = r.entete.map(label);
   const col = (...names: string[]) => head.findIndex((h) => names.includes(h));
@@ -199,7 +207,7 @@ export function parseTR(r: Reponse): Mesure[] {
   const get = (row: unknown[], i: number) => (i >= 0 ? value(row[i]) : null);
   return r.results.flatMap((row) => {
     if (!Array.isArray(row)) return [];
-    const code = label(row[at.code]);
+    const code = camp ?? label(row[at.code]);
     const t = timeOf(row[at.t]);
     if (!CODES.has(code) || !Number.isFinite(t)) return [];
     return [{
@@ -215,8 +223,11 @@ export function parseTR(r: Reponse): Mesure[] {
       etalement: get(row, at.etal),
       temperature: get(row, at.temp),
     } satisfies Mesure];
-  });
+  }).sort((a, b) => a.t - b.t);
 }
+
+/** getCampTR for one campaign: its measurements from `dateDeb` (YYYY-MM-DD, UTC), oldest first. */
+export const parseSerieTR = (r: Reponse, camp: string) => rowsOf(r, camp);
 
 /** getCampInfos: the campaign's place (columns Nom, Latitude, Longitude, …), when it gives one. */
 export function parseInfos(r: Reponse): { lat: number; lon: number } | undefined {
@@ -317,4 +328,149 @@ export function releves(e: Etat | null | undefined, now: Date, near?: { lon: num
     return [{ ...m, nom: b.nom, ...at }];
   });
   return near && km ? out.sort((a, b) => km(near.lon, near.lat, a.lon, a.lat) - km(near.lon, near.lat, b.lon, b.lat)) : out;
+}
+
+/*
+ * The series: what each buoy measured over the last 30 days, for the curves of /mer and the figures of temperature_mer.
+ * Its own key, so that the answers which only want the last measurement do not read a month. Fed by the scheduled
+ * event 5 minutes after the state (`serieDue`), from the state's last measurements: no request of its own. A buoy not
+ * filled yet from the start of its days (`rempli`), or with a hole of more than SERIE_TROU minutes not asked for in
+ * vain (`trou_vu`), asks getCampTR, at most once a buoy a day; a refusal (quota reached, address banned) stops them until the next day.
+ */
+export const SERIE_KEY = "candhis:serie";
+export const SERIE_JOURS = 30;
+/** Kept a little longer than its days: a series a scheduled event did not write for a while is still shown, dated. */
+export const SERIE_TTL_SECONDS = (SERIE_JOURS + 2) * 86_400;
+export const SERIE_OFFSET = 15;
+/** More than this between two measurements (they come every 30 minutes): a hole getCampTR is asked to fill. */
+export const SERIE_TROU = 70;
+
+/** One measurement of the series: [t (epoch ms), hauteur, hmax, periode, direction, temperature]. */
+export type Point = [number, number | null, number | null, number | null, number | null, number | null];
+
+export interface Serie {
+  bouees: Record<string, { hauteur_selon: Mesure["hauteur_selon"]; periode_selon: Mesure["periode_selon"]; points: Point[] }>;
+  /** When getCampTR was last asked for each buoy, answered or not. */
+  tr?: Record<string, number>;
+  /**
+   * When getCampTR first brought lines from the start of the days, for each buoy: until then, it is asked from there
+   * again (once a day), whatever the scheduled event added since; a first fill that failed is never lost.
+   */
+  rempli?: Record<string, number>;
+  /** The start of the last hole getCampTR was asked for and did not fill: a buoy that did not measure. Not asked again. */
+  trou_vu?: Record<string, number>;
+  /** The last write, and the last failure of a getCampTR. */
+  essai: number;
+  echec?: { at: number; status?: number; message: string };
+  pause_jusqu_a?: number;
+}
+
+export const serieDue = (now: Date) => (((now.getUTCMinutes() - SERIE_OFFSET) % REFRESH_EVERY) + REFRESH_EVERY) % REFRESH_EVERY < 5;
+
+const pointOf = (m: Mesure): Point => [m.t, m.hauteur, m.hmax, m.periode, m.direction, m.temperature];
+
+/** `points` and `more` merged on their time, the newer reading of a time kept, those older than `from` left out. */
+export function fusion(points: Point[], more: Point[], from: number): Point[] {
+  const by = new Map<number, Point>();
+  for (const p of [...points, ...more]) if (p[0] >= from) by.set(p[0], p);
+  return [...by.values()].sort((a, b) => a[0] - b[0]);
+}
+
+/**
+ * The first hole of the series within its days that starts after `apres` (a hole already asked for in vain), as the
+ * time getCampTR should start from; undefined when none.
+ */
+export function premierTrou(points: Point[], from: number, apres = -Infinity): number | undefined {
+  if (!points.length) return from;
+  for (let i = 1; i < points.length; i++) if (points[i][0] - points[i - 1][0] > SERIE_TROU * 60_000 && points[i - 1][0] > apres) return points[i - 1][0];
+  return undefined;
+}
+
+/** The start of the next day in La Réunion (UTC+4), when a refused getCampTR may be asked again. */
+const lendemain = (t: number) => {
+  const local = t + 4 * 3600_000;
+  return local - (local % DAY) + DAY - 4 * 3600_000;
+};
+
+let serieReader: (() => Promise<Serie | null>) | undefined;
+
+/** In the Worker: the reader of the series the scheduled event keeps in KV. */
+export function configureSerie(read?: () => Promise<Serie | null>) {
+  serieReader = read;
+}
+
+/**
+ * In the Worker's scheduled event: the state's last measurement of each active buoy added to its series, the days
+ * older than SERIE_JOURS dropped, then getCampTR for a buoy whose series is empty or has a hole, once a day at most.
+ * Throws after writing when a getCampTR failed, for the logs.
+ */
+export async function completer(before: Serie | null, write: (s: Serie) => Promise<void>, now = new Date(), state?: Etat | null): Promise<string> {
+  const t = now.getTime();
+  if (!apiKey) return "sans clé";
+  const etat = state === undefined ? (reader ? await reader() : null) : state;
+  const from = t - SERIE_JOURS * DAY;
+  const serie: Serie = {
+    bouees: {},
+    essai: t,
+    ...(before?.tr ? { tr: { ...before.tr } } : {}),
+    ...(before?.rempli ? { rempli: { ...before.rempli } } : {}),
+    ...(before?.trou_vu ? { trou_vu: { ...before.trou_vu } } : {}),
+    ...(before?.pause_jusqu_a && before.pause_jusqu_a > t ? { pause_jusqu_a: before.pause_jusqu_a } : {}),
+  };
+  for (const [code, b] of Object.entries(before?.bouees ?? {})) {
+    const points = fusion(b.points, [], from);
+    if (points.length) serie.bouees[code] = { ...b, points };
+  }
+  let ajoutes = 0;
+  for (const m of Object.values(etat?.mesures ?? {})) {
+    if (m.t < from) continue;
+    const b = serie.bouees[m.code] ?? { hauteur_selon: m.hauteur_selon, periode_selon: m.periode_selon, points: [] };
+    const n = b.points.length;
+    serie.bouees[m.code] = { hauteur_selon: m.hauteur_selon, periode_selon: m.periode_selon, points: fusion(b.points, [pointOf(m)], from) };
+    ajoutes += serie.bouees[m.code].points.length - n;
+  }
+  const actives = Object.keys(etat?.types?.actives ?? {}).sort();
+  let asked = 0;
+  try {
+    for (const code of actives) {
+      if (serie.pause_jusqu_a) break;
+      // Not filled yet from the start of the days: from there, whatever the state added since. Else its first hole
+      // not asked for in vain.
+      const premier = !serie.rempli?.[code];
+      const trou = premier ? from : premierTrou(serie.bouees[code]?.points ?? [], from, serie.trou_vu?.[code]);
+      if (trou == null || t - (serie.tr?.[code] ?? 0) < DAY) continue;
+      serie.tr = { ...serie.tr, [code]: t };
+      asked++;
+      const dateDeb = new Date(Math.max(trou, from)).toISOString().slice(0, 10);
+      const ms = parseSerieTR(await ask(`getCampTR.php?camp=${code}&dateDeb=${dateDeb}&dateFin=${new Date(t + DAY).toISOString().slice(0, 10)}`), code);
+      if (ms.length) {
+        if (premier) serie.rempli = { ...serie.rempli, [code]: t };
+        const last = ms[ms.length - 1];
+        const b = serie.bouees[code] ?? { hauteur_selon: last.hauteur_selon, periode_selon: last.periode_selon, points: [] };
+        const n = b.points.length;
+        serie.bouees[code] = { ...b, points: fusion(b.points, ms.map(pointOf), from) };
+        ajoutes += serie.bouees[code].points.length - n;
+      }
+      // A hole getCampTR did not fill: the buoy did not measure then. Not asked again.
+      if (!premier && premierTrou(serie.bouees[code]?.points ?? [], from, serie.trou_vu?.[code]) === trou) serie.trou_vu = { ...serie.trou_vu, [code]: trou };
+    }
+  } catch (err) {
+    const status = err instanceof UpstreamError ? err.status : undefined;
+    serie.echec = { at: t, ...(status ? { status } : {}), message: err instanceof Error ? err.message : String(err) };
+    // A quota reached or an address banned: no getCampTR before the next day.
+    if (status === 429 || status === 423 || status === 401) serie.pause_jusqu_a = lendemain(t);
+    await write(serie);
+    throw err;
+  }
+  await write(serie);
+  return `${Object.keys(serie.bouees).length} bouées en série, ${ajoutes} mesures ajoutées, ${asked} requêtes`;
+}
+
+/** The series the scheduled event keeps: read from KV in the Worker; nothing elsewhere. */
+export async function serie(cache: Cache) {
+  return cache.get(SERIE_KEY, READ_SECONDS, async () => {
+    const v = serieReader ? await serieReader() : null;
+    if (!v?.bouees) throw new UpstreamError(SOURCE.id, "série des bouées absente du stockage");
+    return v;
+  });
 }

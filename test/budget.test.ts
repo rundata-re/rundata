@@ -66,6 +66,8 @@ function upstream(url: string, init?: RequestInit): Response {
   const pub = coastwatch(url, init);
   if (pub) return pub;
   if (url.includes("erdMH1sstd1day")) return new Response(fixture("modis.csv"));
+  // The satellite's 30 days off a beach (providers/crw-serie.ts).
+  if (url.includes("CRW_SSTANOMALY")) return new Response("time,latitude,longitude,CRW_SST,CRW_SSTANOMALY\nUTC,degrees_north,degrees_east,Celsius,Celsius\n2026-11-22T12:00:00Z,-21.075,55.225,26.82,1.47\n");
   if (url.includes("marine-api.open-meteo")) return new Response(fixture(url.includes("meteofrance_wave") ? "openmeteo_houle_mf.json" : "openmeteo_houle.json"));
   if (url.includes("air-quality-api.open-meteo")) return new Response(fixture("cams_uv.json"));
   if (url.includes("ensemble-api.open-meteo.com/data")) return new Response(fixture("openmeteo_ens_meta.json"));
@@ -102,7 +104,9 @@ describe("subrequests of a cold question in the Worker", () => {
     // empty (providers/meteofrance.ts `refreshShared`): one more.
     ["meteo_actuelle, Cilaos", (c: Cache) => meteoActuelle(c, "Cilaos", NOW), 32],
     ["meteo_actuelle, tour of the island", (c: Cache) => meteoActuelle(c, undefined, NOW), 27],
-    ["temperature_mer, Saint-Leu", (c: Cache) => temperatureMer(c, "Saint-Leu", NOW), 10],
+    // 10, and 7 for the figures of 30 days (the buoys' series from KV, the satellite's 30 days off four beaches, the cache
+    // read and write), as the registry says.
+    ["temperature_mer, Saint-Leu", (c: Cache) => temperatureMer(c, "Saint-Leu", NOW), 17],
     ["prevision_meteo, Cilaos demain", (c: Cache) => previsionMeteo(c, "Cilaos", "demain", NOW), PAGE_BUDGET],
     ["prevision_meteo, tour of the island", (c: Cache) => previsionMeteo(c, undefined, undefined, NOW), PAGE_BUDGET],
   ])("%s stays within the limit", async (_, ask, most) => {

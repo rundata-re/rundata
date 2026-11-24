@@ -163,7 +163,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Each beach with the satellite's pass time, and the corals' grid a view of /mer kept (the home page's sea bubble).
   // The prefecture's RAA list moved (« …/Recueil-des-actes-administratifs », without « -RAA ») on 14/11/2026: its links.
   // The Candhis buoys' last measurements, Météo-France's off Saint-Pierre since November 2026 (23/11/2026).
-  mer: 10,
+  // « En courbes »: the buoys' 30 days, the forecast at the buoy and the satellite's 30 days off four beaches, with their figures (24/11/2026).
+  mer: 11,
   // The stations of MétéoR Océan Indien besides the others, each with its credit (09/11/2026).
   // The amateur stations (MétéoR-OI) apart: never the station named first, marked in the answer (10/11/2026).
   // The home page's sea (SeaNow) with each beach's pass time and the nearest corals' level.

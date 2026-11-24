@@ -32,7 +32,9 @@ import { qualiteAir, type Amateurs, type Measured } from "../tools/air.js";
 import { calendrier } from "../tools/calendrier.js";
 import { electricite } from "../tools/electricite.js";
 import { pointsOf } from "./electricite-historique.js";
-import { BEACHES, boueesLues, modelsOf, releveBlock, SEA_SOURCES, seaTour, TOUR as SEA_TOUR, temperatureMer, waveLine, wavesNow } from "../tools/mer.js";
+import { BEACHES, boueesLues, modelsOf, previsionAu, releveBlock, SEA_SOURCES, seaTour, serieLue, TOUR as SEA_TOUR, temperatureMer, waveLine, wavesNow } from "../tools/mer.js";
+import { type Courbes, courbes as courbesMer } from "../tools/mer-courbes.js";
+import * as crwSerie from "../providers/crw-serie.js";
 import * as candhis from "../providers/candhis.js";
 import { gaugeRow, gauges } from "../tools/maree.js";
 import { amateur, islandTour, meteoActuelle } from "../tools/meteo.js";
@@ -346,6 +348,11 @@ export interface SeaData {
    * page says them while they are recent at the view. Missing without the key, or on a copy made before.
    */
   bouees?: (ReturnType<typeof releveBlock> & { t: number })[];
+  /**
+   * The curves of « En courbes » and their figures (tools/mer-courbes.ts): the buoys' 30 days, the forecast at the
+   * buoy, the satellite's 30 days off four beaches with the satellite copy's time. Missing on a copy made before.
+   */
+  courbes?: Courbes & { satellite_lu?: string };
   sources: Credit[];
 }
 
@@ -367,8 +374,23 @@ async function corauxGardes(cache: Cache, now: Date): Promise<coraux.Coraux | un
   }
 }
 
+/**
+ * The satellite's 30 days off four beaches that a view of /mer last kept (providers/crw-serie.ts), never asked of NOAA
+ * here, as the corals' grid.
+ */
+async function serieMerGardee(cache: Cache, now: Date): Promise<Cached<crwSerie.SerieMer> | undefined> {
+  try {
+    return await cache.peek<crwSerie.SerieMer>(crwSerie.KEY, now.getTime() - 24 * 3600_000, REEF_KV_WAIT_MS);
+  } catch (err) {
+    console.error("copie de /mer : série satellite gardée illisible", why(err));
+    return undefined;
+  }
+}
+
 export async function buildSea(cache: Cache, now = new Date()): Promise<SeaData> {
-  const [t, tide, w, reef, buoys] = await Promise.all([seaTour(cache, now, BEACHES), gauges(cache, now), wavesNow(cache), corauxGardes(cache, now), boueesLues(cache, now)]);
+  const [t, tide, w, reef, buoys, serie, crw] = await Promise.all([seaTour(cache, now, BEACHES), gauges(cache, now), wavesNow(cache), corauxGardes(cache, now), boueesLues(cache, now), serieLue(cache), serieMerGardee(cache, now)]);
+  const curves = courbesMer(serie, crw?.value, w ? previsionAu(w.value, now) : undefined, now);
+  const withCurves = curves.bouees.length || curves.satellite;
   if (!t && !w) throw new Error("ni mesure satellite de la mer, ni prévision des vagues");
   // Without the satellites' grids (before the scheduled event first shares them, or a day after they last came): the
   // last copy's readings, each with its day, rather than a copy without the water's temperature that the home page
@@ -397,9 +419,11 @@ export async function buildSea(cache: Cache, now = new Date()): Promise<SeaData>
     ...(read ? { maree: tide.map((g) => gaugeRow(g, now)) } : {}),
     ...(reef && { coraux: reef }),
     ...(buoys.length ? { bouees: buoys.map((b) => ({ t: b.t, ...releveBlock(b) })) } : {}),
+    ...(withCurves ? { courbes: { ...curves, ...(crw && curves.satellite ? { satellite_lu: crw.fetchedAt.toISOString() } : {}) } } : {}),
     sources: [
       ...(t ? t.used.map((g) => credit(g.source)) : (last?.sources?.filter((s) => satellites.includes(s.source)) ?? [])),
-      ...(buoys.length ? [credit(candhis.SOURCE)] : []),
+      ...(buoys.length || curves.bouees.length ? [credit(candhis.SOURCE)] : []),
+      ...(curves.satellite ? [credit(crwSerie.SOURCE)] : []),
       ...modelsOf(lines.map((l) => l?.at)).map((m) => credit(m.source)),
       ...(read ? [credit(maregraphes.SOURCE)] : []),
     ],

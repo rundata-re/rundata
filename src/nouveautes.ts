@@ -59,6 +59,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded by marketing): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-24T14:23:00+04:00", texte: "Mer\u00a0: en courbes, la houle mesurée sur 7 jours à la bouée de Saint-Pierre puis prévue sur 4 jours, et la température de la mer sur 30 jours." },
   { date: "2026-11-24T14:03:00+04:00", texte: "Carte\u00a0: les pistes et bandes cyclables cartographiées dans OpenStreetMap, d'après Geovelo, dans une couche à part." },
   { date: "2026-11-24T13:55:00+04:00", texte: "Outils IA, fiche terrain\u00a0: une source lente n'est plus attendue au-delà de 8 s, la partie manquante est nommée, l'adresse non lue le dit" },
   { date: "2026-11-24T13:48:00+04:00", texte: "L'indice UV mesuré au Moufia (Saint-Denis), sur la page météo et pour les assistants IA, d'après ENERGY-Lab, erreur possible jusqu'à\u00a015\u00a0%." },

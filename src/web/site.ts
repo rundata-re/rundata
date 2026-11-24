@@ -106,6 +106,7 @@ import * as carburants from "../providers/carburants.js";
 import { aujourdhuiPage } from "./aujourdhui.js";
 import { communeRss } from "./rss.js";
 import { FEUX_PATH, feuxPage } from "./feux.js";
+import * as crwSerie from "../providers/crw-serie.js";
 import * as coraux from "../providers/coraux.js";
 import * as feux from "../providers/feux.js";
 import * as prefecture from "../providers/prefecture.js";
@@ -886,6 +887,9 @@ async function pages(request: Request, cache: Cache, background: Background, now
     // the response, for the next views.
     const reefRead = coraux.coraux(cache).catch((err) => (console.error(`source ${coraux.SOURCE.id} indisponible:`, why(err)), null));
     background(reefRead);
+    // The satellite's 30 days off four beaches for « En courbes », read as the corals' grid, never waited for: the
+    // copy takes what the last view kept (web/data.ts).
+    background(crwSerie.serieMer(cache).catch((err) => console.error(`source ${crwSerie.SOURCE.id} : série indisponible:`, why(err))));
     const [data, a, reef] = await Promise.all([
       snapshot(cache, "web:mer", () => buildSea(cache, now), background, now, waitFor(request), readerOf(request)),
       alerte(cache, background, now),

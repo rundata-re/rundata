@@ -185,8 +185,9 @@ describe("MétéoR-OI's stations", () => {
     // data center's cache read, the page, the cache written, 20/11/2026); 457 with those orders kept in KV too, read and
     // written by the scheduled event only (cache.ts `islandRead`, 21/11/2026); 478 with /bus's shared copy (20 from cold
     // and its write, 22/11/2026); 479 with the state of the alerts a push would follow (alertes-etat.ts: one KV read
-    // each run, its write only when an alert changes, 24/11/2026).
-    expect(worstMain().subrequests).toBeLessThanOrEqual(479);
+    // each run, its write only when an alert changes, 24/11/2026); 481 with the curves of /mer's shared copy (the buoys'
+    // series and the satellite's 30 days a view kept, read from cold, never asked of NOAA there, 24/11/2026).
+    expect(worstMain().subrequests).toBeLessThanOrEqual(481);
   });
 
   it("has its own cron, never the minute of the event of every 5 minutes", () => {

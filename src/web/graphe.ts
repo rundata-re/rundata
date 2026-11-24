@@ -10,6 +10,9 @@ const num = (n: number) => fr(Math.round(n * 10) / 10);
 export interface Line {
   pts: (number | null)[];
   cls: string;
+  /** Its first value at this index of the labels, then one every `pas` of them (a forecast every 3 hours on a chart of hours). */
+  debut?: number;
+  pas?: number;
 }
 
 export const known = (xs: (number | null | undefined)[]) => xs.filter((v): v is number => v != null);
@@ -23,6 +26,8 @@ export const known = (xs: (number | null | undefined)[]) => xs.filter((v): v is 
 export function chart(o: {
   label: string; labels: string[]; every: number; lines?: Line[]; bars?: (number | null)[]; band?: [(number | null)[], (number | null)[]]; arrows?: (number | null)[];
   min?: number; max?: number; h?: number; barCls?: (string | undefined)[]; marks?: boolean[]; data?: string;
+  /** A thin dotted line across the chart at this index of the labels: now, between what was measured and what is forecast. */
+  maintenant?: number;
 }): string {
   const W = 600, H = o.h ?? 266, L = 52, R = 10, TOP = o.arrows ? 40 : 18, B = o.marks ? 58 : 44;
   const all = [...(o.lines ?? []).flatMap((l) => l.pts), ...(o.bars ?? []), ...(o.band ? [...o.band[0], ...o.band[1]] : [])].filter((v): v is number => v != null);
@@ -47,7 +52,11 @@ export function chart(o: {
     const ok = o.band[0].map((v, i) => v != null && o.band![1][i] != null);
     if (ok.every(Boolean)) s += `<path class="bd" d="M${o.band[1].map((v, i) => `${x(i)},${y(v!)}`).join("L")}L${o.band[0].map((v, i) => `${x(i)},${y(v!)}`).reverse().join("L")}Z"/>`;
   }
-  for (const l of o.lines ?? []) s += `<path class="${l.cls}" d="${l.pts.map((p, i) => (p == null ? "" : `${i && l.pts[i - 1] != null ? "L" : "M"}${x(i)},${y(p)}`)).join("")}"/>`;
+  if (o.maintenant != null) s += `<line class="now" x1="${x(o.maintenant)}" x2="${x(o.maintenant)}" y1="${TOP - 6}" y2="${y(lo)}"/>`;
+  for (const l of o.lines ?? []) {
+    const at = (i: number) => x((l.debut ?? 0) + i * (l.pas ?? 1));
+    s += `<path class="${l.cls}" d="${l.pts.map((p, i) => (p == null ? "" : `${i && l.pts[i - 1] != null ? "L" : "M"}${at(i)},${y(p)}`)).join("")}"/>`;
+  }
   if (o.arrows) s += o.arrows.map((d, i) => (d == null || i % 2 ? "" : `<path class="wa" d="M0 6V-6M-4-2l4-4 4 4" transform="translate(${x(i)} ${TOP - 20}) rotate(${(d + 180) % 360})"/>`)).join("");
   s += o.labels.map((t, i) => (i % o.every ? "" : `<text class="ax" x="${x(i)}" y="${H - 8}" text-anchor="middle">${t}</text>`)).join("");
   return `${s}</svg>`;

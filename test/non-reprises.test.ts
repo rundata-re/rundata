@@ -52,12 +52,12 @@ describe("the halls and the sports sites whose terms forbid taking their informa
       "agenda:teat", "agenda:cite_des_arts", "agenda:kabardock", "agenda:bisik", "agenda:luc_donat", "agenda:cdnoi", "agenda:lespas",
       "sport:ffgolf", "sport:ffvoile", "agenda:sportsregions",
     ]);
-    // Bisik's, Léspas' and Sportsregions' are forms the user sends: not yet.
-    const NON = ["agenda:bisik", "agenda:lespas", "agenda:sportsregions"];
+    // Bisik's, Léspas' and Sportsregions' asked by their forms, on their own days.
+    const FORMS: Record<string, string> = { "agenda:bisik": "2026-11-08", "agenda:lespas": "2026-11-08", "agenda:sportsregions": "2026-11-23" };
     const OUI: Record<string, string> = { "agenda:luc_donat": "2026-10-27", "agenda:kabardock": "2026-11-06" };
     const REFUS: Record<string, string> = { "sport:ffgolf": "2026-11-09" };
     for (const [k, x] of Object.entries(NON_REPRISES)) {
-      expect([k, x.etat, x.demandee_le]).toEqual(NON.includes(k) ? [k, "a_demander", undefined] : [k, OUI[k] ? "accordee" : REFUS[k] ? "refusee" : "demandee", "2026-10-26"]);
+      expect([k, x.etat, x.demandee_le]).toEqual([k, OUI[k] ? "accordee" : REFUS[k] ? "refusee" : "demandee", FORMS[k] ?? "2026-10-26"]);
       expect(x.accordee_le).toBe(OUI[k]);
       expect(x.refusee_le).toBe(REFUS[k]);
     }
@@ -103,11 +103,11 @@ describe("the halls and the sports sites whose terms forbid taking their informa
 
   it("are said once each when only some were asked: those asked in one sentence after the block (marketing, 26/10)", () => {
     // The Théâtre Luc Donat, which agreed on 27/10, and the Kabardock, on 06/11, are no longer among them.
-    expect(mentionSalles()).toEqual(["Les mentions légales des sites de 5 salles interdisent d'en reprendre le contenu sans accord : le TÉAT (Champ Fleuri et Plein Air), la Cité des Arts, Bisik, le CDNOI et Léspas. rundata.re n'affiche donc pas leurs programmes. rundata.re a demandé cet accord le 26/10 au TÉAT, à la Cité des Arts et au CDNOI, et attend leur réponse."]);
-    expect(mentionSalles("Saint-Paul")).toEqual(["Les mentions légales des sites de 2 salles interdisent d'en reprendre le contenu sans accord : le TÉAT (Champ Fleuri et Plein Air) et Léspas. rundata.re n'affiche donc pas leurs programmes. rundata.re a demandé cet accord le 26/10 au TÉAT et attend sa réponse."]);
+    expect(mentionSalles()).toEqual(["Les mentions légales des sites de 5 salles interdisent d'en reprendre le contenu sans accord : le TÉAT (Champ Fleuri et Plein Air), la Cité des Arts, Bisik, le CDNOI et Léspas. rundata.re n'affiche donc pas leurs programmes. rundata.re a demandé cet accord au TÉAT, à la Cité des Arts et au CDNOI le 26/10 et à Bisik et à Léspas le 08/11, et attend leur réponse."]);
+    expect(mentionSalles("Saint-Paul")).toEqual(["Les mentions légales des sites de 2 salles interdisent d'en reprendre le contenu sans accord : le TÉAT (Champ Fleuri et Plein Air) et Léspas. rundata.re n'affiche donc pas leurs programmes. rundata.re a demandé cet accord au TÉAT le 26/10 et à Léspas le 08/11, et attend leur réponse."]);
     // The ffgolf, which refused in writing on 09/11, its own line after the block.
     expect(mentionSports(undefined, true)).toEqual([
-      "Les conditions d'utilisation ou les mentions légales de 2 sites interdisent d'en reprendre le contenu sans leur accord : la FFVoile (les régates de la Ligue de voile de La Réunion) et Sportsregions (les événements que les clubs y publient). rundata.re n'affiche donc pas ces rendez-vous. rundata.re a demandé cet accord le 26/10 à la FFVoile et attend sa réponse.",
+      "Les conditions d'utilisation ou les mentions légales de 2 sites interdisent d'en reprendre le contenu sans leur accord : la FFVoile (les régates de la Ligue de voile de La Réunion) et Sportsregions (les événements que les clubs y publient). rundata.re n'affiche donc pas ces rendez-vous. rundata.re a demandé cet accord à la FFVoile le 26/10 et à Sportsregions le 23/11, et attend leur réponse.",
       GOLF_REFUS,
     ]);
     expect(mentionSports(["golf"], false)).toEqual([GOLF_REFUS]);
@@ -115,7 +115,7 @@ describe("the halls and the sports sites whose terms forbid taking their informa
     set("agenda:cdnoi", { demandee_le: "2026-10-22" });
     set("agenda:kabardock", { etat: "refusee", refusee_le: "2026-11-03" });
     expect(mentionSalles()).toEqual([
-      "Les mentions légales des sites de 5 salles interdisent d'en reprendre le contenu sans accord : le TÉAT (Champ Fleuri et Plein Air), la Cité des Arts, Bisik, le CDNOI et Léspas. rundata.re n'affiche donc pas leurs programmes. rundata.re a demandé cet accord au CDNOI le 22/10 et au TÉAT et à la Cité des Arts le 26/10, et attend leur réponse.",
+      "Les mentions légales des sites de 5 salles interdisent d'en reprendre le contenu sans accord : le TÉAT (Champ Fleuri et Plein Air), la Cité des Arts, Bisik, le CDNOI et Léspas. rundata.re n'affiche donc pas leurs programmes. rundata.re a demandé cet accord au CDNOI le 22/10, au TÉAT et à la Cité des Arts le 26/10 et à Bisik et à Léspas le 08/11, et attend leur réponse.",
       "Le Kabardock a refusé, le 03/11, que rundata.re reprenne le contenu de son site : son programme ne s'affiche donc pas ici.",
     ]);
   });

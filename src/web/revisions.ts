@@ -220,7 +220,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // The earthquakes' copy said « la dernière lecture de rundata.re », never « notre lecture » (23/11/2026).
   // Its texts name rundata.re instead of « nous » (« lus par rundata.re », « jusqu'à la lecture du … », the Enclos'
   // access, the past alerts' heads), and a no-break space before « : » (23/11/2026).
-  volcan: 18,
+  // Each line of « Puis-je monter au volcan ? » with a link names its source: the prefecture's release, the ONF's map (24/11/2026).
+  volcan: 19,
 };
 
 /**

@@ -61,7 +61,7 @@ describe("« Puis-je monter au volcan ? »", () => {
       "Route du volcan (route forestière depuis Bourg-Murat) : le communiqué n'en dit rien, et l'ONF ne la signale pas fermée (carte lue à 20:10).",
       "Pas de Bellecombe et points de vue : le communiqué ne les nomme que comme départ du sentier de l'Enclos, qui est interdit.",
       // Dolomieu is the Enclos' own: told by its line, not here.
-      "Sentiers hors Enclos (Plaine des Sables, Piton Chisny, Nez Coupé de Sainte-Rose…) : Sentier du Cratère Commerson fermé selon l'ONF (24/10). https://rundata.re/sentiers",
+      "Sentiers hors Enclos (Plaine des Sables, Piton Chisny, Nez Coupé de Sainte-Rose…) : Sentier du Cratère Commerson fermé selon l'ONF (24/10) (carte des sentiers de l'ONF : https://rundata.re/sentiers).",
     ]);
     expect(m.pied).toBe("Les interdictions peuvent changer à tout moment : seuls font foi les communiqués de la préfecture.");
     const all = m.lignes.map(lineText).join(" ");
@@ -71,7 +71,7 @@ describe("« Puis-je monter au volcan ? »", () => {
   it("says the road closed when the ONF does, the trails when none is closed, and what to check without the map", () => {
     const closed = acces("Alerte 1", ALERT_1, releaseSentences(PAGE), carte([], "Circulation interdite"));
     expect(closed.lignes.map(lineText)).toContain("Route du volcan (route forestière depuis Bourg-Murat) : le communiqué n'en dit rien. Fermée selon l'ONF (carte lue à 20:10).");
-    expect(closed.lignes.map(lineText).at(-1)).toBe("Sentiers hors Enclos (Plaine des Sables, Piton Chisny, Nez Coupé de Sainte-Rose…) : l'ONF ne signale pas de fermeture dans le secteur du volcan (24/10). https://rundata.re/sentiers");
+    expect(closed.lignes.map(lineText).at(-1)).toBe("Sentiers hors Enclos (Plaine des Sables, Piton Chisny, Nez Coupé de Sainte-Rose…) : l'ONF ne signale pas de fermeture dans le secteur du volcan (24/10) (carte des sentiers de l'ONF : https://rundata.re/sentiers).");
     const blind = acces("Alerte 1", ALERT_1, undefined, undefined);
     expect(blind.lignes.map(lineText)).toEqual([
       `Enclos : interdit (communiqué de la préfecture du 24/10 : ${LIEN}).`,
@@ -91,7 +91,7 @@ describe("« Puis-je monter au volcan ? »", () => {
     const lines = acces("Vigilance", undefined, undefined, c).lignes.map(lineText);
     expect(lines).toContain("Sentiers de l'Enclos ouverts selon l'ONF (24/10) : Sentier Rivals.");
     expect(lines.find((l) => l.startsWith("Sentiers de l'Enclos fermés"))).toMatch(
-      /^Sentiers de l'Enclos fermés selon l'ONF \(24\/10\) : Sentier du Cratère Dolomieu\u00a0; Sentier Kapor \(Sentier instable pour cause d'éruption récente\)\. https:\/\/rundata\.re\/sentiers$/,
+      /^Sentiers de l'Enclos fermés selon l'ONF \(24\/10\) : Sentier du Cratère Dolomieu\u00a0; Sentier Kapor \(Sentier instable pour cause d'éruption récente\) \(carte des sentiers de l'ONF : https:\/\/rundata\.re\/sentiers\)\.$/,
     );
   });
 
@@ -100,7 +100,7 @@ describe("« Puis-je monter au volcan ? »", () => {
     expect(lineText(vigilance.lignes[0])).toBe("Partie haute de l'Enclos : « l'accès du public non-accompagné est restreint aux seuls sentiers balisés et ouverts » (dispositif ORSEC Volcan, p. 23).");
     const over = phaseOf([{ titre: "Piton de la Fournaise : fin de l'éruption, passage en phase de sauvegarde", lien: LIEN, publie: "2026-11-02T08:00:00.000Z" } as unknown as Info])!;
     expect(lineText(acces("Sauvegarde", over, undefined, undefined).lignes[0])).toBe(
-      `Enclos : en phase de sauvegarde, « une réouverture partielle de l'enclos est possible » (dispositif ORSEC Volcan, p. 22). Ce qui est ouvert est dans le communiqué de la préfecture du 02/11. ${LIEN}`,
+      `Enclos : en phase de sauvegarde, « une réouverture partielle de l'enclos est possible » (dispositif ORSEC Volcan, p. 22). Ce qui est ouvert est dit dans le communiqué de la préfecture (communiqué de la préfecture du 02/11 : ${LIEN}).`,
     );
     // An eruption: what the plan provides for the road, after the road's line; never before alert 2.
     const eruption = acces("Alerte 2-1", ALERT_1, releaseSentences(PAGE), carte()).lignes.map(lineText);
@@ -174,6 +174,10 @@ describe("« Puis-je monter au volcan ? » in the answer and on /volcan", () => 
     expect(html).toContain("<summary>Les niveaux du dispositif</summary>");
     expect(html).toContain("<small>Version de 2021, la dernière lue par rundata.re.</small>");
     expect(html.indexOf('id="h-monter"')).toBeLessThan(html.indexOf('id="h-volcan"'));
+    // Every link of the section names where it leads: no « → » alone (accessibility audit, 24/11/2026).
+    const monter = html.slice(html.indexOf('id="monter"'), html.indexOf("</section>", html.indexOf('id="monter"')));
+    expect(monter).toContain(`(<a href="/sentiers">carte des sentiers de l&#39;ONF →</a>).`);
+    expect(monter).not.toMatch(/>\s*→<\/a>/);
 
     // Another isolate, the prefecture's page down: the sentences kept with the phase.
     vi.stubGlobal("fetch", async () => {
@@ -181,6 +185,20 @@ describe("« Puis-je monter au volcan ? » in the answer and on /volcan", () => 
     });
     const again = await buildVolcan(isolate(durable), NOW);
     expect(again.puis_je_monter?.lignes[0].texte).toContain(ENCLOS);
+  });
+
+  it("gives every line with a link its source, at each level", () => {
+    const over = phaseOf([{ titre: "Piton de la Fournaise : fin de l'éruption, passage en phase de sauvegarde", lien: LIEN, publie: "2026-11-02T08:00:00.000Z" } as unknown as Info])!;
+    const c = carte();
+    c.value.sentiers.push({ nom: "Sentier Kapor", statut: "fermé", longueur_km: 1, points: [] });
+    const all = [
+      acces("Vigilance", undefined, undefined, c),
+      acces("Alerte 1", ALERT_1, releaseSentences(PAGE), carte()),
+      acces("Alerte 2-1", ALERT_1, releaseSentences(PAGE), carte([], "Circulation interdite")),
+      acces("Sauvegarde", over, undefined, c),
+    ].flatMap((m) => m.lignes);
+    expect(all.filter((l) => l.lien).length).toBeGreaterThan(3);
+    expect(all.filter((l) => l.lien && !l.source)).toEqual([]);
   });
 
   it("links the volcano's trails to it, and no other", () => {

@@ -535,7 +535,7 @@ export function volcanPage(origin: string, data: Cached<VolcanAnswer> | null, no
   // A non-breaking space before our colons, never inside a quote: no « : » alone at the start of a line (marketing).
   const colons = (s: string) => s.split(/(«[^»]*»)/).map((x, i) => (i % 2 ? x : x.replace(/ :/g, " :"))).join("");
   const line = (l: Ligne) =>
-    `<li>${colons(esc(l.texte))}${l.source ? ` (${l.lien ? `<a href="${esc(l.lien)}">${esc(l.source)} →</a>` : esc(l.source)}).` : l.lien ? ` <a href="${esc(l.lien)}">→</a>` : ""}</li>`;
+    `<li>${colons(esc(l.texte))}${l.source ? ` (${l.lien ? `<a href="${esc(l.lien)}">${esc(l.source)} →</a>` : esc(l.source)}).` : l.lien ? ` (<a href="${esc(l.lien)}">la source →</a>).` : ""}</li>`;
   const monter = m
     ? `<section id="monter" aria-labelledby="h-monter"><div class="sec-h"><h2 id="h-monter">${esc(m.titre)}</h2><p>${esc(m.chapeau)}</p></div>
   <div class="card"${a ? ` id="enclos"` : ""}>${m.avant ? `<p><b>${esc(m.avant)}</b></p>` : ""}<ul class="plain">${m.lignes.map(line).join("")}</ul><p class="note">${esc(m.pied)}</p>

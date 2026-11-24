@@ -318,16 +318,17 @@ describe("meteo_actuelle with the Météo-France stations", () => {
 
   it("says, for Salazie, that its station with a temperature stands in Bras-Panon, and how far", async () => {
     // Seen on /aujourdhui/salazie on 04/11/2026: « 24,6 °C mesurés à 14:18 (station Bellevue Bras-Panon) », without its commune.
+    // 9 km since 24/11/2026: Salazie is located at its town hall (scripts/build-gazetteer.py TOWN_HALLS), 620 m west.
     const p = PAGES.find((x) => x.slug === "salazie")!;
     const meteo = body(await meteoActuelle(await mfCache(true), p.lieu, MF_NOW, false));
     expect(meteo.stations.map((s: { station: string; commune: string }) => [s.station, s.commune])).toContainEqual(["Bellevue Bras-Panon", "Bras-Panon"]);
     const copy = { value: { meteo }, fetchedAt: MF_NOW, stale: false };
     const r = resume(p, { meteo: copy } as never, MF_NOW);
-    expect(r.meteo!.mesure).toMatchObject({ station: "Bellevue Bras-Panon", commune: "Bras-Panon", distance_km: 8.5 });
+    expect(r.meteo!.mesure).toMatchObject({ station: "Bellevue Bras-Panon", commune: "Bras-Panon", distance_km: 9 });
     // Its name says its commune already: the distance only.
-    expect(r.resume).toMatch(/ mesurés à \d\d:\d\d \(station Bellevue Bras-Panon, à 8,5 km\)/);
-    expect(aujourdhuiPage("https://rundata.re", p, r, copy)).toContain("par la station Bellevue Bras-Panon (480 m, à 8,5 km)");
-    expect(communePage("https://rundata.re", p, { place: copy } as never, MF_NOW)).toContain("par la station <b>Bellevue Bras-Panon</b>, à 8,5 km");
+    expect(r.resume).toMatch(/ mesurés à \d\d:\d\d \(station Bellevue Bras-Panon, à 9 km\)/);
+    expect(aujourdhuiPage("https://rundata.re", p, r, copy)).toContain("par la station Bellevue Bras-Panon (480 m, à 9 km)");
+    expect(communePage("https://rundata.re", p, { place: copy } as never, MF_NOW)).toContain("par la station <b>Bellevue Bras-Panon</b>, à 9 km");
     expect(placePage("https://rundata.re", p, copy, MF_NOW)).toContain("par la station <b>Bellevue Bras-Panon</b> (");
     // A name that does not say it: its commune too (Beauvallon, Saint-Benoît, for Bras-Panon).
     const bp = PAGES.find((x) => x.slug === "bras-panon")!;

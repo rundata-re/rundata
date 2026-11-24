@@ -289,6 +289,24 @@ def bdtopo_places(cache):
 ALTI_CHUNK = 25
 
 
+# The communes whose settlement node lies more than 500 m from their town hall, located at it instead: their pages,
+# the stops of their centre, the weather station nearest it and the journeys to them start there. Checked on
+# 24/11/2026 against three sources: the town hall's OSM element (its position, here), its address in the Base adresse
+# nationale (within 85 m of it) and in the annuaire service-public. The 19 others are within 500 m of their town hall.
+TOWN_HALLS = {
+    # 1 040 m off, by the sea at Rivière des Roches; OSM relation 2972562, 89 route nationale 2.
+    "Bras-Panon": {"lon": 55.67616, "lat": -20.99522},
+    # 1 470 m off, east of the town; OSM way 67317511, 230 rue de la République.
+    "La Plaine-des-Palmistes": {"lon": 55.62580, "lat": -21.13506},
+    # 1 240 m off, north of the town by the pond; OSM node 4435765589, place du Général-de-Gaulle.
+    "Saint-Paul": {"lon": 55.26967, "lat": -21.00968},
+    # 620 m off, east of the village; OSM way 67036470, 1 place Théodore-Simonette.
+    "Salazie": {"lon": 55.53915, "lat": -21.02766},
+    # 540 m off, north-east of the town; OSM way 119069747, 125 avenue Principale.
+    "Saint-Louis": {"lon": 55.40921, "lat": -21.28663},
+}
+
+
 def altitudes(points, cache):
     """IGN altimetry, ALTI_CHUNK points per call. Sea and out-of-coverage points come back as -99999."""
     out = []
@@ -373,11 +391,12 @@ def main():
     places += bdtopo_places(cache)
 
     # A commune is located at its main settlement (the OSM node with the same name), not at the
-    # polygon centroid, which for Saint-Paul or Saint-Pierre lies far up in the hills.
+    # polygon centroid, which for Saint-Paul or Saint-Pierre lies far up in the hills; at its town hall (TOWN_HALLS)
+    # where that node is more than 500 m from it.
     by_name = {norm(p["nom"]): p for p in places if p["type"] == "localite"}
     for c in communes:
         nom = c["properties"]["nom"]
-        p = by_name.get(norm(nom))
+        p = TOWN_HALLS.get(nom) or by_name.get(norm(nom))
         if p is None:
             raise SystemExit(f"no settlement node for commune {nom}")
         places.append({"nom": nom, "type": "commune", "lon": p["lon"], "lat": p["lat"],

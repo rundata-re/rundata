@@ -1,0 +1,469 @@
+{
+ "resume": "87 événements à La Réunion dans les deux semaines qui viennent (du samedi 24/10 au samedi 07/11).",
+ "periode": {
+  "du": "samedi 24/10",
+  "au": "samedi 07/11"
+ },
+ "nombre": 87,
+ "evenements": [
+  {
+   "titre": "Fête de l'ail 2026",
+   "quand": "du vendredi 23/10 au dimanche 25/10",
+   "date": "2026-10-23",
+   "lieu": "Domaine du Relais",
+   "commune": "Petite-Île",
+   "genres": [
+    "festival"
+   ],
+   "lien": "https://www.petite-ile.re/actualites/agenda/fete-de-lail-2026-0",
+   "publie_par": "Ville de Petite-Île",
+   "lu_le": "samedi 24/10 à 08:00",
+   "source": "site de la commune de Petite-Île, lu le samedi 24/10 à 08:00",
+   "fiche": "250d9acb"
+  },
+  {
+   "titre": "1er Rally National Grand Est",
+   "quand": "du samedi 24/10 au dimanche 25/10",
+   "date": "2026-10-24",
+   "commune": "Bras-Panon",
+   "genres": [],
+   "lien": "https://www.braspanon.re/fr/ev/2512733/1993643/1er-rally-national-grand-est",
+   "publie_par": "Ville de Bras-Panon",
+   "lu_le": "samedi 24/10 à 08:00",
+   "source": "site de la commune de Bras-Panon, lu le samedi 24/10 à 08:00",
+   "fiche": "0f80d284"
+  },
+  {
+   "titre": "Atelier Parentali'thé : gestes de 1er secours",
+   "quand": "samedi 24/10",
+   "date": "2026-10-24",
+   "lieu": "Centre de l'enfance",
+   "commune": "La Possession",
+   "categories": [
+    "Atelier"
+   ],
+   "genres": [
+    "atelier"
+   ],
+   "lien": "https://www.lapossession.re/agenda/890456",
+   "publie_par": "Ville de La Possession",
+   "lu_le": "samedi 24/10 à 08:00",
+   "source": "site de la commune de La Possession, lu le samedi 24/10 à 08:00",
+   "position": {
+    "lat": -20.9445214,
+    "lon": 55.33220189999999
+   },
+   "fiche": "754111ed"
+  },
+  {
+   "titre": "Calogero",
+   "quand": "samedi 24/10",
+   "date": "2026-10-24",
+   "lieu": "TÉAT Plein Air",
+   "commune": "Saint-Paul",
+   "categories": [
+    "Musique"
+   ],
+   "genres": [
+    "concert"
+   ],
+   "lien": "https://www.teat.re/programmation/musique/un-soir-dans-les-thEAtres/calogero,869.htm",
+   "publie_par": "TÉAT La Réunion",
+   "lu_le": "samedi 24/10 à 08:00",
+   "fiche": "61d77756"
+  },
+  {
+   "titre": "Collecte de dons de sang",
+   "quand": "samedi 24/10",
+   "date": "2026-10-24",
+   "autres_dates": [
+    "vendredi 30/10"
+   ],
+   "commune": "Le Tampon",
+   "genres": [],
+   "lien": "https://letampon.fr/agenda/collecte-de-dons-de-sang-1026/",
+   "publie_par": "Ville du Tampon",
+   "lu_le": "samedi 24/10 à 08:00",
+   "source": "site de la commune du Tampon, lu le samedi 24/10 à 08:00",
+   "fiche": "eb524ee7"
+  },
+  {
+   "titre": "Le rallye grand est fait étape à St-André",
+   "quand": "samedi 24/10",
+   "date": "2026-10-24",
+   "autres_dates": [
+    "dimanche 25/10"
+   ],
+   "commune": "Saint-André",
+   "genres": [
+    "sport"
+   ],
+   "lien": "https://www.saint-andre.re/%f0%9d%97%9f%f0%9d%97%b2-%f0%9d%97%a5%f0%9d%97%ae%f0%9d%97%b9%f0%9d%97%b9%f0%9d%98%86%f0%9d%97%b2-%f0%9d%97%9a%f0%9d%97%bf%f0%9d%97%ae%f0%9d%97%bb%f0%9d%97%b1-%f0%9d%97%98%f0%9d%98%80/",
+   "publie_par": "Ville de Saint-André",
+   "lu_le": "samedi 24/10 à 08:00",
+   "source": "site de la commune de Saint-André, lu le samedi 24/10 à 08:00",
+   "fiche": "4cc61ab8"
+  },
+  {
+   "titre": "Olivier Ker Ourio",
+   "quand": "samedi 24/10",
+   "date": "2026-10-24",
+   "lieu": "Cité des Arts, Fanal",
+   "commune": "Saint-Denis",
+   "categories": [
+    "Concert de jazz"
+   ],
+   "genres": [
+    "concert"
+   ],
+   "lien": "https://www.citedesarts.re/Olivier-Ker-Ourio",
+   "publie_par": "Cité des Arts",
+   "lu_le": "samedi 24/10 à 08:00",
+   "fiche": "d9e659b9"
+  },
+  {
+   "titre": "Tisé Mélé",
+   "quand": "samedi 24/10",
+   "date": "2026-10-24",
+   "lieu": "Place Festival",
+   "commune": "La Possession",
+   "categories": [
+    "Animation"
+   ],
+   "genres": [],
+   "lien": "https://www.lapossession.re/agenda/892785",
+   "publie_par": "Ville de La Possession",
+   "lu_le": "samedi 24/10 à 08:00",
+   "source": "site de la commune de La Possession, lu le samedi 24/10 à 08:00",
+   "position": {
+    "lat": -20.9387712,
+    "lon": 55.3311088
+   },
+   "fiche": "754237d4"
+  },
+  {
+   "titre": "Matinée Sport Santé, Bien-Être ce samedi au Port",
+   "quand": "samedi 24/10 de 08:00 à 12:30",
+   "date": "2026-10-24T08:00",
+   "commune": "Le Port",
+   "categories": [
+    "Sportif"
+   ],
+   "genres": [
+    "sport"
+   ],
+   "description": "Vous avez envie de bouger, de",
+   "lien": "https://www.ville-port.re/event/matinee-sport-sante-bien-etre-ce-samedi-au-port/",
+   "publie_par": "Ville du Port",
+   "lu_le": "samedi 24/10 à 08:00",
+   "source": "site de la commune du Port (© www.ville-port.re), lu le samedi 24/10 à 08:00",
+   "fiche": "909eb811"
+  },
+  {
+   "titre": "Journée d'Accès au droit",
+   "quand": "samedi 24/10 de 08:30 à 12:30",
+   "date": "2026-10-24T08:30",
+   "commune": "La Possession",
+   "categories": [
+    "Atelier"
+   ],
+   "genres": [
+    "atelier"
+   ],
+   "lien": "https://www.lapossession.re/agenda/901039",
+   "publie_par": "Ville de La Possession",
+   "lu_le": "samedi 24/10 à 08:00",
+   "source": "site de la commune de La Possession, lu le samedi 24/10 à 08:00",
+   "position": {
+    "lat": -20.926454826665456,
+    "lon": 55.33587098121643
+   },
+   "fiche": "76f3d923"
+  },
+  {
+   "titre": "Atelier Pop Up Safari",
+   "quand": "samedi 24/10 de 09:00 à 10:00",
+   "date": "2026-10-24T09:00",
+   "commune": "Bras-Panon",
+   "genres": [
+    "atelier"
+   ],
+   "lien": "https://www.braspanon.re/fr/ev/2512733/1991459/atelier-pop-up-safari/2026/10/24",
+   "publie_par": "Ville de Bras-Panon",
+   "lu_le": "samedi 24/10 à 08:00",
+   "source": "site de la commune de Bras-Panon, lu le samedi 24/10 à 08:00",
+   "fiche": "2e4e736e"
+  },
+  {
+   "titre": "Rendez-vous au Port pour le Grand Dressing des Galeries Circulaires !",
+   "quand": "samedi 24/10 de 09:00 à 16:00",
+   "date": "2026-10-24T09:00",
+   "commune": "Le Port",
+   "categories": [
+    "Pratique"
+   ],
+   "genres": [
+    "exposition"
+   ],
+   "description": "Les Galeries Circulaires du mois d’octobre passent en mode Grand Dressing!",
+   "lien": "https://www.ville-port.re/event/rendez-vous-au-port-pour-le-grand-dressing-des-galeries-circulaires/",
+   "publie_par": "Ville du Port",
+   "lu_le": "samedi 24/10 à 08:00",
+   "source": "site de la commune du Port (© www.ville-port.re), lu le samedi 24/10 à 08:00",
+   "fiche": "909eb7f0"
+  },
+  {
+   "titre": "Initiation boxe et MMA",
+   "quand": "samedi 24/10 de 10:00 à 15:00",
+   "date": "2026-10-24T10:00",
+   "commune": "Bras-Panon",
+   "genres": [],
+   "lien": "https://www.braspanon.re/fr/ev/2512733/1928019/initiation-boxe-et-mma-1-4/2026/10/24",
+   "publie_par": "Ville de Bras-Panon",
+   "lu_le": "samedi 24/10 à 08:00",
+   "source": "site de la commune de Bras-Panon, lu le samedi 24/10 à 08:00",
+   "fiche": "2fbda28f"
+  },
+  {
+   "titre": "Sport Nout Santé",
+   "quand": "samedi 24/10 de 10:00 à 15:00",
+   "date": "2026-10-24T10:00",
+   "commune": "Bras-Panon",
+   "genres": [
+    "sport"
+   ],
+   "lien": "https://www.braspanon.re/fr/ev/2512733/2007306/sport-nout-sante/2026/10/24",
+   "publie_par": "Ville de Bras-Panon",
+   "lu_le": "samedi 24/10 à 08:00",
+   "source": "site de la commune de Bras-Panon, lu le samedi 24/10 à 08:00",
+   "fiche": "76ac2596"
+  },
+  {
+   "titre": "Festival de kann’ – Clôture du défi alimentaire",
+   "quand": "samedi 24/10 de 14:00 à 18:00",
+   "date": "2026-10-24T14:00",
+   "lieu": "Pôle Culturel et Sportif, 28 rue Georges BRASSENS",
+   "commune": "Les Trois-Bassins",
+   "categories": [
+    "Culture",
+    "Education",
+    "Santé"
+   ],
+   "genres": [
+    "festival"
+   ],
+   "lien": "https://trois-bassins.re/event/cloture-de-la-semaine-danimations-du-defi-alimentaire/",
+   "publie_par": "Mairie des Trois-Bassins",
+   "lu_le": "samedi 24/10 à 08:00",
+   "source": "site de la commune des Trois-Bassins, lu le samedi 24/10 à 08:00",
+   "fiche": "24283d04"
+  }
+ ],
+ "non_lus": [
+  "Ville de Sainte-Marie : première lecture dans quelques minutes",
+  "Ville de Salazie : première lecture dans quelques minutes",
+  "Ville de Saint-Louis : première lecture dans quelques minutes",
+  "Le Séchoir : première lecture dans quelques minutes",
+  "Ville de L'Étang-Salé : première lecture dans quelques minutes",
+  "Médiathèques de Bras-Panon et de La Plaine-des-Palmistes : première lecture dans quelques minutes",
+  "Département de La Réunion : première lecture dans quelques minutes",
+  "Ligue réunionnaise de volley-ball : première lecture dans quelques minutes",
+  "Mairie de Saint-Philippe : première lecture dans quelques minutes",
+  "Ville de Cilaos : première lecture dans quelques minutes",
+  "Ville de Saint-Joseph : première lecture dans quelques minutes",
+  "Ville de Saint-Denis : première lecture dans quelques minutes",
+  "Mairie de Saint-Pierre : première lecture dans quelques minutes",
+  "Ville de Saint-Leu : première lecture dans quelques minutes",
+  "Ville de La Plaine-des-Palmistes : première lecture dans quelques minutes",
+  "Clubs sportifs (Sportsregions) : première lecture dans quelques minutes",
+  "Théâtre Luc Donat : première lecture dans quelques minutes"
+ ],
+ "couverture": "Agendas lus : Mairie de Saint-Paul, Ville du Port, Mairie des Trois-Bassins, Ville de Sainte-Marie, Ville de Salazie, Ville du Tampon, Ville de Saint-Louis, Ville de Saint-André, Ville de L'Étang-Salé, Ville de La Possession, Ville de Petite-Île, Ville de Bras-Panon, Ville de Saint-Benoît, Médiathèques de Bras-Panon et de La Plaine-des-Palmistes (Bras-Panon, La Plaine-des-Palmistes), Département de La Réunion, CINOR (Saint-Denis, Sainte-Marie, Sainte-Suzanne), Office de tourisme du Nord (Saint-Denis, Sainte-Marie, Sainte-Suzanne), Ligue réunionnaise de volley-ball, Clubs sportifs (Sportsregions). Programmes des salles : Le Séchoir, TÉAT Champ Fleuri et Plein Air, Cité des Arts, Kabardock, Bisik, Théâtre Luc Donat, CDNOI, Léspas. Actualités des mairies, pour les seuls événements qu'elles annoncent avec leur date (pas un agenda complet) : Saint-Philippe, Cilaos, Saint-Joseph, Saint-Denis, Saint-Pierre, Saint-Louis, Saint-Leu, La Plaine-des-Palmistes, Sainte-Marie, Salazie. Sans agenda lu : Les Avirons, Entre-Deux, Sainte-Rose. Aussi : les événements que les clubs et associations proposent sur rundata.re (https://rundata.re/associations), relus avant publication. Pas encore lus : les bars et les clubs, les billetteries privées. Un événement absent ici peut quand même avoir lieu (voir le site ou la page Facebook de la salle ou de la mairie). Chaque événement dit qui le publie, renvoie à sa page et dit quand rundata.re l'a lu.",
+ "a_savoir": "Heures de La Réunion. Les dates et les prix sont ceux publiés par l'organisateur : vérifier sur la page de l'événement avant de se déplacer (annulation, météo, places). Un événement annulé ou reporté reste dans la liste avec son statut ; « complet » : plus de places en vente. Les matchs des clubs et les programmes sportifs des communes : l'outil sport.",
+ "sources": [
+  {
+   "source": "Agendas des mairies de Saint-Paul, des Trois-Bassins et du Tampon",
+   "licence": "Information publique (agendas municipaux)",
+   "attribution": "Villes de Saint-Paul, des Trois-Bassins et du Tampon"
+  },
+  {
+   "source": "Agenda de la Ville du Port",
+   "licence": "Reprise autorisée à des fins d'information, sans usage commercial (mentions légales du site)",
+   "attribution": "Ville du Port"
+  },
+  {
+   "source": "Agenda de la Ville de Saint-André",
+   "licence": "Information publique (agenda municipal)",
+   "attribution": "Ville de Saint-André"
+  },
+  {
+   "source": "Agenda de la Ville de La Possession",
+   "licence": "Information publique (agenda municipal)",
+   "attribution": "Ville de La Possession"
+  },
+  {
+   "source": "Agenda de la Ville de Petite-Île",
+   "licence": "Information publique (agenda municipal)",
+   "attribution": "Ville de Petite-Île"
+  },
+  {
+   "source": "Agenda de la Ville de Bras-Panon",
+   "licence": "Information publique (agenda municipal)",
+   "attribution": "Ville de Bras-Panon"
+  },
+  {
+   "source": "Agenda de la Ville de Saint-Benoît",
+   "licence": "Information publique (agenda municipal)",
+   "attribution": "Ville de Saint-Benoît"
+  },
+  {
+   "source": "OpenAgenda : agendas de la CINOR et de l'Office de tourisme intercommunal du Nord",
+   "licence": "Licence Ouverte Etalab 2.0",
+   "attribution": "CINOR, Office de Tourisme Intercommunal du Nord de La Réunion, via OpenAgenda"
+  },
+  {
+   "source": "Programmes des salles : Le Séchoir, TÉAT Champ Fleuri et Plein Air, Cité des Arts, Kabardock, Bisik, Théâtre Luc Donat, CDNOI, Léspas",
+   "licence": "Le Séchoir : site sans mentions légales, programme repris tel qu'il est publié ; les autres salles : seulement avec leur accord écrit",
+   "attribution": "Le Séchoir, TÉAT Champ Fleuri et Plein Air, Cité des Arts, Kabardock, Bisik, Théâtre Luc Donat, CDNOI, Léspas"
+  }
+ ],
+ "lus_le": "2026-10-24T04:00:00.000Z",
+ "sites_lus": {
+  "Saint-Paul": [
+   {
+    "site": "site de la commune de Saint-Paul",
+    "lu_le": "2026-10-24T04:00:00.000Z"
+   }
+  ],
+  "Le Port": [
+   {
+    "site": "site de la commune du Port",
+    "lu_le": "2026-10-24T04:00:00.000Z"
+   }
+  ],
+  "Les Trois-Bassins": [
+   {
+    "site": "site de la commune des Trois-Bassins",
+    "lu_le": "2026-10-24T04:00:00.000Z"
+   }
+  ],
+  "Le Tampon": [
+   {
+    "site": "site de la commune du Tampon",
+    "lu_le": "2026-10-24T04:00:00.000Z"
+   }
+  ],
+  "Saint-André": [
+   {
+    "site": "site de la commune de Saint-André",
+    "lu_le": "2026-10-24T04:00:00.000Z"
+   }
+  ],
+  "La Possession": [
+   {
+    "site": "site de la commune de La Possession",
+    "lu_le": "2026-10-24T04:00:00.000Z"
+   }
+  ],
+  "Petite-Île": [
+   {
+    "site": "site de la commune de Petite-Île",
+    "lu_le": "2026-10-24T04:00:00.000Z"
+   }
+  ],
+  "Bras-Panon": [
+   {
+    "site": "site de la commune de Bras-Panon",
+    "lu_le": "2026-10-24T04:00:00.000Z"
+   }
+  ],
+  "Saint-Benoît": [
+   {
+    "site": "site de la commune de Saint-Benoît",
+    "lu_le": "2026-10-24T04:00:00.000Z"
+   }
+  ]
+ },
+ "ce_week_end": [
+  {
+   "titre": "1er Rally National Grand Est",
+   "quand": "du samedi 24/10 au dimanche 25/10",
+   "date": "2026-10-24",
+   "commune": "Bras-Panon",
+   "genres": [],
+   "lien": "https://www.braspanon.re/fr/ev/2512733/1993643/1er-rally-national-grand-est",
+   "publie_par": "Ville de Bras-Panon",
+   "lu_le": "samedi 24/10 à 08:00",
+   "source": "site de la commune de Bras-Panon, lu le samedi 24/10 à 08:00",
+   "fiche": "0f80d284"
+  },
+  {
+   "titre": "Atelier Parentali'thé : gestes de 1er secours",
+   "quand": "samedi 24/10",
+   "date": "2026-10-24",
+   "lieu": "Centre de l'enfance",
+   "commune": "La Possession",
+   "categories": [
+    "Atelier"
+   ],
+   "genres": [
+    "atelier"
+   ],
+   "lien": "https://www.lapossession.re/agenda/890456",
+   "publie_par": "Ville de La Possession",
+   "lu_le": "samedi 24/10 à 08:00",
+   "source": "site de la commune de La Possession, lu le samedi 24/10 à 08:00",
+   "position": {
+    "lat": -20.9445214,
+    "lon": 55.33220189999999
+   },
+   "fiche": "754111ed"
+  },
+  {
+   "titre": "Calogero",
+   "quand": "samedi 24/10",
+   "date": "2026-10-24",
+   "lieu": "TÉAT Plein Air",
+   "commune": "Saint-Paul",
+   "categories": [
+    "Musique"
+   ],
+   "genres": [
+    "concert"
+   ],
+   "lien": "https://www.teat.re/programmation/musique/un-soir-dans-les-thEAtres/calogero,869.htm",
+   "publie_par": "TÉAT La Réunion",
+   "lu_le": "samedi 24/10 à 08:00",
+   "fiche": "61d77756"
+  },
+  {
+   "titre": "Collecte de dons de sang",
+   "quand": "samedi 24/10",
+   "date": "2026-10-24",
+   "commune": "Le Tampon",
+   "genres": [],
+   "lien": "https://letampon.fr/agenda/collecte-de-dons-de-sang-1026/",
+   "publie_par": "Ville du Tampon",
+   "lu_le": "samedi 24/10 à 08:00",
+   "source": "site de la commune du Tampon, lu le samedi 24/10 à 08:00",
+   "fiche": "eb524ee7"
+  },
+  {
+   "titre": "Le rallye grand est fait étape à St-André",
+   "quand": "samedi 24/10",
+   "date": "2026-10-24",
+   "autres_dates": [
+    "dimanche 25/10"
+   ],
+   "commune": "Saint-André",
+   "genres": [
+    "sport"
+   ],
+   "lien": "https://www.saint-andre.re/%f0%9d%97%9f%f0%9d%97%b2-%f0%9d%97%a5%f0%9d%97%ae%f0%9d%97%b9%f0%9d%97%b9%f0%9d%98%86%f0%9d%97%b2-%f0%9d%97%9a%f0%9d%97%bf%f0%9d%97%ae%f0%9d%97%bb%f0%9d%97%b1-%f0%9d%97%98%f0%9d%98%80/",
+   "publie_par": "Ville de Saint-André",
+   "lu_le": "samedi 24/10 à 08:00",
+   "source": "site de la commune de Saint-André, lu le samedi 24/10 à 08:00",
+   "fiche": "4cc61ab8"
+  }
+ ]
+}

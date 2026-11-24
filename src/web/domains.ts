@@ -93,6 +93,27 @@ const TITLE_MAX = 60;
 /** `full` when it fits in what search engines show, else `short`. */
 const describe = (full: string, short: string) => (full.length <= DESCRIPTION_MAX ? full : short);
 
+// The descriptions with the figures of a copy, worded by marketing (24/11/2026) to fit in DESCRIPTION_MAX with the
+// largest realistic figures (test/descriptions-longueur.test.ts): too long, a page would always say its short one.
+export const velosDescription = (total: number) =>
+  `Altervélo, vélos électriques en libre-service (974) : ${total} vélos libres en ce moment, et les places par station à Saint-Pierre, Saint-Louis et L'Étang-Salé.`;
+export const eauDescription = (good: number, total: number) =>
+  `Qualité de l'eau à La Réunion (974) : ${good} plages et bassins sur ${total} en bonne qualité au dernier prélèvement de l'ARS, et l'eau du robinet des 24 communes.`;
+export const randonneesDescription = (routes: number, suivis: number, fermes: number) =>
+  `Randonnée à La Réunion (974) : ${routes} itinéraires (GR R1, R2, R3, Piton des Neiges…), ${suivis} sentiers ONF avec trace GPX, dénivelé et état du jour : ${fermes} fermés.`;
+/** `at`: « le 24/11 à 05:07 ». */
+export const electriciteDescription = (at: string, mw: number, pct: number) =>
+  `Électricité à La Réunion (974) ${at} : ${fr(Math.round(mw))} MW produits, dont ${fr(Math.round(pct))} % renouvelable. Filière par filière, et les heures où le réseau est chargé.`;
+/** `when`: « état du 24/11 à 05:07 », or the time of the copy. */
+export const bornesDescription = (when: string, libres: number, total: number) =>
+  `Bornes de recharge à La Réunion (974), ${when} : ${libres} points libres sur ${total}, la recharge rapide et chaque station, commune par commune.`;
+/** A trail's description while its copy is not read: its whole name, the words after it giving way to a long one. */
+export const traceShort = (nom: string) =>
+  [`${nom} (La Réunion, 974) : trace GPS à télécharger (GPX), longueur, dénivelé, profil et état du sentier d'après l'ONF.`,
+    `${nom} (La Réunion, 974) : trace GPS (GPX), longueur, dénivelé, profil et état d'après l'ONF.`,
+    `${nom} (974) : trace GPS (GPX), longueur, dénivelé, profil et état d'après l'ONF.`]
+    .find((d) => d.length <= DESCRIPTION_MAX) ?? `${nom} (974) : trace GPS (GPX), longueur, dénivelé et état d'après l'ONF.`;
+
 /** `parent`: the page between the home page and this one (« Clubs et associations » above its form). */
 function crumbs(origin: string, name: string, path: string, parent?: { name: string; path: string }) {
   const trail = [{ name: SITE, path: "/" }, ...(parent ? [parent] : []), { name, path }];
@@ -956,7 +977,7 @@ export function electricitePage(origin: string, data: Cached<ElectriciteAnswer> 
 
   const title = "Électricité en direct : part renouvelable · La Réunion (974)";
   const description = p
-    ? describe(`Électricité à La Réunion (974) ${leJour(p.heure_mesure)} : ${fr(Math.round(p.total_mw))} MW produits, dont ${fr(Math.round(p.renouvelable_pct))} % renouvelable. Filière par filière, et les heures où le réseau est chargé.`,
+    ? describe(electriciteDescription(leJour(p.heure_mesure), p.total_mw, p.renouvelable_pct),
         `Électricité à La Réunion (974) : ${fr(Math.round(p.renouvelable_pct))} % renouvelable en ce moment. Filière par filière, et les heures où le réseau est chargé.`)
     : "Électricité à La Réunion (974) en direct : d'où vient le courant, la part renouvelable et les heures où le réseau est chargé.";
 
@@ -1452,7 +1473,7 @@ export function velosPage(origin: string, data: Cached<VelosAnswer> | null, now 
 
   const title = "Vélos Altervélo libres en direct · La Réunion (974)";
   const description = d
-    ? describe(`Vélos électriques Altervélo en libre-service (974) en ce moment : ${total} vélos disponibles, et les places libres de chaque station à Saint-Pierre, Saint-Louis et L'Étang-Salé.`,
+    ? describe(velosDescription(total),
         "Vélos électriques Altervélo en libre-service (974) : vélos et places libres de chaque station, en direct.")
     : "Vélos électriques Altervélo en libre-service (974) : vélos et places libres de chaque station, en direct.";
 
@@ -1780,7 +1801,7 @@ export function bornesPage(origin: string, data: Cached<BornesAnswer> | null, no
   const title = "Bornes de recharge libres en direct · La Réunion (974)";
   const short = "Bornes de recharge pour voiture électrique à La Réunion (974) : points libres, occupés ou hors service, en direct, station par station.";
   const description = d
-    ? describe(`Bornes de recharge à La Réunion (974), ${etat ? `état ${duAt(etat)}` : leAt(data!.fetchedAt)} : ${libres} points libres sur ${total}, la recharge rapide et chaque station, commune par commune.`, short)
+    ? describe(bornesDescription(etat ? `état ${duAt(etat)}` : leAt(data!.fetchedAt), libres, total), short)
     : short;
 
   const band = `${crumbBar("Bornes de recharge")}
@@ -1930,7 +1951,7 @@ export function eauPage(origin: string, data: Cached<EauAnswer> | null, now = ne
   const title = "Qualité de l'eau : baignade et robinet · La Réunion (974)";
   const short = "Qualité de l'eau à La Réunion (974) : les plages et bassins contrôlés par l'ARS et l'eau du robinet de chaque commune, réseau par réseau.";
   const description = d && !bathOld
-    ? describe(`Qualité de l'eau à La Réunion (974) : ${good} plages et bassins sur ${bains.length} en bonne qualité au dernier prélèvement de l'ARS, et l'eau du robinet des 24 communes, réseau par réseau.`, short)
+    ? describe(eauDescription(good, bains.length), short)
     : short;
 
   const band = `${crumbBar("Qualité de l'eau")}
@@ -2579,7 +2600,7 @@ export function randonneesPage(origin: string, data: Cached<RandonneesAnswer> | 
   const title = "Randonnée : traces GPS, sentiers ouverts · La Réunion (974)";
   const short = "Randonnée à La Réunion (974) : itinéraires et sentiers de l'ONF avec trace GPS (GPX), distance, dénivelé et état du jour.";
   const description = d
-    ? describe(`Randonnée à La Réunion (974) : ${nRoutes} itinéraires (GR R1, R2, R3, Piton des Neiges…) et ${d.suivis} sentiers de l'ONF avec trace GPS (GPX), distance, dénivelé et état du jour : ${d.fermes} fermés.`, short)
+    ? describe(randonneesDescription(nRoutes, d.suivis, d.fermes), short)
     : short;
   const list = d
     ? [{
@@ -2832,7 +2853,7 @@ export function tracePage(origin: string, kind: "sentier" | "randonnee", slug: s
   const title = [`${which} : trace GPX · La Réunion (974)`, `${which} · La Réunion (974)`, `${bare} : trace GPX · La Réunion (974)`,
     `${bare} · La Réunion (974)`, `${bare} : trace GPX · 974`]
     .find((t) => t.length <= TITLE_MAX) ?? `${bare} · 974`;
-  const short = `${nom} (La Réunion, 974) : trace GPS à télécharger (GPX), longueur, dénivelé, profil et état du sentier d'après l'ONF.`;
+  const short = traceShort(nom);
   const where = sector ? `${sector.nom}, La Réunion` : "La Réunion";
   const description = d ? traceDescription(d, nom, where, short, now) : short;
   const trail = sector ? sectorTrail(origin, sector, { name: nom, path }) : { bar: hikeCrumbBar(nom), jsonld: hikeCrumbs(origin, nom, path) };
@@ -2981,7 +3002,7 @@ export function secheressePage(origin: string, data: Cached<SecheresseAnswer> | 
   const rules = droughtUses(d?.interdits ?? []);
 
   const title = "Sécheresse, restrictions d'eau · La Réunion (974)";
-  const short = "Restrictions d'eau à La Réunion (974) : le niveau de sécheresse de chaque commune et ce qui est interdit (arrosage, lavage, piscine), d'après l'arrêté préfectoral.";
+  const short = "Restrictions d'eau à La Réunion (974) : le niveau de sécheresse par commune et ce qui est interdit (arrosage, lavage, piscine), d'après l'arrêté du préfet.";
   const description = d ? describe(`${d.resume}`, short) : short;
 
   const band = `${crumbBar("Sécheresse")}
@@ -3274,7 +3295,8 @@ export function daePage(origin: string, data: Cached<DaeAnswer> | null, now = ne
     : "";
 
   const title = "Défibrillateurs : où trouver un DAE · La Réunion (974)";
-  const description = "Défibrillateurs (DAE) à La Réunion (974) : plus de 1 200 appareils dans les 24 communes, d'après la base nationale Géo'DAE, et le plus proche d'un lieu avec votre IA.";
+  // The count of the bundled base, by the hundred below (« plus de 1 200 » for 1 277).
+  const description = `Défibrillateurs (DAE) à La Réunion (974) : plus de ${fr(Math.floor(DAES.length / 100) * 100)} appareils dans les 24 communes, d'après Géo'DAE, et le plus proche d'un lieu avec votre IA.`;
 
   const band = `${crumbBar("Défibrillateurs")}
 <div class="wrap intro">
@@ -4191,7 +4213,7 @@ export function actualitesPage(origin: string, data: Cached<ActualitesAnswer> | 
     : "";
 
   const title = "Actualités en direct, par commune · La Réunion (974)";
-  const short = "Ce qui se passe en ce moment à La Réunion (974) : les titres des médias de l'île, leurs directs et les communiqués de la préfecture, commune par commune, mis à jour toutes les 5 minutes.";
+  const short = "Ce qui se passe à La Réunion (974) en ce moment : titres et directs des médias, communiqués de la préfecture, commune par commune, toutes les 5 minutes.";
   const description = d && d.infos[0] ? describe(`À La Réunion, ${newsTime(d.infos[0])} : ${d.infos[0].titre}. Les titres des médias de l'île et leurs directs, commune par commune.`, short) : short;
 
   const band = `${crumbBar("Actualités")}

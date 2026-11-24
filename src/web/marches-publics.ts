@@ -117,7 +117,7 @@ export function marchesPage(origin: string, data: Cached<MarchesAnswer> | null, 
       : `<p class="card">Aucun avis de marché ouvert pour La Réunion sur le BOAMP ${leAt(data.fetchedAt)}.</p>`;
 
   const title = "Marchés publics, appels d'offres en cours · La Réunion (974)";
-  const description = "Les avis de marché publiés au BOAMP pour La Réunion (974) : travaux, services et fournitures des collectivités, de l'État et des hôpitaux, avec la date limite et le lien vers l'avis.";
+  const description = "Avis de marché BOAMP à La Réunion (974) : travaux, services et fournitures des collectivités, de l'État et des hôpitaux, avec date limite et lien vers l'avis.";
 
   const band = `${crumbBar(NOM)}
 <div class="wrap intro solo"><div class="pitch">

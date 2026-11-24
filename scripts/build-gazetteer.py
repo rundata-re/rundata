@@ -23,7 +23,7 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-UA = {"User-Agent": "reunion-temps-reel/0.1", "Accept": "application/json"}
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip(), "Accept": "application/json"}
 COMMUNES = "https://geo.api.gouv.fr/departements/974/communes?format=geojson&geometry=contour&fields=nom,code,population"
 OVERPASS = "https://overpass-api.de/api/interpreter"
 ALTI = "https://data.geopf.fr/altimetrie/1.0/calcul/alti/rest/elevation.json"

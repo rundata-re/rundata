@@ -35,7 +35,7 @@ from pathlib import Path
 
 DATASET = "https://www.data.gouv.fr/api/2/datasets/6569b51ae64326786e4e8e1a/resources/?page_size=100&q=974"
 BASE = "https://meteofrance.s3.sbg.io.cloud.ovh.net/data/synchro_ftp/BASE/QUOT/"
-UA = {"User-Agent": "rundata.re (open source MCP server, real-time data for Reunion Island)"}
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 FIELDS = {"RR-T-Vent": ["RR", "TN", "TX", "TM", "FXI"], "autres-parametres": ["INST", "SIGMA", "GLOT", "UM"]}
 MAX_STATEMENT = 90_000
 # The current file has some 70 stations: fewer means a broken file, better keep yesterday's rows.

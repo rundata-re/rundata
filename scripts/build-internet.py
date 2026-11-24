@@ -17,7 +17,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 URL = "https://data.arcep.fr/fixe/maconnexioninternet/statistiques/last/commune/commune_meilleure_techno_thd.csv"
-UA = {"User-Agent": "reunion-temps-reel (open source MCP server, real-time data for Reunion Island)"}
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 # The file's columns, best technology first, as the server names them.
 TECHNOS = {"elig_ftth": "fibre", "elig_coax": "cable", "elig_cu_30": "cuivre_30", "elig_thdr": "thd_radio", "elig_cu_8": "cuivre_8", "elig_4gf": "4g_fixe",
            "elig_hdr": "hd_radio", "elig_sat": "satellite"}

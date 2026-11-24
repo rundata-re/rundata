@@ -27,7 +27,7 @@ DATASET = "https://www.data.gouv.fr/api/1/datasets/annuaire-sante-ameli/"
 RESOURCE = "432983b9-2e6f-473a-b35a-20403c300a5f"
 ROWS = (f"https://tabular-api.data.gouv.fr/api/resources/{RESOURCE}/data/"
         "?coordonnees_code_postal__greater=97399&coordonnees_code_postal__less=97500&type_ps_code__exact=1&page_size=200")
-UA = {"User-Agent": "reunion-temps-reel (open source MCP server, real-time data for Reunion Island)"}
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 # La Poste's postcodes (src/places/codes-postaux.ts); a CEDEX is read from its town.
 POSTCODES = {
     "97400": "Saint-Denis", "97410": "Saint-Pierre", "97411": "Saint-Paul", "97412": "Bras-Panon", "97413": "Cilaos",

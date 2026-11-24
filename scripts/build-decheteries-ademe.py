@@ -27,7 +27,7 @@ GEOCODE = "https://data.geopf.fr/geocodage/search/csv"
 # 66 rue Saint-Louis, placed 6.7 km away in the directory).
 MAX_KM = 1
 MIN_SCORE = 0.7
-UA = {"User-Agent": "reunion-temps-reel (open source MCP server, real-time data for Reunion Island)"}
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 NAMES = {code: nom for nom, code in re.findall(r'"([^"]+)": "(974\d\d)"', (ROOT / "src/places/insee.ts").read_text())}
 GAZETTEER = json.loads((ROOT / "src/places/gazetteer.json").read_text())["places"]
 TCO = {s["commune"] for s in json.loads((ROOT / "src/vie/decheteries.json").read_text())["sites"]}

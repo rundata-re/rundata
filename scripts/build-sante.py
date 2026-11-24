@@ -23,7 +23,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DATASET = "https://www.data.gouv.fr/api/1/datasets/53699569a3a729239d2046eb/"
-UA = {"User-Agent": "reunion-temps-reel (open source MCP server, real-time data for Reunion Island)"}
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 PHARMACY, HOSPITALS, CLINICS = {"620"}, {"101", "355"}, {"365", "128"}
 NOT_ACUTE = re.compile(r"\b(PSY|PUI|SSR|USLD|EHPAD)\b")
 GEOCODE = "https://data.geopf.fr/geocodage/search/csv"

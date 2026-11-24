@@ -40,7 +40,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 # Rows D1 lets an account write per day (UTC) on the free plan.
 D1_DAILY_WRITES = 100_000
-UA = {"User-Agent": "reunion-temps-reel/0.2"}
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 COMMUNES = "https://geo.api.gouv.fr/departements/974/communes?format=geojson&geometry=contour&fields=nom,code"
 
 # id, name, operator, GTFS (stable data.gouv.fr resource links), page of the dataset.

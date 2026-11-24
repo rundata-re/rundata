@@ -15,6 +15,7 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 COMMUNES = "https://geo.api.gouv.fr/departements/974/communes?format=geojson&geometry=contour&fields=nom"
 LON0, LAT0, LON1, LAT1 = 55.19, -21.41, 55.86, -20.85
 KX = math.cos(math.radians(21.1))  # equirectangular, scaled at the island's latitude
@@ -70,7 +71,7 @@ def main():
     if args.communes:
         geo = json.loads(args.communes.read_text())
     else:
-        req = urllib.request.Request(COMMUNES, headers={"User-Agent": "reunion-temps-reel/0.1"})
+        req = urllib.request.Request(COMMUNES, headers=UA)
         with urllib.request.urlopen(req, timeout=60) as r:
             geo = json.load(r)
     paths = []

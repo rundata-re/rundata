@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "src/vie/ecoles.json"
 EXPORT = ("https://data.education.gouv.fr/api/explore/v2.1/catalog/datasets/fr-en-annuaire-education/exports/json"
           "?where=code_departement%3D%22974%22")
-UA = {"User-Agent": "reunion-temps-reel (open source MCP server, real-time data for Reunion Island)"}
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 TYPES = {"Ecole": "ecole", "Collège": "college", "Lycée": "lycee"}
 # The communes as the server spells them (src/places/insee.ts), by INSEE code.
 COMMUNES = {

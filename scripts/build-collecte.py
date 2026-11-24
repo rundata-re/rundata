@@ -26,7 +26,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 DATASET = "calendriers-de-collectes-du-territoire-de-louest-gru"
 API = f"https://data.tco.re/api/explore/v2.1/catalog/datasets/{DATASET}"
-UA = {"User-Agent": "reunion-temps-reel (open source MCP server, real-time data for Reunion Island)"}
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 OUT = ROOT / "src/vie/collecte.json"
 CODES = {"OM", "CS", "DV", "EN", "F"}
 # A code whose text the PDF cuts short, its square drawn in full: « E » for EN, in the column of the encombrants

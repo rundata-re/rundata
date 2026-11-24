@@ -32,7 +32,7 @@ CATALOGUE = "https://opendata.caissedesdepots.fr/api/explore/v2.1/catalog/datase
 WHERE = 'code_departement="974" and nb_session_active>0'
 # « Sirene : Fichier StockUniteLegale », the latest month: data.gouv.fr's lasting link to the resource.
 STOCK = "https://www.data.gouv.fr/api/1/datasets/r/825f4199-cadd-486c-ac46-a65a8ea1a047"
-UA = {"User-Agent": "reunion-temps-reel (open source MCP server, real-time data for Reunion Island)"}
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 
 
 def get(url):

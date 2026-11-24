@@ -47,6 +47,7 @@ import zlib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 ISLAND = json.loads((ROOT / "src/places/island.json").read_text())
 LON0, LAT0, LON1, LAT1 = ISLAND["bbox"]
 W, H = ISLAND["w"] * 2, ISLAND["h"] * 2  # computed at twice the map's size, then reduced: smooth coast, crisp ridges
@@ -149,7 +150,7 @@ def fetch(url, name, cache):
         return kept.read_bytes()
     if getattr(fetch, "last", 0):
         time.sleep(max(0.0, fetch.last + 60 - time.time()))
-    with urllib.request.urlopen(url, timeout=300) as r:
+    with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=300) as r:
         data = r.read()
     fetch.last = time.time()
     if kept:

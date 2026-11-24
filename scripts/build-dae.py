@@ -25,7 +25,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DATASET = "https://www.data.gouv.fr/api/1/datasets/61556e1e9d6adb2df86eb0fc/"
-UA = {"User-Agent": "reunion-temps-reel (open source MCP server, real-time data for Reunion Island)"}
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 LON0, LAT0, LON1, LAT1 = 55.1, -21.5, 55.9, -20.8
 DAYS = {"Mo": "lundi", "Tu": "mardi", "We": "mercredi", "Th": "jeudi", "Fr": "vendredi", "Sa": "samedi", "Su": "dimanche"}
 

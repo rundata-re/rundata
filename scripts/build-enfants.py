@@ -27,7 +27,7 @@ from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-UA = {"User-Agent": "reunion-temps-reel (open source MCP server, real-time data for Reunion Island)"}
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 OVERPASS = "https://overpass-api.de/api/interpreter"
 QUERY = """[out:json][timeout:120];area["ISO3166-2"="FR-974"]->.a;(
 nwr["leisure"~"^(playground|park|amusement_arcade|trampoline_park|water_park)$"](area.a);

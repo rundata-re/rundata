@@ -22,7 +22,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 BASE = "https://meteofrance.s3.sbg.io.cloud.ovh.net/data/synchro_ftp/BASE/QUOT/"
 FILES = ["Q_974_previous-1950-2024_RR-T-Vent.csv.gz", "Q_974_latest-2025-2026_RR-T-Vent.csv.gz"]
-UA = {"User-Agent": "rundata.re (open source MCP server, real-time data for Reunion Island)"}
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 POSTE = "97418110"
 Y0, Y1 = 1991, 2020
 MIN_DAYS = 20

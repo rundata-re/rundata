@@ -21,7 +21,6 @@ Usage: python3 -I scripts/build-elections.py [--cache DIR]   (DIR keeps the isla
 import csv
 import io
 import json
-import os
 import re
 import sys
 import time
@@ -38,7 +37,7 @@ FICHIERS = {
     "general": "https://www.data.gouv.fr/datasets/r/b8703c69-a18f-46ab-9e7f-3a8368dcb891",
     "candidats": "https://www.data.gouv.fr/datasets/r/52a11762-45b4-414f-b6a2-eaa290217dc6",
 }
-UA = {"User-Agent": os.environ.get("RUNDATA_UA", "reunion-temps-reel (open source MCP server, real-time data for Reunion Island)")}
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 ILE = {"ZD", "974"}
 # Three communes only in the file.
 EXCLUS = {"2004_regi"}

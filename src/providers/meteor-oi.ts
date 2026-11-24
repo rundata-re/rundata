@@ -13,7 +13,7 @@
  * measures in KV, which the questions and the pages read: never the network, from a visit.
  */
 import type { Cache, Cached } from "../cache.js";
-import { getText } from "../http.js";
+import { getText, UA_RUNDATA } from "../http.js";
 import type { Observation, SourceInfo, Station } from "../types.js";
 
 export const SOURCE: SourceInfo = {
@@ -36,7 +36,7 @@ export const CC_BY_NC = "https://creativecommons.org/licenses/by-nc/4.0/deed.fr"
 export const AUTORISATION = "meteo:meteor_oi";
 
 /** As the association asked: a User-Agent naming rundata.re and its address (ASCII only, as every header). */
-export const UA = "rundata.re (https://rundata.re; contact@rundata.re)";
+export const UA = UA_RUNDATA;
 
 /**
  * Its own cron (wrangler.jsonc), at 3 past the hour and every 10 minutes after: never at the minute of the event of every

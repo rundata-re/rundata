@@ -101,7 +101,8 @@ export async function bodyText(request: Request, max: number): Promise<string | 
  * commune's site is read slowly, under an honest name): the agendas, the halls, the news, the prefecture, fuel prices.
  */
 export const UA_RUNDATA = "rundata.re (+https://rundata.re/a-propos#lecteur; contact@rundata.re)";
-export const USER_AGENT = "reunion-temps-reel/0.2 (open source MCP server, real-time data for Reunion Island)"; // header values must be ASCII
+/** Every read's name by default: rundata.re's, the same for every source (header values must be ASCII). */
+export const USER_AGENT = UA_RUNDATA;
 
 /**
  * The fetches an invocation has in flight at once. The platform opens six connections at a time and queues the next

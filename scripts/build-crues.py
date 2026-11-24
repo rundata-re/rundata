@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SITE = "https://www.vigicrues-reunion.re/assets/php/vigicrues/"
 COMMUNES = "https://geo.api.gouv.fr/departements/974/communes?fields=nom,code"
 HUBEAU = "https://hubeau.eaufrance.fr/api/v2/hydrometrie/referentiel/stations?format=json&code_station="
-UA = {"User-Agent": "reunion-temps-reel (open source MCP server, real-time data for Reunion Island)"}
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 
 
 def post(name, fields):

@@ -12,7 +12,8 @@ import { resume } from "../src/tools/resume.js";
 import { sportTool } from "../src/tools/sport.js";
 import { aujourdhuiPage } from "../src/web/aujourdhui.js";
 import type { AgendaAnswer } from "../src/web/data.js";
-import { agendaPage, electricitePage, sportPage } from "../src/web/domains.js";
+import { electricitePage, sportPage } from "../src/web/domains.js";
+import { agendaPage } from "../src/web/agenda.js";
 import { communeEvents } from "../src/web/liens.js";
 import { PAGES } from "../src/web/places.js";
 

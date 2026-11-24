@@ -4,7 +4,8 @@ import { resume } from "../src/tools/resume.js";
 import { alertePage } from "../src/web/alerte-cyclone.js";
 import { aujourdhuiPage } from "../src/web/aujourdhui.js";
 import type { AgendaAnswer, SeaData } from "../src/web/data.js";
-import { agendaPage, signalHeure } from "../src/web/domains.js";
+import { signalHeure } from "../src/web/domains.js";
+import { agendaPage } from "../src/web/agenda.js";
 import { seaPage } from "../src/web/pages.js";
 import { pageOf } from "../src/web/places.js";
 

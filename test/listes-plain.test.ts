@@ -5,7 +5,7 @@ import { resume, type Resume } from "../src/tools/resume.js";
 import { cheminTexte, telephoneTexte } from "../src/web/adresse.js";
 import { aujourdhuiPage } from "../src/web/aujourdhui.js";
 import type { AgendaAnswer } from "../src/web/data.js";
-import { agendaPage } from "../src/web/domains.js";
+import { agendaPage } from "../src/web/agenda.js";
 import { CSS, STYLE_PATH } from "../src/web/pages.js";
 import { pageOf } from "../src/web/places.js";
 import { site } from "../src/web/site.js";

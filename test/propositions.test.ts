@@ -661,7 +661,7 @@ describe("the published proposals as an agenda (providers/agenda-propositions.ts
   it("gives search engines the association as organiser, and its price", async () => {
     const { evenement } = await import("../src/providers/agenda-propositions.js");
     const { eventRow } = await import("../src/tools/agenda.js");
-    const { agendaEvents } = await import("../src/web/domains.js");
+    const { agendaEvents } = await import("../src/web/agenda.js");
     const row = (l: propositions.Ligne) => eventRow(evenement(l), evenement(l).seances);
     const [paid, free, other] = agendaEvents([row(ligne()), row(ligne({ prix: "gratuit" })), row(ligne({ prix: "5 € adultes, gratuit enfants" }))]) as Record<string, unknown>[];
     expect(paid).toMatchObject({ organizer: { "@type": "Organization", name: "Association Lèv la tèt" }, offers: { "@type": "Offer", price: 5, priceCurrency: "EUR" } });

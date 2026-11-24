@@ -5,7 +5,7 @@ import { parseRss as agendaRss } from "../src/providers/agenda.js";
 import { parseRss as waterRss } from "../src/providers/avis-eau.js";
 import { eventRow } from "../src/tools/agenda.js";
 import type { AgendaAnswer } from "../src/web/data.js";
-import { agendaPage } from "../src/web/domains.js";
+import { agendaPage } from "../src/web/agenda.js";
 import { fichePage, fichePath } from "../src/web/fiche-evenement.js";
 
 // A feed that is compromised or badly made: its links are not all http(s) addresses.

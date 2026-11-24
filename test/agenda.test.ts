@@ -11,7 +11,7 @@ import { agenda, AGENDAS_LUS, COUVERTURE, COUVERTURE_OUTIL, MAIRIES_ACTUALITES, 
 import { FICHE_REUNION_FR, mentionReunionFr, noteReunionFr, RESUME_REUNION_FR } from "../src/tools/non-repris.js";
 import { handle } from "../src/app.js";
 import { buildAgenda } from "../src/web/data.js";
-import { agendaHours, agendaPage } from "../src/web/domains.js";
+import { agendaHours, agendaPage } from "../src/web/agenda.js";
 import { CSS } from "../src/web/pages.js";
 import { mesure } from "../src/web/mesure.js";
 import { SOURCE_REVISION } from "../src/web/revisions.js";

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { marchesDesJours, periode, SPORT_CE_WEEK_END } from "../src/tools/agenda.js";
-import { agendaMarketDays, agendaPage } from "../src/web/domains.js";
+import { agendaMarketDays, agendaPage } from "../src/web/agenda.js";
 import { weekend, weekendMarketDays, weekendPage } from "../src/web/evenements.js";
 import { MARCHES_NOTE, SPORT_LIEN } from "../src/web/marches-agenda.js";
 import { marchesDuJour } from "../src/vie/marches.js";

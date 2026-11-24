@@ -4,7 +4,8 @@ import * as transit from "../src/providers/transit.js";
 import { findStops, stopPageDepartures } from "../src/tools/transports.js";
 import { searchPage, stopPage } from "../src/web/arret.js";
 import type { ActualitesAnswer, AgendaAnswer } from "../src/web/data.js";
-import { actualitesPage, agendaPage } from "../src/web/domains.js";
+import { agendaPage } from "../src/web/agenda.js";
+import { actualitesPage } from "../src/web/domains.js";
 import { weekendPage } from "../src/web/evenements.js";
 
 /**

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Cache } from "../src/cache.js";
 import type { AgendaAnswer } from "../src/web/data.js";
-import { agendaPage } from "../src/web/domains.js";
+import { agendaPage } from "../src/web/agenda.js";
 import { concertsPage, holidays, inWeekend, occurrences, weekend, weekendPage, weekendText } from "../src/web/evenements.js";
 import { CSS, STYLE_PATH } from "../src/web/pages.js";
 import { site } from "../src/web/site.js";

@@ -317,6 +317,11 @@ describe("a new order read before its 1st", () => {
     copy = { ...copy, titre: "relu" };
     clock += 60 * 60_000;
     expect((await carburants.prix(cache, new Date(clock))).value.titre).not.toBe("relu");
+    // And read again once they are past: 5 h 59 after it was read, still the copy; 6 h 01, the store.
+    clock += (4 * 60 + 59) * 60_000;
+    expect((await carburants.prix(cache, new Date(clock))).value.titre).not.toBe("relu");
+    clock += 2 * 60_000;
+    expect((await carburants.prix(cache, new Date(clock))).value.titre).toBe("relu");
   });
 
   it("is asked for again every quarter of an hour from the 28th, until the new order is in the copy", async () => {

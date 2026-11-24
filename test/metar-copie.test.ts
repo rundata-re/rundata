@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import * as metar from "../src/providers/metar.js";
-import { COPY_MAX_MINUTES, islandTour } from "../src/tools/meteo.js";
+import { islandTour } from "../src/tools/meteo.js";
 import type { HomeData, StationNow } from "../src/web/data.js";
 import { withTemp } from "../src/web/pages.js";
 import { SHARED } from "../src/web/partagees.js";
@@ -41,12 +41,14 @@ async function tours(times: number[]) {
 describe("the airports' METAR when aviationweather.gov does not answer", () => {
   it("keeps each airport at its measure's time from the copy kept, and leaves it out past 3 hours, its source then said down", async () => {
     const min = 60_000;
-    const [read, failed, late] = await tours([OBS + 20 * min, OBS + 40 * min, OBS + (COPY_MAX_MINUTES + 1) * min]);
+    // The 3 hours written here, not imported: a limit changed in the code must show here.
+    const [read, failed, edge, late] = await tours([OBS + 20 * min, OBS + 40 * min, OBS + 180 * min, OBS + 181 * min]);
     expect(read.gillot).toEqual({ stale: false, time: OBS });
     expect(read.down).not.toContain(metar.SOURCE.nom);
     // 20 minutes later the read times out: the copy is served, Gillot with it, at the time it was measured.
     expect(failed.gillot).toEqual({ stale: true, time: OBS });
     expect(failed.down).not.toContain(metar.SOURCE.nom);
+    expect(edge.gillot).toEqual({ stale: true, time: OBS });
     // Past 3 hours: no station from that copy, and the source said unavailable rather than nothing said.
     expect(late.gillot).toBeUndefined();
     expect(late.down).toContain(metar.SOURCE.nom);

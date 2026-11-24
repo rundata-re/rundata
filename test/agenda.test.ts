@@ -628,11 +628,12 @@ describe("agenda", () => {
 
     it("reads its pages one after the other up to the last one linked, five at most, and says what it left out", async () => {
       const log = vi.spyOn(console, "log").mockImplementation(() => {});
+      // Spied before the first read: a calendar read whole says nothing to watch.
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
       const { value } = await SPORTSREGIONS.load(cache(), NOW);
       expect(urls).toEqual([PORTAIL, `${PORTAIL}?page=2`, `${PORTAIL}?page=3`, `${PORTAIL}?page=4`]);
       expect(value).toHaveLength(109);
       expect(log).toHaveBeenCalledWith("agenda sportsregions : 4 pages sur 4 liées, 109 événements dont 61 réservés aux adhérents, 0 hors de La Réunion");
-      const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
       expect(warn).not.toHaveBeenCalled();
       urls = [];
       vi.stubGlobal("fetch", async (url: string) => (urls.push(url), new Response(`${pages[0]}<a href="/reunion/calendrier-clubs-sportifs-en-reunion?page=9">9</a>`)));

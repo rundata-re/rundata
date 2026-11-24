@@ -95,7 +95,10 @@ describe("POST /signal, as recorded", () => {
     } finally {
       configurerEquipe(undefined);
     }
-    expect((await hitsOf(beacon(`e=o&v=oui&p=%2F${"a".repeat(400)}`))).hits).toEqual([]);
+    // A valid signal made long by a key the page never sends: kept at 300 bytes, refused at 301 by the length alone.
+    const long = (n: number) => { const b = "e=o&v=oui&p=%2F&x="; return b + "a".repeat(n - b.length); };
+    expect((await hitsOf(beacon(long(300)))).hits).toHaveLength(1);
+    expect((await hitsOf(beacon(long(301)))).hits).toEqual([]);
     const get = await hitsOf(beacon("", BROWSER, "GET"));
     expect(get.response.status).toBe(405);
     expect(get.hits).toEqual([]);

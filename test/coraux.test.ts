@@ -124,11 +124,20 @@ describe("coraux", () => {
   });
 
   it("answers temperature_mer without the block, and with the rest, when NOAA's grid does not answer", async () => {
-    vi.stubGlobal("fetch", async () => {
+    // The waves' forecast answers (the day of its fixture), NOAA's grid does not: the answer keeps the waves.
+    const day = new Date("2026-10-22T06:00:00Z");
+    const houle = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url));
+    vi.stubGlobal("fetch", async (url: string) => {
+      const u = String(url);
+      if (u.includes("marine-api.open-meteo")) return new Response(houle(u.includes("meteofrance_wave") ? "openmeteo_houle_mf.json" : "openmeteo_houle.json"));
       throw new Error("offline");
     });
-    const r = await temperatureMer(new Cache(undefined, () => NOW.getTime()), undefined, NOW);
-    if (!r.isError) expect(body(r).coraux).toBeUndefined();
+    const said = vi.spyOn(console, "error").mockImplementation(() => {});
+    const r = await temperatureMer(new Cache(undefined, () => day.getTime()), undefined, day).finally(() => said.mockRestore());
+    expect(r.isError).toBeFalsy();
+    const b = body(r);
+    expect(b.coraux).toBeUndefined();
+    expect(JSON.stringify(b)).toContain("vagues_prevision");
   });
 
   it("shows /mer the level in words with a scale of 0 to 7 in night blue, what the level is, the heat, the day and the warnings", () => {

@@ -26,6 +26,8 @@ describe("rundata.re's archive of EDF's production", () => {
     // 04:00: photovoltaïque 0 to 11, its mean 5.5; the others as read, the batteries charging kept as EDF says.
     expect(hs[0]).toEqual([h(H0), 5.5, 5, 25, 51, 77, 108, 14, -1, 285.5]);
     expect(hs[1][1]).toBe(17.5);
+    // The hour still going is left out even with enough lines: 06:00 to 06:30, seven lines.
+    expect(edf.heuresOf(lignes(H0, 31)).map((x) => x[0])).toEqual([h(H0), h(H0) + 1]);
   });
 
   it("puts a new hour over an older one of the same hour, and forgets what is older than 400 days", () => {

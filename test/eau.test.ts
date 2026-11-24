@@ -130,6 +130,8 @@ describe("qualité de l'eau", () => {
     expect(paul.content[0].text.length).toBeLessThan(11_000);
     expect(body(paul).baignade.sites.filter((r: object) => "derniers_prelevements" in r)).toHaveLength(2);
     expect(body(await qualiteEau(cache(), "Terre-Sainte", "baignade", NOW)).baignade.sites.length).toBeLessThanOrEqual(2);
+    // A place with more than one site within 5 km gets two: Grand Fond, between Boucan Canot and Les Roches Noires.
+    expect(body(await qualiteEau(cache(), "Grand Fond", "baignade", NOW)).baignade.sites.map((r: { site: string }) => r.site)).toEqual(["Plage de Boucan Canot", "Plage des Roches Noires"]);
   });
 
   it("lists a commune's networks, those with a problem first", async () => {

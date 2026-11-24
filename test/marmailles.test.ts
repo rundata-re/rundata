@@ -81,8 +81,11 @@ describe("sentiers_randonnee for a family", () => {
     expect(maido.zone).toBe("À moins de 10 km du Maïdo");
     expect(maido.sentiers[0]).toMatchObject({ sentier: "La boucle de Grand Bord", distance_km: 1.2 });
     // A length asked, as for the hikes.
-    const short = body(await sentiersRandonnee(cache(), undefined, NOW, { longueur_max_km: 1 }, true)).sentiers_marmailles;
-    expect(short.sentiers.every((s: { longueur_km: number }) => s.longueur_km <= 1)).toBe(true);
+    const short = body(await sentiersRandonnee(cache(), undefined, NOW, { longueur_max_km: 1.2 }, true)).sentiers_marmailles;
+    // Some walks, not all of them: an empty list would pass « every » whatever the filter does.
+    expect(short.sentiers.length).toBeGreaterThan(0);
+    expect(short.sentiers.length).toBeLessThan(all.nombre);
+    expect(short.sentiers.every((s: { longueur_km: number }) => s.longueur_km <= 1.2)).toBe(true);
     expect(body(await sentiersRandonnee(cache(), "Zzyzx", NOW, undefined, true)).erreur).toBe("Lieu introuvable à La Réunion : « Zzyzx ».");
   });
 });

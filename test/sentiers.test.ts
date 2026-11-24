@@ -321,9 +321,10 @@ describe("sentiers de randonnée", () => {
     expect(paul.resume).toContain(" 52 aires d'accueil de l'ONF dans la commune de Saint-Paul (voir aires_accueil).");
     const cilaos = body(await sentiersRandonnee(cache(), "Cilaos", NOW));
     expect(cilaos.aires_accueil).toMatchObject({ ou: "dans le cirque de Cilaos", rayon_km: 6, nombre: 29 });
-    // A trail asked by its name, with no place: those within 300 m of it.
-    const trail = body(await sentiersRandonnee(cache(), "le sentier de la Roche Pendue est ouvert ?", NOW));
-    if (trail.aires_accueil) expect([trail.aires_accueil.ou, trail.aires_accueil.rayon_km]).toEqual(["à moins de 300 m du sentier", 0.3]);
+    // A trail asked by its name, with no place: those within 300 m of it (the École normale passes the Côteau Monique).
+    const trail = body(await sentiersRandonnee(cache(), "le sentier de l'École normale est ouvert ?", NOW));
+    expect(trail.aires_accueil).toMatchObject({ ou: "à moins de 300 m du sentier", rayon_km: 0.3, nombre: 2 });
+    expect(trail.aires_accueil.aires.map((a: { nom: string }) => a.nom)).toEqual(["Bélouve - Grand parking Côteau Monique", "RF Bélouve - pk15 - Côteau Monique"]);
     // The island: none, and never a word of what a place allows.
     const ile = body(await sentiersRandonnee(cache(), undefined, NOW));
     expect(ile.aires_accueil).toBeUndefined();

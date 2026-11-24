@@ -351,7 +351,8 @@ describe("a commune's children's page", () => {
     expect(port).toContain("Avec les enfants au Port");
     expect(avirons).toContain("Avec les enfants aux Avirons");
     expect(avirons).toContain("pour les enfants des Avirons, sur la carte");
-    for (const page of [port, avirons]) expect(page).not.toMatch(/\b(à|de) Les? /);
+    // Not \b: « à » is not a word character for it, so \bà never matches after a space.
+    for (const page of [port, avirons]) expect(page).not.toMatch(/(?<!\p{L})(à|de) Les? /u);
     expect(html).toMatch(/<button type="button" data-z="0" aria-label="[^"]*Recentrer sur toute la commune">[^<]*Recentrer<\/button>/);
   });
 

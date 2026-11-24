@@ -74,6 +74,12 @@ describe("a shared copy whose source does not answer (web/partagees.ts `SharedFa
     const got = await center(kv, clock).get(SEISMES, FRESH, async () => (tries++, [{ magnitude: 2 }]));
     expect(tries).toBe(1);
     expect(got).toMatchObject({ stale: false, value: [{ magnitude: 2 }] });
+    // The breaker of a 3-hour-old failure is closed anyway: the shared store itself must leave it off the copy, and
+    // put on it one newer than the copy.
+    const store = () => new SharedFallback(new MemoryStore(), kv, () => T0);
+    expect((await store().get(SEISMES, T0))?.echec).toBeUndefined();
+    await kv.put(`copie-echec:${SEISMES}`, JSON.stringify({ at: T0 - 60 * 60_000, source: "ipgp_ovpf_seismes" }));
+    expect((await store().get(SEISMES, T0))?.echec).toEqual({ at: T0 - 60 * 60_000, source: "ipgp_ovpf_seismes" });
   });
 
   it("writes no failure for a copy that is not shared", async () => {

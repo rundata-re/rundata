@@ -10,6 +10,7 @@ import { carburantsAnswer, FUEL } from "./carburants.js";
 import { credits, de, fr, minutees, notFound, text, tranche } from "./format.js";
 import { COLLECTION, collecteAnswer } from "./collecte.js";
 import { decheteriesAnswer, WASTE } from "./decheteries.js";
+import { crechesAnswer, NURSERY } from "./creches.js";
 import { CHILDREN, enfantsAnswer } from "./enfants.js";
 import { collegeAnswer, ecolesAnswer, SCHOOL } from "./etablissements.js";
 import { JUSTICE, justiceAnswer } from "./justice.js";
@@ -131,6 +132,8 @@ export function branche(quoi: string, adresse?: string) {
   // The places of justice first (« tribunal pour enfants »), public procurement before the markets (« marchés publics »
   // is no market), a school's results before the bins (« résultats du bac », 23/11/2026).
   if (JUSTICE.test(quoi)) return "justice";
+  // The crèches before the doctor on duty (« mode de garde ») and the places to go with children (« garde d'enfants »).
+  if (NURSERY.test(quoi)) return "creches";
   if (PHARMACY.test(quoi)) return "pharmacies";
   if (GARDE.test(quoi)) return "garde";
   if (EMERGENCY.test(quoi)) return "urgences";
@@ -165,6 +168,7 @@ export async function annuaireTool(cache: Cache, quoi: string, lieu: string | un
     case "medecins": return medecinsAnswer(quoi, lieu);
     case "college_de_secteur": return collegeAnswer(quoi, lieu, adresse!);
     case "ecoles": return ecolesAnswer(quoi, lieu);
+    case "creches": return crechesAnswer(lieu);
     case "enfants": return enfantsAnswer(quoi, lieu, now);
   }
   const res = lieu?.trim() ? resolvePlace(lieu) : null;

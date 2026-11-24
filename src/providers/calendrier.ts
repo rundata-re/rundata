@@ -13,7 +13,7 @@ export const SCHOOL: SourceInfo = {
   organisme: "Ministère de l'Éducation nationale",
   licence: "Licence Ouverte Etalab 2.0",
   attribution: "Ministère de l'Éducation nationale",
-  url: "https://data.education.gouv.fr/explore/dataset/fr-en-calendrier-scolaire/",
+  url: "https://data.education.gouv.fr/explore/assets/fr-en-calendrier-scolaire/",
 };
 
 export const HOLIDAYS: SourceInfo = {

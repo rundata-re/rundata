@@ -80,7 +80,7 @@ export const SOURCE: SourceInfo = {
   organisme: "Météo-France",
   licence: "Licence Ouverte Etalab 2.0",
   attribution: "Météo-France",
-  url: "https://portail-api.meteofrance.fr/",
+  url: "https://portail-api.meteofrance.fr/web/",
 };
 
 /**

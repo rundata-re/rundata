@@ -21,7 +21,7 @@ export const SOURCE: SourceInfo = {
   organisme: "transport.data.gouv.fr, d'après les opérateurs de recharge (Freshmile, EZDrive…)",
   licence: "Licence Ouverte Etalab 2.0",
   attribution: "Base nationale des IRVE, transport.data.gouv.fr",
-  url: "https://transport.data.gouv.fr/datasets/beta-bases-nationales-des-points-de-recharge-pour-vehicules-electriques-en-france-irve",
+  url: "https://transport.data.gouv.fr/datasets/base-nationale-des-points-de-recharge-pour-vehicules-electriques-en-france-irve",
 };
 
 export const LIVE_URL = "https://proxy.transport.data.gouv.fr/resource/consolidation-nationale-irve-dynamique";

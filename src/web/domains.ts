@@ -3966,7 +3966,7 @@ function seances(r: AgendaRow): [string, string | undefined][] {
 }
 
 // The licence of OpenAgenda's pictures (rights.license of each event, providers/agenda.ts).
-const LICENCE_OUVERTE = "https://www.data.gouv.fr/pages/legal/licences/etalab-2.0/";
+const LICENCE_OUVERTE = "https://www.data.gouv.fr/pages/legal/licences/etalab-2-0";
 
 /**
  * Who organises it: those the site's agenda names; else the hall whose programme it is, or the association that

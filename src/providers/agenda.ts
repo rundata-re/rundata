@@ -55,7 +55,7 @@ export const SOURCES = {
     organisme: "CINOR, Office de Tourisme Intercommunal du Nord de La Réunion",
     licence: "Licence Ouverte Etalab 2.0",
     attribution: "CINOR, Office de Tourisme Intercommunal du Nord de La Réunion, via OpenAgenda",
-    url: "https://openagenda.com/cinor-territoire-du-nord-de-la-reunion",
+    url: "https://openagenda.com/fr/cinor-territoire-du-nord-de-la-reunion",
   },
 } satisfies Record<string, SourceInfo>;
 

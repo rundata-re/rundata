@@ -499,7 +499,7 @@ describe("actualités", () => {
   // A change that keeps something else (a link, a field, a medium, a filter) changes it: add its fingerprint here and
   // raise SOURCE_REVISION["actualites:fil"] (and RENDU_REVISION.actualites), so that the entry read by the old code is
   // read again after the deploy. A fixture changed alone: add its fingerprint and raise the number all the same.
-  const FIL = ["b7e88ffb49a93884", "44c0eb346a5da96e", "95031bc5918208dd", "d177bf8851fdca3e", "e8416969f0a2d8cc", "3091f8c4c8a956ed", "257b273333650345", "69195050c2791723", "dcf1a479d2810ca3", "a79102468fde6006"];
+  const FIL = ["b7e88ffb49a93884", "44c0eb346a5da96e", "95031bc5918208dd", "d177bf8851fdca3e", "e8416969f0a2d8cc", "3091f8c4c8a956ed", "257b273333650345", "69195050c2791723", "dcf1a479d2810ca3", "a79102468fde6006", "ea2fd4bd49be75b4"];
 
   it("keeps, from the same pages, what its revision says: one fingerprint per revision of actualites:fil", async () => {
     const { value } = await fil(cache(), NOW);

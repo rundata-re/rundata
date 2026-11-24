@@ -15,7 +15,7 @@ export const SOURCE: SourceInfo = {
   organisme: "Ministère de l'Éducation nationale",
   licence: "Licence Ouverte Etalab 2.0",
   attribution: "Carte scolaire des collèges publics (ministère de l'Éducation nationale)",
-  url: "https://data.education.gouv.fr/explore/dataset/fr-en-carte-scolaire-colleges-publics/",
+  url: "https://data.education.gouv.fr/explore/assets/fr-en-carte-scolaire-colleges-publics/",
 };
 
 /** How a commune's file is read, from its path: the Worker's static assets (worker.ts), public/ under Node (bin/). */

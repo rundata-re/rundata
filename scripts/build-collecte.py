@@ -110,7 +110,7 @@ def main():
     codes = sorted(calendars)
     streets = sorted({(re.sub(r"\s+", " ", r["nomvoielong"]).strip(), COMMUNES[r["libcommune"].strip().upper()], -1 if none(r["codcalend"]) else codes.index(r["codcalend"])) for r in rows})
     out = {
-        "source": f"https://data.tco.re/explore/dataset/{DATASET}/",
+        "source": f"https://data.tco.re/explore/assets/{DATASET}/",
         "licence": "Licence Ouverte (Etalab)",
         "mis_a_jour": modified,
         "annee": year,

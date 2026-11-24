@@ -33,7 +33,7 @@ export const LICENCES: Record<string, string> = {
   "https://transport.data.gouv.fr/datasets/referentiel-topologique-reseau-carsud": "Licence Ouverte version\u00a02.0",
   "https://transport.data.gouv.fr/datasets/jeu-de-donnee-spl-estival-2025": "Licence Ouverte version\u00a02.0",
   "https://transport.data.gouv.fr/datasets/velos-a-assistance-electrique-en-libre-service-saint-pierre-la-reunion-civis-altervelo": "Licence Ouverte version\u00a02.0",
-  "https://transport.data.gouv.fr/datasets/beta-bases-nationales-des-points-de-recharge-pour-vehicules-electriques-en-france-irve": "Licence Ouverte version\u00a02.0",
+  "https://transport.data.gouv.fr/datasets/base-nationale-des-points-de-recharge-pour-vehicules-electriques-en-france-irve": "Licence Ouverte version\u00a02.0",
 };
 
 export interface Jeu {

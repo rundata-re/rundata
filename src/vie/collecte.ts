@@ -16,7 +16,7 @@ export const SOURCE: SourceInfo = {
   organisme: "Territoire de l'Ouest (TCO)",
   licence: "Licence Ouverte Etalab",
   attribution: "Territoire de l'Ouest (TCO)",
-  url: "https://data.tco.re/explore/dataset/calendriers-de-collectes-du-territoire-de-louest-gru/",
+  url: "https://data.tco.re/explore/assets/calendriers-de-collectes-du-territoire-de-louest-gru/",
 };
 
 export type Kind = "OM" | "CS" | "DV" | "EN";

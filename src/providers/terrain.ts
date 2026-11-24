@@ -15,7 +15,7 @@ import { UpstreamError, type SourceInfo } from "../types.js";
 import { ALTIMETRIE } from "./ign.js";
 
 export const SOURCES: Record<"ban" | "cadastre" | "gpu" | "alti" | "dvf" | "dvfVoie" | "ppr" | "georisques", SourceInfo> = {
-  ban: { id: "ban_geocodage", nom: "Base adresse nationale (géocodage de la Géoplateforme)", organisme: "IGN, Etalab", licence: "Licence Ouverte Etalab 2.0", attribution: "BAN, IGN", url: "https://geoservices.ign.fr/documentation/services/services-geoplateforme/geocodage" },
+  ban: { id: "ban_geocodage", nom: "Base adresse nationale (géocodage de la Géoplateforme)", organisme: "IGN, Etalab", licence: "Licence Ouverte Etalab 2.0", attribution: "BAN, IGN", url: "https://cartes.gouv.fr/aide/fr/guides-utilisateur/utiliser-les-services-de-la-geoplateforme/geocodage/" },
   cadastre: { id: "cadastre_apicarto", nom: "Plan cadastral (API Carto)", organisme: "DGFiP, IGN", licence: "Licence Ouverte Etalab 2.0", attribution: "DGFiP, IGN", url: "https://apicarto.ign.fr/api/doc/cadastre" },
   gpu: { id: "gpu_zone_urba", nom: "Zonage des plans locaux d'urbanisme (Géoportail de l'urbanisme)", organisme: "Communes, IGN", licence: "Licence Ouverte Etalab 2.0", attribution: "Géoportail de l'urbanisme", url: "https://www.geoportail-urbanisme.gouv.fr" },
   alti: ALTIMETRIE,

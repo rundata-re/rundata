@@ -20,7 +20,7 @@ export const SOURCE: SourceInfo = {
   organisme: "Météo-France",
   licence: "Licence Ouverte Etalab 2.0",
   attribution: "Météo-France",
-  url: "https://portail-api.meteofrance.fr/",
+  url: "https://portail-api.meteofrance.fr/web/",
 };
 
 const URL = "https://public-api.meteofrance.fr/public/DPRadar/v1/mosaiques/REUNION/observations/LAME_D_EAU/produit?maille=500";

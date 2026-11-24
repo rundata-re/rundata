@@ -29,7 +29,7 @@ export const FINESS: SourceInfo = {
   organisme: "Ministère chargé de la santé",
   licence: "Licence Ouverte Etalab",
   attribution: "Ministère chargé de la santé, FINESS",
-  url: "https://www.data.gouv.fr/datasets/finess-extraction-du-fichier-des-etablissements/",
+  url: "https://www.data.gouv.fr/datasets/finess-extraction-du-fichier-des-etablissements",
 };
 
 export const ARS_GARDE: SourceInfo = {
@@ -38,7 +38,7 @@ export const ARS_GARDE: SourceInfo = {
   organisme: "Agence régionale de santé La Réunion",
   licence: "Information publique",
   attribution: "ARS La Réunion",
-  url: "https://www.lareunion.ars.sante.fr/trouver-la-pharmacie-de-garde-la-plus-proche-0",
+  url: "https://www.lareunion.ars.sante.fr/trouver-la-pharmacie-de-garde-la-plus-proche",
 };
 
 export const SANTE_FR: SourceInfo = {
@@ -47,7 +47,7 @@ export const SANTE_FR: SourceInfo = {
   organisme: "Santé.fr, service public d'information en santé",
   licence: "Faits seulement (horaires et adresses), sans licence de réutilisation",
   attribution: "Santé.fr",
-  url: "https://www.sante.fr/ocean-indien-numeros-utiles-en-cas-durgence",
+  url: "https://www.sante.fr/urgences-les-numeros-utiles-la-reunion",
 };
 
 /** Santé.fr's map of the practices that see a patient without appointment, in the daytime (not the evening's duty). */

@@ -21,7 +21,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 API = "https://data.education.gouv.fr/api/explore/v2.1/catalog/datasets"
-PAGE = "https://data.education.gouv.fr/explore/dataset/{}/"
+PAGE = "https://data.education.gouv.fr/explore/assets/{}/"
 UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 # dataset id, its department field, its year field.
 IPS_COLLEGES = ("fr-en-ips-colleges-ap2023", "code_du_departement", "rentree_scolaire")

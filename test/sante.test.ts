@@ -36,7 +36,7 @@ describe("the pharmacies and hospitals of FINESS", () => {
     expect(r.pharmacies).toHaveLength(5);
     expect(r.pharmacies[0].distance_km).toBeLessThan(3);
     expect(r.pharmacie_de_garde.a_savoir.join(" ")).toMatch(/ordonnance et de la carte Vitale.*sonnette/);
-    expect(r.pharmacie_de_garde.source).toBe("https://www.lareunion.ars.sante.fr/trouver-la-pharmacie-de-garde-la-plus-proche-0");
+    expect(r.pharmacie_de_garde.source).toBe("https://www.lareunion.ars.sante.fr/trouver-la-pharmacie-de-garde-la-plus-proche");
     expect(r.avertissements[0]).toMatch(/ne sait pas quelle pharmacie est de garde/);
     expect(r.sources.map((s: { source: string }) => s.source)).toEqual(expect.arrayContaining([expect.stringMatching(/^FINESS/), expect.stringMatching(/ARS La Réunion/)]));
     // Without a place: where to find the duty pharmacy, and nothing listed.

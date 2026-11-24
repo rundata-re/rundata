@@ -11,7 +11,7 @@ import { fenetre } from "../src/web/map.js";
 // fenêtre »: its items link there, and a page opens it in a new window.
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/actualites/${f}`, import.meta.url), "utf8");
 const NOW = new Date("2026-10-24T08:05:00Z");
-const HOME = "https://www.freedom.fr/";
+const HOME = "https://freedom.fr/";
 const cache = () => new Cache(new MemoryStore(), () => NOW.getTime());
 
 // Freedom and Clicanoo answer; the other sites do not.

@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Mardi 24 novembre 2026
 
+- Météo : en accéléré, le rejeu de la pluie sur 7 jours passe désormais heure par heure sur les téléphones récents.
 - Avec les enfants : la liste des lieux mise à jour, avec de nouvelles aires de jeux au Tampon, à Saint-André et à Sainte-Marie.
 - Électricité : les centrales inscrites deux fois au registre d'EDF ne comptent plus qu'une fois (La Possession, Sainte-Rose).
 - Outils IA : un sentier demandé avec son cirque ou sa commune (« sentier des Porteurs, Cilaos ») donne bien l'état de ce sentier

@@ -185,10 +185,19 @@ ON CONFLICT (hote) DO UPDATE SET statut = 'a_verifier', url = excluded.url, prem
   constat = excluded.constat, revenu_le = NULL, n403 = 0
 WHERE sans_reponse.statut = 'revenu'`;
 
+/** A silent site's last try dated by the day's failed reads at most this often (seconds): a write per half hour. */
+export const ESSAI_MIN_S = 1800;
+const ESSAYER = `UPDATE sans_reponse SET dernier_essai = ?, constat = ?
+WHERE hote = ? AND statut = 'injoignable' AND (dernier_essai IS NULL OR dernier_essai <= ?)`;
+const essais = new Map<string, number>();
+
 /**
  * A read of `url` (source `source`) failed: the host enters « a_verifier » if it was unknown or had come back, with its
- * root as address (origineDe), never the read's own. Written once per change of state: a host already listed writes
- * nothing. Never throws.
+ * root as address (origineDe), never the read's own. A host shown silent (« injoignable ») gets this failure as its
+ * last try, its time and what was seen, ESSAI_MIN_S apart at most: the page said « dernier essai le 23/11 à 06:00 »,
+ * the morning's recheck, while Saint-Joseph's site answered 522 to the reads of 03:06, 04:11 and 05:15 (24/11/2026).
+ * A 403 or a 429 of the day is our reads turned away, not the site's silence, and a host « bloque » or « a_verifier »
+ * keeps the recheck's state: only the recheck, asked alone, changes those. Never throws.
  */
 export async function noter(source: string, url: string, constat: string, now = new Date()): Promise<void> {
   const hote = hoteDe(url);
@@ -196,7 +205,16 @@ export async function noter(source: string, url: string, constat: string, now = 
   try {
     await lireEtats(now.getTime());
     const etat = etats?.get(hote);
-    if (!etats || (etat && etat !== "revenu")) return;
+    if (!etats) return;
+    if (etat === "injoignable") {
+      const t = Math.floor(now.getTime() / 1000);
+      if (constat === "http_403" || constat === "http_429" || t - (essais.get(hote) ?? -Infinity) < ESSAI_MIN_S) return;
+      essais.set(hote, t);
+      count(1, true);
+      await run(ESSAYER, t, constat, hote, t - ESSAI_MIN_S);
+      return;
+    }
+    if (etat && etat !== "revenu") return;
     etats.set(hote, "a_verifier");
     count(1, true);
     await run(ENTRER, hote, origineDe(url), JSON.stringify([source]), Math.floor(now.getTime() / 1000), constat);

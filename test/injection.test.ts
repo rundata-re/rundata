@@ -63,10 +63,11 @@ describe("a text read elsewhere, trapped, never comes out as a tag", () => {
     // An agenda's link is put in an href: escaped, « javascript:… » would still run on a tap. The page writes « # » instead.
     const now = new Date("2026-10-24T04:00:00Z");
     const value = piege(copie<AgendaAnswer>("agenda"), new Set(["lien", "billetterie"]), " JavaScript:alert(3)");
-    // The structured data keeps the source's address as its `url`, JSON that no browser runs (checked apart).
-    const page = horsJsonLd(agendaPage(O, { value, fetchedAt: now, stale: false }, now));
+    // Nor in the structured data, whose `url` search engines follow: the event is given there without it.
+    const page = agendaPage(O, { value, fetchedAt: now, stale: false }, now);
     expect(page).not.toMatch(/javascript:/i);
-    expect(page).toContain('href="#"');
+    expect(horsJsonLd(page)).toContain('href="#"');
+    expect(page).toContain('"@type":"Event"');
   });
 
   it("in the headlines (/actualites)", () => {

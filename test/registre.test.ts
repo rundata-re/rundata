@@ -46,14 +46,14 @@ describe("the budget's registry (src/registre.ts)", () => {
     for (const c of checks()) expect(c.value, c.what).toBeLessThanOrEqual(c.limit);
   });
 
-  it("puts in a queue exactly the scheduled reads worker.ts runs in their own counted(BUILD_BUDGET) after the event's reads", () => {
+  it("puts in a queue exactly the scheduled reads worker.ts runs in their own counted budget after the event's reads", () => {
     // Each block of the scheduled event that counts its own BUILD_BUDGET, but MétéoR-OI's, which has a cron of its own: the
     // name its log line starts with, which is its entries' queue.
     const src = readFileSync(new URL("../src/worker.ts", import.meta.url), "utf8");
     const event = src.slice(src.indexOf("async scheduled("));
     // The collectors of the table (collecteurs.ts) run by one loop of the event, each in its own counted(BUILD_BUDGET).
     const blocks = [
-      ...event.split(/counted\((?:BUILD_BUDGET|MINUIT_BUDGET)/).slice(1).map((b) => b.match(/console\.log\(`([^`$:]+?) :/)?.[1]).filter((x) => x && x !== "stations MétéoR-OI"),
+      ...event.split(/counted\((?:BUILD_BUDGET|MINUIT_BUDGET|envoiAlertes\.ENVOI_BUDGET)/).slice(1).map((b) => b.match(/console\.log\(`([^`$:]+?) :/)?.[1]).filter((x) => x && x !== "stations MétéoR-OI"),
       ...COLLECTEURS.map((c) => c.nom),
     ];
     expect(new Set(blocks).size).toBe(blocks.length);

@@ -7,6 +7,7 @@
  * Only the addresses of the known push services are kept: otherwise anyone could make the Worker send requests to an
  * address of their choice. A service that answers 404 or 410 says the subscription is gone: its row is deleted.
  */
+import { count } from "../budget.js";
 import { chiffrer, enteteVapid, type CleVapid, unb64u } from "./webpush.js";
 
 export type Run = (sql: string, ...params: unknown[]) => Promise<number>;
@@ -22,6 +23,9 @@ export function configure(r: Run | undefined, a: All | undefined, vapid: Promise
   all = a;
   cle = vapid;
 }
+
+/** The D1 calls configured, for the scheduled sends (push/envoi.ts); undefined without the binding. */
+export const d1 = () => (run && all ? { run, all } : undefined);
 
 /** The address the push services may write to about our sends (RFC 8292 § 2.1), public already. */
 export const CONTACT = "mailto:contact@rundata.re";
@@ -118,10 +122,12 @@ export type Issue = "envoye" | "efface" | "echec";
 
 /**
  * Sends `m` to one subscription: encrypted for it, signed with VAPID (one JWT a push service, kept by `jwts` for the
- * call). A 404 or 410 deletes the subscription. `urgent`: « Urgency: high » (red, the cyclone, the volcano).
+ * call). A 404 or 410 deletes the subscription, or hands its address to `parti` when given (deleted together after a
+ * batch, push/envoi.ts). `urgent`: « Urgency: high » (red, the cyclone, the volcano). Counted as a subrequest.
  */
-export async function envoyer(a: Abonnement, m: Message, urgent: boolean, jwts = new Map<string, Promise<string>>(), now = Date.now()): Promise<Issue> {
+export async function envoyer(a: Abonnement, m: Message, urgent: boolean, jwts = new Map<string, Promise<string>>(), now = Date.now(), parti?: (endpoint: string) => void): Promise<Issue> {
   if (!cle) return "echec";
+  count(1, true);
   const k = await cle;
   const origine = new URL(a.endpoint).origin;
   let vapid = jwts.get(origine);
@@ -139,14 +145,15 @@ export async function envoyer(a: Abonnement, m: Message, urgent: boolean, jwts =
     return "echec";
   }
   if (r.status === 404 || r.status === 410) {
-    await desabonner(a.endpoint);
+    if (parti) parti(a.endpoint);
+    else await desabonner(a.endpoint);
     return "efface";
   }
   if (!r.ok) console.error(`alertes : ${new URL(a.endpoint).hostname} a répondu ${r.status}`);
   return r.ok ? "envoye" : "echec";
 }
 
-/** Every subscription, for the team's test send (web/alertes.ts); the scheduled sends come in a later change. */
+/** Every subscription, for the team's test send (web/alertes.ts); the scheduled sends read them by batches (push/envoi.ts). */
 export async function tous(): Promise<Abonnement[]> {
   return all ? all<Abonnement>("SELECT endpoint, p256dh, auth FROM abonnements") : [];
 }

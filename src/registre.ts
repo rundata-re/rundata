@@ -16,6 +16,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { BUILD_BUDGET, PAGE_BUDGET, SCHEDULED_BUDGET, SERVICE_OPS_LIMIT, SUBREQUEST_LIMIT } from "./budget.js";
 import { MINUIT_BUDGET, MINUIT_PAR_PASSAGE } from "./web/minuit.js";
+import { ENVOI_BUDGET, ENVOI_MAX } from "./push/envoi.js";
 import { DETAILS_MAX as CONNECTEUR_DETAILS, PAGES_MAX as CONNECTEUR_PAGES } from "./connecteurs/helloasso.js";
 import { IN_FLIGHT } from "./http.js";
 import { AGENDAS } from "./providers/agenda.js";
@@ -206,18 +207,49 @@ const SCHEDULED: Entry[] = [
   // Météo-France's official map (providers/vigilance-carte.ts), in the vigilance's copy, outside its cost: its state read
   // at each of its builds; a new bulletin kept (its time of issue read in the PDF, 40 ms in Node, the PDF and the state
   // written); a picture by Cloudflare's browser (the call, the picture and the state written), 24 a day at most.
-  // The alerts a push would follow (alertes-etat.ts): their state read at each event, from the copies just kept (no
-  // source read, the copies in memory), and written only when it changes, a few dozen times a year: not counted.
+  // The alerts a push follows (alertes-etat.ts): their state read at each event, from the copies just kept (no source
+  // read, the copies in memory), and written when it changes. It keeps the last bulletin and /volcan copy taken, so it
+  // is written at each new one: at most once an event, counted so (the usual, /volcan every 30 minutes and a few
+  // bulletins a day, is about 60 a day).
   {
     id: "alertes:etat",
     trigger: "planifiée",
-    what: "alertes à suivre (vigilance orange ou rouge, alerte cyclonique, niveau du volcan) : leur état (KV), une ligne de journal à chaque changement, rien d'envoyé",
+    what: "alertes à suivre (vigilance orange ou rouge, alerte cyclonique, niveau du volcan) : leur état (KV), une ligne de journal à chaque changement, envoyée par l'entrée suivante une fois les alertes ouvertes",
     every: EVENT_MINUTES,
     offset: 0,
-    run: { subrequests: 1, kvReads: 1, cpuMs: 1 },
+    run: { subrequests: 2, kvReads: 1, kvWrites: 1, cpuMs: 1 },
     from: ["src/alertes-etat.ts"],
     basis: "code",
+  },  // The alerts sent to the phones once open (push/envoi.ts, web/alertes-drapeau.ts; nothing while closed, production
+  // until the flag), in a budget of their own after the event's reads. Each event: the pause's KV read and the message
+  // going out read in D1. A batch: ENVOI_MAX pushes (2.5 ms of CPU each, measured in Node with WebCrypto), the gone
+  // subscriptions deleted a hundred at a time, the changes' keys and the cursor written. Declared at a busy season's
+  // pace: 10 messages a month to 10 000 subscriptions (ABONNES_MAX), 5 batches each, so one batch every 864 minutes.
+  {
+    id: "alertes:envoi",
+    queue: "envoi des alertes",
+    queueBudget: ENVOI_BUDGET,
+    trigger: "planifiée",
+    what: "alertes sur le téléphone, une fois ouvertes : la pause (KV) et le message en cours (D1) lus à chaque passage",
+    every: EVENT_MINUTES,
+    offset: 0,
+    run: { subrequests: 2, kvReads: 1, d1Calls: 1, d1RowsRead: 1, cpuMs: 1 },
+    from: ["src/push/envoi.ts"],
+    basis: "code",
   },
+  {
+    id: "alertes:envoi:lot",
+    queue: "envoi des alertes",
+    queueBudget: ENVOI_BUDGET,
+    trigger: "planifiée",
+    what: `alertes sur le téléphone, une fois ouvertes : un lot de ${ENVOI_MAX} abonnements (D1), un envoi chacun, les abonnements disparus effacés`,
+    every: 864,
+    offset: 0,
+    run: { subrequests: ENVOI_MAX + ENVOI_MAX / 100 + 10, d1Calls: ENVOI_MAX / 100 + 10, d1RowsRead: ENVOI_MAX + 1, d1RowsWritten: ENVOI_MAX + 10, cpuMs: 2.5 * ENVOI_MAX },
+    from: ["src/push/envoi.ts"],
+    basis: "code",
+  },
+
   {
     id: "vigilance:carte",
     trigger: "planifiée",

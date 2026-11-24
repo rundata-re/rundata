@@ -230,6 +230,23 @@ export function sansPrelevement(last: string | undefined, now: Date): string | u
 }
 
 /**
+ * No sample of the season under way, a month after it began, the last ones all of the season before (24/11/2026:
+ * none on the ministry's site, the ARS's own site has its yearly leaflet only, Hub'Eau has no bathing API): said
+ * first, on /eau and by the tool, with its dates, and that those results do not say the water of today. `lasts`:
+ * each site's last sample, « DD/MM/YYYY ». Undefined in the season's first month, or with a sample of the season.
+ */
+export function saisonSansPrelevement(lasts: (string | undefined)[], now: Date): string | undefined {
+  const iso = lasts.filter((x): x is string => !!x && /^\d\d\/\d\d\/\d{4}$/.test(x)).map((x) => x.split("/").reverse().join("-")).sort();
+  const start = `${baignades.season(now) - 1}-10-01`;
+  const last = iso.at(-1);
+  if (!last || last >= start || !sansPrelevement(start, now)) return undefined;
+  const one = iso.length === 1;
+  return `Aucun prélèvement de baignade publié par l'ARS pour la saison commencée le ${day(start)}\u00a0: ` +
+    (one ? `le dernier résultat est celui de la saison passée, du ${day(last)}, et ne dit` : `les derniers résultats sont ceux de la saison passée, jusqu'au ${day(last)}, et ne disent`) +
+    " pas la qualité de l'eau aujourd'hui.";
+}
+
+/**
  * The sites' sentences, a gap the two share said once after them (06/11/2026: the same sentence after each of the two
  * beaches of L'Hermitage): « Pour les deux sites : aucun prélèvement publié… ».
  */
@@ -319,7 +336,7 @@ async function baignade(cache: Cache, res: Resolution, now: Date, lieu: string) 
     const read = await siteRows(cache, [named], now);
     const [{ row }] = read;
     const note = copyNote(read);
-    return { resume: bathSentence(row) + (note ? ` ${note}` : ""), sites: [row], ...(note ? { copie: note } : {}) };
+    return { resume: ((saison) => (saison ? `${saison} ${bathSentence(row, false)}` : bathSentence(row)))(saisonSansPrelevement([row.dernier_prelevement], now)) + (note ? ` ${note}` : ""), sites: [row], ...(note ? { copie: note } : {}) };
   }
   const near = baignades.SITES
     .map((s) => ({ s, d: distanceKm(res.lieu.lon, res.lieu.lat, s.lon, s.lat) }))
@@ -343,7 +360,8 @@ async function baignade(cache: Cache, res: Resolution, now: Date, lieu: string) 
     return rest;
   });
   return {
-    resume: bathSentences(rows) + (note ? ` ${note}` : ""),
+    // Nothing of the season: said first, the sites' sentences without their gap (each row keeps it).
+    resume: ((saison) => (saison ? `${saison} ${bathSentences(rows.map((r) => ({ ...r, prelevements_en_retard: undefined })))}` : bathSentences(rows)))(saisonSansPrelevement(rows.map((r) => r.dernier_prelevement), now)) + (note ? ` ${note}` : ""),
     sites: rows,
     ...(note ? { copie: note } : {}),
     ...(rows.length > 2 ? { detail: "Les derniers prélèvements des deux sites les plus proches\u00a0; pour un autre site, rappeler l'outil avec son nom." } : {}),
@@ -437,7 +455,7 @@ export async function qualiteEau(cache: Cache, lieu: string | undefined, sujet?:
       ...(wanted.includes("baignade") ? { eau_de_baignade: noteBaignade(!!(parts.baignade as { sites?: { prelevements_en_retard?: string }[] } | undefined)?.sites?.some((r) => r.prelevements_en_retard)) } : {}),
     },
     ...(sea ? { risque_requin: requin.requinBlock(now, res.lieu) } : {}),
-    consulter: wanted.map((w) => (w === "robinet" ? "https://www.reunion.ars.sante.fr" : baignades.SOURCE.url)),
+    consulter: wanted.map((w) => (w === "robinet" ? "https://www.lareunion.ars.sante.fr" : baignades.SOURCE.url)),
     // A distributor's notice used: its source credited beside the ARS's (23/11/2026), and named in `citer` (citer.ts).
     sources: credits([potable.SOURCE, baignades.SOURCE, ...(sea ? [requin.SOURCE] : []), ...(dry ? [notices.SOURCE] : [])]),
   });

@@ -951,6 +951,12 @@ const OTHER_PAGES: Record<string, Page> = {
   // The private page of an internal trial, behind its secret link (web/uv-moufia.ts): its file read from KV (about
   // 570 Ko), nothing else, no header. Its render measured 57 to 64 ms under tsx with the file of 09/11/2026.
   "/essais/uv-moufia/*": { subrequests: 1, cpuMs: 100, from: ["src/web/uv-moufia.ts"], what: "essai interne, page privée derrière son lien secret : son fichier lu dans KV", basis: "estimé" },
+  // The alerts on the phone (web/alertes.ts), on the trial Worker only until their flag: no header, no copy. A
+  // subscription counts the rows, then writes its own (2 D1 calls); its removal deletes it (1). The team's test send:
+  // the subscriptions read (1 call), then one push a subscription (the team's phones, 10 counted), and a row deleted for
+  // each one gone. CPU: 2.5 ms a push in Node (encryption and JWT), measured again on the trial Worker.
+  "/alertes/abonnement": { subrequests: 0, cpuMs: 5, from: [], d1: { d1Calls: 2, d1RowsRead: 1, d1RowsWritten: 1 }, what: "alertes sur le téléphone : un abonnement gardé ou effacé (D1), sur le Worker d'essai tant que le drapeau est fermé", basis: "code" },
+  "/alertes/essai": { subrequests: 10, cpuMs: 30, from: ["src/push/abonnements.ts"], d1: { d1Calls: 11, d1RowsRead: 10, d1RowsWritten: 10 }, what: "alertes sur le téléphone : le message d'essai de l'équipe, un envoi par abonnement (10 comptés), sur le Worker d'essai", basis: "estimé" },
   "*": { subrequests: 7, cpuMs: 70, from: [], what: "toute autre adresse : la vigilance et la version, lues pour l'en-tête" },
 };
 

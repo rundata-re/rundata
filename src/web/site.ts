@@ -125,7 +125,7 @@ import { rafraichirConnecteurs, rafraichirPropositions } from "../tools/agenda.j
 import * as bord from "./bord.js";
 import { flux, ICS_PATH, JSON_PATH } from "./flux-associations.js";
 import { margin, scheduledEvery } from "./partagees.js";
-import { ALIASES as ASSOCIATIONS_ALIASES, associationsPage, PATH as ASSOCIATIONS_PATH, preuve } from "./associations.js";
+import { ALIASES as ASSOCIATIONS_ALIASES, annuaire as annuaireAssociations, associationsPage, PATH as ASSOCIATIONS_PATH, preuve } from "./associations.js";
 import { readCopies, refresh, resume } from "../tools/resume.js";
 import { SCRIPT as ALLER_SCRIPT, SCRIPT_PATH as ALLER_PATH } from "./aller.js";
 import { rejeuScript, rejeuScriptPath } from "./meteo-carte.js";
@@ -797,8 +797,8 @@ async function pages(request: Request, cache: Cache, background: Background, now
   if (formulaires.enLigne()) {
     // The space's page: the agendas' last copy for its proof, and the vigilance's banner.
     if (path === ASSOCIATIONS_PATH || path === `${ASSOCIATIONS_PATH}/`) {
-      const [a, p] = await Promise.all([alerte(cache, background, now), preuve(cache, now)]);
-      return new Response(associationsPage(origin, p, a), { headers: HTML });
+      const [a, p, rep] = await Promise.all([alerte(cache, background, now), preuve(cache, now), annuaireAssociations(url)]);
+      return new Response(associationsPage(origin, p, a, rep), { headers: HTML });
     }
     if (ASSOCIATIONS_ALIASES.includes(path.replace(/\/$/, ""))) return Response.redirect(`${origin}${ASSOCIATIONS_PATH}${new URL(request.url).search}`, 301);
     if (path === formulaires.LIEN_PATH) return formulaires.lienPost(request, now);

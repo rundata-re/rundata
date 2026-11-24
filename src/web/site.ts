@@ -129,6 +129,8 @@ import { meteoPath, pageOf, PAGES, PRINCIPAL } from "./places.js";
 import { pressePage, pressFigures, toolCount } from "./presse.js";
 import { avisPost } from "./avis-envoi.js";
 import * as connecteurs from "./connecteurs.js";
+import * as alertesPush from "./alertes.js";
+import { enLigne as alertesEnLigne } from "./alertes-drapeau.js";
 import * as espaceClub from "./club.js";
 import * as formulaires from "./propositions.js";
 import * as dae from "../providers/dae.js";
@@ -775,6 +777,11 @@ async function pages(request: Request, cache: Cache, background: Background, now
   const to = Object.hasOwn(ALIASES, bare) ? ALIASES[bare] : bare !== path && !ASSOCIATIONS_ALIASES.includes(bare) ? `${bare}${url.search}` : undefined;
   if (to) return new Response(null, { status: 301, headers: { location: to, "cache-control": STATIC } });
 
+  // The alerts on the phone (web/alertes.ts), on the trial Worker until the flag.
+  if (alertesEnLigne() && path.startsWith("/alertes/")) {
+    const r = await alertesPush.route(request, path);
+    if (r) return r;
+  }
   // The feedback form at the bottom of every page (web/avis.ts).
   if (path === "/avis") return avisPost(request, now);
   // The clubs' and associations' forms (web/propositions.ts), once their page goes out.

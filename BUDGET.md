@@ -223,6 +223,8 @@ Chacune a sa propre minuterie (wrangler.jsonc), dans sa propre invocation, avec 
 | /antennes | la page des antennes : la carte et le tableau (dans le paquet), et la copie des sites mobiles hors service | à chaque vue |  | 8 | 1 |  |  |  |  | 80 | code |
 | /chiffres | rundata.re en chiffres : la copie de ses comptes, avec la vigilance et la version de l'en-tête | à chaque vue |  | 9 | 1 |  |  |  |  | 40 | code |
 | /essais/uv-moufia/* | essai interne, page privée derrière son lien secret : son fichier lu dans KV | à chaque vue |  | 1 | 1 |  |  |  |  | 100 | estimé |
+| /alertes/abonnement | alertes sur le téléphone : un abonnement gardé ou effacé (D1), sur le Worker d'essai tant que le drapeau est fermé | à chaque vue |  | 0 |  |  | 2 | 1 | 1 | 5 | code |
+| /alertes/essai | alertes sur le téléphone : le message d'essai de l'équipe, un envoi par abonnement (10 comptés), sur le Worker d'essai | à chaque vue |  | 10 |  |  | 11 | 10 | 10 | 30 | estimé |
 | * | toute autre adresse : la vigilance et la version, lues pour l'en-tête | à chaque vue |  | 7 |  |  |  |  |  | 70 | mesuré |
 | /meteo | la page /meteo | à chaque vue |  | 53 | 6 | 4 |  |  |  | 80 | mesuré |
 | /volcan | la page /volcan | à chaque vue |  | 55 | 4 | 3 | 2 | 21 |  | 60 | mesuré |
@@ -405,6 +407,7 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | /sites-sans-reponse | connecteurs/helloasso, providers/agenda, providers/avis-eau, providers/salles, providers/sport |
 | /antennes | providers/sites-hs |
 | /essais/uv-moufia/* |  |
+| /alertes/essai | push/abonnements |
 | /meteo | providers/arome, providers/calendrier, providers/ensemble, providers/feux, providers/ffvl, providers/metar, providers/meteofrance, providers/meteor-oi, providers/mf-auth, providers/openmeteo, providers/radar, providers/uv-mesure, providers/uv, providers/vigilance |
 | /volcan | connecteurs/helloasso, providers/actualites, providers/agenda, providers/avis-eau, providers/prefecture, providers/salles, providers/seismes, providers/sentiers, providers/sport, providers/traces, providers/volcan |
 | /air | providers/air-mesures, providers/atmo, providers/capteurs |

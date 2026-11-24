@@ -26,6 +26,8 @@ export type Sorte = keyof typeof PAR_MINUTE;
 export const RETRY_AFTER_S = 60;
 
 const FORMULAIRES = /^\/(?:avis|associations\/.+)$/;
+// A subscription to the alerts on the phone, kept or forgotten (web/alertes.ts): counted as a form, on both methods.
+const ABONNEMENT = "/alertes/abonnement";
 // Read at a source each time it is opened (clubs/espace.ts `apercu`): counted as a form, on any method.
 const LECTURES = new Set(["/associations/club/demande"]);
 
@@ -37,6 +39,7 @@ export function sorteDe(request: Request): Sorte | undefined {
   const path = new URL(request.url).pathname;
   if (LECTURES.has(path)) return "formulaire";
   if (path.startsWith(`${TRIP_PATH}/`)) return request.method === "GET" || request.method === "HEAD" ? "trajet" : undefined;
+  if (path === ABONNEMENT && (request.method === "POST" || request.method === "DELETE")) return "formulaire";
   if (request.method !== "POST") return undefined;
   if (path === "/mcp" || path === "/mcp/") return "mcp";
   return FORMULAIRES.test(path) ? "formulaire" : undefined;

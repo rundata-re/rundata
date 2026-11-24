@@ -78,6 +78,9 @@ import { configure as metaWebhookSecrets } from "./meta-webhook.js";
 import { cheminMasque } from "./chemin-secret.js";
 import { plage } from "./web/plage.js";
 import { sansIndex } from "./web/noindex.js";
+import * as abonnements from "./push/abonnements.js";
+import * as alertesPush from "./web/alertes.js";
+import { configurer as configurerAlertes, enLigne as alertesEnLigne } from "./web/alertes-drapeau.js";
 import { GARDE_TAPEE, gardeTapee } from "./providers/terrain.js";
 
 // How long the edge keeps an entry. Much longer than any freshness window: an old copy is what gets served,
@@ -157,6 +160,10 @@ interface Env {
   UV_MOUFIA_JETON?: string;
   /** Optional: the team's secret, sent by its scripts in the header `rundata-jeton` so that their calls are not counted (src/app.ts). */
   EQUIPE_JETON?: string;
+  /** Optional: the VAPID key of the alerts on the phone, a P-256 JWK (scripts/vapid-cles.mjs, src/push/webpush.ts); one for the trial Worker, another for production. */
+  VAPID_PRIVE?: string;
+  /** « 1 » on the trial Worker only (wrangler.essai.jsonc): the alerts' addresses open there (web/alertes-drapeau.ts). */
+  ALERTES_ESSAI?: string;
   /** Cloudflare Email Sending: the confirmation of the events the clubs propose (src/propositions.ts). */
   EMAIL?: propositions.EmailBinding;
   /** Browser Rendering: the picture of Météo-France's official map of the vigilance (src/providers/vigilance-carte.ts). */
@@ -415,6 +422,16 @@ function setup(env: Env): Cache {
   );
   formulaires.configure(env.TURNSTILE_SECRET);
   configurerEquipe(env.EQUIPE_JETON);
+  // The alerts on the phone (web/alertes.ts): open on the trial Worker only until the flag; the subscriptions in the
+  // same database (scripts/alertes.sql), the VAPID key read once an isolate.
+  configurerAlertes(env.ALERTES_ESSAI);
+  const vapid = alertesPush.cleDuSecret(env.VAPID_PRIVE, alertesEnLigne());
+  abonnements.configure(
+    avisRun,
+    avisDb && (async <T>(sql: string, ...params: unknown[]) => (count(), (await avisDb.prepare(sql).bind(...params).all<T>()).results)),
+    vapid,
+  );
+  alertesPush.configure(vapid);
   // Its data in KV, written once by the team: the page's secret link reads it (web/uv-moufia.ts).
   configurerUv(env.UV_MOUFIA_JETON, env.STORE);
   // The videos handed to Threads, written into KV by the team for a day (web/partage-video.ts).

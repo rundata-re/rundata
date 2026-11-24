@@ -30,9 +30,9 @@ const COMMUNES = [
   "sainte-rose", "sainte-suzanne", "salazie",
 ].map((x) => `/communes/${x}`);
 
-/** A commune's water cuts, where its page is indexable (web/coupures.ts). */
+/** A commune's water cuts, where its page is indexable (web/coupures.ts); Le Tampon since 24/11/2026, its notices read. */
 const COUPURES_EAU = [
-  "bras-panon", "cilaos", "l-etang-sale", "la-plaine-des-palmistes", "la-possession", "le-port", "les-avirons",
+  "bras-panon", "cilaos", "l-etang-sale", "la-plaine-des-palmistes", "la-possession", "le-port", "le-tampon", "les-avirons",
   "les-trois-bassins", "petite-ile", "saint-andre", "saint-benoit", "saint-denis", "saint-leu", "saint-louis",
   "saint-paul", "saint-philippe", "saint-pierre", "sainte-marie", "sainte-rose", "sainte-suzanne", "salazie",
 ].map((x) => `/coupures-eau/${x}`);

@@ -100,7 +100,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // A feed not read said « rundata.re ne sait pas ce qu'il annonce », never « nous » (23/11/2026).
   // A notice's place on its card (`lieu`); a silent feed said with what its last read held for the commune (24/11/2026).
   // With the hour the notices were read (avis_lus_le), said by the commune's page instead of the copy's (24/11/2026).
-  coupures: 24,
+  // Le Tampon's notices, Sudéau's read on the town's site (24/11/2026).
+  coupures: 25,
   // Saint-André's notices read again, with its written agreement of 16/11/2026.
   // The notices of Cilaos, Saint-Philippe and Sainte-Suzanne read as the communes' public information (20/11/2026).
   // A notice written in the bold letters of Unicode read (Saint-André's of 19/11/2026, typographie.ts `unstyled`).
@@ -293,7 +294,8 @@ export const SOURCE_REVISION: Readonly<Record<string, number>> = {
   // A list of streets ended by « Et (toutes) les voies adjacentes », kept last, or by « Il est recommandé… » (CIREST,
   // 20/11/2026).
   // La Créole's titles in the case of a sentence, and the place a notice names in its sentence (`lieu`, 24/11/2026).
-  "avis-eau:flux": 6,
+  // Sudéau's notices posted by the town of Le Tampon, one feed more (24/11/2026).
+  "avis-eau:flux": 7,
   // The date and the cause of a notice parted by « · » (avis(), Sentier Bayonne).
   "onf:sentiers": 1,
   // The trace of one trail (onf:trace:<slug>), its notice parted by « · » too (parseTrace, Sentier Bayonne).

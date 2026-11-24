@@ -186,8 +186,9 @@ describe("MétéoR-OI's stations", () => {
     // written by the scheduled event only (cache.ts `islandRead`, 21/11/2026); 478 with /bus's shared copy (20 from cold
     // and its write, 22/11/2026); 479 with the state of the alerts a push would follow (alertes-etat.ts: one KV read
     // each run, its write only when an alert changes, 24/11/2026); 481 with the curves of /mer's shared copy (the buoys'
-    // series and the satellite's 30 days a view kept, read from cold, never asked of NOAA there, 24/11/2026).
-    expect(worstMain().subrequests).toBeLessThanOrEqual(481);
+    // series and the satellite's 30 days a view kept, read from cold, never asked of NOAA there, 24/11/2026); 482 with
+    // Le Tampon's water notices (one request in web:coupures, 24/11/2026).
+    expect(worstMain().subrequests).toBeLessThanOrEqual(482);
   });
 
   it("has its own cron, never the minute of the event of every 5 minutes", () => {

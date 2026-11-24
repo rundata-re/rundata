@@ -33,11 +33,13 @@ import { carteHero, carteHtml } from "./vigilance-carte.js";
 import { current, cyclone, cycloneHead, cycloneLevel, cycloneOn, feminine, islandGreen, NONE_ISSUED, NONE_ISSUED_SAID, raised, spans } from "../tools/vigilance.js";
 import type { Alerte, Credit, DepuisMinuit, HistoriqueAnswer, HomeData, PlaceData, RandonneesAnswer, SeaData, StationAnswer, StationNow } from "./data.js";
 import { confianceExplication } from "../tools/prevision.js";
-import { joursDuJour, vigilanceLue } from "./data.js";
+import { credit, joursDuJour, vigilanceLue } from "./data.js";
 import { CSS_CHIFFRES, enChiffres } from "./en-chiffres.js";
 import { hasZones, ZONES_SCRIPT } from "./defilement.js";
 import brand from "./brand.json" with { type: "json" };
 import og from "./og.json" with { type: "json" };
+import * as climat from "../providers/climat.js";
+import { SOURCE as ONF_SOURCE } from "../providers/sentiers.js";
 import * as traces from "../providers/traces.js";
 import { GAUGES } from "../providers/maregraphes.js";
 import * as coraux from "../providers/coraux.js";
@@ -2679,7 +2681,7 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
     ? `<p class="card">Les mesures se chargent : rechargez la page dans quelques secondes.</p>`
     : stations.length
       ? `<div class="two">${stations.map(stationCard).join("")}</div>` + (complement ? amateurCard(complement) : "") + (jour ? sinceMidnightCard(jour) : "") +
-        `<p class="note">Mis à jour ${leAt(data.fetchedAt)} (${since(data.fetchedAt, now)}). Sources : ${credits(d!.meteo!.sources)}.</p>`
+        `<p class="note">Mis à jour ${leAt(data.fetchedAt)} (${since(data.fetchedAt, now)}).</p>`
       : `<p class="card">Aucune mesure disponible pour le moment.</p>`;
 
   // In the Hauts, the coming morning's cloud sea, high on the page: « dégagé au Maïdo demain matin ? ». Said less firmly
@@ -2725,7 +2727,7 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
       `<div class="card">${d.mer.mesure ? `<ul class="seas"><li><span>Au large, le ${esc(dayMonth(d.mer.mesure.jour_mesure))}</span><b>${esc(thin(d.mer.mesure.temperature_eau))}</b></li></ul>` : ""}` +
       // The swimming rule of the tool's résumé (item 1828) said once, in the « Baignade et requins » block below.
       `<p>${esc(thin(d.mer.resume.replace(` ${REGLE_COURTE}`, "")))}</p>${tideLine}<p class="note">Température : mesure satellite au large, du jour indiqué (une mesure paraît au plus tôt le lendemain), ` +
-      `pas celle du lagon ni du bord.${d.mer.houle_mesuree ? ` Houle mesurée : la bouée ${esc(d.mer.houle_mesuree.bouee)} du Cerema, au large, à l'heure dite.` : ""}${d.mer.etat_de_la_mer ? " Vagues : prévision d'un modèle, au large, pas une mesure." : ""}${tides ? ` Marée : calculée d'après les mesures des marégraphes, hauteurs à environ 5 cm près, <a href="/mer">détail sur la page mer</a>.` : ""} Source : ${credits(d.mer.sources)}${tides ? `, ${esc(TIDE_CITATION)}` : ""}.</p></div></section>`
+      `pas celle du lagon ni du bord.${d.mer.houle_mesuree ? ` Houle mesurée : la bouée ${esc(d.mer.houle_mesuree.bouee)} du Cerema, au large, à l'heure dite.` : ""}${d.mer.etat_de_la_mer ? " Vagues : prévision d'un modèle, au large, pas une mesure." : ""}${tides ? ` Marée : calculée d'après les mesures des marégraphes, hauteurs à environ 5 cm près, <a href="/mer">détail sur la page mer</a>.` : ""}</p></div></section>`
     : "";
 
   const f = d?.prevision && { ...d.prevision, jours: joursDuJour(d.prevision.jours, data!.fetchedAt, now) };
@@ -2749,9 +2751,24 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
       `</ul>` +
       (confidenceNote ? `<p class="note">Plus l'échéance est lointaine, moins la prévision est sûre\u00a0: <a href="/meteo#${CONFIANCE_ANCRE}">comment rundata.re l'indique →</a></p>` : "") +
       `<p class="note">${esc(f.modele ? `Modèle ${f.modele.nom}, maille de ${fr(f.modele.maille_km)} km${f.modele.run_du_modele ? `, calcul du ${f.modele.run_du_modele.replace(" ", " à ")}` : ""}. ` : "")}` +
-      `Un modèle ne voit pas tous les microclimats de l'île. Cyclone, fortes pluies : seule compte la vigilance de <a href="https://meteofrance.re/">Météo-France La Réunion</a>. ` +
-      `Source : ${credits(f.sources)}.</p></section>`
+      `Un modèle ne voit pas tous les microclimats de l'île. Cyclone, fortes pluies : seule compte la vigilance de <a href="https://meteofrance.re/">Météo-France La Réunion</a>.</p></section>`
     : "";
+
+  // The page's sources, said once at its end (sourcesLast), the sources of one licence together (credits): the
+  // measures', the sea's and the forecast's were each written under their block, with the same licences, the same on
+  // every place's page, and the footer then carried the credits of the whole site. Each block shown names its own: the
+  // month's normals and records, the hikes' traces, and the ONF for the state of each hike, said only with the
+  // hikers' copy. The tide's citation, in the SHOM's words, last.
+  const reperes = reperesBlock(d?.reperes, now);
+  const around = hikesAround(p, hikes);
+  const said: Credit[] = [
+    ...(stations.length ? d!.meteo!.sources : []),
+    ...(sea ? d!.mer!.sources : []),
+    ...(forecast ? f!.sources : []),
+    ...(reperes ? [credit(climat.SOURCE)] : []),
+    ...(around.includes('<ul class="rows eau">') ? [credit(traces.SOURCES.osm), credit(traces.SOURCES.ign), ...(hikes ? [credit(ONF_SOURCE)] : [])] : []),
+  ];
+  const cite = sea && tides ? adressesCoupables(TIDE_CITATION) : "";
 
   const jsonld = [
     {
@@ -2811,9 +2828,10 @@ ${nightCard}
 ${sea}
 ${coastal(p) ? bathingBlock(now, { nom: p.nom, lon: p.place.lon, lat: p.place.lat, commune: p.commune ? p.nom : undefined }, g) + g.feuille : ""}
 ${forecast}
-${reperesBlock(d?.reperes, now)}
-${hikesAround(p, hikes)}
-<p class="or"><a href="/meteo#communes">Météo ailleurs à La Réunion →</a></p>`;
+${reperes}
+${around}
+<p class="or"><a href="/meteo#communes">Météo ailleurs à La Réunion →</a></p>${said.length || cite ? `
+<p class="sources">Sources : ${[credits(said), cite].filter(Boolean).join(" ; ")}.</p>` : ""}`;
   return layout(origin, { title, description, path: `/meteo/${p.slug}`, jsonld, alerte, iaAside: true }, band, g.ligne + body);
 }
 

@@ -11,11 +11,14 @@ first practice; one with practices in two communes is counted in both, and once 
 Counted in each commune: the general practitioners by sector and with the OPTAM option, the specialists by speciality and
 those of them in sector 1, and the postcodes where its general practitioners work (the directory's links, web/commune.ts).
 The directory publishes a new file every week; this is run by hand now and then, and the file comes in a pull request.
-Usage: python3 -I scripts/build-medecins.py [--json FILE] [--out FILE]
-  (--json: the tabular API's rows, already downloaded; --out: src/vie/medecins-comptes.json by default)
+Usage: python3 -I scripts/build-medecins.py [--json FILE] [--out FILE] [--verifier ECART]
+  (--json: the tabular API's rows, already downloaded; --out: src/vie/medecins-comptes.json by default; --verifier:
+  write nothing, compare with the bundled file and fail past ECART doctors counted differently, the Monday check of
+  .github/workflows/listes.yml)
 """
 import argparse
 import json
+import sys
 import time
 import urllib.request
 from datetime import date
@@ -78,10 +81,36 @@ def count(doctors):
     return out
 
 
+def totals(c):
+    """A commune's counts as compared: its general practitioners, and its specialists by speciality."""
+    return {GP: c["generalistes"]["total"], **{k: v["total"] for k, v in c["specialistes"].items()}}
+
+
+def verifier(data, bundled, ecart):
+    """The bundled counts against today's directory, without writing: by commune, the general practitioners and each
+    speciality. 1 (the job's failure, its alert) when more than `ecart` doctors are counted differently."""
+    lines, n = [], 0
+    for c in sorted(set(data["communes"]) | set(bundled["communes"])):
+        now = totals(data["communes"][c]) if c in data["communes"] else {}
+        before = totals(bundled["communes"][c]) if c in bundled["communes"] else {}
+        for k in sorted(set(now) | set(before)):
+            d = now.get(k, 0) - before.get(k, 0)
+            if d:
+                n += abs(d)
+                lines.append(f"  {c}, {k} : {before.get(k, 0)} -> {now.get(k, 0)}")
+    print(f"liste construite le {bundled['construit']} (fichier du {bundled['mis_a_jour']}) ; annuaire du {data['mis_a_jour']} : {n} écarts")
+    print("\n".join(lines[:40]))
+    if n > ecart:
+        print(f"::error::Les comptes de médecins ont {n} écarts avec l'annuaire santé Ameli (seuil {ecart}) : lancer scripts/build-medecins.py et proposer la PR.")
+        return 1
+    return 0
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--json")
     ap.add_argument("--out", default=str(OUT))
+    ap.add_argument("--verifier", type=int, metavar="ECART", help="write nothing: compare with the bundled file, fail past ECART doctors counted differently")
     a = ap.parse_args()
     meta = get(DATASET)
     updated = next(r["last_modified"] for r in meta["resources"] if r["id"] == RESOURCE)[:10]
@@ -118,6 +147,8 @@ def main():
         "ile": count(island.values()),
         "communes": {c: {"codes_postaux": sorted(postcodes.get(c, ())), **count(here[c].values())} for c in sorted(here)},
     }
+    if a.verifier is not None:
+        sys.exit(verifier(data, json.loads(OUT.read_text(encoding="utf-8")), a.verifier))
     Path(a.out).write_text(json.dumps(data, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     print(f"{len(rows)} practices, {len(island)} doctors, {sum(len(v) for v in here.values())} counted by commune, written to {a.out}")
 

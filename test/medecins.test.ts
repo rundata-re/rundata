@@ -45,12 +45,12 @@ describe("the doctors of the Assurance Maladie's directory, counted", () => {
     expect(readdirSync("src/vie").filter((f) => f.startsWith("medecins"))).toEqual(["medecins-comptes.json", "medecins.ts"]);
   });
 
-  it("counts the file of 26/10/2026: a doctor once in a commune however many practices, once in the island", () => {
-    expect(C.mis_a_jour).toBe("2026-10-26");
+  it("counts the file of 09/11/2026: a doctor once in a commune however many practices, once in the island", () => {
+    expect(C.mis_a_jour).toBe("2026-11-09");
     const sum = (c: medecins.Comptes) => c.generalistes.total + Object.values(c.specialistes).reduce((n, s) => n + s.total, 0);
     expect(sum(C.ile)).toBe(1751);
-    expect(C.ile.generalistes.total).toBe(1043);
-    expect(Object.values(C.communes).reduce((n, c) => n + sum(c), 0)).toBe(2038);
+    expect(C.ile.generalistes.total).toBe(1042);
+    expect(Object.values(C.communes).reduce((n, c) => n + sum(c), 0)).toBe(2037);
     for (const c of Object.values(C.communes)) {
       const g = c.generalistes;
       expect(g.secteur_1 + g.secteur_2 + g.depassement_permanent + g.non_conventionnes).toBe(g.total);
@@ -135,7 +135,7 @@ describe("the commune page's doctors", () => {
     expect(part).toContain(`<li><span>Ophtalmologistes<small>${eyes.secteur_1} en secteur 1</small></span><span>${eyes.total}</span></li>`);
     expect(part).toContain("le tarif de la Sécurité sociale, sans dépassement");
     expect(part).toContain("Un médecin qui a plusieurs cabinets dans la commune compte une fois\u00a0; Ameli montre chaque cabinet. L&#39;annuaire ne dit pas si un médecin prend de nouveaux patients");
-    expect(part).toContain("fichier du 26/10");
+    expect(part).toContain("fichier du 09/11");
     // The page gathers its sources at the bottom.
     expect(communePage("https://rundata.re", pageOf("saint-paul")!, { place: null }, NOW)).toContain("Annuaire santé Ameli (Licence Ouverte Etalab 2.0)");
   });

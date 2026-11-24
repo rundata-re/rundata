@@ -118,11 +118,14 @@ describe("past cyclones", () => {
     expect(passePage("https://rundata.re", passe("colina-1993"))).toContain("<b>Plaine des Palmistes</b> : 205\u00a0km/h (57\u00a0m/s) le 19/01/1993");
   });
 
-  it("is served, in the sitemap and listed on /cyclones", async () => {
+  it("is served, indexable and listed on /cyclones, which alone is in the sitemap", async () => {
     const cache = new Cache();
     const r = await handle(new Request("https://rundata.re/cyclones/dina-2002", { headers: { accept: "text/html" } }), cache);
     expect(r.status).toBe(200);
-    expect(await r.text()).toContain("<h1>Cyclone Dina, 22 et 23 janvier 2002</h1>");
+    const dina = await r.text();
+    expect(dina).toContain("<h1>Cyclone Dina, 22 et 23 janvier 2002</h1>");
+    expect(dina).not.toMatch(/<meta name="robots" content="[^"]*noindex/);
+    expect(r.headers.get("x-robots-tag") ?? "").not.toContain("noindex");
     expect((await handle(new Request("https://rundata.re/cyclones/bejisa-2014", { headers: { accept: "text/html" } }), cache)).status).toBe(404);
     // The name alone, as people type it, leads to its page; a name not in the list stays a 404.
     for (const p of PASSES) {
@@ -134,7 +137,9 @@ describe("past cyclones", () => {
     expect([slash.status, slash.headers.get("location")]).toEqual([301, "/cyclones/dina"]);
     expect((await handle(new Request("https://rundata.re/cyclones/bejisa"), cache)).status).toBe(404);
     const map = await (await handle(new Request("https://rundata.re/sitemap.xml"), cache)).text();
-    for (const p of PASSES) expect(map).toContain(`<loc>https://rundata.re/cyclones/${p.slug}</loc>`);
+    // The sitemap names the head page only since 24/11/2026 (web/sitemap-gardees.ts): each cyclone is reached from it.
+    expect(map).toContain("<loc>https://rundata.re/cyclones</loc>");
+    for (const p of PASSES) expect(map).not.toContain(`<loc>https://rundata.re/cyclones/${p.slug}</loc>`);
     expect(cyclonesPage("https://rundata.re", null, NOW)).toContain('<li><a href="/cyclones/garance-2025">Cyclone Garance, 28 février 2025</a></li>');
   });
 

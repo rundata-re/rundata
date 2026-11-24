@@ -179,13 +179,12 @@ describe("a commune whose distributor's notices are not read (1284, 20/11/2026)"
   });
 });
 
-describe("a commune's day page in the sitemap, with its water notices not read (1599, 23/11/2026)", () => {
+describe("a commune's day page, with its water notices not read (1599, 23/11/2026)", () => {
   it("says where its distributor publishes them, never that they are not read, on every commune's page", async () => {
-    // With the water's copy and no notice in it: the card the sitemap test, rendering cold, never sees.
+    // With the water's copy and no notice in it: the card a test rendering cold never sees. On each commune's page,
+    // in the sitemap or not (none is since 24/11/2026, web/sitemap-gardees.ts): they stay online and indexable.
     const xml = await (await handle(new Request("https://rundata.re/sitemap.xml"), new Cache(new MemoryStore()))).text();
-    const listed = [...xml.matchAll(/<loc>https:\/\/rundata\.re\/aujourdhui\/([^<]+)<\/loc>/g)].map((m) => m[1]);
-    expect(listed.length).toBeGreaterThan(0);
-    for (const slug of listed) expect(COMMUNES.some((p) => p.slug === slug), slug).toBe(true);
+    expect(xml).not.toContain("<loc>https://rundata.re/aujourdhui/");
     const fautes: string[] = [];
     for (const p of COMMUNES) {
       const none = { ...full(p.nom), coupures: copy({ resume: "", couverture: "", a_savoir: "", sources: [], communes_suivies: [], avis: [] }) };
@@ -194,7 +193,7 @@ describe("a commune's day page in the sitemap, with its water notices not read (
       if (said) fautes.push(`${p.slug} : « ${said[0]} »`);
     }
     expect(fautes.join("\n")).toBe("");
-    // Le Tampon, in the sitemap, served by Sudéau (live on 23/11/2026 with « ne sont pas lus »).
+    // Le Tampon, served by Sudéau (live on 23/11/2026 with « ne sont pas lus »).
     const tampon = resume(pageOf("le-tampon")!, { ...full("Le Tampon"), coupures: copy({ resume: "", couverture: "", a_savoir: "", sources: [], communes_suivies: [], avis: [] }) } as never, NOW);
     expect(tampon.coupures_eau?.note).toBe("Sudéau publie ses avis de coupure sur son site, rubrique «\u00a0L'eau dans ma commune\u00a0»\u00a0; la mairie peut aussi vous renseigner.");
   });

@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Mardi 24 novembre 2026
 
+- Coupures d'eau aux Avirons, au Tampon, à Saint-Joseph et à l'Entre-Deux : le titre dit où sont publiés les avis du distributeur.
 - Coupures d'eau : sur la page d'une commune, les avis en cours passent en premier, avant la qualité de l'eau du robinet.
 - Mer : la règle de baignade dite en haut de la page et dans la réponse de l'outil temperature_mer.
 

@@ -1009,7 +1009,10 @@ describe("the clubs' and associations' space (web/associations.ts)", () => {
     expect(publier.indexOf('id="lien"')).toBeLessThan(publier.indexOf('<section id="exemples"'));
     expect(plain(await (await get("/a-propos")).text())).toContain('href="/associations"');
     const map = await (await handle(new Request("https://rundata.re/sitemap.xml"), new Cache())).text();
-    for (const loc of ["https://rundata.re/associations", "https://rundata.re/associations/proposer"]) expect(map).toContain(`<loc>${loc}</loc>`);
+    // The space is in the sitemap; its form, reached from it, is not since 24/11/2026 (web/sitemap-gardees.ts).
+    expect(map).toContain("<loc>https://rundata.re/associations</loc>");
+    expect(map).not.toContain("<loc>https://rundata.re/associations/proposer</loc>");
+    expect(plain(await (await get("/associations")).text())).toContain('href="/associations/proposer');
     const form = plain(await (await get("/associations/proposer")).text());
     expect(form).toContain('"position":2,"name":"Clubs et associations","item":"https://rundata.re/associations"');
     expect(form).toContain('href="/confidentialite#associations-donnees"');

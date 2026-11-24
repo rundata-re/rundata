@@ -438,7 +438,7 @@ describe("coupures d'eau", () => {
     expect(said("la-possession", "La Possession", "Eaux de La Possession")).toContain("1 avis des Eaux de La Possession en cours");
     expect(said("saint-andre", "Saint-André", "CIREST")).toContain("1 avis de la CIREST en cours");
     expect(said("saint-denis", "Saint-Denis", "Dionéo")).toContain("1 avis de Dionéo en cours");
-    expect(coupuresCommunePage("https://rundata.re", pageOf("entre-deux")!, { coupures: null }, NOW)).toContain(`<meta name="description" content="Coupures d&#39;eau à l&#39;Entre-Deux (974)`);
+    expect(coupuresCommunePage("https://rundata.re", pageOf("entre-deux")!, { coupures: null }, NOW)).toContain(`<meta name="description" content="Entre-Deux (974)\u00a0: les avis de coupure sont publiés par Sudéau, avec le lien vers sa page. Ici\u00a0: l&#39;eau du robinet`);
     // The page of the day: « eau à ne pas boire » first in its description, and a cut counted only as a cut.
     expect(descriptionOf(pageOf("salazie")!, resume(pageOf("salazie")!, { coupures } as never, NOW)).replace(/[\u00a0\u202f]/g, " ")).toMatch(/^Aujourd'hui à Salazie \(974\) : eau à ne pas boire, 2 coupures d'eau\. /);
     // The home page's tile: the cuts only, beside the communes not to drink the water of.
@@ -727,6 +727,51 @@ describe("coupures d'eau", () => {
     // The SPL Sources et Eaux, at Petite-Île: its notices read on the ville's site, never its own (its pages of notices empty).
     expect(page("petite-ile")).toContain(`les avis de coupure publiés sur <a href="https://www.petite-ile.re/taxonomy/term/301" rel="noopener">le site de la ville de Petite-Île</a>`);
     expect(page("petite-ile")).not.toContain("sourceo.re");
+  });
+
+  it("titles the page of a commune whose notices are not read by what it holds: where the notices are, and the tap water", async () => {
+    const coupures = { value: await buildCoupures(cache(), NOW), fetchedAt: NOW };
+    const page = (slug: string, w: object = { coupures }) => coupuresCommunePage("https://rundata.re", pageOf(slug)!, w, NOW);
+    const of = (html: string) => ({
+      title: html.match(/<title>([^<]*)<\/title>/)![1],
+      og: html.match(/<meta property="og:title" content="([^"]*)">/)![1],
+      // As a search engine reads it: the page's typography puts no-break spaces in the description.
+      meta: html.match(/<meta name="description" content="([^"]*)">/)![1].replace(/[\u00a0\u202f]/g, " "),
+      h1: html.match(/<h1>(.*?)<\/h1>/)![1],
+      // « ARS » is spelled out at its first occurrence (web/sigles.ts): the words alone.
+      hook: html.match(/<p class="hook">(.*?)<\/p>/)![1].split(/<[^>]*>/).join(""),
+    });
+    // Marketing's words (24/11/2026): « coupures » stays in the title, which says who publishes the notices.
+    const av = of(page("les-avirons"));
+    expect(av.title).toBe("Eau aux Avirons : coupures chez CISE Réunion, eau du robinet");
+    expect(av.og).toBe(av.title);
+    expect(av.h1).toBe(`L'eau aux Avirons <span class="n974">974</span>`);
+    expect(av.hook).toBe("Les avis de coupure des Avirons sont publiés par CISE Réunion : le lien est juste en dessous. Ici, l&#39;eau du robinet analysée par l&#39;ARS et la sécheresse.");
+    // The description whole when it fits 160 characters, else without its last words.
+    expect(av.meta).toBe("Les Avirons (974) : les avis de coupure sont publiés par CISE Réunion, avec le lien vers sa page. Ici : l&#39;eau du robinet analysée par l&#39;ARS et la sécheresse.");
+    // The link the hook announces is in the lead right under it.
+    const html = page("les-avirons");
+    expect(html.indexOf('<p class="lead">Les avis de coupure des Avirons sont publiés par CISE Réunion sur <a href="https://www.cise-reunion.re/"')).toBeGreaterThan(html.indexOf('<p class="hook">'));
+    for (const [slug, title] of [["le-tampon", "Eau au Tampon : coupures chez Sudéau, eau du robinet"], ["saint-joseph", "Eau à Saint-Joseph : coupures chez Sudéau, eau du robinet"], ["entre-deux", "Eau à l&#39;Entre-Deux : coupures chez Sudéau, eau du robinet"]]) {
+      const x = of(page(slug));
+      expect(x.title, slug).toBe(title);
+      expect(x.title.replaceAll("&#39;", "'").length, slug).toBeLessThanOrEqual(60);
+      expect(x.meta.replaceAll("&#39;", "'").length, slug).toBeLessThanOrEqual(160);
+      expect(x.meta, slug).toContain("les avis de coupure sont publiés par Sudéau, avec le lien vers sa page.");
+      expect(x.h1, slug).toMatch(/^L'eau (au|à) /);
+      expect(page(slug), slug).not.toContain("les avis en cours des distributeurs");
+    }
+    // The same before the notices are here: these words depend on no reading.
+    expect(of(page("les-avirons", {})).title).toBe(av.title);
+    expect(of(page("les-avirons", {})).meta).toBe(av.meta);
+    // A commune whose notices are read keeps its title, its h1 and the section's hook; so does L'Étang-Salé, one of
+    // whose two distributors is read.
+    for (const slug of ["saint-denis", "sainte-marie", "l-etang-sale"]) {
+      const x = of(page(slug));
+      expect(x.title, slug).toMatch(/^Coupure d&#39;eau /);
+      expect(x.h1, slug).toMatch(/^Coupures d'eau /);
+      expect(x.hook, slug).toBe("Coupure d&#39;eau ou eau à ne pas boire : les avis en cours des distributeurs.");
+    }
   });
 
   it("gives each commune its page: its notices, or none at the time of the copy, and who distributes its water", async () => {

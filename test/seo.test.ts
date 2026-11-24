@@ -65,7 +65,7 @@ describe("search engines", () => {
     const map = await get("/sitemap.xml");
     // A live page changes all day, a trail when the ONF changes its state: no day would be exact.
     expect(map).toContain(`<loc>${O}/evenements</loc><changefreq>hourly</changefreq>`);
-    expect(map).toContain(`<loc>${O}/meteo/cilaos</loc><changefreq>hourly</changefreq>`);
+    expect(map).toContain(`<loc>${O}/meteo/maido</loc><changefreq>hourly</changefreq>`);
     expect(map).toContain(`<loc>${O}/randonnees/${RANDONNEES[0].slug}</loc><changefreq>daily</changefreq>`);
     expect(map).toContain(`<loc>${O}/conditions</loc><changefreq>monthly</changefreq>`);
     // A list bundled with the server: the day it was rebuilt; the latest change for /nouveautes.

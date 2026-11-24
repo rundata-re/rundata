@@ -89,9 +89,9 @@ dependencies {
     implementation("androidx.browser:browser:1.10.0")
     // Le widget (Jetpack Glance) et sa mise à jour toutes les 30 min
     implementation("androidx.glance:glance-appwidget:1.2.0")
-    implementation("androidx.work:work-runtime-ktx:2.11.2")
+    implementation("androidx.work:work-runtime-ktx:2.12.0")
     // Ce que le widget garde de chaque commune, en JSON
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.12.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.13.0")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:2.4.21")
 }

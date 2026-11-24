@@ -8,7 +8,7 @@ plugins {
     id("org.jetbrains.compose")
 }
 
-val ktor = "3.5.2"
+val ktor = "3.6.1"
 
 kotlin {
     android {
@@ -32,11 +32,11 @@ kotlin {
         commonMain.dependencies {
             // Material 3 laissé de côté : sa version multiplateforme est en retard sur Compose 1.11.1 ; l'écran dessine
             // ses propres surfaces avec les couleurs du site.
-            api("org.jetbrains.compose.runtime:runtime:1.11.1")
-            api("org.jetbrains.compose.foundation:foundation:1.11.1")
-            api("org.jetbrains.compose.ui:ui:1.11.1")
+            api("org.jetbrains.compose.runtime:runtime:1.12.2")
+            api("org.jetbrains.compose.foundation:foundation:1.12.2")
+            api("org.jetbrains.compose.ui:ui:1.12.2")
             api("io.ktor:ktor-client-core:$ktor")
-            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.12.0")
+            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.13.0")
             api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
         }
         commonTest.dependencies {

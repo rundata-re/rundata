@@ -1200,6 +1200,7 @@ overflow-x:auto;scroll-snap-type:x mandatory}
 .scale .vg{text-align:center}
 .suivi{display:grid;gap:1rem}
 .suivi p{max-width:65ch}
+.suivi .zone-suivi{margin:0;font-weight:600}
 .seas a{color:#fff;font-size:.85rem}
 .reefs{list-style:none;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(14rem,100%),1fr));gap:.6rem;--echelle:var(--night-2)}
 .reefs li{display:grid;gap:.25rem;align-content:start;padding:.8rem 1rem;border:1px solid var(--line);border-radius:16px;background:var(--surface-2)}
@@ -2841,13 +2842,14 @@ ${around}
   return layout(origin, { title, description, path: `/meteo/${p.slug}`, jsonld, alerte, iaAside: true }, band, g.ligne + body);
 }
 
-export function notFoundPage(origin: string, path: string): string {
+export function notFoundPage(origin: string, path: string, alerte?: Alerte): string {
   return layout(origin, {
     title: `Page introuvable · ${SITE}`,
     description: "La Réunion (974) en direct\u00a0: sorties, randos, météo, routes, vigilance, volcan, air, électricité, calendrier.",
     path,
     jsonld: [],
     motif: true,
+    alerte,
   }, `<div class="wrap intro"><div class="pitch"><h1>Page introuvable</h1><p class="lead">Cette adresse n'existe pas sur rundata.re. Repartez de <a href="/">l'accueil</a>, des <a href="/evenements">sorties</a>, des <a href="/randonnees">randos</a> ou de <a href="/communes">votre commune</a>, ou découvrez <a href="/a-propos">qui fait rundata.re</a>.</p></div></div>`,
   `<section aria-labelledby="h-cat"><h2 id="h-cat">Les catégories</h2><ul class="chips">${WITH_PAGE.map((c) => `<li><a href="${c.path}">${esc(c.nom)}</a></li>`).join("")}</ul></section>
 <section aria-labelledby="h-communes"><h2 id="h-communes">Météo par commune et par lieu</h2>${placeLinks()}</section>`);
@@ -2956,7 +2958,7 @@ export function vigilancePage(origin: string, data: Cached<mf.Vigilance> | null,
   const suivi = v?.suivi.length
     ? `<section aria-labelledby="h-suivi"><h2 id="h-suivi">Ce que dit Météo-France</h2><div class="card suivi">` +
       // A title of two phenomena (« Fortes pluies/Orages ») may go to the next line after its « / », never inside « Orages ».
-      v.suivi.map((t) => `<div><h3>${esc(t.titre).replaceAll("/", "/<wbr>")}</h3><p>${esc(t.texte)}</p></div>`).join("") +
+      v.suivi.map((t) => `<div><h3>${esc(t.titre).replaceAll("/", "/<wbr>")}</h3>${t.zone ? `<p class="zone-suivi">Zone ${esc(t.zone)}</p>` : ""}<p>${esc(t.texte)}</p></div>`).join("") +
       `<p class="note">Texte de Météo-France, repris tel quel. Source : ${esc(mf.SOURCE.nom)} (${esc(mf.SOURCE.licence)}).</p></div></section>`
     : "";
 
@@ -3245,7 +3247,7 @@ ${bathingBlock(now, undefined, g)}${g.feuille}
 const PROSE = `max-width:44rem;display:grid;gap:1rem`;
 
 /** The privacy policy and the terms (with the legal notice): what is kept, what is promised. */
-export function legalPage(origin: string, kind: "confidentialite" | "conditions"): string {
+export function legalPage(origin: string, kind: "confidentialite" | "conditions", alerte?: Alerte): string {
   const privacy = kind === "confidentialite";
   const title = privacy ? "Confidentialité" : "Conditions d'utilisation et mentions légales";
   const body = privacy
@@ -3303,6 +3305,7 @@ ${enLigne() ? `<p id="evenements-proposes"><b>Événements proposés par les clu
       : "Conditions d'utilisation de rundata.re, service gratuit de données publiques de La Réunion, et mentions légales.",
     path: `/${kind}`,
     jsonld: [crumbs(origin, title, `/${kind}`)],
+    alerte,
   }, `${crumbBar(title)}
 <div class="wrap intro"><div class="pitch"><h1>${title}</h1></div></div>`, body);
 }

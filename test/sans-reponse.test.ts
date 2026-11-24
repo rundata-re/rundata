@@ -448,7 +448,7 @@ describe("the list's copy around the recheck, and a copy not read again (22/11/2
     expect((await sr.etat(cache, new Date(clock))).passage).toBe(T);
   });
 
-  it("is kept by the browsers no longer than its copy is good: a minute in the recheck's half hour", async () => {
+  it("is kept by the browsers no longer than its copy is good, and a minute at most for its banner of the vigilance", async () => {
     sr.configure(undefined, async () => [] as never[]);
     const ask = async (iso: string) => {
       vi.useFakeTimers({ toFake: ["Date"] });
@@ -461,7 +461,7 @@ describe("the list's copy around the recheck, and a copy not read again (22/11/2
       }
     };
     expect(await ask("2026-11-23T02:05:00Z")).toBe("public, max-age=60");
-    expect(await ask("2026-11-23T03:05:00Z")).toBe("public, max-age=900");
+    expect(await ask("2026-11-23T03:05:00Z")).toBe("public, max-age=60");
   });
 
   it("says a last copy served for a failed read once it is more than an hour old, never a fresh one", async () => {

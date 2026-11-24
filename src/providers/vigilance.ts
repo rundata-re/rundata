@@ -14,6 +14,7 @@ import type { SourceInfo } from "../types.js";
 import { unzipBytes } from "../zip.js";
 import { download, session } from "./mf-auth.js";
 import { type Carte, configured as carteConfigured, kept as carteKept, passage } from "./vigilance-carte.js";
+import { garder } from "./vigilance-episodes.js";
 
 export { enabled } from "./mf-auth.js";
 
@@ -115,8 +116,11 @@ export interface Vigilance {
   emise: string;
   /** zone → phenomenon id → periods; only the zones and phenomena with something issued (colour ≥ 1). */
   zones: Record<string, Record<number, Period[]>>;
-  /** The follow-up texts, by phenomenon title. */
-  suivi: { titre: string; texte: string }[];
+  /**
+   * The follow-up texts, by phenomenon title. A text of a block given for one zone (its `domain_id`) keeps that zone:
+   * `domaine` its id, `zone` its name as Météo-France's (ZONES); none for the island's block (24/11/2026).
+   */
+  suivi: { titre: string; texte: string; zone?: string; domaine?: string }[];
   /** The official map, as the scheduled event last kept it (vigilance-carte.ts); missing until then, and in Node. */
   carte?: Carte;
 }
@@ -135,7 +139,7 @@ interface MapJson {
 }
 
 interface TextsJson {
-  text_bloc_items?: { text_items?: { title: string; text: string[] }[] }[];
+  text_bloc_items?: { domain_id?: string; text_items?: { title: string; text: string[] }[] }[];
 }
 
 export function parse(map: MapJson, texts?: TextsJson): Vigilance {
@@ -154,7 +158,11 @@ export function parse(map: MapJson, texts?: TextsJson): Vigilance {
     }
   }
   const suivi = (texts?.text_bloc_items ?? []).flatMap((b) =>
-    (b.text_items ?? []).map((t) => ({ titre: t.title, texte: t.text.join(" ").trim() })),
+    (b.text_items ?? []).map((t) => ({
+      titre: t.title,
+      texte: t.text.join(" ").trim(),
+      ...(b.domain_id && b.domain_id !== ISLAND && { zone: ZONES[b.domain_id] ?? b.domain_id, domaine: b.domain_id }),
+    })),
   );
   return { emise: map.update_time, zones, suivi };
 }
@@ -176,6 +184,8 @@ export async function read(): Promise<Vigilance> {
   const texts = files.get(TEXTS);
   const text = new TextDecoder();
   const v = parse(JSON.parse(text.decode(map)) as MapJson, texts ? (JSON.parse(text.decode(texts)) as TextsJson) : undefined);
+  // A bulletin above green, kept to replay the episode (vigilance-episodes.ts): by the scheduled event only.
+  if (isScheduled()) await unmeasured(() => garder(zip, v));
   const carte = await unmeasured(() => (scheduled ? passage(files.get(BULLETIN)) : carteKept()));
   return carte ? { ...v, carte } : v;
 }

@@ -3,6 +3,7 @@
  * CHANGELOG.md and sources_donnees (src/nouveautes.ts). Nothing is fetched.
  */
 import { NOUVEAUTES, parJour } from "../nouveautes.js";
+import type { Alerte } from "./data.js";
 import { cheminsTexte } from "./adresse.js";
 import { connectorCta, crumbBar, jourMois, webPage } from "./domains.js";
 import { esc } from "./map.js";
@@ -18,7 +19,7 @@ export const DESCRIPTION = "Les dernières données et pages ajoutées à rundat
 export const chiffreMot = (texte: string): string =>
   esc(texte).replace(/(?<![\p{L}\d,.])(\d+(?:[,.]\d+)*)\u00a0(\p{L}{3,})/gu, '<span class="jm">$1 $2</span>');
 
-export function nouveautesPage(origin: string): string {
+export function nouveautesPage(origin: string, alerte?: Alerte): string {
   const path = "/nouveautes";
   const days = parJour();
   const trail = {
@@ -49,5 +50,5 @@ export function nouveautesPage(origin: string): string {
 </section>`).join("\n") + `
 <p class="note">La même liste est dans le dépôt du code : <a href="${GITHUB}/blob/main/CHANGELOG.md">CHANGELOG.md</a>.</p>
 ${connectorCta("sources_donnees", "toutes ces données")}`;
-  return layout(origin, { title: TITLE, description: DESCRIPTION, path, jsonld: [trail, page] }, band, body);
+  return layout(origin, { title: TITLE, description: DESCRIPTION, path, jsonld: [trail, page], alerte }, band, body);
 }

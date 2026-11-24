@@ -20,6 +20,7 @@ import * as creches from "../vie/creches.js";
 import * as parcoursup from "../vie/parcoursup.js";
 import * as decouvrir from "../vie/decouvrir.js";
 import * as enfants from "../vie/enfants.js";
+import * as collecte from "../vie/collecte.js";
 import * as dech from "../vie/decheteries.js";
 import * as antennes from "../vie/antennes.js";
 import * as internet from "../vie/internet.js";
@@ -757,6 +758,16 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
       foot: fiche ? `${lienNom(fiche, "Fiche service-public.fr", ' rel="noopener"')}` : `<a href="/mcp">Demandez à votre IA →</a>`,
     },
     ...(marches ? [{ icon: "building", nom: "Marchés publics", href: marches.href, sr: aCommune(p.nom), live: marches.live, foot: `<a href="${marches.href}">Les voir →</a>` }] : []),
+    // The commune's waste collection, street by street, where the TCO's calendars are read (vie/collecte.ts): before the
+    // recycling centres, as it serves every week (marketing, 24/11/2026). The page was two clicks away, by /collecte.
+    ...(collecte.COMMUNES.includes(p.nom)
+      ? [{
+        icon: "calendar", nom: "Collecte des déchets", href: `/collecte/${collecte.communeSlug(p.nom)}`, sr: aCommune(p.nom),
+        // Its detail whole (entier): cut after three lines on a phone, it lost the calendar's year and whose it is.
+        live: { valeur: "Jour par rue", detail: esc(`ordures ménagères, tri et déchets verts, d'après le calendrier ${collecte.YEAR} du TCO`), entier: true },
+        foot: `<a href="/collecte/${collecte.communeSlug(p.nom)}">Chercher ma rue →</a>`,
+      }]
+      : []),
     ...(dech.TCO_COMMUNES.includes(p.nom) ? [{ icon: "pin", nom: "Déchèteries", href: `/decheteries#${anchorOf(p.nom)}`, sr: aCommune(p.nom), live: wasteLive(p, l.dechets, now) }] : []),
     ...(dech.ELSEWHERE_COMMUNES.includes(p.nom) ? [{ icon: "pin", nom: "Déchèteries", href: `/decheteries#${anchorOf(p.nom)}`, sr: aCommune(p.nom), live: elsewhereLive(p) }] : []),
     { icon: "heart", nom: "Pharmacies", live: pharmacies(p), foot: `${lienNom(sante.GARDE.site, "Pharmacie de garde : 3237.fr", ' rel="noopener"')}` },

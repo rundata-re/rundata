@@ -12,6 +12,7 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 LAND = "https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@v5.1.2/geojson/ne_50m_land.geojson"
 LON0, LAT0, LON1, LAT1 = 26.0, -44.0, 94.0, 4.0
 TOLERANCE = 0.08  # degrees: about 9 km, under a pixel of the map
@@ -76,7 +77,7 @@ def main():
     if args.land:
         land = json.loads(Path(args.land).read_text())
     else:
-        req = urllib.request.Request(LAND, headers={"User-Agent": "reunion-temps-reel (open source MCP server)"})
+        req = urllib.request.Request(LAND, headers=UA)
         land = json.load(urllib.request.urlopen(req, timeout=120))
     rings = []
     for f in land["features"]:

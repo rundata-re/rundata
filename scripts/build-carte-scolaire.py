@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DATASET = "fr-en-carte-scolaire-colleges-publics"
 API = f"https://data.education.gouv.fr/api/explore/v2.1/catalog/datasets/{DATASET}"
 EXPORT = f"{API}/exports/json?where=code_departement%3D%22974%22"
-UA = {"User-Agent": "reunion-temps-reel (open source MCP server, real-time data for Reunion Island)"}
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 PARITE = {"PI": 0, "I": 1, "P": 2}
 
 

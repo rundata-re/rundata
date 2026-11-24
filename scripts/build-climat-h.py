@@ -38,7 +38,7 @@ from collections import defaultdict
 from pathlib import Path
 
 DATASET = "https://www.data.gouv.fr/api/2/datasets/6569b4473bedf2e7abad3b72/resources/?page_size=100&q=974"
-UA = {"User-Agent": "rundata.re (open source MCP server, real-time data for Reunion Island)"}
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 FIELDS = ["RR1", "T", "U", "FF", "DD", "FXI", "INS", "GLO"]
 FIRST_YEAR = 2000
 MAX_STATEMENT = 90_000

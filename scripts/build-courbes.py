@@ -15,6 +15,7 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 WMS = ("https://data.geopf.fr/wms-r/wms?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=ELEVATION.ELEVATIONGRIDCOVERAGE.HIGHRES"
        "&STYLES=&CRS=EPSG:4326&FORMAT=image/x-bil;bits=32")
 ISLAND = json.loads((ROOT / "src/places/island.json").read_text())["bbox"]
@@ -30,7 +31,7 @@ TOLERANCE = 0.1  # cells
 
 def grid(box, w, h):
     lon0, lat0, lon1, lat1 = box
-    raw = urllib.request.urlopen(f"{WMS}&BBOX={lat0},{lon0},{lat1},{lon1}&WIDTH={w}&HEIGHT={h}", timeout=180).read()
+    raw = urllib.request.urlopen(urllib.request.Request(f"{WMS}&BBOX={lat0},{lon0},{lat1},{lon1}&WIDTH={w}&HEIGHT={h}", headers=UA), timeout=180).read()
     z = array.array("f", raw)
     assert len(z) == w * h, (len(z), w * h)
     return [(-1 if v < -1000 else round(v)) for v in z]

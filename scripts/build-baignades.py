@@ -13,7 +13,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 LAYER = "https://sigmas.social.gouv.fr/server/rest/services/baignades/reu_vue_baignade/MapServer/5/query?"
-UA = {"User-Agent": "reunion-temps-reel (open source MCP server, real-time data for Reunion Island)"}
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 SMALL = {"de", "des", "du", "la", "le", "les", "l", "d", "à", "a", "aux", "et"}
 
 

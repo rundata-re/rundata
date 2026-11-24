@@ -28,7 +28,7 @@ IBTRACS_PAGE = "https://www.ncei.noaa.gov/products/international-best-track-arch
 MF_FIRST = 1987
 REUNION = 6  # the RSMC of La Réunion's letter in IFLAG
 TOLERANCE = 0.05  # degrees: about 5 km, under a pixel of the map
-UA = {"User-Agent": "rundata.re (open source, build)"}
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 
 
 def simplify(pts, tol):

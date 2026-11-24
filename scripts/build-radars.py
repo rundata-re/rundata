@@ -15,7 +15,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DATASET = "https://www.data.gouv.fr/api/1/datasets/6712583387af110196942793/"
-UA = {"User-Agent": "reunion-temps-reel (open source MCP server, real-time data for Reunion Island)"}
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 LON0, LAT0, LON1, LAT1 = 55.1, -21.5, 55.9, -20.8
 # The types as the dataset's page defines them, word for word (read on 26/10/2026).
 TYPES = {

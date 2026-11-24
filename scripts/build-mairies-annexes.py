@@ -24,7 +24,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DATASET = "mairies-annexes-villesaintdenis"
 API = f"https://data.regionreunion.com/api/explore/v2.1/catalog/datasets/{DATASET}"
 PAGE = f"https://data.regionreunion.com/explore/assets/{DATASET}/"
-UA = {"User-Agent": "reunion-temps-reel (open source MCP server, real-time data for Reunion Island)"}
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 # The fields taken, under the names given here; LEFT are those known and never taken. Any other stops the build.
 KEPT = {"nature": "nature", "nom": "nom", "nom_de_qua": "quartier", "adresse": "adresse"}
 LEFT = {"elu", "maire", "source", "date_d_exp", "geo_shape", "geo_point_2d"}

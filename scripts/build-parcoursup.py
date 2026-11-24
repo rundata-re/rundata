@@ -21,7 +21,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 BASE = "https://data.enseignementsup-recherche.gouv.fr/api/explore/v2.1/catalog/datasets/fr-esr-parcoursup"
 PAGE = "https://data.enseignementsup-recherche.gouv.fr/explore/dataset/fr-esr-parcoursup/"
-UA = {"User-Agent": "reunion-temps-reel (open source MCP server, real-time data for Reunion Island)"}
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 WHERE = 'dep="974"'
 FIELDS = "session,dep,cod_uai,g_ea_lib_vx,ville_etab,lib_for_voe_ins,capa_fin,taux_acces_ens,lien_form_psup"
 # The sheet of a formation on parcoursup.fr: only its number changes, kept alone.

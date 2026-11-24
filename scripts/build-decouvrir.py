@@ -27,7 +27,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 DATASET = "https://data.regionreunion.com/api/explore/v2.1/catalog/datasets/lieux-remarquables-lareunion-tourinsoft"
 PAGE = "https://data.regionreunion.com/explore/dataset/lieux-remarquables-lareunion-tourinsoft/"
-UA = {"User-Agent": "reunion-temps-reel (open source MCP server, real-time data for Reunion Island)"}
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 last = {}
 
 # The names read one by one on 03/11/2026 and kept, of the heritage: none named after a person (an artisan, a guide) nor

@@ -335,7 +335,7 @@ describe("the sensors of private people on sensors.social (ODbL 1.0, its written
       `https://roseman.robonomics.network/api/v2/sensor/${SS_ID(1)}/…`,
     ]);
     expect(social[0].url).toMatch(new RegExp(`/${NOW.getTime() / 1000 - 3600}/${NOW.getTime() / 1000}$`));
-    for (const x of social) expect(x.ua).toBe("rundata.re (https://rundata.re; contact@rundata.re)");
+    for (const x of social) expect(x.ua).toBe("rundata.re (+https://rundata.re/a-propos#lecteur; contact@rundata.re)");
     expect((written[0] as capteurs.Copie).capteurs.filter((c) => c.reseau === "sensors.social").map((c) => c.commune)).toEqual(["Le Port", "Saint-Denis"]);
     // The other passes of the hour: Sensor.Community alone.
     seen.length = 0;

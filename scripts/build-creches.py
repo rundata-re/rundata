@@ -22,7 +22,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 API = "https://data.caf.fr/api/explore/v2.1/catalog/datasets"
 PAGE = "https://data.caf.fr/explore/dataset/txcouv_pe_com/"
-UA = {"User-Agent": "reunion-temps-reel (open source MCP server, real-time data for Reunion Island)"}
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 last = [0.0]
 
 # The five intercommunalités by SIREN, as said on the page, and their communes by INSEE code: north, east, west, south.

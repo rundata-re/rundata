@@ -16,7 +16,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 OVERPASS = "https://overpass-api.de/api/interpreter"
-UA = {"User-Agent": "reunion-temps-reel (open source MCP server, real-time data for Reunion Island)"}
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 QUERY = """[out:json][timeout:90];area["ISO3166-2"="FR-974"]->.a;(nwr["amenity"="marketplace"](area.a););out center tags;"""
 DAYS = {"Mo": "lundi", "Tu": "mardi", "We": "mercredi", "Th": "jeudi", "Fr": "vendredi", "Sa": "samedi", "Su": "dimanche"}
 ORDER = list(DAYS)

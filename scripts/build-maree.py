@@ -25,7 +25,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "src" / "maree" / "constantes.json"
 API = "https://services.data.shom.fr/maregraphie/observation/json/"
-UA = {"User-Agent": "rundata.re (contact@rundata.re)"}
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 GAUGES = {"110": "Pointe des Galets (Le Port)", "832": "Sainte-Marie"}
 HOURLY = 4  # validated hourly heights
 TEN_MIN = 2  # raw heights every 10 minutes, a few days late

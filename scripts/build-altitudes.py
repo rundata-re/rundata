@@ -19,6 +19,7 @@ import zlib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 ISLAND = json.loads((ROOT / "src/places/island.json").read_text())
 LON0, LAT0, LON1, LAT1 = ISLAND["bbox"]
 W = 125  # about 540 m a cell: enough for a veil of colour drawn smooth over the map
@@ -39,7 +40,7 @@ def png(levels, w, h):
 
 
 def main():
-    with urllib.request.urlopen(WMS, timeout=120) as r:
+    with urllib.request.urlopen(urllib.request.Request(WMS, headers=UA), timeout=120) as r:
         z = array.array("f", r.read())
     if sys.byteorder != "little":
         z.byteswap()

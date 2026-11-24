@@ -78,7 +78,7 @@ describe("MétéoR-OI's stations", () => {
     const said = await meteorOi.collect(before, async (c) => void (written = c), AT);
     expect(asked).toHaveLength(meteorOi.STATIONS.length);
     expect(new Set(asked.map((a) => a.url)).size).toBe(meteorOi.STATIONS.length);
-    expect(asked.every((a) => a.ua === "rundata.re (https://rundata.re; contact@rundata.re)")).toBe(true);
+    expect(asked.every((a) => a.ua === "rundata.re (+https://rundata.re/a-propos#lecteur; contact@rundata.re)")).toBe(true);
     expect(written!.sans_reponse).toEqual(["PAM290"]);
     expect(written!.mesures.find((m) => m.code === "PAM290")).toEqual(before.mesures[0]);
     expect(written!.mesures).toHaveLength(meteorOi.STATIONS.length);

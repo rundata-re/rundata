@@ -15,7 +15,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "src" / "eau" / "distributeurs.json"
-UA = {"User-Agent": "rundata.re (contact@rundata.re)"}
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 API = "https://hubeau.eaufrance.fr/api/v1/qualite_eau_potable/resultats_dis"
 INSEE = {
     "Les Avirons": "97401", "Bras-Panon": "97402", "Entre-Deux": "97403", "L'Étang-Salé": "97404", "Petite-Île": "97405",

@@ -12,7 +12,7 @@
  * measures from another's.
  */
 import type { Cached } from "../cache.js";
-import { getJson } from "../http.js";
+import { getJson, UA_RUNDATA } from "../http.js";
 import { placeAt } from "../places/resolve.js";
 import { distanceKm } from "../geo.js";
 import type { SourceInfo } from "../types.js";
@@ -60,7 +60,7 @@ const URL = `https://data.sensor.community/airrohr/v1/filter/box=${BOX.south.toF
 // The server behind sensors.social's map (RoSeMAN), as the map's own code calls it (src/providers/remote.js).
 const ROSEMAN = "https://roseman.robonomics.network/api/v2/sensor/";
 /** Asked by sensors.social: rundata.re's site and address in the User-Agent of its reads (ASCII only). */
-export const SOCIAL_UA = "rundata.re (https://rundata.re; contact@rundata.re)";
+export const SOCIAL_UA = UA_RUNDATA;
 /**
  * The island's sensors on sensors.social read at most: one request each, besides the list (1 on 09/11/2026). Past it,
  * the ones that sent last are kept. 3 until 14/11/2026, when the budget counted this read where it runs, in its own

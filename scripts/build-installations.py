@@ -28,7 +28,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DATASET = "https://opendata-reunion.edf.fr/data-fair/api/v1/datasets/2ne0caym1gcwtbpsdtb3u511"
-UA = {"User-Agent": "rundata.re (contact@rundata.re)"}
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 # The register's filières, in its words, lower-cased: the names the page says.
 FILIERES = {
     "Bioénergies": "bioénergies",

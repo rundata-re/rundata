@@ -26,7 +26,7 @@ ITINERANCE = re.compile(r"^FR[A-Z0-9]{3}")
 ROOT = Path(__file__).resolve().parent.parent
 STATIC = "https://transport.data.gouv.fr/resources/84013/download"
 COMMUNE_AT = "https://geo.api.gouv.fr/communes?fields=nom&format=json&"
-UA = {"User-Agent": "reunion-temps-reel (open source MCP server, real-time data for Reunion Island)"}
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 LON0, LAT0, LON1, LAT1 = 55.1, -21.5, 55.9, -20.8
 
 PLUGS = [("prise_type_2", "Type 2"), ("prise_type_combo_ccs", "Combo CCS"), ("prise_type_chademo", "CHAdeMO"),

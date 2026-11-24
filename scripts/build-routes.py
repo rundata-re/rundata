@@ -29,6 +29,7 @@ from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 ISLAND = json.loads((ROOT / "src/places/island.json").read_text())
 LON0, LAT0, LON1, LAT1 = ISLAND["bbox"]
 W, H = ISLAND["w"], ISLAND["h"]
@@ -73,7 +74,7 @@ def fetch(typename, extra, start, cache):
         return json.loads((cache / name).read_text())
     params = {"SERVICE": "WFS", "VERSION": "2.0.0", "REQUEST": "GetFeature", "TYPENAMES": typename,
               "OUTPUTFORMAT": "application/json", "COUNT": PAGE, "STARTINDEX": start, "SORTBY": "cleabs", **extra}
-    req = urllib.request.Request(f"{WFS}?{urllib.parse.urlencode(params)}", headers={"User-Agent": "reunion-temps-reel/0.1"})
+    req = urllib.request.Request(f"{WFS}?{urllib.parse.urlencode(params)}", headers=UA)
     if fetch.last:
         time.sleep(max(0, fetch.last + 61 - time.time()))
     with urllib.request.urlopen(req, timeout=300) as r:

@@ -23,7 +23,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 DATASET = "https://www.data.gouv.fr/api/1/datasets/693aa2feed1bf4da603faa49/"
 VINTAGE = 2025
-UA = {"User-Agent": "reunion-temps-reel (open source MCP server, real-time data for Reunion Island)"}
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 # Each file of the dataset, by the end of its name.
 KINDS = {"appartement": "pred-app-", "appartement_1_2_pieces": "pred-app12-", "appartement_3_pieces_et_plus": "pred-app3-", "maison": "pred-mai-"}
 

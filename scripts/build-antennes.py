@@ -26,7 +26,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 MOBILE = "https://www.data.gouv.fr/api/1/datasets/6ab291cf426d615c84196260/"
 RADIO = "https://www.data.gouv.fr/api/1/datasets/551d4ff3c751df55da0cd89f/"
-UA = {"User-Agent": "reunion-temps-reel (open source MCP server, real-time data for Reunion Island)"}
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 # The ANFR's names, as the site writes the operators: their trade names (Telco OI sells as Free, SRR as SFR Réunion).
 OPERATORS = {"ORANGE": "Orange", "SRR": "SFR Réunion", "TELCO OI": "Free", "ZEOP": "Zeop"}
 STATES = {"En service": "service", "Techniquement opérationnel": "operationnel", "Projet approuvé": "projet"}

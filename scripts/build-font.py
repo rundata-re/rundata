@@ -16,6 +16,7 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 # The variable font, latin subset, as Google Fonts serves it to a current browser.
 URL = "https://fonts.gstatic.com/s/bricolagegrotesque/v9/3y9K6as8bTXq_nANBjzKo3IeZx8z6up5BeSl9D4dj_x9PpZBMlGIInE.woff2"
 UNICODES = ("U+0020-007E,U+00A0-00FF,U+0152-0153,U+2009,U+2013-2014,U+2019,U+201C-201E,U+2026,U+202F,"
@@ -26,7 +27,7 @@ def main():
     with tempfile.TemporaryDirectory() as d:
         d = Path(d)
         src, inst, out = d / "src.woff2", d / "inst.ttf", d / "out.woff2"
-        src.write_bytes(urllib.request.urlopen(URL, timeout=60).read())
+        src.write_bytes(urllib.request.urlopen(urllib.request.Request(URL, headers=UA), timeout=60).read())
         py = sys.executable
         subprocess.run([py, "-m", "fontTools.varLib.instancer", str(src), "wght=600:800", "opsz=36:96",
                         "-o", str(inst), "-q"], check=True)

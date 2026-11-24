@@ -26,7 +26,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DATASET = "https://www.data.gouv.fr/api/1/datasets/53698f4ca3a729239d2036df/"
-UA = {"User-Agent": "reunion-temps-reel (open source MCP server, real-time data for Reunion Island)"}
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 YEARS = 5
 # The files' titles change from a year to another (« carcteristiques-2022.csv », « caract-2023.csv », « Caract_2024.csv »):
 # found by their kind and year.

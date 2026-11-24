@@ -16,7 +16,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 URL = "https://data.tco.re/api/explore/v2.1/catalog/datasets/meteo-des-decheteries/records?limit=100&select=titre,address,commune,lat,lng,lien"
-UA = {"User-Agent": "reunion-temps-reel (open source MCP server, real-time data for Reunion Island)"}
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 # « Commune de Trois-Bassins » → the commune as the server spells it (src/places/insee.ts).
 NAMES = {code: nom for nom, code in re.findall(r'"([^"]+)": "(974\d\d)"', (ROOT / "src/places/insee.ts").read_text())}
 

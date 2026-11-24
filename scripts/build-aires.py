@@ -17,7 +17,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 LAYER = "https://services1.arcgis.com/Y4HgaQpzkE7kenlE/arcgis/rest/services/Sentiers_La_Reunion_public/FeatureServer/1"
 QUERY = LAYER + "/query?" + urllib.parse.urlencode({"where": "1=1", "outFields": "WA_Lieu", "returnGeometry": "true", "outSR": "4326", "geometryPrecision": "5", "f": "json"})
-UA = {"User-Agent": "reunion-temps-reel (open source MCP server, real-time data for Reunion Island)"}
+UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 
 
 def get(url):

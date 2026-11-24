@@ -1,7 +1,9 @@
 // The trial Worker of the alerts on the phone (src/web/alertes.ts), apart from production's wrangler.jsonc, which it
 // never changes. Its own address on workers.dev (HTTPS, which Web Push needs; no DNS), its own D1 database and VAPID
 // key, and NO scheduled event, so that the sources are never read twice. Only the alerts' addresses are meant to be
-// used there: no KV, no static assets, none of production's other bindings. ALERTES_ESSAI opens those addresses.
+// used there: no KV, none of production's other bindings. It serves production's static files (the fonts, icons and
+// images the service worker keeps for offline use), else the service worker cannot install and /alertes cannot
+// subscribe a phone. ALERTES_ESSAI opens those addresses.
 //
 // Set up once, from the repository (the database's id, not a secret, is in database_id below since step 1):
 //   1. npx wrangler d1 create rundata-essai
@@ -18,6 +20,7 @@
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
   "workers_dev": true,
+  "assets": { "directory": "./public", "binding": "ASSETS", "run_worker_first": ["/demo/*"] },
   "preview_urls": false,
   "vars": { "ALERTES_ESSAI": "1" },
   "d1_databases": [{ "binding": "AVIS", "database_name": "rundata-essai", "database_id": "b4ac7d04-82bb-4573-b478-10f91d646594" }],

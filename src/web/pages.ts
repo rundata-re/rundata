@@ -424,6 +424,11 @@ p,ul,ol,table,figure{margin:0}
 .wrap{max-width:72rem;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .ic{width:1.4em;height:1.4em;flex:none}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* A space for screen readers between the boxes of a flex or a grid: the one in the HTML is dropped there (« Au plus28 °C »,
+   « 0,5 kmouvert », TalkBack 24/11/2026). Empty on screen, a no-break space for the reader, on each box but those that
+   are themselves a flex or a grid (the generated box would take a gap there: .kb, .l2, .tabs, .rj-plus, .echelle, and the
+   containers of the list), a link (read on its own) or what is hidden from the reader. Zero specificity: a box's own ::before or ::after wins. */
+:where(.rows li,.st,.th,.pls,.pl,.seas li,.iprw,.records ul li,.reefs li,.bars li,.minuit li,.minuit .v,.legend,.facts,.figs li,.qdays .axis,.wxmap .lgs,.pill)>:not(:where(.rows li,.st,.th,.pls,.pl,.seas li,.iprw,.records ul li,.reefs li,.bars li,.minuit li,.minuit .v,.legend,.facts,.figs li,.qdays .axis,.wxmap .lgs,.pill,.kb,.l2,.tabs,.rj-plus,.echelle,a,[aria-hidden="true"]))::before,:where(.rows li,.st,.th,.pls,.pl,.seas li,.iprw,.records ul li,.reefs li,.bars li,.minuit li,.minuit .v,.legend,.facts,.figs li,.qdays .axis,.wxmap .lgs,.pill)>:not(:where(.rows li,.st,.th,.pls,.pl,.seas li,.iprw,.records ul li,.reefs li,.bars li,.minuit li,.minuit .v,.legend,.facts,.figs li,.qdays .axis,.wxmap .lgs,.pill,.kb,.l2,.tabs,.rj-plus,.echelle,a,[aria-hidden="true"]))::after{content:""/"\\a0"}
 /* A day's number with its month (« 10 novembre »), on one line, or « Saint-Paul » in /presse's release, never
    « Saint- / Paul » at 390 px; under 19.9 em, below, the line may break there. */
 .jm{white-space:nowrap}
@@ -1669,7 +1674,9 @@ export function hook(path: string): string | undefined {
  */
 function share(origin: string, head: Head): string {
   const text = `${head.title.replace(/ · (?:La Réunion \(974\)|974)$/, "")} : ${origin}${head.path}?ref=wa`;
-  const link = (s: Social, label = s.nom) => `<a href="${esc(fromSite(s.url))}" rel="noopener">${esc(label)}</a>`;
+  // A name of one letter (X) is read « X majuscule »: the link says whose account it is, in words.
+  const link = (s: Social, label = s.nom) =>
+    `<a href="${esc(fromSite(s.url))}" rel="noopener"${/^\p{L}$/u.test(label) ? ` aria-label="rundata.re sur ${esc(label)}"` : ""}>${esc(label)}</a>`;
   // The two promises first, Facebook's fact every morning and the WhatsApp channel's outings on Friday; then the
   // other networks, a plain list of where rundata.re is, with no rhythm promised (wording validated on 22/11/2026): « Suivez
   // rundata.re : une info utile chaque matin sur Facebook, les sorties du week-end le vendredi sur notre chaîne
@@ -2237,7 +2244,7 @@ function weatherLive(data: Cached<HomeData> | null, now: Date): string {
  * Every station of the official networks, filtered by commune and sorted by the page's script; without it, by altitude.
  * Under them, folded, the amateur stations, each said so (the validated words, 10/11/2026).
  */
-function stationsList(every: StationNow[], now: Date): string {
+export function stationsList(every: StationNow[], now: Date): string {
   const all = every.filter((s) => !s.amateur);
   const am = every.filter((s) => s.amateur);
   const row = (s: StationNow) => {
@@ -2249,7 +2256,7 @@ function stationsList(every: StationNow[], now: Date): string {
     // « 11,9 °C à 20 h 30 » for the evening of another day (06/11/2026). Seen, the time alone: « 06/11 · 14:06 »
     // pushes it under the temperature on 9 cards of 12 at 390 px. The day seen too when it is not today's.
     const [day, time] = localTime(new Date(s.time)).split(" ");
-    const when = day === localTime(now).split(" ")[0] ? `<span class="sr">mesurée le ${day} à </span>${time}` : `<span class="sr">mesurée le </span>${day}<span class="sr"> à</span> ${time}`;
+    const when = day === localTime(now).split(" ")[0] ? `<span class="sr">mesurée le ${day} à\u00a0</span>${time}` : `<span class="sr">mesurée le\u00a0</span>${day} <span class="sr">à\u00a0</span>${time}`;
     return `<li class="st tgt" id="${stationId(s.nom)}" data-c="${esc(c)}" data-z="${s.altitude_m}" data-t="${s.temperature ?? ""}" data-n="${esc(s.nom)}">` +
       `<p class="th">${t}<span class="when">${when}${old}</span></p><h3>${s.source === "meteofrance" && s.id && stationOf(s.id) ? `<a href="${stationPath(s.id)}">${esc(s.nom)}</a>` : esc(s.nom)}</h3><p class="ou">${esc(c)} · ${metres(s.altitude_m)}</p>` +
       `${pills ? `<p class="pls">${pills}</p>` : ""}${s.amateur ? `<p class="cr">${esc(ditAmateur(s.source) ?? "")}</p>` : ""}${meteorNote(s)}</li>`;

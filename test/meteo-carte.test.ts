@@ -585,12 +585,12 @@ describe("the page /meteo with every station", () => {
 
   it("dates a measure of another day in the list, and says it old", () => {
     const html = page([GILLOT, { ...BRAS_SEC, time: "2026-10-21T15:00:00Z" }]);
-    expect(html).toContain(`<span class="when"><span class="sr">mesurée le </span>21/10<span class="sr"> à</span> 19:00 (ancienne)</span>`);
+    expect(html).toContain(`<span class="when"><span class="sr">mesurée le\u00a0</span>21/10 <span class="sr">à\u00a0</span>19:00 (ancienne)</span>`);
   });
 
   it("gives today's day too to a screen reader and to a page read as text, the time alone seen", () => {
     const html = page([GILLOT, BRAS_SEC]);
-    expect(html).toContain(`<span class="when"><span class="sr">mesurée le 22/10 à </span>09:18</span>`);
+    expect(html).toContain(`<span class="when"><span class="sr">mesurée le 22/10 à\u00a0</span>09:18</span>`);
     expect(html).not.toMatch(/<span class="when">\d\d:\d\d/);
   });
 

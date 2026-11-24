@@ -79,7 +79,7 @@ describe("restrictions d'eau", () => {
 
   it("draws its legend as the charter of the maps wants: each colour as a square then its word, never a coloured word, and nothing else", async () => {
     const page = secheressePage("https://rundata.re", { value: await buildSecheresse(cache()), fetchedAt: new Date(), stale: false });
-    expect(page).toContain('<span><svg viewBox="-37 -37 74 74" aria-hidden="true"><rect x="-30" y="-30" width="60" height="60" rx="8" style="fill:#862e9c"/></svg>crise</span>');
+    expect(page).toContain('<span><svg viewBox="-37 -37 74 74" aria-hidden="true"><rect x="-30" y="-30" width="60" height="60" rx="8" style="fill:#862e9c"/></svg>crise<span class="sr">\u00a0</span></span>');
     const figure = page.slice(page.indexOf('<figure class="card mapcard">'), page.indexOf("</figure>"));
     expect(figure).not.toContain('class="mls"');
     expect(figure).not.toContain("2094");

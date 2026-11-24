@@ -251,8 +251,8 @@ describe("the map of /evenements", () => {
     expect(layerOf(html, "we-0")).toContain(`aria-label="Le Port : 1 événement, voir le détail"`);
     // A count in the night's colour; the legend draws each mark, then the nature, source and time.
     expect(layerOf(html, "we-0")).toContain('fill="#14202b"');
-    expect(html).toContain('<circle r="34" fill="#14202b"/><text y="11">3</text></svg>événements de la commune</span>');
-    expect(html).toContain('<circle r="17" fill="#56b4e9" style="paint-order:stroke"/></svg>lieu de l&#39;événement, d&#39;après l&#39;annonce</span>');
+    expect(html).toContain('<circle r="34" fill="#14202b"/><text y="11">3</text></svg>événements de la commune<span class="sr">\u00a0</span></span>');
+    expect(html).toContain('<circle r="17" fill="#56b4e9" style="paint-order:stroke"/></svg>lieu de l&#39;événement, d&#39;après l&#39;annonce<span class="sr">\u00a0</span></span>');
     expect(html).toContain('<span class="mls">Annonces des salles, des mairies et des offices de tourisme, d&#39;après les agendas lus le 27/10 à 10:00.</span>');
     // Read another day: the day too.
     const yesterday = agendaPage("https://rundata.re", { value: { ...data(ROWS).value, ce_week_end: [] }, fetchedAt: new Date(TUESDAY.getTime() - 86400_000) }, TUESDAY);

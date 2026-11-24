@@ -56,8 +56,14 @@ function mark(c: Cle): string {
 }
 
 /** The legend's two parts: the marks, then `ligne` (HTML: it may hold a link). */
+/**
+ * A space for screen readers at the end of a key's words: the keys are boxes of a flex, where the space between them in
+ * the HTML is dropped (TalkBack read « bonnemoyennemauvaise », 24/11/2026). Out of the flow, so the gap stays the same.
+ */
+export const ESPACE_LU = `<span class="sr">\u00a0</span>`;
+
 export const legende = (cles: Cle[], ligne?: string): string =>
-  (cles.length ? `<span class="mlg">${cles.map((c) => `<span>${mark(c)}${esc(c.dit)}</span>`).join(" ")}</span>` : "") +
+  (cles.length ? `<span class="mlg">${cles.map((c) => `<span>${mark(c)}${esc(c.dit)}${ESPACE_LU}</span>`).join(" ")}</span>` : "") +
   (ligne ? `${cles.length ? " " : ""}<span class="mls">${ligne}</span>` : "");
 
 /** Its style, in the page's sheet. At 1.6 rem, a disc's figures are 11 px high, a pill's 13 px. */

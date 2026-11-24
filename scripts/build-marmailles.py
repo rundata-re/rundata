@@ -14,6 +14,7 @@ import argparse
 import importlib.util
 import json
 import re
+import sys
 import time
 import urllib.request
 from datetime import date
@@ -75,6 +76,7 @@ def main():
     p.add_argument("--geojson", help="a local copy of the portal's GeoJSON export")
     p.add_argument("--du", help="the day the portal gives the data, 2026-11-02")
     p.add_argument("--cache", help="keep the ONF's answer in this folder")
+    p.add_argument("--verifier", type=int, metavar="ECART", help="write nothing: compare with src/vie/marmailles.json, fail past ECART sentiers marmailles added, gone or changed")
     a = p.parse_args()
     if a.cache:
         bt.CACHE = Path(a.cache)
@@ -123,6 +125,8 @@ def main():
         w = walks[-1]
         print(f"  {w['id']:>3} {w['nom']}: {w['km']} km ({bt.length_km(pieces):.1f} tracés, {w.get('parcours', '?')}), {w['duree']}, ONF {w['part_onf']:.0%} {w['sentiers_onf']}")
     walks.sort(key=lambda w: w["id"])
+    if a.verifier is not None:
+        sys.exit(verifier(walks, a.verifier))
     dest = ROOT / "src/vie/marmailles.json"
     dest.write_text(json.dumps({
         "construit": date.today().isoformat(),
@@ -132,6 +136,30 @@ def main():
         "sentiers": walks,
     }, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
     print(f"{len(walks)} sentiers -> {dest.relative_to(ROOT)}, {dest.stat().st_size // 1024} Ko")
+
+
+def verifier(rows, ecart):
+    """The bundled list against the portal's of today, without writing: each entry by its id, all its fields (the ONF
+    trails it follows included), not the day it was built. The portal's date of change moves with no change of content
+    (16/11/2026). 1 (the job's failure, its alert) when more than `ecart` were added, are gone or changed."""
+    bundled = json.loads((ROOT / "src/vie/marmailles.json").read_text(encoding="utf-8"))
+    before, now = {r["id"]: r for r in bundled["sentiers"]}, {r["id"]: r for r in rows}
+    added, gone = [i for i in now if i not in before], [i for i in before if i not in now]
+    changed = {i: sorted(f for f in set(before[i]) | set(now[i]) if before[i].get(f) != now[i].get(f)) for i in now if i in before}
+    changed = {i: f for i, f in changed.items() if f}
+    print(f"liste du {bundled['construit']} : {len(before)} sentiers marmailles ; le portail aujourd'hui : {len(now)}, "
+          f"{len(added)} nouveaux, {len(gone)} disparus, {len(changed)} changés")
+    for i in added[:20]:
+        print(f"  nouveau : {now[i]['nom']}")
+    for i in gone[:20]:
+        print(f"  disparu : {before[i]['nom']}")
+    for i, f in list(changed.items())[:20]:
+        print(f"  changé : {now[i]['nom']} ({', '.join(f)})")
+    n = len(added) + len(gone) + len(changed)
+    if n > ecart:
+        print(f"::error::La liste des sentiers marmailles a {n} écarts avec les sentiers marmailles du portail de la Région (seuil {ecart}) : lancer scripts/build-marmailles.py et proposer la PR.")
+        return 1
+    return 0
 
 
 if __name__ == "__main__":

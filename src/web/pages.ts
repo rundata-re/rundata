@@ -1596,7 +1596,7 @@ const HOOKS: [string, string][] = [
   ["/", "Les sorties, les randos, le temps et les routes de l'île en ce moment, pour vous et votre IA."],
   ["/meteo", "Le temps qu'il fait vraiment, mesuré par la station la plus proche, et la prévision à part."],
   ["/vigilance", "Avant de sortir : la vigilance officielle de Météo-France, zone par zone."],
-  ["/crues", "Fortes pluies ? La vigilance crues et la hauteur des rivières en ce moment, station par station."],
+  ["/crues", "Fortes pluies ? La vigilance crues et la hauteur des rivières en ce moment, station par station, d'après Vigicrues Réunion."],
   ["/mer", "Avant la plage : la température de l'eau au large de chaque plage."],
   ["/volcan", "Éruption ou pas, Enclos ouvert ou fermé : l'état du volcan avant de monter."],
   ["/bus", "Votre prochain bus, à l'heure annoncée par le réseau, sans appli à installer."],

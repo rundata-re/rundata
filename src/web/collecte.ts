@@ -12,13 +12,17 @@ import { esc } from "./map.js";
 import { folded, layout } from "./pages.js";
 
 // The texts of the pages, worded by marketing.
-export const TITLE = "Collecte des déchets Ouest Réunion : jours par rue · 974";
+// The titles and a commune's description say the year of the calendars read (vie/collecte.ts YEAR), never the year of
+// the day: people search « collecte des déchets saint-paul 2026 » and « calendrier tco » (marketing, 24/11/2026).
+const TITLE_MAX = 60;
+export const TITLE = `Calendrier collecte TCO ${col.YEAR} : jours par rue · 974`;
 const H1 = "Quel jour passent les poubelles ?";
-const META = `Ordures ménagères, tri, déchets verts : le jour de collecte rue par rue à Saint-Paul, La Possession, Saint-Leu, Le Port et Trois-Bassins (974), calendriers ${col.YEAR} du TCO.`;
-const titleOf = (c: string) => `Collecte des déchets ${a(c)} : jours par rue · 974`;
+const META = `Ordures ménagères, tri, déchets verts : le jour de collecte rue par rue à Saint-Paul, La Possession, Saint-Leu, Le Port et Trois-Bassins (974), d'après le TCO.`;
+// A long name (Les Trois-Bassins) without « jours par rue ».
+const titleOf = (c: string) => [`Collecte des déchets ${c} ${col.YEAR} : jours par rue · 974`].find((t) => t.length <= TITLE_MAX) ?? `Collecte des déchets ${c} ${col.YEAR} · 974`;
 const h1Of = (c: string) => `Quel jour passent les poubelles ${a(c)} ?`;
 const COLLECTE = { name: "Collecte des déchets", path: "/collecte" };
-const metaOf = (c: string) => `Ordures ménagères, tri et déchets verts ${a(c)} (974) : le jour de collecte de votre rue, d'après le calendrier ${col.YEAR} du TCO. Cherchez votre rue.`;
+const metaOf = (c: string) => `Calendrier ${col.YEAR} de collecte des déchets ${a(c)} (974) : ordures ménagères, tri et déchets verts, le jour de passage de votre rue, d'après le TCO.`;
 const LEAD = `Tapez le nom de votre rue : le jour de passage pour les ordures ménagères, le tri et les déchets verts, d'après les calendriers ${col.YEAR} publiés par le TCO.`;
 const { honesty, communeSlug } = col;
 // With the list just below (marketing), and the tool's first words of `a_savoir` (honesty): only the West is read.

@@ -5,7 +5,7 @@ import * as carburants from "../src/providers/carburants.js";
 import { annuaireTool } from "../src/tools/annuaire.js";
 import { FUEL, keep } from "../src/tools/carburants.js";
 import { handle } from "../src/app.js";
-import { carburantsPage, descriptionOf, TITLE } from "../src/web/carburants.js";
+import { carburantsPage, descriptionOf, titleOf } from "../src/web/carburants.js";
 
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url), "utf8");
 const LIEN = "https://www.reunion.gouv.fr/Actualites/Communiques-de-presse/Prix-des-carburants-en-octobre";
@@ -187,14 +187,14 @@ describe("the prefect's fuel prices", () => {
     const prix = carburants.parseRelease(fixture("carburants_octobre.html"), LIEN, NOW)!;
     const at = { value: prix, fetchedAt: NOW, stale: false };
     const page = render("https://rundata.re", at, NOW);
-    expect(TITLE.length).toBeLessThanOrEqual(60);
-    expect(page).toContain(`<title>${TITLE}</title>`);
+    expect(titleOf(prix).length).toBeLessThanOrEqual(60);
+    expect(page).toContain(`<title>${titleOf(prix).replace(/'/g, "&#39;")}</title>`);
     expect(page).toContain('<h1>Prix des carburants à La Réunion, octobre 2026 <span class="n974">974</span></h1>');
     // Marketing's sentence, its end dropped when it would not fit in what search engines show.
-    expect(descriptionOf(prix)).toBe("Prix maximum en octobre 2026 à La Réunion (974) : sans plomb 2,00 €/L (+0,17 €), gazole 1,80 €/L (+0,12 €), bouteille de gaz 20,81 €. Fixés par le préfet.");
+    expect(descriptionOf(prix)).toBe("Prix de l'essence à La Réunion en octobre 2026 : sans plomb 2,00 €/L, gazole (gasoil) 1,80 €/L, gaz 20,81 € la bouteille. Prix maximum du préfet.");
     for (const depuis of ["2026-09-01", "2026-02-01", "2026-12-01"]) expect(descriptionOf({ ...prix, depuis }).length).toBeLessThanOrEqual(160);
     // A figure the order does not give is left out, not printed empty.
-    expect(descriptionOf({ ...prix, produits: prix.produits.filter((x) => x.produit !== "Gazole") })).toBe("Prix maximum en octobre 2026 à La Réunion (974) : sans plomb 2,00 €/L (+0,17 €), bouteille de gaz 20,81 €. Fixés par le préfet, partout sur l'île.");
+    expect(descriptionOf({ ...prix, produits: prix.produits.filter((x) => x.produit !== "Gazole") })).toBe("Prix de l'essence à La Réunion en octobre 2026 : sans plomb 2,00 €/L, gaz 20,81 € la bouteille. Prix maximum du préfet.");
     expect(page).toContain("<td><b>1,26 €</b></td>");
     // No green dot: the order's month, not a reading of the day.
     expect(page).toContain('<p class="pill">Arrêté du préfet · Prix depuis le 1er octobre</p>');

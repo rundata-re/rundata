@@ -151,13 +151,13 @@ describe("the tool and the pages", () => {
 
   it("gives /collecte and a page per commune, every street of it, grouped by calendar", () => {
     const all = collectePage("https://rundata.re", NOW);
-    expect(all).toContain("<title>Collecte des déchets Ouest Réunion : jours par rue · 974</title>");
+    expect(all).toContain(`<title>Calendrier collecte TCO ${col.YEAR} : jours par rue · 974</title>`);
     expect(all).toContain("<h1>Quel jour passent les poubelles ?</h1>");
     expect(communeOf("trois-bassins")).toBe("Les Trois-Bassins");
     const sp = collectePage("https://rundata.re", NOW, "Saint-Paul");
-    expect(sp).toContain("<title>Collecte des déchets à Saint-Paul : jours par rue · 974</title>");
+    expect(sp).toContain(`<title>Collecte des déchets Saint-Paul ${col.YEAR} : jours par rue · 974</title>`);
     expect(sp).toContain("<h1>Quel jour passent les poubelles à Saint-Paul ?</h1>");
-    expect(sp).toContain("Ordures Ménagères, tri et déchets verts à Saint-Paul (974)".replace("Ménagères", "ménagères"));
+    expect(sp).toContain(`content="Calendrier ${col.YEAR} de collecte des déchets à Saint-Paul (974)`);
     expect(sp).toContain("<li>Rue Leconte Delisle</li>");
     expect(sp).not.toContain("Rue Victoria");
     expect(sp).toContain('<a href="/decheteries">');

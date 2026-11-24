@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { journeeOf } from "../src/web/data.js";
 import { installationsReplay, productionChart } from "../src/web/electricite-carte.js";
-import { IMAGES_FAST, IMAGES_MAX, IMAGES_OVER, imagesMaxOf, keepsUp, rejeuScript, skipNear, skipOf, unionOf } from "../src/web/meteo-carte.js";
+import { IMAGES_FAST, IMAGES_HEURES, IMAGES_MAX, IMAGES_OVER, imagesMaxFor, imagesMaxOf, keepsUp, rejeuScript, skipNear, skipOf, unionOf } from "../src/web/meteo-carte.js";
 import { CSS } from "../src/web/pages.js";
 import { VITESSE_JS, VITESSES, vitesseBouton } from "../src/web/vitesse.js";
 
@@ -88,7 +88,7 @@ describe("the speed of the replays", () => {
     expect(at(4)).toEqual([4, 3, 4, 4, 4]);
     // Never more than 7 shown a second.
     for (const v of VITESSES) for (const x of Object.values(n)) expect((v * x) / skipOf(v, x, 7)).toBeLessThanOrEqual(7);
-    expect(js).toContain(`const skipOf=${skipOf},skipNear=${skipNear},keepsUp=${keepsUp},imagesMaxOf=${imagesMaxOf},unite=${unionOf};`);
+    expect(js).toContain(`const skipOf=${skipOf},skipNear=${skipNear},keepsUp=${keepsUp},imagesMaxOf=${imagesMaxOf},imagesMaxFor=${imagesMaxFor},unite=${unionOf};`);
     expect(js).toContain(`const kk=(n,x,m)=>skipNear(V,n,x||7,DN?0:m||0,1.2),ne=(n)=>V*n/kk(n)`);
     // Only while playing: paused, the slider shows every image.
     expect(js).toContain(`sub=(l)=>{const k=K[l],n=playing?kk(ips(l),l==="p"?imx():0,l==="p"?NR():0):1;`);
@@ -119,12 +119,34 @@ describe("the speed of the replays", () => {
     expect(Object.values(n).map((x) => skipOf(2, x, max(quick, 2, x)))).toEqual([1, 1, 1, 1, 1]);
     const js = rejeuScript();
     // Chosen when a play starts or its speed changes, never during it; only for the rain.
-    expect(js).toContain(`const imx=()=>{const q=V+" "+PN+" "+d;if(IQ!==q){IQ=q;IM=DN?7:imagesMaxOf(CW,slow,V,ips("p"),0.6,25,7,14);`);
+    expect(js).toContain(`const imx=()=>{const q=V+" "+PN+" "+d;if(IQ!==q){IQ=q;IM=DN?7:imagesMaxFor(d,CW,slow,V,ips("p"),0.6,25,7,14,28);`);
     expect(js).toContain(`const play=()=>{if(T>=E)T=S;playing=true;RJ.pl=true;AZ=null;last=nx=0;PN++;FD=30;FW.length=0;`);
     // A device that draws fewer than 25 frames a second over the last 30 goes back to 7 at once, for the rest of the visit.
     expect(js).toContain(`if(was&&t-was<250){FW.push(t-was);if(FW.length>30)FW.shift();if(FW.length===30){const s=FW.reduce((a,b)=>a+b,0);if(s>30e3/25){DN=true;IM=7;FD=30}`);
     // The rain's next image shown, for the page to decide whether a pair is moved (test/pluie-mouvement.test.ts).
     expect(js).toContain(`RJ.p.mix(r.a.e,r.z.e,r.f,el,gr,trail(shown(T,r,l)),wm(),nxt(r.z))`);
+  });
+
+  // The user's choice of 24/11/2026 between three films of 7 days at ×4: B, every image of an hour shown, none skipped
+  // (14 a second showed one in 2, two hours apart, faded: the rain jumped).
+  it("shows every hourly image of 7 days at ×4 to a device that keeps up with 28 a second; 14, then 7, to the others", () => {
+    expect(IMAGES_HEURES).toBe(28);
+    const max = (m: string, cw: number[] | null, v: number, n: number, slow = false) => imagesMaxFor(m, cw, slow, v, n, 0.6, 25, 7, 14, 28);
+    const n = { "6h": 72 / 12, "24h": 96 / 24, "7j": 168 / 24, "24h+": 288 / 54, "7j+": 672 / 96 };
+    // 28 new images at 12 ms and 30 frames at 2 ms: 396 ms of a second, it keeps up.
+    const fast = [12, 2, 60], quick = [20, 2, 30];
+    expect(max("7j", fast, 4, n["7j"])).toBe(28);
+    expect(skipOf(4, n["7j"], max("7j", fast, 4, n["7j"]))).toBe(1);
+    // One that keeps up with 14 only (28 × 20 ms is over 0.6 s): 14 as before, one hourly image in 2; a slow one, 7.
+    expect(max("7j", quick, 4, n["7j"])).toBe(14);
+    expect(max("7j", null, 4, n["7j"])).toBe(7);
+    expect(max("7j", fast, 4, n["7j"], true)).toBe(7);
+    // Only 7 days' hourly file: 6 h, 24 h and the finer files as imagesMaxOf says.
+    for (const m of ["6h", "24h", "24h+", "7j+"] as const) expect(max(m, fast, 4, n[m]), m).toBe(imagesMaxOf(fast, false, 4, n[m], 0.6, 25, 7, 14));
+    // The script asks it with the mode played.
+    const js = rejeuScript();
+    expect(js).toContain(`imagesMaxFor=${imagesMaxFor}`);
+    expect(js).toContain(`IM=DN?7:imagesMaxFor(d,CW,slow,V,ips("p"),0.6,25,7,14,28);`);
   });
 
   it("keeps the rain's images 15 minutes apart at most, moved one into the other, for up to 1.2 times its most a second", () => {

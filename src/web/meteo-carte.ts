@@ -1602,6 +1602,12 @@ export const IMAGES_MAX = 7;
  * at ×4: « pas fluide »; 09/11/2026: the rain of two images 20 minutes apart covered the same cells at 13 %).
  */
 export const IMAGES_FAST = 14;
+/**
+ * Over 7 days, whose file has an image an hour, the most new images of the rain a second for a device that keeps up with
+ * them: 28, every hourly image at ×4, none skipped. The user's choice of 24/11/2026 between three films of 7 days at ×4
+ * (B): at IMAGES_FAST, one image in 2, two hours apart faded into each other, the rain jumped from one place to another.
+ */
+export const IMAGES_HEURES = 28;
 /** At speed `v`, one image shown in so many of a layer that has `n` new ones a second at ×1, for `max` at most a second. */
 export const skipOf = (v: number, n: number, max: number) => Math.max(1, Math.ceil((v * n) / max - 1e-9));
 /**
@@ -1662,6 +1668,12 @@ export const keepsUp = (cw: number[] | null, slow: boolean, n: number, share: nu
  */
 export const imagesMaxOf = (cw: number[] | null, slow: boolean, v: number, n: number, share: number, fps: number, lo: number, hi: number) =>
   keepsUp(cw, slow, (v * n) / skipOf(v, n, hi), share, fps) ? hi : lo;
+/**
+ * As imagesMaxOf, for the mode `m` played: over 7 days (« 7j », its hourly file), `heures` (IMAGES_HEURES) for a device
+ * that keeps up with the images it would then show, else as imagesMaxOf. The replay's script takes it as its text.
+ */
+export const imagesMaxFor = (m: string, cw: number[] | null, slow: boolean, v: number, n: number, share: number, fps: number, lo: number, hi: number, heures: number) =>
+  m === "7j" && keepsUp(cw, slow, (v * n) / skipOf(v, n, heures), share, fps) ? heures : imagesMaxOf(cw, slow, v, n, share, fps, lo, hi);
 
 /**
  * The replay, asked by REJEU_SCRIPT when its visitor first touches the bar: the file of the length chosen
@@ -1683,7 +1695,7 @@ const P=${js({ ...REJEU_PATHS, "24h+": FINS["24h"], "7j+": FINS["7j"] })},JP=${j
 // A layer's new images a second at ×1 (the radar's, or one an hour), at the speed one in kk of them (IMAGES_MAX), and so
 // many shown a second (ne); the rain's, up to IM (IMAGES_FAST for a device that keeps up), or one in m of them, its
 // images within WAY_MS, up to IMAGES_OVER times IM (skipNear), unless the device fell behind (DN).
-const skipOf=${skipOf},skipNear=${skipNear},keepsUp=${keepsUp},imagesMaxOf=${imagesMaxOf},unite=${unionOf};
+const skipOf=${skipOf},skipNear=${skipNear},keepsUp=${keepsUp},imagesMaxOf=${imagesMaxOf},imagesMaxFor=${imagesMaxFor},unite=${unionOf};
 const kk=(n,x,m)=>skipNear(V,n,x||${IMAGES_MAX},DN?0:m||0,${IMAGES_OVER}),ne=(n)=>V*n/kk(n),ips=(l)=>(l==="p"?DU[d]/ST[d]:DU[d]/36e5)*1e3/PL[d];
 const ST={"6h":3e5,"24h":9e5,"7j":36e5,"24h+":3e5,"7j+":9e5,jour:3e5},SN={"6h":6e4,"24h":18e4,"7j":6e5,"24h+":0,"7j+":0,jour:0},DU={"6h":216e5,"24h":864e5,"7j":6048e5,"24h+":864e5,"7j+":6048e5,jour:864e5};
 // The longest time between two images of the radar faded into each other: 10 minutes over 6 hours, half an hour in the
@@ -1743,13 +1755,14 @@ const R=K.p.length>0&&ck("wx-rd"),G=K.g.length>0&&ck("wx-pv");s.hidden=!R&&!G;if
 // A layer's moments at T: on one, or between two (f of the way), or none (before its first, or across a long hole).
 // Playing faster than its images can follow, one in n of them, the last kept (sub); paused, every one.
 // The rain's most a second (IM), chosen when a play starts and when its speed changes (IQ), never during it: a device
-// that keeps up gets IMAGES_FAST (imagesMaxOf); one that then draws fewer than KEEPS_UP_FPS frames a second over the
+// that keeps up gets IMAGES_FAST, over 7 days IMAGES_HEURES if it keeps up with them (imagesMaxFor); one that then
+// draws fewer than KEEPS_UP_FPS frames a second over the
 // last 30 (FW) goes back to IMAGES_MAX at once, until the page is left (DN). Its images within WAY_MS (NR, one in so
 // many at most). The frames drawn a second (FD): 60 for a device that keeps up with them as with IMAGES_FAST (the user,
 // 07/11/2026, at ×4: « pas fluide »; at 30, the rain moved 5 px a frame over 6 hours at ×4), back to 30 for the rest of
 // the visit once it draws fewer than 50 (D6).
 let IM=${IMAGES_MAX},IQ="",DN=false,PN=0,FD=30,D6=false;const FW=[],NR=()=>Math.floor(${WAY_MS}/ST[d]);
-const imx=()=>{const q=V+" "+PN+" "+d;if(IQ!==q){IQ=q;IM=DN?${IMAGES_MAX}:imagesMaxOf(CW,slow,V,ips("p"),${KEEPS_UP},${KEEPS_UP_FPS},${IMAGES_MAX},${IMAGES_FAST});
+const imx=()=>{const q=V+" "+PN+" "+d;if(IQ!==q){IQ=q;IM=DN?${IMAGES_MAX}:imagesMaxFor(d,CW,slow,V,ips("p"),${KEEPS_UP},${KEEPS_UP_FPS},${IMAGES_MAX},${IMAGES_FAST},${IMAGES_HEURES});
 FD=!D6&&IM>${IMAGES_MAX}&&keepsUp(CW,slow,V*ips("p")/kk(ips("p"),IM,NR()),${KEEPS_UP},${KEEPS_UP_FPS},60)?60:30}return IM};
 const KS=new WeakMap(),sub=(l)=>{const k=K[l],n=playing?kk(ips(l),l==="p"?imx():0,l==="p"?NR():0):1;if(!k||n<2)return k;let c=KS.get(k);if(!c||c[0]!==n){
 // The rain's windows (each its start, de) shown one in n further apart than WAY_MS, faded: each with those it skips (unite).

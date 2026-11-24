@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import * as transit from "../src/providers/transit.js";
 import { CHANGE_S, chosen, type End, endOf, journeys, type Journey, ROWS_MAX, ZONE_MAX } from "../src/tools/itineraire.js";
 import { answer, askedOf, itinerairePage, journeyForm } from "../src/web/itineraire.js";
+import { transports } from "../src/tools/transports.js";
 
 // Rows of the D1 database read by the searches below, from the networks' GTFS of 31/10/2026 (scripts/build-transit.py).
 const rows = JSON.parse(readFileSync(new URL("./fixtures/transit/itineraire.json", import.meta.url), "utf8")) as Record<string, Record<string, { id: number }[]>>;
@@ -223,5 +224,69 @@ describe("the page", () => {
       `<p class="note">Résultats pour les principaux arrêts du Port et de Saint-Pierre : précisez l'arrêt pour un quartier.</p>`,
     ]);
     expect(itinerairePage("https://rundata.re", r(town("Le Port"), town("Saint-Pierre")), undefined, NOW)).toContain("<title>Le Port → Saint-Pierre en bus · 974</title>");
+  });
+});
+
+describe("the transports tool, asked a trip", () => {
+  const body = (r: { content: { text: string }[] }) => JSON.parse(r.content[0].text);
+  // Monday 2/11/2026, 11:00 in La Réunion.
+  const LUNDI = new Date("2026-11-02T07:00:00Z");
+
+  it("gives the journeys themselves, from the timetables, with the page that searches others", async () => {
+    const r = body(await transports("Petite-Île vers aéroport Roland-Garros", undefined, LUNDI));
+    expect(r.resume).toBe(
+      `Trajets en bus de Petite-Île (principaux arrêts) à l'arrêt Aéroport Roland-Garros, aujourd'hui, à partir de 11:00, d'après les horaires prévus par les réseaux : ${r.trajets.length} trouvé${r.trajets.length > 1 ? "s" : ""}, le premier part à ${r.trajets[0].depart} et arrive à ${r.trajets[0].arrivee}.`,
+    );
+    expect(r.trajets.length).toBeGreaterThan(0);
+    expect(r.trajets.length).toBeLessThanOrEqual(5);
+    const j = r.trajets.find((x: { depart: string }) => x.depart === "12:15");
+    expect(j).toEqual({
+      depart: "12:15",
+      arrivee: "15:16",
+      duree: "3 h 01",
+      correspondances: 1,
+      etapes: [
+        expect.stringMatching(/^12:15 Croisée Petite-Île : ligne S3 \(Car Jaune\) vers /),
+        "12:41 descendre à Gare de Saint-Pierre",
+        "Changement : environ 1 min à pied jusqu'à Gare de Saint-Pierre",
+        expect.stringMatching(/^13:00 Gare de Saint-Pierre : ligne T \(Car Jaune\) vers /),
+        "15:16 descendre à Aéroport Roland-Garros, Sainte-Marie",
+      ],
+    });
+    expect(r.page).toBe("https://rundata.re/bus/itineraire?de=Petite-%C3%8Ele&a=a%C3%A9roport%20Roland-Garros");
+    expect(r.horaires).toMatch(/^théoriques/);
+    expect(r).not.toHaveProperty("trajet_en_bus");
+    expect(r).not.toHaveProperty("departs");
+    // One search: the passes at both ends, then the trips and their stops.
+    expect(reads).toBeLessThanOrEqual(5);
+  });
+
+  it("says when no bus is left that day, then the departures at the start", async () => {
+    const tard = new Date("2026-11-01T11:40:00Z");
+    const r = body(await transports("Chemin des Bambous vers Pôle d'échange Marché couvert, Saint-Pierre", undefined, tard));
+    expect(Object.keys(r)[0]).toBe("trajet_en_bus");
+    expect(r.trajet_en_bus).toContain("Plus aucun trajet direct ni avec une seule correspondance ce jour-là après 15:40, d'après les horaires prévus.");
+    expect(r.trajet_en_bus).toContain("https://rundata.re/bus/itineraire?de=Chemin%20des%20Bambous&a=");
+    // Maybe with two changes: the departures at its start.
+    expect(r).not.toHaveProperty("trajets");
+    expect(r).toHaveProperty("departs");
+  });
+
+  it("an end it does not find: the departures at the start, after the page and what it did not find", async () => {
+    const r = body(await transports("aéroport vers xyzzy plugh", undefined, LUNDI));
+    expect(Object.keys(r)[0]).toBe("trajet_en_bus");
+    expect(r.trajet_en_bus).toBe(
+      "Arrivée non trouvée : « xyzzy plugh ». La page Trajet en bus de rundata.re cherche un trajet sur les horaires de tous les réseaux de l'île : https://rundata.re/bus/itineraire?de=a%C3%A9roport&a=xyzzy%20plugh. Donner ce lien à l'utilisateur.",
+    );
+    expect(r).toHaveProperty("departs");
+  });
+
+  it("reads « de A à B » as a trip when both ends are found, else as a stop and its commune", async () => {
+    const r = body(await transports("de Petite-Île à l'aéroport Roland-Garros", undefined, LUNDI));
+    expect(r.trajets.length).toBeGreaterThan(0);
+    expect(r.page).toBe("https://rundata.re/bus/itineraire?de=Petite-%C3%8Ele&a=l'a%C3%A9roport%20Roland-Garros");
+    const stop = body(await transports("de Croisée à xyzzy", undefined, LUNDI));
+    expect(stop).not.toHaveProperty("trajets");
+    expect(stop).not.toHaveProperty("trajet_en_bus");
   });
 });

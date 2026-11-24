@@ -7,7 +7,7 @@ import { REGISTRY } from "../src/registre.js";
 import { DIRECT_VERS, MOTS, ORDRE, PAR_DEFAUT, VUES } from "../src/web/carte.js";
 import { CARTE_CSS } from "../src/web/carte-style.js";
 import { PLEIN_ECRAN_CSS, pleinEcran } from "../src/web/plein-ecran.js";
-import { COUCHES, RESUME_PATH } from "../src/web/couches.js";
+import { bornesObjets, COUCHES, RESUME_PATH } from "../src/web/couches.js";
 import { borneRow } from "../src/web/domains.js";
 import { VENT_DE, ventDe } from "../src/web/meteo-carte.js";
 
@@ -134,5 +134,8 @@ describe("/carte", () => {
     const s = irve.STATIONS[0];
     const row = { id: s.id, station: s.nom, commune: s.commune, reseau: s.reseau, puissance_max_kw: 22, prises: ["Type 2"], horaires: "24 h/24, 7 j/7", carte: "", lon: s.lon, lat: s.lat, libres: 1, total: 2 };
     expect(borneRow(row as Parameters<typeof borneRow>[0], undefined, true)).toContain(`<li id="s-${s.id}" class="tgt">`);
+    // The bubble's link, from /bornes's copy, to that row.
+    const [o] = bornesObjets({ stations: [{ id: s.id, lon: s.lon, lat: s.lat, libres: 1, total: 2 }] } as never, "10:00");
+    expect(o.lien).toBe(`/bornes#s-${s.id}`);
   });
 });

@@ -534,6 +534,7 @@ describe("sport", () => {
     const cold = await counted(PAGE_BUDGET, () => sportTool(c, "volley", undefined, "a_venir", NOW));
     expect(body(cold.value).a_venir.map((r: { epreuve: string }) => r.epreuve)).toContain("King Saison 6 Solo étape 2");
     expect(cold.used).toBeLessThanOrEqual(PAGE_BUDGET);
+    expect((await cold.settled()).refused).toBe(0);
     expect(kv.reads).toBe(1);
   });
 

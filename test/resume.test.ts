@@ -498,6 +498,7 @@ describe("reading the copies", () => {
     expect(r.meteo.avertissement).toBeUndefined();
     expect(r.resume).toMatch(/^Saint-Paul, samedi 24 octobre\u00a0; météo de Boucan-Canot\u00a0; 26,9 °C mesurés à 09:18 \(station Pointe des Trois-Bassins\)/);
     expect((await run.settled()).used).toBeLessThanOrEqual(PAGE_BUDGET);
+    expect((await run.settled()).refused).toBe(0);
   });
 
   it("names the place measured when it has a weather page of its own: the Maïdo's weather, never Saint-Paul's", async () => {
@@ -526,7 +527,8 @@ describe("reading the copies", () => {
         await Promise.allSettled(pending);
         return r;
       });
-      return { r: body(run.value), used: (await run.settled()).used };
+      const total = await run.settled();
+      return { r: body(run.value), used: total.used, refused: total.refused };
     };
     // Saint-Joseph's page as the site keeps it: its centre's weather, on the coast (the copies' figures).
     const withCentre = async () => {
@@ -538,7 +540,7 @@ describe("reading the copies", () => {
     it("gives a lieu-dit of the Hauts its own station and forecast, not the coast's (Grand Coude, 06/11/2026)", async () => {
       // Live: « météo du centre de Saint-Joseph, à 9,3 km de Grand Coude ; 24,9 °C » where Grand-Coude read 16,4 °C.
       const edge = await withCentre();
-      const { r, used } = await ask("Grand Coude", edge);
+      const { r, used, refused } = await ask("Grand Coude", edge);
       expect(r.meteo).toMatchObject({ lieu: "Grand Coude", mesure: { station: "Grand-Coude", altitude_m: 1085, distance_km: 0.8 } });
       expect(r.meteo.avertissement).toBeUndefined();
       // The forecast at the place (the fixtures' model), not the centre's copy (21 to 29 °C).
@@ -546,6 +548,7 @@ describe("reading the copies", () => {
       expect(r.resume).toMatch(/^Saint-Joseph, samedi 24 octobre\u00a0; météo de Grand Coude\u00a0; 21,7 °C mesurés à 09:18 \(station Grand-Coude\)\u00a0; prévision de 14\u00a0h à minuit\u00a0: 12,7 °C à 20,7 °C/);
       expect(r.resume).not.toMatch(/centre/);
       expect(used).toBeLessThanOrEqual(PAGE_BUDGET);
+      expect(refused).toBe(0);
       // Kept under its own key: the next answer reads it, the centre's copy left as it is.
       expect(await edge.get("web:lieu:grand-coude-saint-joseph")).toBeTruthy();
     });
@@ -616,6 +619,7 @@ describe("reading the copies", () => {
     expect(run.value.copies.electricite).toBeTruthy();
     expect(run.value.refreshed).toEqual([KEYS.electricite]);
     expect((await run.settled()).used).toBeLessThanOrEqual(PAGE_BUDGET);
+    expect((await run.settled()).refused).toBe(0);
   });
 
   it("says it read its data when its newest part was read: the weather read again, not the calendar's copy", async () => {
@@ -686,6 +690,7 @@ describe("reading the copies", () => {
         return r;
       });
       expect((await run.settled()).used).toBeLessThanOrEqual(PAGE_BUDGET);
+      expect((await run.settled()).refused).toBe(0);
       return body(run.value).meteo.mesure.heure_mesure;
     };
     // Within FRESH_SECONDS, the copy as it is; 25 min old, the stations read again (their file in the fixtures).

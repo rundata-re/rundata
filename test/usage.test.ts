@@ -156,6 +156,22 @@ describe("MCP endpoint, as recorded", () => {
     await counted(50, () => handle(post({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "sources_donnees", arguments: {} } }), new Cache(), () => {}, (h) => hits.push(h)));
     expect(hits[0]).toMatchObject({ subrequests: 0, cacheHits: 0, cacheLoads: 0 });
     expect(hits[0].ms).toBeGreaterThanOrEqual(0);
+    // A tool that reads its source: each request it sends, counted.
+    let sent = 0;
+    vi.stubGlobal("fetch", async () => {
+      sent++;
+      return new Response("", { status: 503 });
+    });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      await counted(50, () => handle(post({ jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "qualite_air", arguments: {} } }), new Cache(), () => {}, (h) => hits.push(h)));
+    } finally {
+      vi.unstubAllGlobals();
+      vi.restoreAllMocks();
+    }
+    expect(sent).toBeGreaterThan(0);
+    expect(hits[1].subrequests).toBe(sent);
   });
 });
 

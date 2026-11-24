@@ -84,7 +84,8 @@ describe("the page of a commune's day", () => {
     expect(html).toContain('<a href="/decheteries#saint-paul">les bennes →</a>');
     expect(html).toContain('Pharmacie de garde (nuits, dimanches, jours fériés) : <b><a href="https://www.3237.fr/" rel="noopener" aria-label="3237.fr"><span class="adrweb">3237.<wbr>fr</span></a></b>, ou le 32 37 (payant)');
     // Without the prices of the month, no fuel line; elsewhere than the TCO, no skips.
-    expect(html).not.toContain("Carburants :");
+    // The line as the page writes it, « Carburants (prix maximum du mois) : », or in the tile « Carburants » and its colon.
+    expect(html).not.toMatch(/Carburants[\s\u00a0(]/);
     const tampon = pageOf("le-tampon")!;
     expect(aujourdhuiPage("https://rundata.re", tampon, resume(tampon, full(tampon.nom) as never, NOW), null)).not.toContain("Déchèteries :");
   });

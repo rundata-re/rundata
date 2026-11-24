@@ -189,7 +189,10 @@ describe("a commune's elections page, and its summary on the commune's page", ()
     expect(part).toContain(esc("Municipales 2026, 1er tour\u00a0: 50,51\u00a0% des inscrits ont voté à Saint-Paul, 55,27\u00a0% dans toute l'île."));
     expect(part).toContain(`<a href="/communes/saint-paul/elections">${esc("Les élections à Saint-Paul depuis 1999\u00a0: participation et résultats →")}</a>`);
     expect(part).not.toContain("<table");
-    for (const l of elections.ofCommune("Saint-Paul")[0]!.tours[0]![0]!.lignes) if (l.tete) expect(part).not.toContain(esc(l.tete));
+    // No candidate: each line by the name it has, its list's or its head's (in 2026 the lines have no head, `tete: null`).
+    const names = elections.ofCommune("Saint-Paul")[0]!.tours[0]![0]!.lignes.map((l) => l.nom ?? l.tete).filter((x): x is string => !!x);
+    expect(names.length).toBeGreaterThan(1);
+    for (const n of names) expect(part).not.toContain(esc(n));
   });
 
   it("is served for each commune, never for a place that is not one, and /a-propos holds the cantonales' note", async () => {

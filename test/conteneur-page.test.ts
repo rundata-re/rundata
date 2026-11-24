@@ -35,11 +35,15 @@ describe("small-screen rules on the page's container", () => {
 
   it("finds every small-screen rule written in src/web in the sheet with its twin", () => {
     const dir = new URL("../src/web/", import.meta.url);
+    let seen = 0;
     for (const f of readdirSync(dir).filter((n) => n.endsWith(".ts"))) {
       for (const m of readFileSync(new URL(f, dir), "utf8").matchAll(/@media \(max-width:([\d.]+rem)\)\{/g)) {
         expect(CSS, `${f} : ${m[0]}`).toContain(`@container page (max-width:${m[1]}){`);
+        seen++;
       }
     }
+    // The rules found: none found, nothing was checked.
+    expect(seen).toBeGreaterThan(5);
   });
 
   it("pairs the sheet once, when the module loads: the same file at the same address on every request", async () => {

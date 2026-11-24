@@ -97,6 +97,11 @@ describe("halls' programmes", () => {
       expect(after.map((e) => e.lien)).toEqual(before.slice(1).map((e) => e.lien));
       for (const e of after) expect(e.lien).toMatch(/^https?:\/\//);
     }
+    // Bisik's booking link, written « javascript: »: dropped, the show kept.
+    const bisik = utf8("bisik.html");
+    expect(bisik).toContain("https://bisik.re/kpop");
+    const shows = parseBisik(bisik.replaceAll("https://bisik.re/kpop", "javascript:alert(1)"));
+    expect(shows.map((e) => e.billetterie ?? null)).toEqual([null, "https://bisik.re/jpna", null, "https://bisik.re/jlks", "https://bisik.re/urbf"]);
   });
 
   it("reads the Théâtre Luc Donat without its school performances", () => {

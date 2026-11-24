@@ -117,10 +117,13 @@ describe("traces GPS", () => {
 
   it("names the closed trails of a hike", async () => {
     const r2 = RANDONNEES.find((r) => r.slug === "gr-r2")!;
+    // One of its trails closed on the ONF's map: none was in the map of 24/10, and the state was never checked.
+    shut = new RegExp(`^${r2.sentiers_onf[0].replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`);
     const b = body(await sentiersRandonnee(cache(), "trace GR R2", NOW));
     const closed = b.randonnees[0].troncons_onf.filter((t: { etat: string }) => t.etat === "fermé");
     expect(b.randonnees[0].troncons_onf).toHaveLength(r2.sentiers_onf.length);
-    if (closed.length) expect(b.randonnees[0].etat).toMatch(/^\d+ tronçons? fermés? : /);
+    expect(closed.length).toBeGreaterThan(0);
+    expect(b.randonnees[0].etat).toMatch(/^\d+ tronçons? fermés? : /);
   });
 
   it("gives the hikes with a trace around a place, and the trace of each open trail", async () => {
@@ -284,6 +287,14 @@ describe("traces GPS", () => {
     for (const r of b.autour.randonnees_avec_trace ?? []) expect(r.longueur_km).toBeGreaterThanOrEqual(5);
     for (const s of b.autour.sentiers_ouverts) expect(s.longueur_km).toBeLessThanOrEqual(15);
     expect(b.autour.sentiers_ouverts.length).toBeGreaterThan(0);
+    // Both bounds on both lists, and some left out: without them, some are shorter or longer.
+    type Km = { longueur_km: number };
+    const inside = (l: Km[]) => l.every((x) => x.longueur_km >= 5 && x.longueur_km <= 15);
+    const all = body(await sentiersRandonnee(cache(), "Cilaos", NOW));
+    const got: Km[] = [...(b.autour.randonnees_avec_trace ?? []), ...b.autour.sentiers_ouverts];
+    const before: Km[] = [...(all.autour.randonnees_avec_trace ?? []), ...all.autour.sentiers_ouverts];
+    expect(inside(got)).toBe(true);
+    expect(inside(before)).toBe(false);
     const island = body(await sentiersRandonnee(cache(), undefined, NOW, { denivele_max_m: 300 }));
     expect(island.randonnees_avec_trace.every((r: { denivele_positif_m: number }) => r.denivele_positif_m <= 300)).toBe(true);
     expect(island.sentiers_ouverts.every((s: { denivele_positif_m: number }) => s.denivele_positif_m <= 300)).toBe(true);

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { INSEE } from "../src/places/insee.js";
-import { ETABLISSEMENTS, nearest } from "../src/sante/etablissements.js";
+import { ETABLISSEMENTS, inCommune, nearest } from "../src/sante/etablissements.js";
 import { territoires, TERRITOIRES } from "../src/sante/garde.js";
 import { annuaireTool } from "../src/tools/annuaire.js";
 import { EMERGENCY, GARDE, gardeAnswer, PHARMACY, pharmaciesAnswer, urgencesAnswer } from "../src/tools/sante.js";
@@ -66,6 +66,10 @@ describe("the pharmacies and hospitals of FINESS", () => {
   it("are counted on each commune's page, with where to find the duty pharmacy", () => {
     const page = communePage("https://rundata.re", pageOf("saint-leu")!, { place: null });
     expect(page).toMatch(/<h3>Pharmacies<\/h3><p class="tv">\d+ <span class="mc">phar\u00adma\u00adcies<\/span><\/p>/);
+    // The figure is the directory's for the commune, not any number.
+    const listed = inCommune("Saint-Leu", ["pharmacie"]).length;
+    expect(listed).toBeGreaterThan(1);
+    expect(page).toContain(`<h3>Pharmacies</h3><p class="tv">${listed} <span class="mc">`);
     expect(page).toContain('<a href="https://www.3237.fr/" rel="noopener" aria-label="Pharmacie de garde : 3237.fr">Pharmacie de garde : <span class="adrweb">3237.<wbr>fr</span></a>');
   });
 });

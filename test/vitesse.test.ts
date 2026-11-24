@@ -172,9 +172,15 @@ describe("the speed of the replays", () => {
     expect(u.pannes).toEqual(["Colorado"]);
     expect(u.pluie).toBe(enc("3333333000"));
     expect(u.mal_vu).toBe(enc("1000000000"));
-    // The strongest rain at each cell; the same text read twice.
+    // The strongest rain at each cell.
     expect(unionOf([win(6, "1200", "0000"), win(7, "2100", "0000")]).pluie).toBe(enc("2200"));
-    expect(u.pluie).toBe(u.pluie);
+    // Worked out when first read, not before (a window changed until then counts), and kept after.
+    const two = [win(6, "1200", "0000"), win(7, "2100", "0000")];
+    const late = unionOf(two);
+    two[0].pluie = enc("3000");
+    expect(late.pluie).toBe(enc("3100"));
+    two[1].pluie = enc("0003");
+    expect(late.pluie).toBe(enc("3100"));
     const js = rejeuScript();
     // Never named inside (the page's script has no __name).
     expect(js).not.toContain("__name");

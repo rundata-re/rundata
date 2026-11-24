@@ -104,13 +104,26 @@ describe("the link of a departure", () => {
     }
   });
 
-  it("leaves out the day only where no trip runs 4 hours, as a departure listed 20 hours ahead would need", () => {
+  it("leaves out the day only where no trip runs 4 hours, as a departure listed 20 hours ahead would need", async () => {
     const longest = Math.max(...Object.values(rows).flatMap((r) => r.pattern_stops ?? []).map((r) => {
       const stops = JSON.parse((r as unknown as { stops: string }).stops) as [number, number][];
       return stops.at(-1)![1];
     }));
     expect(longest).toBeGreaterThan(0);
     expect(longest).toBeLessThan(4 * 3600);
+    // What it allows: on Friday 23/10 at 12:05, a trip of 3 h 59 from 08:00, listed for Saturday at 08:00, 20 hours
+    // ahead; its address without a day opens Saturday's run, today's being over.
+    const local = 0;
+    const id = CJ.first_pattern + local;
+    const service = Array.from({ length: 500 }, (_, i) => i).find((x) => transit.serviceRuns("carjaune", x, 20261023, 4) && transit.serviceRuns("carjaune", x, 20261024, 5))!;
+    expect(service).toBeDefined();
+    transit.configure({
+      all: async <T>(sql: string) =>
+        (/FROM pattern_stops/.test(sql)
+          ? [{ feed: CJ.stops_feed, id: local, sens: 0, stops: JSON.stringify([[0, 0], [1, 7200], [2, 4 * 3600 - 60]]) }]
+          : [{ feed: CJ.feed, id: local, route: transit.ENDS[id][0] - CJ.first_route, headsign: "Saint-Denis", trips: JSON.stringify([[service, 8 * 3600, "long"]]) }]) as T[],
+    });
+    expect((await tripRun("carjaune", local, "long", undefined, new Date("2026-10-23T08:05:00Z")))!.jour).toBe(20261024);
   });
 });
 

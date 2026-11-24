@@ -1,11 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { Cache, type Cached, MemoryStore } from "../src/cache.js";
 import { daysApart, sinceMidnight } from "../src/geo.js";
 import { communePage } from "../src/web/commune.js";
 import { type AirAnswer, type CalendrierAnswer, FRESH_SECONDS, joursDuJour, snapshot } from "../src/web/data.js";
 import { calendrierLive, calendrierPage, feriesDuJour } from "../src/web/domains.js";
 import { pageOf } from "../src/web/places.js";
-import { tileFreshMs } from "../src/web/site.js";
+import { site, tileFreshMs } from "../src/web/site.js";
 
 // La Réunion is UTC+4: 00:15 on Tuesday 27/10 is 20:15 UTC on the 26th.
 const at = (local: string) => new Date(`${local}+04:00`);
@@ -99,11 +99,26 @@ describe("a copy made before midnight, read after it", () => {
     expect(await served(EVE, AFTER, 400)).toEqual({ value: "copie 1", builtBefore: 2, built: 2 });
   });
 
-  it("brings a tile of the eve up to date at 00:01, however young", () => {
-    const due = (made: Date, read: Date) => read.getTime() - made.getTime() >= tileFreshMs(read);
-    expect(due(EVE, AFTER)).toBe(true);
-    expect(due(at("2026-10-31T23:56:00"), EVE)).toBe(false);
-    expect(due(at("2026-11-01T00:00:30"), AFTER)).toBe(false);
+  it("brings a tile of the eve up to date at 00:01, however young", async () => {
+    // /feux shows the last copy of /sentiers as a tile: whether its view asks for a new one, read in the work it leaves
+    // behind (every source down, nothing else to bring up to date).
+    vi.stubGlobal("fetch", async () => new Response("", { status: 503 }));
+    const asks = async (made: Date, read: Date) => {
+      const store = new MemoryStore();
+      await store.put("web:sentiers", { value: { points: [], suivis: 1, fermes_par_commune: [], sources: [] }, fetchedAt: made.getTime() });
+      const later: Promise<unknown>[] = [];
+      await site(new Request("https://rundata.re/feux"), new Cache(store, () => read.getTime()), (p) => void later.push(p), read);
+      await Promise.allSettled(later);
+      return later.length > 0;
+    };
+    try {
+      expect(await asks(EVE, AFTER)).toBe(true);
+      expect(await asks(at("2026-10-31T23:56:00"), EVE)).toBe(false);
+      expect(await asks(at("2026-11-01T00:00:30"), AFTER)).toBe(false);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+    expect(tileFreshMs(AFTER)).toBe(60_000);
     expect(tileFreshMs(at("2026-11-01T12:00:00"))).toBe(FRESH_SECONDS * 1000);
   });
 

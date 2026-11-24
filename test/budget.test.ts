@@ -106,9 +106,11 @@ describe("subrequests of a cold question in the Worker", () => {
     ["prevision_meteo, Cilaos demain", (c: Cache) => previsionMeteo(c, "Cilaos", "demain", NOW), PAGE_BUDGET],
     ["prevision_meteo, tour of the island", (c: Cache) => previsionMeteo(c, undefined, undefined, NOW), PAGE_BUDGET],
   ])("%s stays within the limit", async (_, ask, most) => {
-    const { value, used } = await counted(PAGE_BUDGET, () => ask(isolate()));
+    const { value, used, settled } = await counted(PAGE_BUDGET, () => ask(isolate()));
     expect(value.isError).toBeFalsy();
     expect(used).toBeLessThanOrEqual(most);
+    // Past the budget a subrequest is refused, never counted in `used`: what proves it fits is that none was.
+    expect((await settled()).refused).toBe(0);
   });
 
   it("forecasts cold from the ECMWF model, labelled, when no AROME grid is stored yet and the invocation is short of subrequests", async () => {
@@ -137,13 +139,14 @@ describe("subrequests of a cold question in the Worker", () => {
   });
 
   it("forecasts from AROME cold within a page's budget, downloading no more grids than a question's share", async () => {
-    const { value, used } = await counted(PAGE_BUDGET, () => previsionMeteo(isolate(), "Cilaos", "demain", NOW));
+    const { value, used, settled } = await counted(PAGE_BUDGET, () => previsionMeteo(isolate(), "Cilaos", "demain", NOW));
     expect(body(value).modele.nom).toBe("AROME outre-mer de Météo-France");
     // The rest of the run's grids are the scheduled prefetch's (providers/arome.ts QUESTION_NEW_GRIDS); the terrain's
     // three, once per run, come apart.
     expect(coverages.length).toBeGreaterThan(3);
     expect(coverages.length).toBeLessThanOrEqual(arome.QUESTION_NEW_GRIDS + 3);
     expect(used).toBeLessThanOrEqual(PAGE_BUDGET);
+    expect((await settled()).refused).toBe(0);
   });
 
   it("asks nothing again of a warm isolate", async () => {
@@ -161,8 +164,9 @@ describe("scheduled AROME prefetch", () => {
     for (;;) {
       runs++;
       const before = { reads: kv.reads, writes: kv.writes, grids: coverages.length };
-      const { value, used } = await counted(PAGE_BUDGET, () => prefetchForecasts(isolate(kv), NOW));
+      const { value, used, settled } = await counted(PAGE_BUDGET, () => prefetchForecasts(isolate(kv), NOW));
       expect(used).toBeLessThanOrEqual(PAGE_BUDGET);
+      expect((await settled()).refused).toBe(0);
       // Each read and write of KV is a subrequest, counted with the grids.
       expect(kv.reads - before.reads + kv.writes - before.writes).toBeGreaterThan(0);
       expect(used).toBeGreaterThanOrEqual(kv.reads - before.reads + kv.writes - before.writes + coverages.length - before.grids);
@@ -178,6 +182,7 @@ describe("scheduled AROME prefetch", () => {
     expect(kv.reads).toBeGreaterThan(reads);
     expect(r.used).toBeGreaterThanOrEqual(kv.reads - reads);
     expect(r.used).toBeLessThanOrEqual(PAGE_BUDGET);
+    expect((await r.settled()).refused).toBe(0);
     expect(body(r.value).pas_de_3h.filter((s: { modele: string }) => s.modele.startsWith("AROME")).length).toBeGreaterThan(5);
   });
 });
@@ -189,8 +194,9 @@ describe("the cloud layer of the mornings and nights in the AROME prefetch", () 
     for (;;) {
       events++;
       // As the scheduled event runs it: its own isolate, the KV shared, the page budget.
-      const { value, used } = await counted(PAGE_BUDGET, () => prefetchForecasts(isolate(kv), NOW));
+      const { value, used, settled } = await counted(PAGE_BUDGET, () => prefetchForecasts(isolate(kv), NOW));
       expect(used).toBeLessThanOrEqual(PAGE_BUDGET);
+      expect((await settled()).refused).toBe(0);
       if (!value?.later) break;
       expect(events).toBeLessThan(72); // the events between two runs, every 5 minutes for 6 hours
     }
@@ -240,16 +246,18 @@ describe("a run not all out yet, in the Worker", () => {
     ["Cilaos demain", (c: Cache) => previsionMeteo(c, "Cilaos", "demain", NOW)],
     ["tour of the island", (c: Cache) => previsionMeteo(c, undefined, undefined, NOW)],
   ])("%s cold stays within the limit", async (_, ask) => {
-    const { value, used } = await counted(PAGE_BUDGET, () => ask(isolate()));
+    const { value, used, settled } = await counted(PAGE_BUDGET, () => ask(isolate()));
     expect(value.isError).toBeFalsy();
     expect(used).toBeLessThanOrEqual(PAGE_BUDGET);
+    expect((await settled()).refused).toBe(0);
   });
 
   it("is filled by the prefetch from both runs, after which a question downloads nothing", async () => {
     const kv = new Namespace();
     for (let runs = 1; ; runs++) {
-      const { value, used } = await counted(PAGE_BUDGET, () => prefetchForecasts(isolate(kv), NOW));
+      const { value, used, settled } = await counted(PAGE_BUDGET, () => prefetchForecasts(isolate(kv), NOW));
       expect(used).toBeLessThanOrEqual(PAGE_BUDGET);
+      expect((await settled()).refused).toBe(0);
       if (!value?.later) break;
       expect(runs).toBeLessThan(6);
     }

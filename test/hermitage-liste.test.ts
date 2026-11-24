@@ -8,7 +8,8 @@ describe("a place sent to another's page (places.ts PRINCIPAL), in the lists of 
   it("has no chip of its own; its name stays on the principal's chip, for the filter", () => {
     for (const html of [placeLinks(), placeLinks(undefined, true), placeLinks("saint-denis")]) {
       expect(html).not.toContain("/meteo/l-hermitage");
-      expect(html).not.toContain(">L'Hermitage<");
+      // Its name as the page writes it, the apostrophe escaped.
+      expect(html).not.toMatch(/>L(?:'|&#39;)Hermitage</);
       expect(html).toContain(`<li data-aussi="L&#39;Hermitage"><a href="/meteo/saint-gilles-les-bains">Saint-Gilles-les-Bains</a></li>`);
     }
   });

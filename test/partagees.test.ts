@@ -139,6 +139,25 @@ describe("the shared copies after a deploy", () => {
     expect(kv.reads).toBe(reads);
   });
 
+  it("keep the agendas' share of an event after a deploy: a copy due only for its version waits past it", async () => {
+    // Seven copies of the previous version, written a minute ago (not due by their rate), 76 subrequests each: six fit
+    // the event's budget beside the agendas' share, the seventh would eat into it (4 left of 620) and waits.
+    const kv = new FakeKv();
+    const now = T0 + 7 * 60_000;
+    const edge = new CountedStore();
+    const list = Array.from({ length: 7 }, (_, i) => ({ key: `web:essai-part-${i}`, every: 30, cold: 76, build: async () => (count(76), { at: now }) }) as Shared);
+    for (const s of list) {
+      const entry = { value: {}, fetchedAt: now - 60_000, cost: s.cold, version: "1.0.0" };
+      await kv.put(kvKey(s.key), JSON.stringify(entry), { metadata: { fetchedAt: now - 60_000, cost: s.cold, every: 30, version: "1.0.0" } });
+      await edge.put(s.key, entry);
+    }
+    const cache = new Cache(new TieredStore(new MemoryStore(), edge), () => now, false, undefined, "2.0.0");
+    const run = await counted(SCHEDULED_BUDGET, async () => ({ warmed: await warmShared(cache, kv, new Date(now), list), rest: left() }));
+    expect(run.value.warmed.written).toHaveLength(6);
+    expect(run.value.warmed.left.map((l) => l.why)).toEqual([expect.stringMatching(/^autre version, budget : /)]);
+    expect(run.value.rest + 2 * run.value.warmed.written.length).toBeGreaterThanOrEqual(AFTER_DEPLOY_RESERVE);
+  });
+
   it("are all due at the first event, rebuilt the oldest first within the budget, over a few events", async () => {
     const kv = new FakeKv();
     let now = T0;
@@ -189,9 +208,8 @@ describe("the shared copies after a deploy", () => {
     // always was, and the earthquakes every other event.
     const everyEvent = new Set(list.filter((s) => s.every === 5 || s.every === 10).map((s) => s.key));
     const byRate = (key: string, at: number) => everyEvent.has(key) || at - writtenAt.get(key)! >= 30 * 60_000;
-    for (const e of events.filter((e) => !e.written.some((k) => byRate(k, e.at)))) {
-      expect(e.rest + 2 * e.written.length).toBeGreaterThanOrEqual(AFTER_DEPLOY_RESERVE);
-    }
+    // (The agendas' share kept after a deploy: the test below. Here every copy fits the first event, and the vigilance,
+    // due at every event, left no event to check it on.)
     // Each written once more, with the new version in its metadata.
     expect((kv.metadata.get(kvKey(versioned(SATELLITES_KEY))) as { version?: string }).version).not.toBe("2.0.0");
     for (const s of pages) {

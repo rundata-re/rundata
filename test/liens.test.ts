@@ -67,7 +67,10 @@ describe("links between the weather, the hikes and the communes", () => {
     const maido = at([[55.38757, -21.06885]])!;
     expect(cloudSeaTold(maido, copy({ prevision: { mer_de_nuages: { titre: "Mer de nuages demain matin" } } }))).toBe(true);
     expect(cloudSeaTold(maido, copy({ prevision: {} }))).toBe(false);
-    expect(tracePage(O, "sentier", "x", "Sentier", null, NOW)).not.toContain("mer-de-nuages");
+    // The trail to the summit, its page not telling the cloud sea (no summit given): no link. A page without its copy
+    // had no link to lose.
+    const bare = tracePage(O, "sentier", "x", "Sentier", { value: { nom: "x", slug: "x", genre: "sentier", km: 1, etat: "Ouvert", ferme: false, troncons: [], lignes: [{ etat: "ouvert", points: neiges }], profil: [], randonnees: [], fermes: [], inconnus: [], sources: [] }, fetchedAt: NOW } as any, NOW, undefined, undefined);
+    expect(bare).not.toContain("mer-de-nuages");
   });
 
   it("give a commune's outings and the forecast of the communes of each weekend day", () => {

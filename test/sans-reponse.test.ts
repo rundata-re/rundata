@@ -306,7 +306,11 @@ describe("what is shown", () => {
     expect(page).toContain("Revérifié chaque jour, dernier passage le 26/10 à\u00a006:01. Un site de cette liste répond pour vous ? Écrivez à <a href=\"mailto:contact@rundata.re\" aria-label=\"contact@rundata.re\"><span class=\"adrweb\">contact@<wbr>rundata.<wbr>re</span></a>");
     // The rows still to check are not there.
     expect(page).not.toContain("georisques");
-    const own = page.slice(page.indexOf('<div class="band">'), page.indexOf("</main>"));
+    // The band has more classes than its own (« band motif »): found by its first one, and found before it is read.
+    const start = page.search(/<div class="band[ "]/);
+    expect(start).toBeGreaterThan(0);
+    const own = page.slice(start, page.indexOf("</main>"));
+    expect(own).toContain("sans réponse depuis le 21/10");
     expect(own).not.toMatch(/en panne|hors ligne|hors service|ferm[ée]|\bvide\b|refus|ne publie pas|piraté/i);
   });
 

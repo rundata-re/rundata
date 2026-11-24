@@ -327,6 +327,8 @@ describe("restrictions_eau when VigiEau does not answer, without a copy kept", (
     const html = secheressePage("https://rundata.re", { value: await buildSecheresse(cache(), now), fetchedAt: now, stale: false }, now);
     expect(html).toContain("VigiEau n&#39;a pas répondu.");
     expect(html).not.toContain("VigiEau affiche encore");
+    // Above the levels' table.
+    expect(html.indexOf('<table class="drought">')).toBeGreaterThan(html.indexOf("VigiEau n&#39;a pas répondu."));
   });
 });
 

@@ -248,7 +248,7 @@ describe("fiche terrain", () => {
     expect(r.sources.map((x: { source: string }) => x.source)).toContain("Données sur les réseaux mobiles (antennes 2G, 3G, 4G, 5G)");
     // One file a year of the commune, from 2021; none of a sale, its parcel or its price alone in the answer.
     expect(urls.filter((u) => u.includes("geo-dvf"))).toEqual([2021, 2022, 2023, 2024, 2025, 2026].map((y) => `https://files.data.gouv.fr/geo-dvf/latest/csv/${y}/communes/974/97415.csv`));
-    expect(JSON.stringify(r.marche_immobilier)).not.toMatch(/BO00|420 000|T7/);
+    expect(JSON.stringify(r.marche_immobilier)).not.toMatch(/BO00|420[\s\u202f]000|T7/);
     expect(r.sources.map((x: { source: string }) => x.source)).toContain("Demandes de valeurs foncières géolocalisées (DVF, Etalab)");
   });
 

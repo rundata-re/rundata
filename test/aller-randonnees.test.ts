@@ -80,9 +80,15 @@ describe("« Y aller » to a hike's start", () => {
   it("is never on an ONF trail's own page: the order of its pieces gives no real start", async () => {
     const t = { nom: hike.sentiers_onf[0], ...traces.SENTIERS[hike.sentiers_onf[0]] };
     expect(Object.keys(traces.SENTIERS)).toContain(t.nom);
+    // The ONF's map in the cache, as the hike's copies have it: without it no copy was built, and nothing was checked.
     const store = new MemoryStore();
-    const copy = await buildTrail(new Cache(store, () => NOW.getTime()), t).catch(() => null);
-    if (copy) expect(copy.depart).toBeUndefined();
+    await store.put(onf.KEY, { value: { sentiers: [trail("ouvert")], routes: [] }, fetchedAt: NOW.getTime() });
+    // Its trace in two pieces, open: the first point of the first piece is no start (the order is the ONF's, not the walk's).
+    const pieces: [number, number][][] = [[[start.lon, start.lat], [start.lon + 0.01, start.lat]], [[start.lon + 0.02, start.lat], [start.lon + 0.03, start.lat]]];
+    await store.put(`onf:trace:${t.slug}`, { value: { nom: t.nom, troncons: pieces.map((points) => ({ statut: "ouvert", points })) }, fetchedAt: NOW.getTime() });
+    const copy = await buildTrail(new Cache(store, () => NOW.getTime()), t);
+    expect(copy).toBeTruthy();
+    expect(copy.depart).toBeUndefined();
     expect(tracePage(O, "sentier", t.slug, t.nom, copy ? { value: copy, fetchedAt: NOW, stale: false } : null, NOW)).not.toContain('class="aller"');
   });
 });

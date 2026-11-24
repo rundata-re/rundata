@@ -7,7 +7,8 @@ import type { Carte } from "../src/providers/sentiers.js";
 import { activityPosts, phaseOf, releaseSentences } from "../src/providers/volcan.js";
 import { acces, definition, lineText } from "../src/tools/volcan-acces.js";
 import { buildVolcan } from "../src/web/data.js";
-import { tracePage, volcanPage } from "../src/web/domains.js";
+import { tracePage } from "../src/web/domains.js";
+import { volcanPage } from "../src/web/volcan.js";
 
 // The prefecture's release of 24/10/2026, its page as captured: alert 1, the Enclos closed, the RN 2 open.
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url), "utf8");

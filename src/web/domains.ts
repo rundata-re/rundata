@@ -7,21 +7,14 @@
 import * as transit from "../providers/transit.js";
 import { LINE_NETWORKS, LINE_PATH, linePages } from "./ligne.js";
 import { enLigne } from "./associations-drapeau.js";
-import { OVPF, OVPF_FACEBOOK, PREFECTURE } from "../providers/volcan.js";
-import { BULLETIN_QUOTIDIEN, CAMERAS_OVPF, depthText, enImages, enImagesApres, IMAGE_APRES, IMAGE_LUE_APRES, givenAt, JOURS_SUIVANTS, type Jour, jusquALecture, LOCALISES, LOCALISES_LIEN, LU_DANS_L_IMAGE, NIVEAU_ILLISIBLE, NON_ANNONCEE, NON_LU, ORSEC_BAN, ovpfNiveau, pitonLines, VIGILANCE_ENCLOS } from "../tools/volcan.js";
-import { type Ligne, NIVEAUX, TITRE, VERSION } from "../tools/volcan-acces.js";
-import { PATH as SANS_REPONSE } from "./sans-reponse.js";
+import { TITRE } from "../tools/volcan-acces.js";
 import { adresseCoupable, adresseTexte } from "./adresse.js";
 import { cable } from "./commune-texte.js";
-import { SOMMET } from "../providers/seismes.js";
 import { sectorsSaid } from "../providers/avis-eau.js";
 import * as onf from "../providers/sentiers.js";
-import { ANNONCERONT, alerteVolcan, BLUESKY_SEUL, ENCLOS, followOvpf, levelSaid, mediaSection, releaseCard, tileLive, type VolcanAlerte, volcanBanner, volcanH1, volcanLead, volcanMeta, volcanTitle } from "./volcan-alerte.js";
-import { ACCUEILS } from "../providers/agenda.js";
+import { ENCLOS, volcanBanner } from "./volcan-alerte.js";
 import type { Cached } from "../cache.js";
-import * as historique from "../tools/volcan-historique.js";
-import { normalize, resolvePlace } from "../places/resolve.js";
-import * as airMesures from "../providers/air-mesures.js";
+import { normalize } from "../places/resolve.js";
 import * as traces from "../providers/traces.js";
 import { SUJETS } from "../providers/actualites.js";
 import { nextSlot, type CourantRow } from "../tools/courant.js";
@@ -29,13 +22,11 @@ import { MAIRIES } from "../providers/coupures-courant.js";
 import { PERIMEE_MIN, perimeeTexte } from "../tools/electricite.js";
 import { copieAncienne, copieAncienneCourte, VOIR_COURANT, VOIR_EAU } from "../tools/copie-ancienne.js";
 import { casse } from "../tools/casse.js";
-import { a, a as aLieu, de, delai, enumeration, fr, heure, heuresDites, nombre } from "../tools/format.js";
-import { CAPTEURS_AVERTISSEMENT, CAPTEURS_EXPLICATION, type Measured } from "../tools/air.js";
-import * as capteurs from "../providers/capteurs.js";
+import { a, de, delai, enumeration, fr, heure, heuresDites, nombre } from "../tools/format.js";
 import { climb, relief } from "../tools/sentiers.js";
 import { COMMUNES as BIKE_COMMUNES } from "../tools/velos.js";
 import { lienJeux } from "./transport-donnees.js";
-import { OUVERT_ONF, ROAD_NEAR_M, type ActualitesAnswer, type AgendaAnswer, type AirAnswer, type Alerte, type BorneStation, type BornesAnswer, type BusData, type GareNow, type CoupuresAnswer, lusLe, type DaeAnswer, type EauAnswer, type ElectriciteAnswer, type Enclos, type HikeCard, type RandonneesAnswer, type SecheresseAnswer, type SentiersAnswer, type SportAnswer, type TraceAnswer, type TrailItem, type VeloStation, type VelosAnswer, type VolcanAnswer } from "./data.js";
+import { OUVERT_ONF, ROAD_NEAR_M, type ActualitesAnswer, type AgendaAnswer, type Alerte, type BorneStation, type BornesAnswer, type BusData, type GareNow, type CoupuresAnswer, lusLe, type DaeAnswer, type EauAnswer, type ElectriciteAnswer, type Enclos, type HikeCard, type RandonneesAnswer, type SecheresseAnswer, type SentiersAnswer, type TraceAnswer, type TrailItem, type VeloStation, type VelosAnswer } from "./data.js";
 import { ageMinutes, localTime } from "../geo.js";
 import { agendasNonLus, mediasNonLus } from "../tools/injoignable.js";
 import { FAST_KW, RECHARGEPEI } from "../tools/bornes.js";
@@ -44,16 +35,14 @@ import { SECTEURS as SECTEURS_RANDO, secteurNamed, type Secteur } from "../trace
 import island from "../places/island.json" with { type: "json" };
 import { esc, fenetre, hikesMap, islandMap, laterMap, type Marker, profile, traceMap, type ZoneLink } from "./map.js";
 import { type Cle, COUNT_COLOR, legende, ROND } from "./carte-legende.js";
+import { arretsAutour } from "./arrets-autour.js";
 import { anneeSection, filieresSection, installationsLegend, installationsList, installationsMap, installationsReplay, productionChart } from "./electricite-carte.js";
-import { reprise } from "./ouvrir-donnees.js";
 import { cloudSeaLink, type Summit, weatherForTrace } from "./liens.js";
 import { LINE as BAIGNADE_LINE } from "./baignade.js";
 import { T as FERRY } from "../tools/ferries.js";
 import { BUILT as DAE_BUILT, DAES } from "../providers/dae.js";
 import { SANS_FORMATION as DAE_SANS_FORMATION, SE_FORMER as DAE_SE_FORMER } from "../tools/dae.js";
 import DAE_LIST from "../dae/liste.json" with { type: "json" };
-import { arretsAutour } from "./arrets-autour.js";
-import * as atmo from "../providers/atmo.js";
 import { adressesCoupables, anchorId, ask, credits, dayMonth, DESCRIPTION_MAX, empty, FOLD_ROWS, folded, icon, ISLAND, layout, type Live, leAt, duAt, leJour, readAt, SITE } from "./pages.js";
 import { pageOf, slugify } from "./places.js";
 import { cycloneWater, distributeursLus } from "./eau-cyclone.js";
@@ -62,7 +51,7 @@ import { faqPage, texteStable, type Faq } from "./texte-stable.js";
 import { noteBaignade, saisonSansPrelevement, sansPrelevement, tapNote } from "../tools/eau.js";
 import { bathRead, keptBath, keptTap, silentBath, silentTap, tapRead, tooOld } from "../eau/ile.js";
 import { aller, MOTS as ALLER_MOTS, permis, porte, type Porte, retire, SHEET as ALLER } from "./aller.js";
-import { mentionSports, noteLa1ere } from "../tools/non-repris.js";
+import { noteLa1ere } from "../tools/non-repris.js";
 import { journeyForm, nowAsked } from "./itineraire.js";
 import { script } from "./scripts-declares.js";
 
@@ -267,35 +256,12 @@ export const connectorAsk = (what: string, commune: string) => `<section aria-la
   <p>Demandez aussi à votre IA, avec le <a href="/mcp">connecteur rundata.re</a>\u00a0: «\u00a0L'eau du robinet est-elle bonne ${esc(a(commune))}\u00a0?\u00a0»</p></div>
 </section>`;
 
-// ---------------------------------------------------------------- volcan
-
-const md = (m: number | null) => (m == null ? "—" : fr(Math.round(m * 10) / 10));
 const dayOf = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", timeZone: "Indian/Reunion" });
 
 // The Enclos as the official texts say it (marketing): the prefecture's release in its title's own words, « 20/10 » its
 // day, or closed by the level of an alert whose title says nothing of it; in vigilance from a release, the plan's rule.
 // Never pitonlive's (25/10/2026).
 const dd = (jour: string) => `${jour.slice(8, 10)}/${jour.slice(5, 7)}`;
-const releaseLink = (c: NonNullable<Enclos["communique"]>) => `<a href="${esc(c.lien)}">communiqué de la préfecture du ${dd(c.jour)}</a>`;
-// The release's words in bold and its day linked, « Accès à l'Enclos : <b>« fermeture »</b> selon le <a>communiqué de la
-// préfecture du 23/10</a> »; or its level, the ban the plan's: « Alerte 2-1 selon le <a>…</a> : accès à l'Enclos
-// <b>interdit</b> à ce niveau (dispositif ORSEC Volcan) ».
-const releaseSaid = (c: NonNullable<Enclos["communique"]>, du = releaseLink(c)) =>
-  c.mots
-    ? `Accès à l'Enclos : <b>${esc(`« ${c.mots} »`)}</b> selon le ${du}`
-    : `${esc(c.niveau!)} selon le ${du} : ${ORSEC_BAN.replace("interdit", "<b>interdit</b>")}`;
-const enclosSaid = (x: Enclos) =>
-  x.communique?.mots
-    ? `Enclos : <b>${esc(`« ${x.communique.mots} »`)}</b> selon le ${releaseLink(x.communique)}.`
-    : x.communique
-      ? `${releaseSaid(x.communique)}.`
-      : x.ovpf
-        ? `${esc(x.ovpf.niveau)} selon l'OVPF : ${ORSEC_BAN.replace("interdit", "<b>interdit</b>")}.`
-        : x.vigilance
-          ? esc(VIGILANCE_ENCLOS)
-          : `Accès à l'Enclos : à vérifier sur ${GOUV}, avant de partir.`;
-// The card's title (marketing).
-const ENCLOS_TITRE = "Accès à l'Enclos";
 /**
  * The short form, on the home page's tile and the card of /trafic, never « ouvert » (marketing): forbidden by the
  * release, its words, the plan's rule in vigilance, or to check.
@@ -310,569 +276,9 @@ const enclosShort = (x: Enclos | undefined): { valeur: string; source: string } 
         : x?.vigilance
           ? { valeur: "Sentiers balisés seulement", source: "plan ORSEC, en vigilance" }
           : { valeur: "À vérifier", source: "reunion.gouv.fr" };
-const OVPF_LINK = `<a href="${OVPF.url}">${OVPF.url.replace("https://", "")}</a>`;
-// A text of ours with the OVPF's link, or a post's, in it: escaped, then the link put back as a link.
-const linked = (t: string, url: string, a: string) => esc(t).replace(esc(url), a);
 
-// The OVPF's Facebook page, which rundata.re does not read: a link only, no embed (marketing).
-const FACEBOOK_LINE = `<p class="lead">L'OVPF publie aussi sur Facebook, que rundata.re ne lit pas : <a href="${OVPF_FACEBOOK}">suivre sa page officielle ↗</a></p>`;
-/** After « …est en images, qui ne sont pas lues : »: the post on Bluesky, and the OVPF's Facebook page, where the same post may not be (marketing). */
-export const imageLinks = (lien: string) => `<a href="${esc(lien)}">la voir sur Bluesky ↗</a>, ou suivre <a href="${OVPF_FACEBOOK}">l'OVPF sur Facebook ↗</a>`;
-
-// Where the prefecture publishes each phase of the ORSEC volcano plan.
-const GOUV = `${lienNom(PREFECTURE.url, "reunion.gouv.fr")}`;
-
-/**
- * Escaped text whose « , » never starts a line: Chrome and Safari cut a word with its comma between the two when the word
- * fits its line and the comma does not (« …de la Fournaise » then « , 1 km » on /volcan at 160 px, Safari's page zoom at
- * 200 % on a 320 px screen). Each « , » followed by a space goes in a .virg (pages.ts), where it takes no room: it hangs past
- * the end of the line, in the card's padding, and the space after it is widened by as much, so that the words around it
- * stay where they were. In the text between the tags only; the text read and copied is the same.
- */
-export function virgulesTenues(html: string): string {
-  return html
-    .split(/(<[^>]*>)/)
-    .map((x, i) => (i % 2 ? x : x.replaceAll(", ", '<span class="virg">, </span>')))
-    .join("");
-}
-
-/** `news`: the news copy, read during an alert only, for what the media say of it. */
-export function volcanPage(origin: string, data: Cached<VolcanAnswer> | null, now = new Date(), alerte?: Alerte, news?: ActualitesAnswer): string {
-  const d = data?.value;
-  const a = alerteVolcan(d);
-  const e = d?.etat;
-  // « … dans les textes que nous avons lus jusqu'au 06/11 à 14:27. »: a copy of the page never says it of another day.
-  const nonAnnoncee = data ? NON_ANNONCEE.replace(/\.$/, ` jusqu'au ${leAt(data.fetchedAt).replace(/^le /, "")}.`) : NON_ANNONCEE;
-  // « indisponible » when the OVPF's catalogue did not answer (tools/volcan.ts).
-  const q = typeof d?.seismes === "object" ? d.seismes : undefined;
-  // The catalogue silent: the counts are of its last copy, said with the time of that read.
-  const jusqua = q?.lus_jusqu_au ? `, ${jusquALecture(q.lus_jusqu_au)}` : "";
-  const url = `${origin}/volcan`;
-  // Under an alert, the OVPF's newest post in images, newer than the release: said once, with its time, at the top;
-  // IMAGE_APRES is then not said (marketing).
-  const p0 = Array.isArray(d?.publications_ovpf) ? d.publications_ovpf[0] : undefined;
-  const folded = !!a && !a.eruption && !a.arret && !!e && !!e.image_ovpf_plus_recente && !!p0?.lien;
-  // Its text read in the first image: said so, the text open on its card (providers/ovpf-ocr.ts).
-  const lu = !!p0?.texte_lu_dans_l_image;
-  const apres = lu ? IMAGE_LUE_APRES : IMAGE_APRES;
-  // pitonlive.com, after the official source, as its own (marketing); the OVPF's level, newer than the release.
-  const piton = e?.pitonlive_non_officiel
-    ? pitonLines(e.pitonlive_non_officiel, !!e.niveau_inconnu, OVPF.url).map((x) => `<p class="lead">${linked(x, OVPF.url, OVPF_LINK)}</p>`).join("")
-    : "";
-  const ovpf = e?.niveau_ovpf
-    ? `<p class="lead">${linked(ovpfNiveau(e.niveau_orsec, givenAt(e.niveau_ovpf.date), e.niveau_ovpf.lien), e.niveau_ovpf.lien, `<a href="${esc(e.niveau_ovpf.lien)}">lien</a>`)}</p>`
-    : "";
-  // The IPGP's site silent (marketing), with the list of the silent sites: at the top out of an alert, with the
-  // official texts during one, where it says what may be missing.
-  const silent = d?.injoignable ? `<p class="note">${esc(d.injoignable)} <a href="${SANS_REPONSE}">Voir les sites sans réponse</a>.</p>` : "";
-  const m = d?.puis_je_monter;
-
-  // During an alert, five lines at most under the heading, each fact once: no eruption announced (whose words), the
-  // Enclos with the way to the detail, whose the level is, the OVPF's newest post in images, the OVPF's accounts
-  // (marketing, 26/10/2026). The level's words are in the heading, the decree in « Les niveaux du dispositif ».
-  const [jour, heure] = (p0?.date.split(" ") ?? []) as [string, string];
-  const top = (a: VolcanAlerte) =>
-    `<p class="lead"><b>${esc(!a.eruption && !a.arret ? nonAnnoncee : volcanLead(a))}</b></p>` +
-    `<p class="lead"><b>${esc(ENCLOS)}</b>${m ? ` <a href="#monter">Routes et sentiers, lieu par lieu ↓</a>` : ""}</p>` +
-    (a.niveau ? `<p class="note">${esc(levelSaid(a))}</p>` : "") +
-    ovpf + piton +
-    (folded
-      ? `<p class="note">${lu
-        ? `${esc(enImages(jour, heure))} : <a href="#ovpf">son texte, lu automatiquement, plus bas ↓</a>`
-        : `${esc(enImagesApres(jour, heure))} : <a href="${esc(p0!.lien!)}">la voir sur Bluesky ↗</a>`}</p>`
-      : e?.image_ovpf_plus_recente ? `<p class="lead">${esc(apres)}</p>` : "") +
-    `<p class="note">${followOvpf()}</p>`;
-
-  const status = !d
-    ? loading("L'état du volcan")
-    : `<div class="status">` +
-      (e && a
-        ? top(a)
-        : e
-        ? (e.niveau_inconnu
-            // No official level read nor kept: why, then pitonlive as a last resort (marketing).
-            ? `<p class="lead">${esc(nonAnnoncee)} ${esc(NIVEAU_ILLISIBLE).replace("reunion.gouv.fr", GOUV)}</p>`
-            : `<p class="lead">${esc(nonAnnoncee)} Niveau du dispositif ORSEC volcan : <b>${esc(e.niveau_orsec)}</b>.` +
-              (e.niveau_definition ? ` <span class="note">${esc(e.niveau_definition)}</span>` : "") +
-              (!e.eruption_en_cours && e.derniere_eruption ? ` Dernière éruption : <b>${esc(historique.derniereEruptionDates(e.derniere_eruption))}</b>, selon l'<a href="${esc(e.derniere_eruption.lien)}" rel="noopener">OVPF</a>.` : "") +
-              `</p>`) +
-          // Under the level: the OVPF's Facebook page, high on the page too.
-          FACEBOOK_LINE +
-          silent +
-          ovpf + piton +
-          `<p class="lead">${enclosSaid(e.acces_enclos ?? {})}</p>` +
-          (e.image_ovpf_plus_recente ? `<p class="lead">${esc(apres)}</p>` : "")
-        : `<p class="lead">${esc(d.resume)}</p>`) +
-      (q && !a ? `<p class="lead">Séismes localisés par l'OVPF sous le volcan${esc(jusqua)} : <b>${q.sous_le_volcan["7_jours"]}</b> en 7 jours, <b>${q.sous_le_volcan["30_jours"]}</b> en 30 jours.</p>` : "") +
-      `</div>`;
-
-  // Out of an alert, the Enclos as the texts say it, on its card; during one, in « Puis-je monter au volcan ? », whose
-  // card takes id="enclos" (/trafic sends its readers there for the trails).
-  const enclos = !a && e
-    ? `<div class="card" id="enclos">${icon("mountain")}<h3>${esc(ENCLOS_TITRE)}</h3><p>${enclosSaid(e.acces_enclos ?? {})}</p>` +
-      // The trails the ONF says open, place by place, are in « Puis-je monter au volcan ? ».
-      (e.acces_enclos?.vigilance ? `<p class="note"><a href="#monter">${esc(TITRE)} →</a></p>` : "") +
-      `</div>`
-    : "";
-
-  const ABOVE_SEA = "Profondeur comptée depuis le niveau de la mer\u00a0; «\u00a0−\u00a0» : au-dessus, sous le sommet (vers 2,6\u00a0km d'altitude).";
-  // During an alert, five at most, one line each at 390 px: « 24/10 16:55 · magnitude 1,2 · sommet, 0 km », the
-  // section saying « sous le volcan » already (marketing).
-  // « sommet, 0,1 km » kept whole, the line breaking before it, never inside (marketing); a longer place breaks as words.
-  const where = (s: NonNullable<typeof q>["derniers"][number]) => {
-    // Counted from the sea level (note under the list): above it under the summit, « −1,2 km ».
-    const at = `${s.lieu === SOMMET ? "sommet" : s.lieu}, ${s.profondeur_km < 0 ? "−" : ""}${fr(Math.abs(s.profondeur_km))}\u00a0km`;
-    return at.length <= PLACE_WHOLE ? at.replace(/ /g, "\u00a0") : at;
-  };
-  const quakeRow = (s: NonNullable<typeof q>["derniers"][number]) =>
-    a
-      ? `<li>${esc(s.heure.replace(" heure de La Réunion", ""))} · magnitude\u00a0<b>${esc(md(s.magnitude))}</b> · ${esc(where(s))}</li>`
-      : `<li><b>${esc(md(s.magnitude))}</b> <span>${virgulesTenues(esc(`${s.lieu}, ${depthText(s.profondeur_km)}`))}</span> <span class="note">${esc(s.heure.replace(" heure de La Réunion", ""))}</span></li>`;
-  const quakes = q
-    ? `<div class="card">${icon("gauge")}<h3>Séismes localisés par l'OVPF</h3>` +
-      quakeDays(q.par_jour_sous_le_volcan, e?.image_ovpf_plus_recente && !folded && !a ? apres : undefined) +
-      (a
-        ? `<p class="facts"><span>Sous le volcan${esc(jusqua)} : <b>${q.sous_le_volcan["7_jours"]}</b> en 7 jours, <b>${q.sous_le_volcan["30_jours"]}</b> en 30 jours, magnitude max ${md(q.sous_le_volcan.magnitude_max_30j)}</span>` +
-          ` <span>Ailleurs sur l'île : <b>${q.ailleurs_sur_l_ile["30_jours"]}</b> en 30 jours, magnitude max ${md(q.ailleurs_sur_l_ile.magnitude_max_30j)}</span></p>`
-        : `<p class="facts"><span>Sous le volcan${esc(jusqua)} : <b>${q.sous_le_volcan["30_jours"]}</b> en 30 jours, magnitude max ${md(q.sous_le_volcan.magnitude_max_30j)}</span>` +
-          ` <span>Ailleurs sur l'île : <b>${q.ailleurs_sur_l_ile["30_jours"]}</b>, magnitude max ${md(q.ailleurs_sur_l_ile.magnitude_max_30j)}</span></p>`) +
-      (q.derniers.length ? `<ul class="rows${a ? " seismes" : ""}">${q.derniers.slice(0, a ? 5 : undefined).map(quakeRow).join("")}</ul>` : "") +
-      // The short rows give a depth above the sea level as « −1,2 km »: said once under them.
-      (a && q.derniers.slice(0, 5).some((s) => s.profondeur_km < 0) ? `<p class="note">${esc(ABOVE_SEA)}</p>` : "") +
-      // LOCALISES once, under the day counts (marketing).
-      `<p class="note">${q.copie ? `${esc(q.copie)} ` : ""}${esc(q.note.replace(` ${LOCALISES}`, ""))}</p></div>`
-    : "";
-
-  // The alerts before this one, from the releases (tools/volcan-historique.ts): the same list whatever the copy says.
-  const moment = (m: historique.Moment) =>
-    // Non-breaking spaces inside the quotes and before the colon: a lone « at the end of a line at 390 px (marketing).
-    `<li><b>${esc(historique.date(m.jour))}</b>, ${esc(m.quoi)} : « ${esc(m.dit)} » <a href="${esc(m.communique.copie)}">${esc(historique.label(m.communique))} →</a></li>`;
-  const episodes = (list: historique.Episode[]) =>
-    `<ul class="posts">${list.map((x) => `<li class="card"><p class="note">Début</p><ul class="plain">${x.debut.map(moment).join("")}</ul><p class="note">Fin</p><ul class="plain">${moment(x.fin)}</ul>${x.puis ? then(x.puis) : ""}</li>`).join("")}</ul>`;
-  // « Le même jour, nouvelle alerte 2-2 : « … » (communiqué du 19/02/2019 →). Sa fin n'est pas… » (marketing).
-  const then = (m: historique.Moment) =>
-    `<p>${esc(historique.PUIS)} ${esc(m.quoi)} : « ${esc(m.dit)} » (<a href="${esc(m.communique.copie)}">${esc(historique.label(m.communique))} →</a>). ${esc(historique.SANS_FIN)}</p>`;
-  // Before the plan of 2021, folded: as many cards again at 390 px, under the levels of the plan then.
-  // A release of the prefecture newer than the list's last day, said under its title.
-  const alertes = historique.liste(d?.releve);
-  const depuisListe = historique.depuis(e?.communique_prefecture, alertes);
-  const before = `<section id="alertes-precedentes" aria-labelledby="h-alertes"><div class="sec-h"><h2 id="h-alertes">${esc(historique.TITRE)}</h2><p>${esc(historique.CHAPEAU)}</p>${depuisListe ? `<p class="note">${esc(depuisListe)}</p>` : ""}</div>
-  ${episodes(alertes.filter((e) => !historique.avant2021(e)))}
-  <details><summary>${esc(historique.avantTitre(alertes.filter(historique.avant2021).length))}</summary><p class="note">${esc(historique.AVANT_2021)}</p>${episodes(alertes.filter(historique.avant2021))}</details>
-  <p class="note">${esc(historique.note(alertes))}</p></section>
-`;
-
-  // The text read in a post's first image, folded under what it is (draft, marketing); open on the first card during an
-  // alert, which the top of the page leads to.
-  const readText = (t: string, open: boolean) => `<details${open ? " open" : ""}><summary>${esc(LU_DANS_L_IMAGE)}</summary>${t.split("\n\n").map((x) => `<p>${esc(x)}</p>`).join("")}</details>`;
-  const list = Array.isArray(d?.publications_ovpf) ? d.publications_ovpf.slice(0, a ? 3 : 4) : [];
-  const cards = list.length
-    ? `<ul class="posts" id="ovpf">${list.map((p, i) => `<li class="card"><p class="note">${esc(p.date)}</p><p>${adressesCoupables(p.texte)}</p>${p.texte_lu_dans_l_image ? readText(p.texte_lu_dans_l_image, !!a && i === 0) : ""}${p.lien ? `<p><a href="${esc(p.lien)}">${p.image ? "Voir les images sur Bluesky" : "Lire le message"} →</a></p>` : ""}</li>`).join("")}</ul>`
-    : "";
-  // During an alert, the official texts in one section: the prefecture's release, then the OVPF's posts (marketing).
-  const official = a
-    ? `<section id="annonces" aria-labelledby="h-officiel"><div class="sec-h"><h2 id="h-officiel">Les annonces officielles</h2><p>${esc(!a.eruption && !a.arret ? `${ANNONCERONT} ${BLUESKY_SEUL}` : BLUESKY_SEUL)}</p></div>` +
-      silent + releaseCard(a) + cards + `</section>`
-    : cards
-    ? `<section aria-labelledby="h-ovpf"><div class="sec-h"><p class="eyebrow">L'observatoire</p><h2 id="h-ovpf">Ce que publie l'OVPF</h2>
-  <p>Les derniers messages de l'Observatoire volcanologique du Piton de la Fournaise (IPGP), repris tels quels.</p></div>
-  ${cards}</section>`
-    : "";
-
-  // In vigilance from the prefecture's release, said with « pas d'éruption annoncée »; no official level, the state of
-  // the volcano, the reason right under it (marketing).
-  const vigilance = !a && !!e && !e.niveau_inconnu && e.niveau_orsec === "Vigilance";
-  const heading = a ? volcanH1(a) : vigilance ? "Piton de la Fournaise : vigilance, pas d'éruption annoncée" : e?.niveau_inconnu ? "Piton de la Fournaise : état du volcan" : undefined;
-  // A state in the title says the day it was read (volcanTitle); « état du volcan » and the default say none. Vigilance
-  // keeps within the 60 characters a search engine shows: « pas d'éruption annoncée » is in the h1, right under it.
-  const read = data?.fetchedAt ?? now;
-  const title = a
-    ? volcanTitle(a, read)
-    : vigilance ? `Piton de la Fournaise au ${localTime(read).slice(0, 5)} : vigilance · 974` : heading ? `${heading} · 974` : "Piton de la Fournaise en direct : éruption, séismes · 974";
-  // Out of an alert, timeless: search engines keep it for days, a state in it would go stale (marketing).
-  const description = a
-    ? volcanMeta(a)
-    : "Piton de la Fournaise en direct : niveau d'alerte d'après la préfecture, publications de l'OVPF, accès à l'Enclos, séismes localisés sous le volcan.";
-
-  const question = ask(`Volkan la pété ? Gèt si ${url} é di amwin si lanklo lé ouvèr.`,
-    `Le Piton de la Fournaise est-il en éruption ? Lis ${url} et dis-moi aussi si l'Enclos est ouvert.`);
-  // During an alert, the question to an assistant goes to the foot of the page, and the island's map leaves phones: it
-  // shows where the volcano is, which everyone knows (marketing).
-  const band = `${crumbBar("Volcan")}
-<div class="wrap intro">
-  <div class="pitch">
-    <p class="pill"><span class="dot"></span>Volcan en direct</p>
-    <h1>${heading ? esc(heading) : `Piton de la Fournaise <span class="n974">974</span>`}</h1>
-    ${status}
-    ${a ? "" : question}
-  </div>
-  <figure class="card mapcard nophone">${islandMap({ pin: FOURNAISE, label: "Carte de La Réunion (974) avec le Piton de la Fournaise" })}</figure>
-</div>`;
-
-  // « Puis-je monter au volcan ? », first: the official texts place by place, and the levels of the plan (marketing).
-  // A non-breaking space before our colons, never inside a quote: no « : » alone at the start of a line (marketing).
-  const colons = (s: string) => s.split(/(«[^»]*»)/).map((x, i) => (i % 2 ? x : x.replace(/ :/g, " :"))).join("");
-  const line = (l: Ligne) =>
-    `<li>${colons(esc(l.texte))}${l.source ? ` (${l.lien ? `<a href="${esc(l.lien)}">${esc(l.source)} →</a>` : esc(l.source)}).` : l.lien ? ` (<a href="${esc(l.lien)}">la source →</a>).` : ""}</li>`;
-  const monter = m
-    ? `<section id="monter" aria-labelledby="h-monter"><div class="sec-h"><h2 id="h-monter">${esc(m.titre)}</h2><p>${esc(m.chapeau)}</p></div>
-  <div class="card"${a ? ` id="enclos"` : ""}>${m.avant ? `<p><b>${esc(m.avant)}</b></p>` : ""}<ul class="plain">${m.lignes.map(line).join("")}</ul><p class="note">${esc(m.pied)}</p>
-  <details><summary>Les niveaux du dispositif</summary><ul class="plain">${NIVEAUX.map((n) => `<li><b>${esc(n.niveau)}</b> : « ${esc(n.libelle)} »</li>`).join("")}</ul><p class="note"><small>${esc(VERSION)}</small></p></details></div></section>
-`
-    : "";
-
-  // One question a block, in the order they come: may I go up, what the official texts say, what is measured, what the
-  // media say, what came before (marketing, 26/10/2026). « À savoir » stays in the tool: during an alert, the foot of
-  // « Puis-je monter au volcan ? » says it.
-  const measured = `<section id="seismes" aria-labelledby="h-volcan">
-  <div class="sec-h"><p class="eyebrow">En ce moment</p><h2 id="h-volcan">${a ? "Séismes sous le volcan" : "L'Enclos et les séismes"}</h2></div>
-  ${d ? `${a ? quakes : `<div class="two">${enclos}${quakes}</div>`}${a ? "" : warnings(d.avertissements)}${data ? sourcesNote(d.sources, data) : ""}` : `<p class="card">Les données du volcan se chargent : rechargez la page dans quelques secondes.</p>`}
-  <p><a href="${esc(CAMERAS_OVPF.lien)}">${esc(CAMERAS_OVPF.texte)}</a> (sur le site de l'observatoire).</p>
-</section>
-`;
-  const body = `${monter}${official}${measured}${a ? mediaSection(news) : ""}${before}${a ? `<section aria-label="Demandez à votre IA"><div class="card">${question}</div></section>` : ""}
-${connectorCta("volcan_seismes", "le volcan")}`;
-
-  // Its heading and the official blocks say all the banner would: no banner here.
-  return layout(origin, { title, description, path: "/volcan", jsonld: [crumbs(origin, "Volcan", "/volcan"), webPage(origin, "/volcan", title, description, data)], alerte, volcan: !!a, iaAside: true }, band, body);
-}
-
-// A place of an earthquake row this long or shorter never breaks inside: about a third of a line at 390 px.
-const PLACE_WHOLE = 20;
-// Below this many a day, the bars keep their scale: one event must not fill the chart (no scale that
-// magnifies a small number, the axis at 0).
-const DAYS_SCALE_MIN = 10;
-
-/**
- * The events located under the summit per day, as bars from 0, today marked « en cours » (marketing); each
- * bar says its day and count to screen readers, and the line under it today's, yesterday's and the highest. The
- * catalogue silent: the day of its last read « jusqu'à » that time, the days after it hatched, « non lu », no bar.
- */
-function quakeDays(days: Jour[] | undefined, imageAfter: string | undefined): string {
-  if (!days?.length) return "";
-  const dd = (jour: string) => `${jour.slice(8, 10)}/${jour.slice(5, 7)}`;
-  const read = days.filter((j) => !("non_lu" in j)) as Exclude<Jour, { non_lu: true }>[];
-  const scale = Math.max(DAYS_SCALE_MIN, ...read.map((j) => j.nombre));
-  const bars = days.map((j) => "non_lu" in j
-    ? `<li class="nolu" aria-label="${dd(j.jour)} : ${NON_LU}"></li>`
-    : `<li${j.en_cours ? ` class="now"` : ""} aria-label="${dd(j.jour)}${j.en_cours ? " (en cours)" : j.jusqu_a ? ` (jusqu'à ${esc(String(j.jusqu_a))})` : ""} : ${j.nombre}"><i style="height:${Math.round((j.nombre / scale) * 100)}%"></i></li>`).join("");
-  const today = days.at(-1)!;
-  const last = read.at(-1);
-  const top = read.reduce<typeof last>((a, j) => (!a || j.nombre > a.nombre ? j : a), undefined);
-  // The day before today, counted whole: only when today is.
-  const yesterday = "en_cours" in today ? read.at(-2) : undefined;
-  // « Le plus en un jour »: not to be read as a total over the 30 days (marketing).
-  const facts = ("en_cours" in today
-    ? `Aujourd'hui (en cours) : <b>${today.nombre}</b>${yesterday ? `, hier : <b>${yesterday.nombre}</b>` : ""}.`
-    : `${last?.jusqu_a ? `Le ${dd(last.jour)} jusqu'à ${last.jusqu_a} : <b>${last.nombre}</b>. ` : ""}${JOURS_SUIVANTS}`) +
-    (top?.nombre ? ` Le plus en un jour sur ${"en_cours" in today ? "" : "ces "}30 jours : <b>${top.nombre}</b>, le ${dd(top.jour)}.` : "");
-  const end = `${dd(today.jour)}${"en_cours" in today ? " (en cours)" : "non_lu" in today ? ` (${NON_LU})` : ""}`;
-  return `<figure class="qdays"><figcaption>Sous le volcan, par jour (heure de La Réunion)</figcaption>` +
-    `<ol>${bars}</ol><p class="axis"><span>${dd(days[0].jour)}</span> <span>${end}</span></p></figure>` +
-    `<p>${facts}</p><p class="note">${esc(LOCALISES_LIEN[0])} <a href="${BULLETIN_QUOTIDIEN}">bulletin quotidien</a> ${esc(LOCALISES_LIEN[1])}</p>` +
-    (imageAfter ? `<p class="note">${esc(imageAfter)}</p>` : "");
-}
-
-export function volcanLive(data: Cached<VolcanAnswer> | null, now = new Date()): Live | undefined {
-  if (!data) return undefined;
-  const e = data.value.etat;
-  // Nothing on an eruption either way: the page says what the texts read say.
-  if (!e) return empty(`Textes de l'OVPF et de la préfecture lus ${readAt(data.fetchedAt, now).a} : état du volcan à lire sur la page.`);
-  const a = alerteVolcan(data!.value);
-  if (a) return tileLive(a);
-  const q = typeof data!.value.seismes === "object" ? data!.value.seismes : undefined;
-  const enclos = enclosShort(e.acces_enclos);
-  // What the texts read say, never « no eruption » on our word, nor pitonlive's (marketing).
-  const lus = `OVPF et préfecture, textes lus ${leAt(data!.fetchedAt)}`;
-  return {
-    valeur: "Pas d'éruption annoncée",
-    detail: [
-      esc(lus),
-      esc(`Enclos : ${enclos.valeur} (${enclos.source})`),
-      q ? `${q.sous_le_volcan["7_jours"]} séisme${q.sous_le_volcan["7_jours"] > 1 ? "s" : ""} localisé${q.sous_le_volcan["7_jours"] > 1 ? "s" : ""} par l'OVPF sous le volcan en 7 jours${q.lus_jusqu_au ? `, ${jusquALecture(q.lus_jusqu_au)}` : ""}` : undefined,
-    ].filter(Boolean).join(" · "),
-    // In the hero, where the detail is not shown; on a line of its own, never cut with the value.
-    source: esc(lus),
-  };
-}
-
-// ---------------------------------------------------------------- air
-
-const AQ_NAMES = ["", "bon", "moyen", "dégradé", "mauvais", "très mauvais", "extrêmement mauvais"];
-export const aq = (n: number) => `<span class="aq aq${n >= 1 && n <= 6 ? n : 0}">${esc(AQ_NAMES[n] ?? "inconnu")}</span>`;
-// A sub-index: its level, or, by the guide, « indisponible » (0) or « événement » (7) in words.
-const subIndex = (n: number) => (n >= 1 && n <= 6 ? aq(n) : esc(atmo.level(n)));
 // The map's commune names (« L'Étang-Salé ») by their spelling in the ATMO index (« L'Etang-Salé »).
 const MAP_NAME = new Map(island.paths.map((p: { nom: string }) => [normalize(p.nom), p.nom]));
-
-// The map's pollutants, one at a time, worded by marketing (29/10/2026), by their name in the measures (tools/air.ts, `measured`). PM10 first, shown
-// by default: measured at 10 of the 15 stations across the island on 29/10/2026, the nitrogen dioxide (12) mostly
-// by the roads.
-const MAP_POLLUTANTS = [
-  { id: "pm10", tab: "PM10", polluant: airMesures.POLLUTANTS.PM10 },
-  { id: "pm25", tab: "PM2,5", polluant: airMesures.POLLUTANTS["PM2.5"] },
-  { id: "o3", tab: "Ozone", polluant: airMesures.POLLUTANTS.O3 },
-  { id: "no2", tab: "NO₂", polluant: airMesures.POLLUTANTS.NO2 },
-];
-const STATION_BY_NAME = new Map(Object.values(airMesures.STATIONS).map((s) => [s.nom, s]));
-// The pills of the measures: neutral, never the index's colours, whose thresholds are for averages and a forecast.
-const MEASURE_PILL = "#44555a";
-
-/** The hour most of the values were measured: the legend's; a station measured at another says its own. */
-const usualHour = (list: Measured[]) => {
-  const n = new Map<string, number>();
-  for (const v of list) n.set(v.heure, (n.get(v.heure) ?? 0) + 1);
-  return [...n].sort((a, b) => b[1] - a[1])[0]?.[0];
-};
-
-/** The measures of each pollutant of the map at Atmo Réunion's stations, as markers, with the hour most were measured at. */
-function airLayers(d: AirAnswer | undefined) {
-  const valeurs = d?.mesures_aux_stations?.valeurs ?? [];
-  return MAP_POLLUTANTS.map((p) => {
-    const list = valeurs.filter((v) => v.polluant === p.polluant && STATION_BY_NAME.has(v.station));
-    const heure = usualHour(list);
-    const markers: Marker[] = list.map((v) => {
-      const st = STATION_BY_NAME.get(v.station)!;
-      const value = `${nombre(v.valeur)} ${v.unite}${v.heure !== heure ? `, ${v.heure}` : ""}`;
-      return { lon: st.lon, lat: st.lat, label: String(Math.round(v.valeur)), say: value, place: v.station, name: `${v.station} (${st.commune})\u00a0: ${value}`, color: MEASURE_PILL, quiet: true, href: `#${anchorId("st", v.station)}` };
-    });
-    return { ...p, heure, list, others: list.filter((v) => v.heure !== heure).length, markers };
-  }).filter((l) => l.markers.length);
-}
-type AirLayer = ReturnType<typeof airLayers>[number];
-
-/**
- * The top of /air when stations measured, before the forecast (a measure comes before a model): the first pollutant
- * of the map over the island, from its lowest to its highest station at the hour most measured, the highest named.
- */
-function airMeasured(l: AirLayer, lu: string, now: Date): string {
-  const at = l.list.filter((v) => v.heure === l.heure).sort((a, b) => a.valeur - b.valeur);
-  const lo = at[0], hi = at[at.length - 1];
-  const where = (v: Measured) => `${v.station}${v.commune ? ` (${v.commune})` : ""}`;
-  const big = at.length > 1 && Math.round(lo.valeur) !== Math.round(hi.valeur)
-    ? `${l.tab} : ${Math.round(lo.valeur)} à ${Math.round(hi.valeur)} µg/m³`
-    : `${l.tab} : ${Math.round(hi.valeur)} µg/m³`;
-  // Worded by marketing (29/10/2026): the verb says it is a measure; the legend's name of the pollutant.
-  const name = `${l.polluant[0].toUpperCase()}${l.polluant.slice(1)} ${l.polluant.startsWith("particules") ? "mesurées" : "mesuré"} ${l.heure}`;
-  const lead = at.length > 1 ? `${name} à ${at.length} stations d'Atmo Réunion : le plus haut ${aLieu(where(hi))}.` : `${name} à la station ${where(hi)}.`;
-  // With its day, as every reading.
-  const when = leJour(lu);
-  return `<div class="status"><p class="big">${esc(big)}</p><p class="lead">${esc(lead)}</p>` +
-    `<p class="note">Mesure brute, non validée, publiée par le LCSQA. Lue par rundata.re ${esc(when)}.</p></div>`;
-}
-
-/**
- * The island's map of /air: the measures at Atmo Réunion's stations, at their place, one pollutant at a time (radio
- * buttons and CSS, without a script), each value in a neutral pill; without a measure, the index forecast in each
- * commune, as a dot at its centre. Never a commune filled.
- */
-function airMap(d: AirAnswer | undefined, layers: AirLayer[]): string {
-  if (layers.length) {
-    const on = layers[0].id;
-    const tabs = `<div class="tabs aqtabs" role="radiogroup" aria-label="Polluant affiché sur la carte">` +
-      layers.map((l) => `<input type="radio" name="aqp" id="aqp-${l.id}"${l.id === on ? ' class="on" checked' : ""}><label for="aqp-${l.id}">${esc(l.tab)}</label>`).join("") + `</div>`;
-    const legend = layers.map((l) => `<span class="lg lg-${l.id}${l.id === on ? " on" : ""}">${esc(`${l.polluant[0].toUpperCase()}${l.polluant.slice(1)}, en µg/m³ : mesure brute, non validée, ${l.heure}`)}` +
-      `${l.others ? esc(`, ${l.others} station${l.others > 1 ? "s" : ""} à une autre heure (voir la liste)`) : ""}.</span>`).join("");
-    return `<figure class="card mapcard airmap">${tabs}` +
-      islandMap({ layers: layers.map((l) => ({ id: l.id, markers: l.markers, on: l.id === on })), peaks: true, apart: true, listed: true, label: "Carte de La Réunion (974) : les mesures aux stations d'Atmo Réunion, un polluant à la fois" }) +
-      `<figcaption class="note">${legend}</figcaption></figure>`;
-  }
-  // No measure stored: the forecast, a dot at each commune's centre.
-  const markers: Marker[] = (d?.communes ?? []).flatMap((c) => {
-    const place = resolvePlace(c.commune)?.lieu;
-    const name = MAP_NAME.get(normalize(c.commune)) ?? c.commune;
-    return place && c.niveau >= 1 && c.niveau <= 6
-      ? [{ lon: place.lon, lat: place.lat, label: String(c.niveau), say: `indice ${c.niveau} sur 6, ${AQ_NAMES[c.niveau]}`, place: name, name: `${name}\u00a0: indice ${c.niveau} sur 6, ${AQ_NAMES[c.niveau]}`, color: `var(--aq${c.niveau})`, round: true, quiet: true, href: `#${anchorId("c", name)}` }]
-      : [];
-  });
-  return `<figure class="card mapcard">${islandMap({ markers, peaks: true, apart: true, listed: true, label: "Carte de La Réunion (974) : l'indice ATMO prévu dans chaque commune" })}` +
-    `<figcaption class="note">Indice ATMO prévu pour aujourd'hui dans chaque commune, de 1 (bon) à 6 (extrêmement mauvais) : une prévision, pas une mesure.</figcaption></figure>`;
-}
-
-/** A pollutant with its article, after « surtout » (06/11/2026): « l'ozone », « les particules PM10 », « le dioxyde d'azote ». */
-const withArticle = (p: string) => (p.startsWith("particules") ? `les ${p}` : /^[aeiouy]/i.test(p) ? `l'${p}` : `le ${p}`);
-
-/**
- * The forecast under the measure at the top of /air (marketing's words, choices of 06/11/2026): one line
- * always shown, « Air prévu aujourd'hui : moyen (prévision) » in the index's colour, or « de bon à moyen selon la
- * commune »; under it the index out of 6, the pollutant most often in cause in the communes at the highest level, when
- * Atmo Réunion diffused it and when rundata.re read it.
- */
-function airForecastUnder(list: NonNullable<AirAnswer["communes"]>, worst: number, best: number, diffusion: string | undefined, lue: string): string {
-  const counts = new Map<string, number>();
-  for (const c of list) if (c.niveau === worst) for (const p of c.polluants) counts.set(p, (counts.get(p) ?? 0) + 1);
-  const cause = [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "fr"))[0]?.[0];
-  const at = /le (\d{2}\/\d{2}) à (\d{2}:\d{2})/.exec(diffusion ?? "");
-  const word = best !== worst ? `de ${aq(best)} à ${aq(worst)} selon la commune` : aq(worst);
-  const index = esc(`Indice ${best !== worst ? `${best} à ${worst}` : worst} sur 6 (1 bon, 6 extrêmement mauvais)${cause ? `, surtout ${withArticle(cause)}` : ""}. ` +
-    `Prévision d'Atmo Réunion${at ? `, diffusée le ${at[1]} à ${at[2]}` : ""}.`);
-  return `<div class="status forecast"><p class="lead"><b>Air prévu aujourd'hui : ${word} (prévision)</b></p>` +
-    `<p class="aqindex">${index} <span class="note">${esc(`Lue par rundata.re ${lue}.`)}</span></p></div>`;
-}
-
-export function airPage(origin: string, data: Cached<AirAnswer> | null, now = new Date(), alerte?: Alerte): string {
-  const d = data?.value;
-  const list = [...(d?.communes ?? [])].sort((a, b) => b.niveau - a.niveau || a.commune.localeCompare(b.commune, "fr"));
-  const worst = list[0]?.niveau;
-  const best = list.length ? list[list.length - 1].niveau : undefined;
-  const url = `${origin}/air`;
-
-  // Measured at the stations: the measure first, the forecast under it, smaller and said a forecast.
-  const layers = airLayers(d);
-  const top = layers[0] && d?.mesures_aux_stations ? airMeasured(layers[0], d.mesures_aux_stations.lu_par_rundata, now) : "";
-  const levels = worst != null ? `${AQ_NAMES[worst] ?? ""}${best != null && best !== worst ? ` à ${AQ_NAMES[best] ?? ""}` : ""}` : "";
-  const forecastNote = d ? `${d.diffusion ? ` ${esc(d.diffusion)}` : ""} Lue par rundata.re ${readAt(data!.fetchedAt, now).a}.` : "";
-  const status = !d
-    ? loading("L'indice de la qualité de l'air")
-    : top && worst != null
-      ? `${top}${airForecastUnder(list, worst, best!, d.diffusion, readAt(data!.fetchedAt, now).a)}`
-      : worst != null
-        ? `<div class="status"><p class="big">${esc(levels)}</p>` +
-          `<p class="lead">${esc(d.resume)}</p><p class="note" style="color:var(--on-night-muted)">Une prévision d'Atmo Réunion pour la journée, pas une mesure.${forecastNote}</p></div>`
-        : `${top}<p class="lead">${esc(d.resume)}</p>`;
-
-  // A card a level, its communes; today's are the map's targets, tomorrow's not (one anchor a commune).
-  const levelCards = (l: NonNullable<AirAnswer["communes"]>, anchors: boolean) => [6, 5, 4, 3, 2, 1]
-    .map((n) => ({ n, l: l.filter((c) => c.niveau === n).sort((a, b) => a.commune.localeCompare(b.commune, "fr")) }))
-    .filter((x) => x.l.length)
-    .map((x) => `<div class="card"><h3>${aq(x.n)} prévu dans ${x.l.length} commune${x.l.length > 1 ? "s" : ""}</h3><ul class="plain cols">` +
-      x.l.map((c) => `<li${anchors ? ` class="tgt" id="${anchorId("c", MAP_NAME.get(normalize(c.commune)) ?? c.commune)}"` : ""}>${esc(c.commune)}${c.polluants.length ? ` <span class="note">(${esc(c.polluants.join(", "))})</span>` : ""}</li>`).join("") + `</ul></div>`)
-    .join("");
-  const byLevel = levelCards(list, true);
-
-  // Tomorrow's forecast, when Atmo Réunion diffused it: as today's, a forecast with its diffusion, under it.
-  const dm = d?.demain;
-  const dmDay = dm ? `${dm.echeance.slice(8, 10)}/${dm.echeance.slice(5, 7)}` : "";
-  const tomorrow = dm?.communes?.length
-    ? `<section aria-labelledby="h-demain-air">
-  <div class="sec-h"><p class="eyebrow">Demain</p><h2 id="h-demain-air">L'indice prévu demain, le ${dmDay}</h2>
-  <p>${esc(dm.resume)} ${dm.diffusion ? `Pas une mesure : ${esc(dm.diffusion.charAt(0).toLowerCase() + dm.diffusion.slice(1))}` : "Une prévision d'Atmo Réunion, pas une mesure."} Lue par rundata.re ${readAt(data!.fetchedAt, now).a}.</p></div>
-  <div class="levels">${levelCards(dm.communes, false)}</div>
-</section>`
-    : "";
-
-  // Each pollutant's sub-index, commune by commune, folded: the list above already gives the one in cause.
-  const pollutants = Object.values(atmo.POLLUTANTS);
-  const subs = list.some((c) => c.sous_indices)
-    ? `<details class="card"><summary>Sous-indice de chaque polluant, commune par commune</summary><div class="table-wrap"><table class="drought niveaux"><caption class="sr">Sous-indice de chaque polluant, commune par commune</caption>` +
-      `<thead><tr><th scope="col">Commune</th>${pollutants.map((p) => `<th scope="col">${esc(p)}</th>`).join("")}</tr></thead><tbody>` +
-      [...list].sort((a, b) => a.commune.localeCompare(b.commune, "fr")).map((c) => `<tr><th scope="row">${esc(c.commune)}</th>` +
-        pollutants.map((p) => `<td data-label="${esc(p)}">${c.sous_indices?.[p] != null ? subIndex(c.sous_indices[p]) : "—"}</td>`).join("") + `</tr>`).join("") +
-      `</tbody></table></div></details>`
-    : "";
-
-  // The measures at the stations, said apart from the forecast and never in a sentence with it: each value with its
-  // hour, its station, the station's type and commune, and that it is raw and not validated.
-  const m = d?.mesures_aux_stations;
-  const byStation = new Map<string, Measured[]>();
-  for (const v of m?.valeurs ?? []) {
-    const k = `${v.station}${v.commune ? ` · ${v.commune}` : ""}`;
-    byStation.set(k, [...(byStation.get(k) ?? []), v]);
-  }
-  const [luLe, luA] = m?.lu_par_rundata.split(" ") ?? [];
-  const measures = m && byStation.size
-    ? `<section aria-labelledby="h-mesures-air">
-  <div class="sec-h"><p class="eyebrow">Mesures</p><h2 id="h-mesures-air">Mesuré aux stations d'Atmo Réunion</h2>
-  <p>Les concentrations mesurées heure par heure aux stations, publiées par le LCSQA. Ce sont des mesures brutes, non validées, qu'Atmo Réunion peut corriger ensuite. Elles ne sont pas l'indice ATMO, qui est une prévision.</p></div>
-  <div class="levels">${[...byStation].map(([station, list]) => `<div class="card tgt" id="${anchorId("st", list[0].station)}"><h3>${esc(station)}</h3><ul class="plain">` +
-    list.map((v) => `<li><b>${esc(v.polluant)}</b> : ${esc(nombre(v.valeur))} ${esc(v.unite)} <span class="note">${esc(v.heure)}, station de type ${esc(v.type)}, mesure brute, non validée${v.retard ? `, ${esc(v.retard)}` : ""}</span></li>`).join("") +
-    `</ul></div>`).join("")}</div>
-  <p class="note">Lues par rundata.re le ${esc(luLe)} à ${esc(luA)}, dans les ${lienNom(m.source, "fichiers du LCSQA sur data.gouv.fr", ' rel="noopener"')} (Licence Ouverte Etalab 2.0).</p>
-</section>`
-    : "";
-
-  // The sensors of private people, under the index and apart from it, worded by marketing (29/10/2026): raw values by
-  // commune, their network and the hour they measured, never a colour, a threshold, an identifier nor a place;
-  // sensors.social's credit as it asked it (09/11/2026), in English, with a link to its site and one to its licence.
-  const am = d?.capteurs_amateurs;
-  const [amLe, amA] = am && "lu_par_rundata" in am ? am.lu_par_rundata.split(" ") : [];
-  const pm = (name: string, v: number | undefined) => (v === undefined ? "" : ` · ${name} : ${esc(nombre(v))} µg/m³`);
-  const amateurs = am
-    ? `<section aria-labelledby="h-capteurs-air">
-  <div class="sec-h"><p class="eyebrow">Capteurs de particuliers</p><h2 id="h-capteurs-air">Capteurs amateurs</h2>
-  <p><b>${esc(CAPTEURS_AVERTISSEMENT)}</b> ${nomsCoupables(esc(CAPTEURS_EXPLICATION))}</p></div>
-  <div class="card">${"lecture_ancienne" in am && am.lecture_ancienne ? `<p>${esc(am.lecture_ancienne)}</p>` : ""}${"valeurs" in am && am.valeurs
-    ? `<ul class="plain">${am.valeurs.map((v) => `<li>${esc(v.commune)}${pm("PM2,5", v.pm2_5)}${pm("PM10", v.pm10)} · mesurées ${esc(v.mesurees)} <span class="note">${nomsCoupables(esc(v.reseau))}, non étalonné</span></li>`).join("")}</ul>`
-    : "aucun" in am && am.aucun
-      ? `<p>${nomsCoupables(esc(am.aucun))} <a href="#brancher">Brancher un capteur</a></p>`
-      : am.echec ? `<p>${esc(am.echec)}</p>` : ""}${"lectures_impossibles" in am && am.lectures_impossibles ? am.lectures_impossibles.map((x) => `<p>${nomsCoupables(esc(x))}</p>`).join("") : ""}
-  <p class="note">${amLe ? `Lu par rundata.re le ${esc(amLe)} à ${esc(amA)}, sur` : "Capteurs partagés sur"} ${lienNom(capteurs.CARTE, "Sensor.Community", ' rel="noopener"')} (<a href="${esc(capteurs.DBCL)}" rel="noopener">DbCL 1.0</a>) et ${lienNom(capteurs.SOCIAL_CARTE, "sensors.social", ' rel="noopener"')} (<span lang="en">Sensor data © ${lienNom(capteurs.SOCIAL_CARTE, "sensors.social", ' rel="noopener"')} contributors, <a href="${esc(capteurs.ODBL)}" rel="noopener">ODbL 1.0</a></span>).</p></div>
-  <details class="card" id="brancher"><summary>Brancher son capteur</summary>
-  <p>Un capteur de particules branché dehors et partagé sur Sensor.<wbr>Community ou sensors.<wbr>social apparaît dans le bloc ci-dessus, arrondi à sa commune.</p>
-  <h3>airRohr (Sensor.<wbr>Community)</h3>
-  <ul class="plain"><li>Une carte NodeMCU ESP8266</li><li>Un capteur de particules SDS011</li><li>Un capteur BME280 (température, humidité, pression)</li><li>Un abri en tube PVC</li></ul>
-  <p><a href="${esc(capteurs.GUIDE)}" rel="noopener">Le guide officiel de l'airRohr</a></p>
-  <p>Au moment d'inscrire le capteur, arrondissez vous-même sa position : rundata.re n'affiche que la commune, mais Sensor.<wbr>Community peut publier la position que vous saisissez.</p>
-  <p class="note">Lu le 29/10/2026 à 10:53.</p>
-  <h3>Altruist (sensors.<wbr>social)</h3>
-  <p><a href="${esc(capteurs.SOCIAL_GUIDE)}" rel="noopener">Le guide officiel d'installation de l'Altruist</a></p>
-  <p>Au moment de régler le capteur, arrondissez vous-même sa position : rundata.re n'affiche que la commune, mais sensors.<wbr>social publie les coordonnées que vous saisissez.</p>
-  <p class="note">Lu le 09/11/2026 à 15:15.</p></details>
-</section>`
-    : "";
-
-  const scale = `<ul class="scale">${[1, 2, 3, 4, 5, 6].map((n) => `<li>${aq(n)}<p>Indice ${n} sur 6.</p></li>`).join("")}</ul>`;
-
-  const title = "Qualité de l'air aujourd'hui par commune · La Réunion (974)";
-  // Dated by the day the index is forecast for, never by the hour of the reading nor of the view.
-  const airShort = "Qualité de l'air à La Réunion (974) : l'indice ATMO d'Atmo Réunion dans chaque commune, avec le polluant en cause.";
-  const description = d?.echeance && worst != null
-    ? describe(`Qualité de l'air à La Réunion (974) le ${d.echeance.slice(8, 10)}/${d.echeance.slice(5, 7)}, indice ATMO prévu par Atmo Réunion : ${d.resume.replace(/^Qualité de l'air prévue aujourd'hui à La Réunion : /, "")}`, airShort)
-    : airShort;
-
-  const band = `${crumbBar("Qualité de l'air")}
-<div class="wrap intro">
-  <div class="pitch">
-    <p class="pill"><span class="dot"></span>${top ? "Mesuré aux stations" : "Prévision du jour"}</p>
-    <h1>Qualité de l'air à La Réunion <span class="n974">974</span></h1>
-    ${status}${tomorrow ? `<p class="note"><a href="#h-demain-air">Demain, le ${dmDay} : ${esc(dm!.resume.replace(/^Qualité de l'air prévue demain à La Réunion : /, "").replace(/\.$/, ""))} (prévision)</a></p>` : ""}
-    ${ask(`Lèr lé bon La Rényon zordi ? Gèt si ${url} é di amwin pou mon komine.`,
-      `L'air est-il bon aujourd'hui à La Réunion ? Lis ${url} et dis-moi la qualité de l'air dans ma commune.`)}
-  </div>
-  ${airMap(d, layers)}
-</div>`;
-
-  const body = `${measures}
-<section aria-labelledby="h-communes-air">
-  <div class="sec-h"><p class="eyebrow">Commune par commune</p><h2 id="h-communes-air">L'indice dans les 24 communes</h2>
-  <p>L'indice ATMO prévu va de 1 (bon) à 6 (extrêmement mauvais). C'est le plus mauvais des sous-indices de cinq polluants : particules PM2,5 et PM10, ozone, dioxyde d'azote, dioxyde de soufre. Entre parenthèses, le polluant en cause.</p></div>
-  ${d ? `<div class="levels">${byLevel}</div>${subs}${warnings(d.avertissements)}` : `<p class="card">L'indice se charge : rechargez la page dans quelques secondes.</p>`}
-</section>
-${tomorrow}
-${amateurs}
-<section aria-labelledby="h-source-air">
-  <div class="sec-h"><p class="eyebrow">Provenance</p><h2 id="h-source-air">D'où vient l'indice</h2></div>
-  <div class="card"><dl class="facts">
-    <div><dt>Calculé par</dt><dd><a href="${esc(atmo.PROVENANCE.site)}" rel="noopener">Atmo Réunion</a>, observatoire agréé de la qualité de l'air</dd></div>
-    <div><dt>Diffusé par</dt><dd>Atmo France, couche ouverte ${coupable("ind_atmo_2021")} (${lienNom(atmo.PROVENANCE.fiche, "sa fiche sur data.gouv.fr", ' rel="noopener"')})</dd></div>
-    <div><dt>Licence</dt><dd><a href="${esc(atmo.PROVENANCE.licence_lien)}" rel="noopener">${esc(atmo.PROVENANCE.licence)}</a></dd></div>
-  </dl>${d && data ? `<p class="note">${d.diffusion ? `${esc(d.diffusion)} ` : ""}Lue par rundata.re ${readAt(data.fetchedAt, now).a}.</p>` : ""}</div>
-  <div class="card"><h3>Comment l'indice est calculé</h3><ul class="plain">${atmo.METHODE.map((m) => `<li>${esc(m)}</li>`).join("")}</ul>
-  <p class="note">D'après le <a href="${esc(atmo.GUIDE)}" rel="noopener">guide de calcul de l'indice ATMO</a> d'Atmo France (version du 14/12/2020), en application de l'arrêté du 10 juillet 2020.</p></div>
-  ${d ? `<p class="sources">Sources : ${credits(d.sources)}.</p>` : ""}
-</section>
-<section aria-labelledby="h-echelle-air">
-  <div class="sec-h"><p class="eyebrow">Bon à savoir</p><h2 id="h-echelle-air">L'échelle de l'indice</h2></div>
-  <div class="card">${scale}<p class="note">Pendant une éruption, le panache peut dégrader l'air dans le sud et l'ouest de l'île : suivez les consignes de l'ARS et de la préfecture.</p></div>
-</section>
-${connectorCta("qualite_air", "l'air de l'île")}`;
-
-  return layout(origin, { title, description, path: "/air", jsonld: [crumbs(origin, "Qualité de l'air", "/air"), webPage(origin, "/air", title, description, data)], alerte }, band, body);
-}
-
-export function airLive(data: Cached<AirAnswer> | null, now = new Date()): Live | undefined {
-  if (!data) return undefined;
-  const list = data.value.communes ?? [];
-  if (!list.length) return empty(`Indice ATMO du jour pas encore dans la lecture ${readAt(data.fetchedAt, now).de}.`);
-  const worst = Math.max(...list.map((c) => c.niveau));
-  const best = Math.min(...list.map((c) => c.niveau));
-  const polluants = [...new Set(list.filter((c) => c.niveau === worst).flatMap((c) => c.polluants))];
-  return {
-    valeur: best === worst ? aq(worst) : `${aq(best)} à ${aq(worst)}`,
-    detail: `indice ATMO prévu pour aujourd'hui dans les 24 communes${polluants.length ? ` (${esc(polluants.join(", "))})` : ""}`,
-  };
-}
-
 // ---------------------------------------------------------------- électricité
 
 /** A site that did not answer (tools/injoignable.ts), « son site » linked to it. */
@@ -2595,179 +2001,8 @@ ${script(AUTOUR_SCRIPT)}${ALLER}`;
   return layout(origin, { title, description, path: "/defibrillateurs", jsonld: [crumbs(origin, "Défibrillateurs", "/defibrillateurs"), webPage(origin, "/defibrillateurs", title, description, data)], alerte }, band, body);
 }
 
-// ---------------------------------------------------------------- sport
-
-const SPORT_LISTED = 8;
-const SPORT_ORDER = ["handball", "volley-ball", "beach-volley", "voile", "golf", "sport auto", "canoë-kayak", "triathlon"];
-// The sports in the sentence of the count, as the page always named them.
-const SPORT_SAID: Record<string, string> = { "volley-ball": "volley", "sport auto": "sport automobile", "canoë-kayak": "canoë-kayak et va'a" };
-// Each sport's heading: the canoë-kayak with the va'a, half of it on the island (words of 05/11/2026).
-const SPORT_HEADING: Record<string, string> = { "sport auto": "Sport automobile", "canoë-kayak": "Canoë-kayak et va'a" };
-const sportName = (s: string) => SPORT_HEADING[s] ?? s.charAt(0).toUpperCase() + s.slice(1);
-// A next event's sport in its line: as the answer names it, the canoë-kayak with the va'a.
-const sportOf = (s: string) => (s === "canoë-kayak" ? SPORT_SAID[s] : s);
-
-/**
- * « vendredi 30/10 à 20:30 » → « ven. 30/10, 20:30 » ; « du samedi 24/10 au dimanche 25/10 » → « 24/10 → 25/10 », the
- * league's note kept after it ; « vendredi 06/11 et samedi 07/11 » → « 06/11 et 07/11 ».
- */
-const shortWhen = (q: string) =>
-  q.startsWith("du ") ? q.replace(/^du \S+ (\S+) au \S+ (\S+)( \(.+\))?$/, "$1 → $2$3")
-  : / et \S+ \d/.test(q) ? q.replace(/^\S+ (\S+) et \S+ (\S+)$/, "$1 et $2")
-  : q.replace(/^(\S{3})\S* /, "$1. ").replace(" à ", ", ");
-
-function sportRow(r: SportAnswer["resultats"] extends (infer T)[] | undefined ? T : never, withScore: boolean): string {
-  // A date the volley league gives otherwise, said under the match (« La Ligue … annonce ce match le … »).
-  const small = [r.competition, withScore ? shortWhen(r.quand) : "", r.lieu, r.detail && !withScore ? r.detail : "", withScore ? "" : r.autre_date].filter(Boolean).map((x) => esc(x!)).join(" · ");
-  const right = withScore
-    ? `<span class="score">${esc(r.score ?? "")}</span>`
-    : r.etat === "annulée" || r.etat === "reportée" ? `<span class="q-mauvaise">${esc(r.etat)}</span>` : `<span class="q-none">${esc(shortWhen(r.quand))}</span>`;
-  // A match links nowhere of its own: its championship's page is linked once, under the standings.
-  const name = r.lien && !r.competition ? `<a href="${esc(r.lien)}" rel="noopener">${esc(r.epreuve)}</a>` : esc(r.epreuve);
-  return `<li><span>${name} <small>${small}${withScore && r.detail ? ` · ${esc(r.detail)}` : ""}</small></span>${right}</li>`;
-}
-
-/** The link to a championship's page, inside it when it is folded (words from marketing). */
-/** The federation's page of a championship; its name for screen readers, as several are one under the other. */
-const federation = (competition: string) => `Le classement sur le site de la fédération<span class="sr"> : ${esc(competition)}</span> ↗`;
-
-/** The rows by sport, each sport folded when `fold` and the list is long (FOLD_ROWS): the results, not what is to come. */
-function bySport(rows: NonNullable<SportAnswer["a_venir"]>, withScore: boolean, fold = false): string {
-  const groups = SPORT_ORDER.map((sp) => ({ sp, list: rows.filter((r) => r.sport === sp) })).filter((g) => g.list.length);
-  const folds = fold && groups.length > 1 && rows.length > FOLD_ROWS;
-  return `<ul class="zones">${groups.map((g) =>
-    `<li class="card">${folded(folds,
-      `<h3>${esc(sportName(g.sp))}${folds ? "\u00a0" : " "}<span class="note">${folds ? "· " : ""}${g.list.length}\u00a0${withScore ? "résultat" : "rendez-vous"}${withScore && g.list.length > 1 ? "s" : ""}</span></h3>`,
-      `<ul class="rows eau">${g.list.slice(0, SPORT_LISTED).map((r) => sportRow(r, withScore)).join("")}` +
-      (g.list.length > SPORT_LISTED ? `<li><span class="note">et ${g.list.length - SPORT_LISTED} autres : demandez-les à votre IA.</span> <span></span></li>` : "") +
-      `</ul>`)}</li>`).join("")}</ul>`;
-}
-
-export function sportPage(origin: string, data: Cached<SportAnswer> | null, now = new Date(), alerte?: Alerte): string {
-  const d = data?.value;
-  const url = `${origin}/sport`;
-  const upcoming = (d?.a_venir ?? []).filter((r) => r.etat !== "annulée");
-  const soon = upcoming.slice(0, 7);
-  const listedRows = d?.a_venir?.length ?? 0;
-  const total = d?.a_venir_en_tout ?? listedRows;
-  const there = new Set(d?.sports_a_venir ?? (d?.a_venir ?? []).map((r) => r.sport));
-  const said = [...SPORT_ORDER.filter((s) => there.has(s)), ...[...there].filter((s) => !SPORT_ORDER.includes(s))].map((s) => SPORT_SAID[s] ?? s);
-
-  const status = !d
-    ? loading("Le calendrier du sport")
-    // As sport counts them: all of them, cancelled ones included, with the sports there are (26/10/2026: 39 here for 77,
-    // the triathlon left out and the motor sport said without any).
-    : `<div class="now"><span class="big">${total}</span><p>rendez-vous officiels dans les quinze prochains jours${said.length ? `\u00a0: ${enumeration(said)}` : ""}` +
-      `${listedRows < total ? `\u00a0; les ${listedRows} premiers ci-dessous` : ""}.</p></div>`;
-
-  const next = soon.length
-    ? `<figure class="card mapcard"><h2 style="color:var(--on-night)">Les prochains rendez-vous</h2><ul class="plain">${soon.map((r) =>
-        `<li><b>${esc(r.quand)}</b> : ${esc(r.epreuve)} <span class="note" style="color:var(--on-night-muted)">(${esc(r.competition ? `${sportOf(r.sport)}, ${r.competition}` : sportOf(r.sport))})</span></li>`).join("")}</ul></figure>`
-    : "";
-
-  // Each championship folded when they are long (FOLD_ROWS). Its name then leaves the line, which opens it: the
-  // federation's page is the first line inside.
-  const foldTables = !!d && d.classements.length > 1 && d.classements.reduce((n, c) => n + c.lignes.length, 0) > FOLD_ROWS;
-  const standings = d?.classements.length
-    ? `<ul class="zones">${d.classements.map((c) => {
-        const site = `<a href="${esc(c.lien)}" rel="noopener">${foldTables ? federation(c.competition) : esc(c.competition)}</a>`;
-        const head = foldTables
-          ? `<h3>${esc(c.competition)}${c.lignes.length ? `\u00a0<span class="note">· ${c.lignes.length}\u00a0équipe${c.lignes.length > 1 ? "s" : ""}</span>` : ""}</h3>`
-          : `<h3>${site}</h3>`;
-        return `<li class="card">${folded(foldTables, head, (foldTables ? `<p class="note">${site}</p>` : "") +
-          `${c.muet ? `<p class="note">${silentText(c.muet)}</p>` : ""}${c.lignes.length ? `<ul class="rows eau">${c.lignes.map((l) =>
-          `<li><span>${l.place}. ${esc(l.equipe)} <small>${l.joues} match${l.joues > 1 ? "s" : ""} joué${l.joues > 1 ? "s" : ""}</small></span> <span class="score">${l.points} pts</span></li>`).join("")}</ul>` : ""}`)}</li>`;
-      }).join("")}</ul>`
-    : "";
-
-  const raid = d?.grand_raid
-    ? `<section aria-labelledby="h-raid">
-  <div class="sec-h"><p class="eyebrow">${esc(d.grand_raid.dates)}</p><h2 id="h-raid">${esc(d.grand_raid.edition)}</h2>
-  <p>Les cinq courses, leurs partants, arrivants et abandons, et les podiums publiés par l'organisateur. Pendant la course, le connecteur donne qui est en tête et combien sont encore en course.</p></div>
-  <ul class="zones">${d.grand_raid.courses.map((c) =>
-    `<li class="card"><h3>${esc(c.course)} <span class="note">${esc(c.statut)}</span></h3><p class="note">Départ ${esc(c.depart)}${c.partants ? ` · ${c.partants} partants` : ""}${c.arrives ? `, ${c.arrives} arrivés` : ""}${c.abandons ? `, ${c.abandons} abandons` : ""}${c.en_course ? `, ${c.en_course} en course` : ""}</p>` +
-    (c.podium ? `<ul class="plain">${c.podium.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>` : "") +
-    (c.podium_femmes ? `<p class="note">Femmes : ${c.podium_femmes.map((p) => esc(p)).join(" ; ")}</p>` : "") + `</li>`).join("")}</ul>
-  <p class="note"><a href="${esc(d.grand_raid.lien)}" rel="noopener">Tous les classements sur Livetrail</a></p>
-</section>`
-    : "";
-
-
-  const title = "Sport : matchs, résultats, Grand Raid · La Réunion (974)";
-  const description = "Sport à La Réunion (974) : matchs à venir et résultats du handball et du volley régionaux, classements, rallyes et podiums du Grand Raid.";
-
-  const band = `${crumbBar("Sport")}
-<div class="wrap intro">
-  <div class="pitch">
-    <p class="pill"><span class="dot"></span>Calendriers et résultats officiels</p>
-    <h1>Sport <span class="n974">974</span></h1>
-    ${status}
-    ${enLigne() ? `<p class="clubs-top"><a href="/associations/proposer?ref=sport-entete">Votre club organise un événement\u00a0? Proposez-le →</a></p>` : ""}
-    ${ask(`Kosa néna konm match sé wikenn la ? Gèt si ${url} é di amwin.`,
-      `Quels matchs et quelles compétitions ce week-end à La Réunion ? Lis ${url} et dis-le-moi.`)}
-  </div>
-  ${next}
-</div>`;
-
-  const body = `${clubsBox()}
-<section aria-labelledby="h-venir">
-  <div class="sec-h"><p class="eyebrow">Quinze prochains jours</p><h2 id="h-venir">À venir</h2>
-  <p>Les matchs des championnats régionaux de handball (D1) et de volley (R1) et le calendrier de la Ligue du sport automobile. Heures de La Réunion.</p></div>
-  ${d ? (d.a_venir?.length ? bySport(d.a_venir, false) : `<p class="card">Aucun rendez-vous trouvé dans les quinze prochains jours.</p>`) : `<p class="card">Le calendrier se charge : rechargez la page dans quelques secondes.</p>`}
-  ${clubsLink()}
-</section>
-${d?.programmes_communes?.length ? `<section aria-labelledby="h-prog">
-  <div class="sec-h"><p class="eyebrow">Publiés par les mairies</p><h2 id="h-prog">Programmes sportifs des communes</h2>
-  ${d.programmes_communes?.length ? `<p>${esc(d.programmes_a_savoir ?? "")}</p>` : ""}</div>
-  ${d.programmes_communes?.length ? `<ul class="zones"><li class="card"><ul class="rows eau">${d.programmes_communes.map((p) =>
-    `<li><span><a href="${esc(p.lien)}" rel="noopener"${ACCUEILS.has(p.lien) ? ' target="_blank"' : ""}>${esc(p.titre)}</a> <small>${[p.commune && esc(p.commune), adresseTexte(`Source\u00a0: ${p.source}`)].filter(Boolean).join(" · ")}</small></span> <span class="q-none">${esc(shortWhen(p.dates))}</span></li>`).join("")}</ul></li></ul>` : ""}
-</section>` : ""}
-${d?.resultats?.length ? `<section aria-labelledby="h-res">
-  <div class="sec-h"><p class="eyebrow">Sept derniers jours</p><h2 id="h-res">Derniers résultats</h2>
-  ${d.resultats_en_tout ? `<p>${d.resultats_en_tout} résultats${d.periode ? ` depuis le ${esc(d.periode.du)}` : ""}\u00a0: les ${d.resultats.length} plus récents ci-dessous.</p>` : ""}</div>
-  ${bySport(d.resultats, true, true)}
-</section>` : ""}
-${standings ? `<section aria-labelledby="h-class">
-  <div class="sec-h"><p class="eyebrow">Championnats régionaux</p><h2 id="h-class">Classements</h2></div>
-  ${standings}
-</section>` : ""}
-${raid}
-<section aria-labelledby="h-src">
-  <div class="sec-h"><h2 id="h-src">Ce qui n'est pas couvert</h2><p>${d ? esc(d.non_couvert) : ""}</p></div>
-  ${d && data ? sourcesNote(d.sources, data) : ""}
-  <p class="note">${noteLa1ere("sport")}</p>
-  ${mentionSports(undefined, true).map((x) => `<p class="note np">${esc(x)}${reprise(x)}</p>`).join("")}
-</section>
-${connectorCta("sport", "le sport")}`;
-
-  return layout(origin, { title, description, path: "/sport", jsonld: [crumbs(origin, "Sport", "/sport"), webPage(origin, "/sport", title, description, data)], alerte }, band, body);
-}
 
 const MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
-
-/**
- * The name a source gives the next event, on the home page's tile (words validated on 06/11/2026): without a
- * leading « Saison 2026-2027 » in that exact form, nor a closing date (« 06-07 novembre ») whose days and month are all
- * in its « quand ». Nothing else of the source's name is rewritten.
- */
-export function libelleProchain(epreuve: string, quand: string): string {
-  const s = epreuve.replace(/^Saison \d{4}-\d{4} /, "");
-  const m = new RegExp(`\\s(\\d{1,2})(?:-(\\d{1,2}))? (${MOIS.join("|")})$`, "u").exec(s);
-  if (!m) return s;
-  const mm = String(MOIS.indexOf(m[3]) + 1).padStart(2, "0");
-  const days = [m[1], m[2]].filter((d): d is string => !!d).map((d) => `${d.padStart(2, "0")}/${mm}`);
-  return days.every((d) => quand.includes(d)) ? s.slice(0, m.index) : s;
-}
-
-export function sportLive(data: Cached<SportAnswer> | null): Live | undefined {
-  const d = data?.value;
-  if (!d) return undefined;
-  // The page's count: all of them, not only those listed, cancelled ones included (06/11/2026: « 40 » here for 68).
-  // The whole detail shown (entier), the next event's sport and day included (06/11/2026).
-  const total = d.a_venir_en_tout ?? d.a_venir?.length ?? 0;
-  const first = (d.a_venir ?? []).find((r) => r.etat !== "annulée");
-  return { valeur: `${total} rendez-vous`, detail: first ? `officiels d'ici quinze jours ; prochain : ${esc(libelleProchain(first.epreuve, first.quand))}${first.sport ? ` (${esc(first.sport)})` : ""}, ${esc(first.quand)}` : "officiels d'ici quinze jours", entier: true };
-}
 
 /** A text escaped, each day with its month kept on one line (marketing), « Mardi <span class="jm">10 novembre</span> »,
  *  « depuis le <span class="jm">1er novembre</span> 2026 » (a day's title, /carburants, /trafic): .jm is nowrap in the
@@ -2793,7 +2028,7 @@ export const clubsLink = () =>
   enLigne() ? `<p><a href="/associations?ref=site">Votre club ou votre association n'y est pas\u00a0? Faites connaître vos événements</a></p>` : "";
 
 // What the pages built from a part of a domain's data (evenements.ts) share with the domain's own page.
-export { connectorCta, crumbBar, crumbs, dayOf, describe, enclosShort, hikeCrumbBar, hikeCrumbs, INFOTRAFIC, jourMois, loading, sourcesNote, warnings, webPage };
+export { clubsBox, connectorCta, crumbBar, crumbs, dayOf, dd, describe, enclosShort, FOURNAISE, hikeCrumbBar, hikeCrumbs, INFOTRAFIC, jourMois, loading, MAP_NAME, MOIS, sourcesNote, warnings, webPage };
 
 // ---------------------------------------------------------------- actualités
 

@@ -11,7 +11,7 @@ import { clubOf, clubsNamed, zoneOf } from "../src/sport/clubs.js";
 import { dateLigue, joursDuTitre, liensCommuns, sets, sportTool, RESULTS_OUTIL, RESULTS_TOUS, UPCOMING_OUTIL, UPCOMING_TOUS, window, type SportRow } from "../src/tools/sport.js";
 import { handle } from "../src/app.js";
 import { ouvrir } from "../src/web/associations-drapeau.js";
-import { libelleProchain, sportLive, sportPage } from "../src/web/domains.js";
+import { libelleProchain, sportLive, sportPage } from "../src/web/sport.js";
 import type { SportAnswer } from "../src/web/data.js";
 import { withVide } from "../src/vide.js";
 

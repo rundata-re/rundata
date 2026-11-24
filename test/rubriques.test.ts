@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { CATEGORIES } from "../src/web/categories.js";
-import { airPage, bornesPage, eauPage } from "../src/web/domains.js";
+import { bornesPage, eauPage } from "../src/web/domains.js";
+import { airPage } from "../src/web/air.js";
 import { traficPage } from "../src/web/trafic.js";
 import { decheteriesPage } from "../src/web/decheteries.js";
 import { esc } from "../src/web/map.js";

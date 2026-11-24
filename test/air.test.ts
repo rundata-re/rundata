@@ -4,7 +4,7 @@ import { Cache, MemoryStore } from "../src/cache.js";
 import * as atmo from "../src/providers/atmo.js";
 import { parse } from "../src/providers/atmo.js";
 import { airEvery, qualiteAir } from "../src/tools/air.js";
-import { airPage } from "../src/web/domains.js";
+import { airPage } from "../src/web/air.js";
 import { CSS } from "../src/web/pages.js";
 import { sourceRevision } from "../src/web/revisions.js";
 import { esc } from "../src/web/map.js";

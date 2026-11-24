@@ -72,7 +72,10 @@ import { COMMUNES, communePage, communesPage, electionsPage, electionsPath } fro
 import { type Entree, FICHES, ficheAttente, ficheIssue, fichePage, fichePassee, ficheOf, ficheTerminee } from "./fiche-evenement.js";
 import { buildEmploi, emploiPage } from "./emploi.js";
 import { buildMarches, marchesPage } from "./marches-publics.js";
-import { actualitesPage, airPage, bornesPage, busOutran, busPage, coupuresPage, daePage, eauPage, electricitePage, randonneesPage, secheressePage, sportPage, tracePage, velosPage, volcanPage } from "./domains.js";
+import { actualitesPage, bornesPage, busOutran, busPage, coupuresPage, daePage, eauPage, electricitePage, randonneesPage, secheressePage, tracePage, velosPage } from "./domains.js";
+import { volcanPage } from "./volcan.js";
+import { airPage } from "./air.js";
+import { sportPage } from "./sport.js";
 import { calendrierPage } from "./calendrier.js";
 import { cruesPage } from "./crues.js";
 import { sentiersPage } from "./sentiers.js";

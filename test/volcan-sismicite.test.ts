@@ -5,7 +5,7 @@ import type { Info } from "../src/providers/actualites.js";
 import { parse, type Seisme } from "../src/providers/seismes.js";
 import { activityPosts, phaseOf } from "../src/providers/volcan.js";
 import { BULLETIN_QUOTIDIEN, LOCALISES, perDay, volcanSeismes } from "../src/tools/volcan.js";
-import { virgulesTenues, volcanLive, volcanPage } from "../src/web/domains.js";
+import { virgulesTenues, volcanLive, volcanPage } from "../src/web/volcan.js";
 import { CSS } from "../src/web/pages.js";
 
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url), "utf8");

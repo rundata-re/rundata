@@ -6,7 +6,7 @@ import { parse } from "../src/providers/seismes.js";
 import { activityPosts, phase, phaseOf, type PitonState } from "../src/providers/volcan.js";
 import { nonOfficiel, officiel } from "../src/tools/volcan.js";
 import { buildVolcan, type VolcanAnswer } from "../src/web/data.js";
-import { volcanPage } from "../src/web/domains.js";
+import { volcanPage } from "../src/web/volcan.js";
 import { alerteVolcan } from "../src/web/volcan-alerte.js";
 
 // The prefecture's release of 24/10/2026, its page as captured, and its card in the list of releases: both give the

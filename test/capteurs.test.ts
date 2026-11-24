@@ -8,7 +8,7 @@ import { parse as parseAtmo } from "../src/providers/atmo.js";
 import { REGISTRY } from "../src/registre.js";
 import { LICENCES, autorisee } from "../src/providers/autorisations.js";
 import { CAPTEURS_AUCUN, CAPTEURS_AVERTISSEMENT, CAPTEURS_EXPLICATION, capteursAncienne, capteursAucunLieu, capteursEchec, measuredAt, qualiteAir } from "../src/tools/air.js";
-import { airPage } from "../src/web/domains.js";
+import { airPage } from "../src/web/air.js";
 import { esc } from "../src/web/map.js";
 import { SHARED } from "../src/web/partagees.js";
 

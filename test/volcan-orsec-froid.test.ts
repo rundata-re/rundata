@@ -5,7 +5,7 @@ import type { Info } from "../src/providers/actualites.js";
 import { parse } from "../src/providers/seismes.js";
 import { activityPosts, PHASE_KEY, PREFECTURE, phase, phaseOf } from "../src/providers/volcan.js";
 import { buildVolcan } from "../src/web/data.js";
-import { volcanPage } from "../src/web/domains.js";
+import { volcanPage } from "../src/web/volcan.js";
 import { site } from "../src/web/site.js";
 
 // 24/10/2026: the prefecture in alert 1 since the morning, pitonlive still at « Vigilance » (its status of the 19th).

@@ -5,7 +5,8 @@ import { actualites } from "../src/tools/actualites.js";
 import { FICHE_LA1ERE, mentionLa1ere, mentionSports, noteLa1ere } from "../src/tools/non-repris.js";
 import { sportTool } from "../src/tools/sport.js";
 import { buildActualites } from "../src/web/data.js";
-import { actualitesPage, sportPage } from "../src/web/domains.js";
+import { actualitesPage } from "../src/web/domains.js";
+import { sportPage } from "../src/web/sport.js";
 
 // Sunday 26/10/2026 at 08:00 in La Réunion. France Télévisions' terms (franceinfo.fr/cgu.html, art. 13.2 and 13.3),
 // read on 26/10: no automated access to extract or reuse the content of its sites, metadata and titles included.

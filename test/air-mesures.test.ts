@@ -5,7 +5,7 @@ import { Cache, MemoryStore, type CacheEntry } from "../src/cache.js";
 import * as airMesures from "../src/providers/air-mesures.js";
 import { parse } from "../src/providers/atmo.js";
 import { qualiteAir } from "../src/tools/air.js";
-import { airPage } from "../src/web/domains.js";
+import { airPage } from "../src/web/air.js";
 import { esc } from "../src/web/map.js";
 import { deadAnchors, doubleIds, mapLinks } from "./cartes.js";
 import { REGISTRY } from "../src/registre.js";

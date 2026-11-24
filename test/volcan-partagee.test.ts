@@ -7,7 +7,7 @@ import * as seismes from "../src/providers/seismes.js";
 import * as onf from "../src/providers/sentiers.js";
 import { activityPosts, phaseOf } from "../src/providers/volcan.js";
 import { perDay, quakeSummary, volcanSeismes } from "../src/tools/volcan.js";
-import { volcanLive, volcanPage } from "../src/web/domains.js";
+import { volcanLive, volcanPage } from "../src/web/volcan.js";
 import { esc } from "../src/web/map.js";
 import { type Kv, oublierEcritures, SHARED, SharedFallback, warmShared } from "../src/web/partagees.js";
 

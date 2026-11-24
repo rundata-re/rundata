@@ -4,7 +4,8 @@ import type { HikeCard, RandonneesAnswer, SportAnswer } from "../src/web/data.js
 import { communePage } from "../src/web/commune.js";
 import type { CommuneData } from "../src/web/data.js";
 import { decheteriesPage } from "../src/web/decheteries.js";
-import { departureLi, randonneesPage, sportPage } from "../src/web/domains.js";
+import { departureLi, randonneesPage } from "../src/web/domains.js";
+import { sportPage } from "../src/web/sport.js";
 import { pageOf } from "../src/web/places.js";
 
 // Links whose text is the same for several targets on a page (« Carte et profil », « GPX », « vers St-Denis »): a screen

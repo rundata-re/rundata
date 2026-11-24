@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { carburantsPage } from "../src/web/carburants.js";
-import { airPage, coupable } from "../src/web/domains.js";
+import { coupable } from "../src/web/domains.js";
+import { airPage } from "../src/web/air.js";
 
 // A tool's name in the connector card and the values of /air's source list may be cut after each « . » and « _ » on a
 // narrow screen (/carburants at 280 to 320 px, /air at 320 px with the text at 150 %), never in the middle of a word;

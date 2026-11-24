@@ -489,7 +489,7 @@ describe("qualité de l'eau", () => {
       const both = await timed("Saint-Pierre");
       expect(both.eau_du_robinet.reseaux.length).toBeGreaterThan(0);
       expect(both.indisponible).toEqual(["eau de baignade"]);
-      expect(both.resume).toMatch(/^Eau du robinet à Saint-Pierre : 13 réseaux.* Les résultats des plages et bassins \(site de l'ARS\) ne répondent pas pour le moment\u00a0: voir le site de l'ARS, ou l'affichage sur place\.$/);
+      expect(both.resume).toMatch(/^Eau du robinet à Saint-Pierre : 13 réseaux.* Le site de l'ARS, qui publie les résultats des plages et bassins, ne répond pas pour le moment\u00a0: réessayer plus tard, ou regarder l'affichage sur la plage\.$/);
       // Hub'Eau the same.
       hung = "hubeau.eaufrance.fr";
       const tap = await timed("Saint-Pierre", "robinet");

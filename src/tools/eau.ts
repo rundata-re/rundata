@@ -94,8 +94,8 @@ export function tapSentence(row: ReturnType<typeof networkRow>, where: string): 
   return `Eau du robinet, réseau ${row.reseau} ${where} : ${last}\u00a0; ${bad}.`;
 }
 
-/** The ARS's site did not answer in the call's time, and no copy of the site: said, with where to look. */
-const BAIGNADE_MUETTE = "Les résultats des plages et bassins (site de l'ARS) ne répondent pas pour le moment\u00a0: voir le site de l'ARS, ou l'affichage sur place.";
+/** The ARS's site did not answer in the call's time, and no copy of the site: said, with what to do instead. */
+const BAIGNADE_MUETTE = "Le site de l'ARS, qui publie les résultats des plages et bassins, ne répond pas pour le moment\u00a0: réessayer plus tard, ou regarder l'affichage sur la plage.";
 const ANALYSES_MUETTES = "Les analyses du contrôle sanitaire de l'ARS (Hub'Eau) ne répondent pas pour le moment.";
 
 /**

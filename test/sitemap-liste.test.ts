@@ -17,11 +17,11 @@ async function sitemap(): Promise<string[]> {
 const RETIREES = ["/aujourdhui/cilaos", "/enfants/les-avirons", "/communes/petite-ile/elections", "/bus/arret/saint-pierre/pierrefonds", "/bus/arret/les-avirons/gare-des-avirons", "/meteo/les-avirons"];
 
 describe("the sitemap from 24/11/2026, marketing's list of that day", () => {
-  it("holds the 231 pages kept, but for the one not served here, and nothing else", async () => {
+  it("holds the 232 pages kept, but for the one not served here, and nothing else", async () => {
     const urls = await sitemap();
     // 231 kept, less /feux with no FIRMS key here. 893 before. 230 from 24/11/2026: a deviation the ONF took off its
-    // map, its page no longer a trail's state. 231 the same day: Le Tampon's water cuts, its notices read.
-    expect(NOMBRE).toBe(231);
+    // map, its page no longer a trail's state. 231 the same day: Le Tampon's water cuts, its notices read; 232: Saint-Joseph's.
+    expect(NOMBRE).toBe(232);
     expect(urls).not.toContain("/sentiers/sentier-du-trou-de-fer-deviation-par-rf-fleurs-jaunes");
     expect(urls).toHaveLength(NOMBRE - 1);
     expect(urls).not.toContain("/feux");
@@ -30,7 +30,8 @@ describe("the sitemap from 24/11/2026, marketing's list of that day", () => {
     // The home page, the head pages, the 24 communes, the water cuts whose page is indexable, and what people look for.
     for (const u of ["/", "/meteo", "/communes/les-avirons", "/coupures-eau/les-avirons", "/coupures-eau/petite-ile", "/meteo/maido", "/meteo/saint-gilles-les-bains", "/collecte/saint-paul", "/enfants/saint-leu", "/randonnees/mafate", "/sentiers/le-bloc-piton-des-neiges", "/terrain", "/en"]) expect(urls, u).toContain(u);
     expect(urls.filter((u) => u.startsWith("/communes/"))).toHaveLength(24);
-    expect(urls.filter((u) => u.startsWith("/coupures-eau/"))).toHaveLength(22);
+    // 23 since 24/11/2026: Saint-Joseph, its notices read; L'Entre-Deux alone left out.
+    expect(urls.filter((u) => u.startsWith("/coupures-eau/"))).toHaveLength(23);
     // No stop, no event's page, no elections, no past cyclone, no day of a commune.
     expect(urls.filter((u) => /^\/(bus|evenements|cyclones|aujourdhui)\/|\/elections$/.test(u))).toEqual([]);
     for (const u of RETIREES) expect(urls, u).not.toContain(u);

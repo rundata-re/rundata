@@ -75,6 +75,9 @@ const ROUTES: [RegExp, string | ((body: string) => string)][] = [
   [/petite-ile\.re\/taxonomy\/term\/301\/feed/, "avis-eau/petite-ile.xml"],
   // Sudéau's notices posted by the town of Le Tampon, its search feed of 24/11/2026.
   [/letampon\.fr\/\?s=sud/, "avis-eau/le-tampon.xml"],
+  // Saint-Joseph's feed and Les Avirons's sitemap, read since 24/11/2026 (their copies of that day).
+  [/saintjoseph\.re\/spip\.php\?page=backend/, "avis-eau/saint-joseph.xml"],
+  [/mairie-avirons\.fr\/sitemap\.xml/, "avis-eau/avirons-sitemap.xml"],
   // Sainte-Suzanne's orders allowing runéo's works (providers/arretes-travaux.ts), its page of 20/11/2026.
   [/ville-saintesuzanne\.re\/type-de-document\/arretes-de-travaux/, "avis-eau/sainte-suzanne-arretes.html"],
   // Saint-André's notices of power cuts, read since its written agreement of 16/11/2026 (live on that day).

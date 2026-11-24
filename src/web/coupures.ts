@@ -186,6 +186,9 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
   const siteDist = dist && !dist.avis ? SITES_DISTRIBUTEURS[dist.nom] : undefined;
   // Where its notices are published, in words of its own (GUIDES_AVIS): the lead, the distributor's card and the list.
   const guide = dist && !dist.avis ? GUIDES_AVIS[p.nom] : undefined;
+  // Its mairie's site read, which has posted nothing of late, and where its distributor publishes its own (Les Avirons):
+  // said after « Pas d'avis », in place of « ailleurs ».
+  const guideLu = dist?.avis ? GUIDES_AVIS[p.nom] : undefined;
   // « Pas d'avis » with when its site was read, and that a cut may be told elsewhere (marketing, 22/11/2026), as the tool
   // coupures_eau says it: never « aucun avis », which reads as « no cut ». The mairie is not that elsewhere when the
   // notices read are its own (Cilaos, Sainte-Marie…).
@@ -222,7 +225,7 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
       ? noticesHead(x.avis, where, [], x.muet ? "" : at)
       : dist?.avis
         // Worded with marketing: who publishes the notices read, without the commune when that name already says it.
-        ? `<p class="lead">${noNotice(esc)} ${ailleurs}</p>`
+        ? `<p class="lead">${noNotice(esc)} ${guideLu?.bandeau ?? ailleurs}</p>`
         : guide
         ? `<p class="lead">${guide.bandeau}</p>`
         : siteDist
@@ -283,8 +286,7 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
   <p>${COMMUNES.filter((c) => c.slug !== p.slug).map((c) => `<a href="/coupures-eau/${c.slug}">${esc(c.nom)}</a>`).join(" · ")}</p>
   <p class="note"><a href="/coupures-eau">Tous les avis de l'île</a>, sur une carte.</p></section>`;
 
-  // A commune whose notices are not read, its distributor's site linked (Les Avirons, Saint-Joseph,
-  // L'Entre-Deux): the page is named by what it holds, not by notices it does not show (marketing, 24/11/2026: it was
+  // A commune whose notices are not read, its distributor's site linked (L'Entre-Deux): the page is named by what it holds, not by notices it does not show (24/11/2026: it was
   // titled « Coupure d'eau » and said « rundata.re ne les reprend pas encore »). « Coupures » stays
   // in the title, with who publishes them; the description, the h1 and the hook say the rest. A commune whose notices
   // are read, one of two distributors' included (L'Étang-Salé), keeps its words.

@@ -1,6 +1,6 @@
 import { apresCyclone } from "../eau/cyclone.js";
 import type { Cache, Cached } from "../cache.js";
-import { distributeur, LIENS, lues, nomDit, partage, phrasePartage, SITES_DISTRIBUTEURS, SOURCE as DISTRIBUTEURS } from "../eau/distributeurs.js";
+import { distributeur, GUIDES_AVIS, LIENS, lues, nomDit, partage, phrasePartage, SITES_DISTRIBUTEURS, SOURCE as DISTRIBUTEURS } from "../eau/distributeurs.js";
 import { resolvePlace } from "../places/resolve.js";
 import * as notices from "../providers/avis-eau.js";
 import { BACK, lifts } from "../providers/avis-eau.js";
@@ -9,7 +9,7 @@ import * as arretesVille from "../providers/arretes-travaux.js";
 import { localTime } from "../geo.js";
 import { why } from "../types.js";
 import { slugify } from "../web/places.js";
-import { deNom } from "../articles.js";
+import { de, deNom } from "../articles.js";
 import { a, credits, enumeration, notFound, placeBlock, text } from "./format.js";
 import { type Injoignable, injoignable, when as luLe } from "./injoignable.js";
 import { copieAncienne, VOIR_EAU } from "./copie-ancienne.js";
@@ -156,7 +156,7 @@ export const AFTER_CUT = "D'après l'ARS La Réunion, quand l'eau revient au rob
 
 const COMMON = {
   // Worded by marketing: never « pas de coupure » where the sources say nothing.
-  couverture: `Avis lus pour ${enumeration(lues())} (Dionéo, runéo, Eaux de La Possession, La Créole, la CIREST pour ses six communes, CISE Réunion par la ville de Sainte-Marie, Derichebourg Aqua OI par la commune de Saint-Leu, Sudéau par la commune de Saint-Philippe et par la ville du Tampon, la SPL Sources et Eaux par la ville de Petite-Île, la ville de Cilaos, La Créole aussi par la ville de Trois-Bassins)\u00a0: une coupure que ces sources n'annoncent pas n'apparaît pas ici. Ailleurs, voir la mairie ou le distributeur.`,
+  couverture: `Avis lus pour ${enumeration(lues())} (Dionéo, runéo, Eaux de La Possession, La Créole, la CIREST pour ses six communes, CISE Réunion par la ville de Sainte-Marie et par la commune des Avirons, Derichebourg Aqua OI par la commune de Saint-Leu, Sudéau par la commune de Saint-Philippe, par la ville du Tampon et par la ville de Saint-Joseph, la SPL Sources et Eaux par la ville de Petite-Île, la ville de Cilaos, La Créole aussi par la ville de Trois-Bassins)\u00a0: une coupure que ces sources n'annoncent pas n'apparaît pas ici. Ailleurs, voir la mairie ou le distributeur.`,
   a_savoir: `${AFTER_CUT} Source\u00a0: le dépliant «\u00a0Coupure d'eau\u00a0» de l'ARS La Réunion, ${ARS_COUPURE}. La conformité de l'eau du robinet d'après les analyses de l'ARS : qualite_eau.`,
 };
 
@@ -341,7 +341,12 @@ export async function coupuresEau(cache: Cache, lieu: string | undefined, now = 
   // « Pas d'avis » with where it was looked for and when, never « aucun avis », which reads as « no cut » (marketing).
   const lu = `, lu le ${published({ publie: readAt.toISOString() } as notices.Avis).replace(/^(\d\d\/\d\d)\/\d{4}/, "$1")}`;
   // The mairie named as elsewhere, unless the notices read are its own (Cilaos, Sainte-Marie…).
-  const ailleurs = lus && /^(?:la )?(?:ville|commune|mairie)\b/i.test(lus.publie_par) ? "Une coupure peut être annoncée ailleurs." : "Une coupure peut être annoncée ailleurs, par la mairie par exemple.";
+  // Its mairie's site read, and its distributor's own site where it publishes its notices (Les Avirons, GUIDES_AVIS):
+  // that site in place of « ailleurs », as the commune's page says it.
+  const siteGuide = dist?.avis && GUIDES_AVIS[commune] ? SITES_DISTRIBUTEURS[dist.nom] : undefined;
+  const ailleurs = siteGuide
+    ? `Les avis de coupure ${de(commune)} sont publiés par ${dist!.nom} sur son site, rubrique «\u00a0L'eau dans ma commune\u00a0»\u00a0: ${siteGuide}. La mairie peut aussi vous renseigner.`
+    : lus && /^(?:la )?(?:ville|commune|mairie)\b/i.test(lus.publie_par) ? "Une coupure peut être annoncée ailleurs." : "Une coupure peut être annoncée ailleurs, par la mairie par exemple.";
   const where = !lus
     ? (dist ? `. D'après l'ARS, ${nomDit(dist)} distribue l'eau ${a(commune)}, et rundata.re ne lit pas ses avis` : "")
     : lus.distributeur === lus.publie_par

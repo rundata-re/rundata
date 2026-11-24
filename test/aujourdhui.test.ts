@@ -204,14 +204,15 @@ describe("the town hall in the page of a commune's day", () => {
 
 describe("a commune whose distributor's notices are not read (20/11/2026)", () => {
   it("names the distributor and links its site, as /coupures-eau says it, never « voir la mairie » alone", () => {
-    const p = pageOf("saint-joseph")!;
+    // L'Entre-Deux: Sudéau's, read nowhere (Saint-Joseph's and Le Tampon's are read on the towns' sites since 24/11/2026).
+    const p = pageOf("entre-deux")!;
     const none = { ...full(p.nom), coupures: copy({ resume: "", couverture: "", a_savoir: "", sources: [], communes_suivies: [], avis: [] }) };
     const r = resume(p, none as never, NOW);
     expect(r.coupures_eau?.note).toBe("Sudéau publie ses avis de coupure sur son site, rubrique «\u00a0L'eau dans ma commune\u00a0»\u00a0; la mairie peut aussi vous renseigner.");
     expect(r.coupures_eau?.site_distributeur).toBe("https://www.sudeau.re/");
     const html = aujourdhuiPage("https://rundata.re", p, r, null);
     expect(html).toContain('<a href="https://www.sudeau.re/" rel="noopener">Le site de Sudéau ↗</a>');
-    expect(html).not.toContain("Les avis du distributeur à Saint-Joseph");
+    expect(html).not.toContain("Les avis du distributeur à l&#39;Entre-Deux");
   });
 });
 
@@ -229,8 +230,8 @@ describe("a commune's day page, with its water notices not read (23/11/2026)", (
       if (said) fautes.push(`${p.slug} : « ${said[0]} »`);
     }
     expect(fautes.join("\n")).toBe("");
-    // Saint-Joseph, served by Sudéau (Le Tampon live on 23/11/2026 with « ne sont pas lus », read since 24/11/2026).
-    const tampon = resume(pageOf("saint-joseph")!, { ...full("Saint-Joseph"), coupures: copy({ resume: "", couverture: "", a_savoir: "", sources: [], communes_suivies: [], avis: [] }) } as never, NOW);
+    // L'Entre-Deux, served by Sudéau (Le Tampon live on 23/11/2026 with « ne sont pas lus », read since 24/11/2026, as Saint-Joseph).
+    const tampon = resume(pageOf("entre-deux")!, { ...full(pageOf("entre-deux")!.nom), coupures: copy({ resume: "", couverture: "", a_savoir: "", sources: [], communes_suivies: [], avis: [] }) } as never, NOW);
     expect(tampon.coupures_eau?.note).toBe("Sudéau publie ses avis de coupure sur son site, rubrique «\u00a0L'eau dans ma commune\u00a0»\u00a0; la mairie peut aussi vous renseigner.");
   });
 });

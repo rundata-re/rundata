@@ -2,7 +2,7 @@
  * /baignade and the « Baignade et requins » block of /mer and of the coastal places' pages: the prefect's shark
  * rule and the zones of the GIP Centre Sécurité Requin, from the package (src/eau/requin.ts), with no request.
  */
-import { ARRETE, CSR, CSR_URL, noneLine, ruleText, saysBsan, SOURCE, STORIES, T, ZONES, zoneLine, zonesNear, inForce } from "../eau/requin.js";
+import { ARRETE, CSR, CSR_URL, noneLine, REGLE_COURTE, regleCourte, ruleText, saysBsan, SOURCE, STORIES, T, ZONES, zoneLine, zonesNear, inForce } from "../eau/requin.js";
 import type { Alerte } from "./data.js";
 import { porte, type Porte } from "./aller.js";
 import { lienNom } from "./domains.js";
@@ -45,10 +45,14 @@ function zonesHtml(zones: typeof ZONES, now: Date, g: Porte): string {
  * The rule in one sentence on a place's page (/meteo/<lieu>), worded by marketing (20/11): the coastal places carried the
  * order's 60 words each; /mer carries it in full. Only while the order is in force: after, the place says ruleText's own.
  */
-const RULE_SHORT = "Baignade, surf, bodyboard et paddle sont interdits dans la bande des 300 m de tout le littoral, sauf dans le lagon, " +
-  `les espaces aménagés et surveillés, et les ZONEX ouvertes et surveillées (arrêté préfectoral n° ${ARRETE.numero}, jusqu'au ` +
-  `${ARRETE.au.split("-").reverse().join("/")}). Ces zones réduisent le risque requin, elles ne le suppriment pas.`;
+const RULE_SHORT = `${REGLE_COURTE} ${T.reduit}`;
 const RULE_SHORT_LINK = '<a href="/mer">Les règles et les zones surveillées, sur la page mer →</a>';
+
+/** The rule at the top of /mer, under the temperature, linked to the block further down; nothing once the order has ended. */
+export function ruleTop(now: Date): string {
+  const r = regleCourte(now);
+  return r ? `<p class="note">${say(r)} <a href="#h-requin">${esc(T.lien)} →</a></p>` : "";
+}
 
 /** The block of a page: near a place (its zones, or none), or for the whole island (every zone). */
 export function bathingBlock(now: Date, near?: { nom: string; lon: number; lat: number; commune?: string }, g: Porte = porte()): string {

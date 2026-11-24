@@ -110,6 +110,15 @@ export const T = {
   lien: "Toutes les zones et la règle",
 };
 
+/**
+ * The rule in one sentence, marketing's words (20/11) for a place's page, said also in the résumé of temperature_mer and
+ * at the top of /mer (revue ux du 24/11, item 1828): asked about the sea, one hears whether one may swim. While in force only.
+ */
+export const REGLE_COURTE = "Baignade, surf, bodyboard et paddle sont interdits dans la bande des 300 m de tout le littoral, sauf dans le lagon, " +
+  `les espaces aménagés et surveillés, et les ZONEX ouvertes et surveillées (arrêté préfectoral n° ${ARRETE.numero}, jusqu'au ` +
+  `${ARRETE.au.split("-").reverse().join("/")}).`;
+export const regleCourte = (now: Date): string | undefined => (inForce(now) ? REGLE_COURTE : undefined);
+
 /** Said the same before and after the decree: it comes from the GIP, not from the decree. */
 const reopened = (z: Zone) => `${z.nom} : de nouveau ouvert au public, d'après le ${CSR} (27/10/2026).`;
 

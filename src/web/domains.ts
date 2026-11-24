@@ -3007,8 +3007,11 @@ export function nobreak(text: string): string {
   return esc(text).replace(/[\p{Lu}][\p{L}'’]*(?:-[\p{L}'’]+)+/gu, (w) => `<span class="nb">${w}</span>`);
 }
 
-/** « publié le 04/11/2026 à 11:15 », or for a notice dated after its reading « avis daté du 05/11/2026 ». */
-const dateOfNotice = (n: CoupuresAnswer["avis"][number]) => (n.publie_le ? `publié le ${esc(n.publie_le)}` : `avis daté du ${esc(n.date_de_l_avis ?? "")}`);
+/**
+ * « publié le 04/11/2026 à 11:15 », or for a notice dated after its reading, La Créole's dated by the day of its cut,
+ * « coupure du 05/11/2026 »: « avis daté du » read as the day it was published (revue ux du 24/11, item 1831).
+ */
+const dateOfNotice = (n: CoupuresAnswer["avis"][number]) => (n.publie_le ? `publié le ${esc(n.publie_le)}` : `coupure du ${esc(n.date_de_l_avis ?? "")}`);
 
 export function noticeCard(n: CoupuresAnswer["avis"][number]): string {
   // An image or a PDF: nothing is read from it, the link only.

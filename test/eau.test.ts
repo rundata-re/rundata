@@ -224,6 +224,20 @@ describe("qualité de l'eau", () => {
     const main = page.indexOf("<main");
     expect(page.indexOf('id="h-robinet"')).toBeGreaterThan(main);
     expect(page.indexOf('id="h-robinet"')).toBeLessThan(page.indexOf('id="h-coupures-eau"'));
+    // With a notice in progress or to come, the notices first, as the page says (« ils s'affichent en haut de cette page »;
+    // revue ux du 24/11 at 390 px: two notices of Saint-Paul 3 664 px down, under 13 networks). A notice La Créole dates
+    // by the day of the cut says that day as the cut's, never « avis daté du » (item 1831).
+    const notice = {
+      titre: "INTERRUPTION DE LA DISTRIBUTION", communes: [c.commune], distributeur: "La Créole", date_de_l_avis: "25/11/2026",
+      coupure: { de: "mercredi 25/11 à 08:00", a: "mercredi 25/11 à 15:00", etat: "à venir" }, secteurs: [], secteurs_complets: false,
+      texte: "La distribution de l'eau potable sera interrompue le mercredi 25 novembre 2026, de 8h à 15h, sur la rue des Salins.", lien: "https://lacreole.re/flash-infos",
+    };
+    const coupures = { value: { avis: [notice], sources: [] }, fetchedAt: NOW } as never;
+    const cut = coupuresCommunePage("https://rundata.re", p, { coupures, eau, secheresse: sec(true) }, NOW);
+    expect(cut.indexOf('id="h-coupures-eau"')).toBeGreaterThan(cut.indexOf("<main"));
+    expect(cut.indexOf('id="h-coupures-eau"')).toBeLessThan(cut.indexOf('id="h-robinet"'));
+    expect(cut).not.toContain("avis daté du");
+    expect(cut).toMatch(/La.Créole, coupure du 25\/11\/2026<\/span>/);
     expect(page).toContain(`<h2 id="h-robinet">L'eau du robinet ${esc(a(c.commune))}</h2>`);
     // The drought level from the order, with its number and its day; what is forbidden on /secheresse only.
     expect(page).toContain(`<p>Sécheresse\u00a0: alerte depuis l'arrêté n°2026-2094/SG/SCOPP/BCPE du 12/11/2026. Ce qui est interdit\u00a0: <a href="/secheresse">page Sécheresse</a>.</p>`);

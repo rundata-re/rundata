@@ -561,6 +561,8 @@ export async function temperatureMer(cache: Cache, lieu: string | undefined, now
         measured.length ? `Eau de mer, MESURÉE par satellite\u00a0: ${measured.join("\u00a0; ")}.` : "Pas de mesure satellite de l'eau pour le moment.",
         ...measuredWaves.map(releveSaid),
         ...(waves.length ? [`Vagues PRÉVUES maintenant (${modelWords(models)}, pas une mesure) : ${waves.join("\u00a0; ")}.`] : []),
+        // Asked about the sea, whether one may swim (revue ux du 24/11, item 1828), not only in risque_requin.
+        ...(requin.regleCourte(now) ? [requin.regleCourte(now)!] : []),
       ].join(" "),
       points,
       ...(measuredWaves.length ? { houle_mesuree: measuredWaves } : {}),
@@ -599,7 +601,8 @@ export async function temperatureMer(cache: Cache, lieu: string | undefined, now
       : "Prévision des vagues momentanément indisponible.";
   return text({
     lieu: placeBlock(lieu, r),
-    resume: `${temperature}${buoy ? ` ${releveSaid(buoy)}` : ""} ${waves}`,
+    // On the coast, the swimming rule too, as on /mer (item 1828); inland, nothing.
+    resume: `${temperature}${buoy ? ` ${releveSaid(buoy)}` : ""} ${waves}${(m || v) && requin.regleCourte(now) ? ` ${requin.regleCourte(now)}` : ""}`,
     ...(m ? { mesure: said(m.mesure, true) } : {}),
     ...(buoy ? { houle_mesuree: buoy } : {}),
     ...(v ? { etat_de_la_mer: v.bloc } : {}),

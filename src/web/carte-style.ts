@@ -44,6 +44,15 @@ export const CARTE_CSS = `
 .kmapc .kpv{position:absolute;display:block;pointer-events:none;overflow:hidden}.kpv circle{fill:none;stroke:#1c7ed6;stroke-width:3px;vector-effect:non-scaling-stroke}.kpv .kpb{stroke:#fff;stroke-width:6px}
 @media (prefers-reduced-motion:no-preference){.kdl i{animation:kbeat 2s ease-in-out infinite}.kmapc .kpv{animation:kpulse 1.6s ease-in-out infinite alternate}}
 @keyframes kbeat{50%{opacity:.3}}@keyframes kpulse{from{opacity:.15}to{opacity:1}}
+.kac{display:flex;gap:10px;margin:0 0 .75rem;padding:0 0 4px;list-style:none;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}.kac::-webkit-scrollbar{display:none}
+.kac li{flex:0 0 78%;min-width:0;scroll-snap-align:start}
+.kac a{display:grid;grid-template-columns:76px 1fr;gap:10px;align-items:center;height:100%;box-sizing:border-box;min-height:44px;padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);text-decoration:none}
+.kac a[aria-current]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.kac svg{display:block;width:76px;height:auto}.kac use{fill:var(--muted);opacity:.35}.kac a[aria-current] use{opacity:.6}.kac rect{fill:none;stroke:var(--ink);stroke-width:12}
+.kac span{display:grid;gap:2px;min-width:0}.kac strong{font-size:.95rem;line-height:1.2}.kac small{min-height:1.25em;font-size:.8rem;line-height:1.25;color:var(--muted)}.kac small b{color:var(--ink)}
+@media (min-width:48rem){.kac{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));overflow:visible}.kac li{flex:none}.kac a{grid-template-columns:1fr;align-content:start}.kac svg{width:100%;max-width:150px;margin:0 auto}}
+.kcarte:not(.pe-on) .kvues :is(h3,ul){display:none}.pe-on .kac{display:none}
+.kdir{background:none;box-shadow:none;color:var(--muted);padding:0;margin:0 0 .4rem}.kdl i{box-shadow:0 0 0 3px rgb(105 219 124/.25)}
 body:has(.kcarte){overflow-x:clip}.kcarte:not(.pe-on){row-gap:0}.pe-on .kdir{display:none}
 .kcarte:not(.pe-on) .kmapc>.kvues{margin:0;padding:.75rem max(16px,calc(50vw - 36rem + 16px)) .5rem}
 .kcarte:not(.pe-on) .kvues a{border-color:transparent;background:rgb(255 255 255/.72);box-shadow:0 2px 10px rgb(11 31 54/.12)}.kcarte:not(.pe-on) .kvues a[aria-current]{background:var(--ink)}

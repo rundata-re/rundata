@@ -11,10 +11,12 @@
  * ticked by hand leaves the view, and the boxes ticked go in the address (`#c=pluie,rivieres`), so that what is shown
  * can be shared. Without a script, the map alone, and the pages.
  *
- * The map is edge to edge, on the sea's colour, its views and buttons over the sea: above and under it on a phone, at its
- * sides on a wide screen, never over the island. Over it, the « En direct » band: a figure for each of four live layers,
- * from their copies (couches.ts, resume), each leading to the view that shows it; a layer without a fresh copy has no
- * figure. On the map, a blue ring around each station that measured rain in its last hour, which pulses unless the
+ * The map is edge to edge, on the sea's colour, its buttons over the sea: above and under it on a phone, at its sides on
+ * a wide screen, never over the island. Over it, the views as cards (the user's choice of 24/11/2026, « Passer à C »):
+ * each with a small map of the island, the place it frames drawn on it, its name, and a line of what it shows now, the
+ * figure of a live layer from its copy (couches.ts, resume), or what a fixed list holds; a layer without a fresh copy
+ * leaves its line empty. On a phone the cards slide sideways, one seen and the next one showing; on a wide screen the
+ * six hold on a line. The small maps draw the map's own outline (`#isl`), nothing more to load. On the map, a blue ring around each station that measured rain in its last hour, which pulses unless the
  * phone asks for less motion: the rings are a layer of their own over the map, only its opacity moving, which the
  * browser does without drawing the map again.
  *
@@ -26,7 +28,7 @@ import { MAX_ZOOM } from "./carte-zoom.js";
 import { COUCHE_PATH, COUCHES, type Couche, type Nature, type Precision, RESUME_PATH, type Theme } from "./couches.js";
 import type { Alerte } from "./data.js";
 import { ACCES, crumbBar, crumbs, webPage } from "./domains.js";
-import { esc, FOND_ZOOM, H, islandMap, W, zoomIsland } from "./map.js";
+import { esc, FOND_ZOOM, H, islandMap, project, W, zoomIsland } from "./map.js";
 import { RAIN_WASH, VENT_DE, ventDe } from "./meteo-carte.js";
 import { anchorId, layout } from "./pages.js";
 import { CLASSES } from "./pluie-radar.js";
@@ -77,7 +79,8 @@ export const MOTS = {
   surLaCarte: "{n} sur la carte.",
   maj: ", données mises à jour le {d} à {h}, sans modification",
   radarMalVu: "zones que le radar voit mal",
-  // The « En direct » band over the map: none, one, many ({n} the figure, in bold); each opens its view.
+  // The views' cards: the live line of four (none, one, many; {n} the figure, in bold), the time of their copy over the
+  // cards, and the line of the two fixed lists.
   direct: "En direct",
   enDirect: {
     stations: ["aucune station sous la pluie", "{n} station sous la pluie", "{n} stations sous la pluie"],
@@ -95,8 +98,15 @@ export const MOTS = {
   cercles: "cercle bleu\u00a0: pluie mesurée dans l'heure",
 };
 
-/** Where each figure of the band leads: the view, or the layer alone, that shows it. */
-export const DIRECT_VERS: Record<keyof typeof MOTS.enDirect, string> = { stations: "#meteo", rivieres: "#pluie-rivieres", sentiers: "#c=sentiers", seismes: "#volcan" };
+/** The line of each view's card: a live figure (MOTS.enDirect), or the words of a fixed list. */
+export const LIGNE_VUE: Record<string, { direct: keyof typeof MOTS.enDirect } | { fixe: string }> = {
+  meteo: { direct: "stations" },
+  "pluie-rivieres": { direct: "rivieres" },
+  volcan: { direct: "seismes" },
+  rando: { direct: "sentiers" },
+  enfants: { fixe: "aires de jeux, parcs, musées, piscines" },
+  defibrillateurs: { fixe: "déclarés dans Géo'DAE" },
+};
 
 /** What each layer shows (panel, line 2), its page's name in the site's menu, and its words in the bubble and legend. */
 interface Dit {
@@ -256,7 +266,6 @@ function conf() {
     mots: MOTS,
     vues: VUES.map((v) => ({ id: v.id, dit: v.dit, couches: v.couches, cadre: v.cadre, fond: v.fond })),
     resume: RESUME_PATH,
-    direct: DIRECT_VERS,
   };
 }
 
@@ -291,6 +300,22 @@ function bloc(c: Couche): string {
     `<p class="kl2"><a href="${esc(c.page)}">${esc(MOTS.voir(d.rubrique))}</a>${(d.liens ?? []).map(([href, t]) => `<a href="${esc(href)}">${esc(t)}</a>`).join("")}<a href="${esc(fichierOf(c))}" download>${esc(MOTS.telecharger(c.source.licence))}</a></p></article>`;
 }
 
+/**
+ * A view's card: the small map of the island (the map's own outline, `#isl`, defined once in the page) with the place
+ * it frames, its name, and its line, a fixed list's words or, for a live figure, left empty for the script.
+ */
+export function carteVue(v: Vue): string {
+  let cadre = "";
+  if (v.cadre) {
+    const [x0, y0] = project(v.cadre[0], v.cadre[3]), [x1, y1] = project(v.cadre[2], v.cadre[1]);
+    cadre = `<rect x="${Math.round(x0)}" y="${Math.round(y0)}" width="${Math.round(x1 - x0)}" height="${Math.round(y1 - y0)}" rx="14"/>`;
+  }
+  const l = LIGNE_VUE[v.id];
+  const ligne = "fixe" in l ? `<small>${esc(l.fixe)}</small>` : `<small data-k="${l.direct}"></small>`;
+  return `<li><a href="#${esc(v.id)}" data-v="${esc(v.id)}"><svg viewBox="0 0 ${W} ${H}" aria-hidden="true" focusable="false"><use href="#isl"/>${cadre}</svg>` +
+    `<span><strong>${esc(v.nom)}</strong>${ligne}</span></a></li>`;
+}
+
 /** The page: built once per isolate, its layers' data asked by the script. */
 let built: string | undefined;
 
@@ -306,6 +331,7 @@ function corps(): string {
   const vues = VUES.map((v) => `<li><a href="#${esc(v.id)}" data-v="${esc(v.id)}">${esc(v.nom)}</a></li>`).join("");
   return `<section aria-labelledby="h-carte" class="kcarte"><h2 id="h-carte" class="sr">${esc(MOTS.h1)}</h2>
   <p class="kdir" hidden><span class="kdl"><i aria-hidden="true"></i>${esc(MOTS.direct)} · <time></time></span></p>
+  <ul class="kac" aria-label="${esc(MOTS.vues)}">${VUES.map(carteVue).join("")}</ul><noscript><style>.kac{display:none}</style></noscript>
   <figure class="card mapcard kmapc"><nav class="kvues" aria-labelledby="h-vues" hidden><h3 id="h-vues">${esc(MOTS.vues)}</h3><ul>${vues}</ul><p class="kvd" aria-live="polite"></p></nav>${map}${curseurBar()}<figcaption class="note"><ul class="klg" aria-live="polite"></ul><p class="kcr"></p></figcaption></figure>
   <noscript><p class="note">${esc(MOTS.sansScript)} ${pages}.</p></noscript>
   <details class="kch" open hidden><summary>${esc(MOTS.couches)} (<span class="kcn">0</span>)</summary><div class="kths">${choix()}</div></details>
@@ -441,19 +467,18 @@ const tick=(b)=>{const c=L.get(b.value);if(b.checked)ask(c);show(c);credit();ani
 Object.assign(KC,{K,el,rain,pv,place,hm,jm,boxes,show:(id)=>show(L.get(id)),live:()=>["pluie","stations"].forEach((id)=>{const c=L.get(id),j=got.get(id);if(j&&etat(c,j)!=="echec")draw(c,j);show(c)})});
 ${CURSEUR_PAGE}
 const nav=document.querySelector(".kvues"),vd=nav.querySelector(".kvd");nav.hidden=false;
-const mark=(v)=>{nav.querySelectorAll("a").forEach((a)=>{if(v&&a.dataset.v===v.id)a.setAttribute("aria-current","true");else a.removeAttribute("aria-current")});vd.textContent=v?v.dit:""};
+const kac=document.querySelector(".kac");
+const mark=(v)=>{document.querySelectorAll(".kcarte a[data-v]").forEach((a)=>{if(v&&a.dataset.v===v.id)a.setAttribute("aria-current","true");else a.removeAttribute("aria-current")});vd.textContent=v?v.dit:""};
 const fond=(f)=>{const i=document.querySelector('.fonds[data-fd="k"] input[value="'+f+'"]');if(i&&!i.checked){i.checked=true;i.dispatchEvent(new Event("change",{bubbles:true}))}};
 const cadre=(b)=>{let d=null;if(b){const x0=X(b[0]),x1=X(b[2]),y0=Y(b[3]),y1=Y(b[1]),w=Math.max(x1-x0,(y1-y0)*W/H);d={x:(x0+x1-w)/2,y:(y0+y1-w*H/W)/2,w}}svg.dispatchEvent(new CustomEvent("zbox",{detail:d}))};
 const vue=(v,f)=>{boxes.forEach((b)=>{b.checked=v.couches.includes(b.value);tick(b)});if(f){fond(v.fond);cadre(v.cadre)}mark(v)};
 const lire=()=>{const h=location.hash.slice(1),v=K.vues.find((x)=>x.id===h);if(v){vue(v,1);return}const m=/(?:^|&)c=([a-z0-9,-]*)/.exec(h);
 if(!m){vue(K.vues[0],0);return}mark(null);const want=m[1].split(",");boxes.forEach((b)=>{b.checked=want.includes(b.value);tick(b)})};
 list.addEventListener("change",(e)=>{const b=e.target;if(b.name!=="c")return;tick(b);mark(null);hash()});
-nav.addEventListener("click",(e)=>{const a=e.target.closest("a[data-v]");if(!a)return;e.preventDefault();history.replaceState(null,"","#"+a.dataset.v);lire()});
+[nav,kac].forEach((x)=>x&&x.addEventListener("click",(e)=>{const a=e.target.closest("a[data-v]");if(!a)return;e.preventDefault();history.replaceState(null,"","#"+a.dataset.v);lire()}));
 addEventListener("hashchange",lire);lire();
-const dir=document.querySelector(".kdir");if(dir)fetch(K.resume).then((r)=>r.ok?r.json():null).catch(()=>null).then((r)=>{if(!r)return;
-const n={stations:r.stations&&r.stations.pluie,rivieres:r.rivieres&&r.rivieres.hausse,sentiers:r.sentiers&&r.sentiers.fermes,seismes:r.seismes&&r.seismes.n};
-const its=Object.keys(K.direct).filter((k)=>typeof n[k]==="number");if(!its.length)return;
-its.forEach((k)=>{const w=M.enDirect[k][Math.min(n[k],2)].split("{n}"),a=document.createElement("a");a.href=K.direct[k];
-if(w.length>1){const b=document.createElement("b");b.textContent=nb(n[k]);a.append(w[0],b,w[1])}else a.append(w[0]);dir.append(a)});
-const t=dir.querySelector("time");t.dateTime=r.heure;t.textContent=hm(r.heure);dir.hidden=false;
-dir.addEventListener("click",(e)=>{const a=e.target.closest("a");if(!a)return;e.preventDefault();const h=a.getAttribute("href");history.replaceState(null,"",h);if(!K.vues.some((v)=>"#"+v.id===h))cadre(null);lire()})})})();`;
+const dir=document.querySelector(".kdir");if(dir&&kac)fetch(K.resume).then((r)=>r.ok?r.json():null).catch(()=>null).then((r)=>{if(!r)return;
+const n={stations:r.stations&&r.stations.pluie,rivieres:r.rivieres&&r.rivieres.hausse,sentiers:r.sentiers&&r.sentiers.fermes,seismes:r.seismes&&r.seismes.n};let vu=0;
+kac.querySelectorAll("small[data-k]").forEach((s)=>{const k=s.dataset.k;if(typeof n[k]!=="number")return;vu++;const w=M.enDirect[k][Math.min(n[k],2)].split("{n}");
+if(w.length>1){const b=document.createElement("b");b.textContent=nb(n[k]);s.replaceChildren(w[0],b,w[1])}else s.replaceChildren(w[0])});if(!vu)return;
+const t=dir.querySelector("time");t.dateTime=r.heure;t.textContent=hm(r.heure);dir.hidden=false})})();`;

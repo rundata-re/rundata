@@ -154,8 +154,10 @@ import { connecteurPage } from "./connecteur.js";
 import { enTetes, SECURITY_TEXT, SECURITY_TXT } from "./securite.js";
 import { typo, typoPage } from "./typo.js";
 import { tripGonePage, tripPage } from "./trajet.js";
-import { searchStops, stopPageDepartures, TRIP_PATH, tripRun } from "../tools/transports.js";
+import { lineDay, searchStops, stopPageDepartures, TRIP_PATH, tripRun } from "../tools/transports.js";
 import { searchPage, stopPage } from "./arret.js";
+import { LINE_PATH, linePages } from "./ligne.js";
+import { LINE_NOINDEX, linePage } from "./ligne-page.js";
 import { answer, askedOf, ITINERAIRE_PATH, itinerairePage } from "./itineraire.js";
 import { endOf } from "../tools/itineraire.js";
 import { STOP_PATH } from "./domains.js";
@@ -1212,6 +1214,20 @@ async function pages(request: Request, cache: Cache, background: Background, now
     const r = await answer(asked, now);
     if (r.search) console.log(`trajet en bus : ${r.search.lectures.requetes} lectures D1, ${r.search.lectures.lignes} lignes, ${r.search.trajets.length} trajets, ${Date.now() - started} ms${r.search.trop_large ? ", trop large" : ""}`);
     return new Response(itinerairePage(origin, r, await alerte(cache, background, now), now), { status: r.indisponible ? 503 : 200, headers: { ...HTML, "cache-control": r.indisponible ? "no-store" : HTML["cache-control"] } });
+  }
+  // A bus line's page: read from the timetables at each view, never kept, as a stop's (web/ligne-page.ts).
+  if (path.startsWith(`${LINE_PATH}/`)) {
+    const p = linePages().get(path.slice(LINE_PATH.length + 1).replace(/\/$/, ""));
+    if (!p) return new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
+    let day: Awaited<ReturnType<typeof lineDay>>;
+    try {
+      if (!transit.enabled()) throw new Error("horaires indisponibles ici");
+      day = await lineDay(p.routes, now);
+    } catch (err) {
+      console.error(`page ${path} : horaires indisponibles`, why(err));
+      return new Response(tripGonePage(origin, path, undefined, await alerte(cache, background, now), true), { status: 503, headers: { ...HTML, "cache-control": "no-store", "retry-after": "60" } });
+    }
+    return new Response(linePage(origin, p, day, now, await alerte(cache, background, now)), { headers: { ...HTML, "cache-control": "public, max-age=300", ...(LINE_NOINDEX ? { "x-robots-tag": "noindex" } : {}) } });
   }
   // A stop's page, and the search for one: read from the timetables at each view, never kept (web/arret.ts).
   if (path === STOP_PATH || path === `${STOP_PATH}/`) {

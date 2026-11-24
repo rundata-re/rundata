@@ -4,6 +4,8 @@
  * assistants reading a page see it, and points to the connector for the rest. Each also says it in a few words for
  * its tile on the home page.
  */
+import * as transit from "../providers/transit.js";
+import { LINE_NETWORKS, LINE_PATH, linePages } from "./ligne.js";
 import { BILLETTERIES } from "../http.js";
 import { enLigne } from "./associations-drapeau.js";
 import { OVPF, OVPF_FACEBOOK, PREFECTURE } from "../providers/volcan.js";
@@ -1297,6 +1299,22 @@ const busFaq = (): Faq[] => [
   { q: FERRY.h3, a: esc(FERRY.page), note: esc(FERRY.verifie), id: "h-bateau" },
 ];
 
+/**
+ * The lines that have their page (web/ligne.ts), network by network: each with its long name, leading to its stops and
+ * its day's departures (24/11/2026).
+ */
+export function linesList(): string {
+  const all = [...linePages().values()];
+  return `<section aria-labelledby="h-lignes"><div class="sec-h"><h2 id="h-lignes">Les lignes</h2>
+  <p>Les arrêts de chaque ligne dans l'ordre, dans chaque sens, et ses départs du jour.</p></div>
+  ${LINE_NETWORKS.map((net) => {
+    const mine = all.filter((p) => p.reseau === net);
+    return `<details class="card lignes"><summary><h3>${esc(transit.NETWORKS[net]?.nom ?? net)}</h3> <span class="note">${mine.length} lignes</span></summary>` +
+      `<ul class="rows cols lieux">${mine.map((p) => `<li><a href="${LINE_PATH}/${esc(p.slug)}">Ligne ${esc(p.ligne)}</a>${p.nom ? `<small>${esc(p.nom)}</small>` : ""}</li>`).join("")}</ul></details>`;
+  }).join("")}
+</section>`;
+}
+
 export function busPage(origin: string, data: Cached<BusData> | null, now = new Date(), alerte?: Alerte): string {
   const d = data?.value;
   const url = `${origin}/bus`;
@@ -1353,6 +1371,7 @@ export function busPage(origin: string, data: Cached<BusData> | null, now = new 
   ${lienJeux()}
 </section>
 ${d?.alertes?.length ? `<section aria-labelledby="h-trafic"><h2 id="h-trafic">Info trafic</h2><div class="card">${alertList(d.alertes)}<p class="note">Publié par les réseaux dans leur flux en direct, repris tel quel.</p></div></section>` : ""}
+${linesList()}
 ${texteStable(busLire(d ? d.reseaux.length : undefined, d ? lines : undefined), busFaq())}
 ${connectorCta("transports", "les bus de l'île")}`;
 

@@ -130,7 +130,7 @@ describe("the links to the stop pages from a commune's page", () => {
     expect(r.arrets_proches.every((x: { distance_m: number }) => x.distance_m >= 0)).toBe(true);
   });
 
-  it("cites the page of a stop named, in `lien` and at the end of the résumé, and /bus for a line or a place", async () => {
+  it("cites the page of a stop named, in `lien` and at the end of the résumé, a line's page for a line, and /bus for a place", async () => {
     const said = async (arret?: string, ligne?: string) => JSON.parse((cite("transports", await transports(arret, ligne, NOW)) as { content: { text: string }[] }).content[0].text);
     const gare = "https://rundata.re/bus/arret/saint-pierre/gare-de-saint-pierre";
     // Three stops of three networks, in two pages: the first one's, each stop with its own.
@@ -142,8 +142,12 @@ describe("the links to the stop pages from a commune's page", () => {
       ["Alternéo", `${gare}?ref=mcp`],
       ["CarSud", "https://rundata.re/bus/arret/saint-pierre/gare-routiere-de-saint-pierre?ref=mcp"],
     ]);
-    // A line alone, a commune, and a stop no bus serves (the stops served nearest it given): /bus.
-    for (const [arret, ligne] of [[undefined, "S1"], ["Saint-Pierre", undefined], ["mairie de Saint-Pierre", undefined]] as const) {
+    // A line alone: its page.
+    const s1 = await said(undefined, "S1");
+    expect(s1.lien).toBe("https://rundata.re/bus/ligne/carjaune/s1?ref=mcp");
+    expect(s1.resume).toMatch(/https:\/\/rundata\.re\/bus\/ligne\/carjaune\/s1\?ref=mcp\.$/);
+    // A commune, and a stop no bus serves (the stops served nearest it given): /bus.
+    for (const [arret, ligne] of [["Saint-Pierre", undefined], ["mairie de Saint-Pierre", undefined]] as const) {
       const x = await said(arret, ligne);
       expect(x.lien, `${arret ?? ligne}`).toBe("https://rundata.re/bus?ref=mcp");
       expect(x.resume).toMatch(/https:\/\/rundata\.re\/bus\?ref=mcp\.$/);

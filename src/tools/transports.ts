@@ -10,6 +10,7 @@ import * as transit from "../providers/transit.js";
 import { why } from "../types.js";
 import { quand } from "./actualites.js";
 import { SITE_URL } from "./citer.js";
+import { LINE_PATH, lineOfRoutes } from "../web/ligne.js";
 import { asksCrossing, T as FERRY } from "./ferries.js";
 import { a as aLieu, credits, de as deLieu, fr, heure, text } from "./format.js";
 import { rienTrouve } from "../vide.js";
@@ -113,7 +114,7 @@ export function nearStops(lon: number, lat: number, reseau?: string): { g: trans
   return (close.length ? close : all).slice(0, 3);
 }
 
-const clock = (s: number) => heure(Math.floor((((s % 86400) + 86400) % 86400) / 60));
+export const clock = (s: number) => heure(Math.floor((((s % 86400) + 86400) % 86400) / 60));
 /**
  * « 07:05 », or « demain 05:51 » for a departure after midnight: a time of a list of departures, with its minutes even
  * on the hour (« demain 05:00 » beside « demain 05:15 »), as on the stop's page (web/domains.ts listClock()).
@@ -486,7 +487,7 @@ export function spread(list: Departure[], max = 12): Departure[] {
 export const completeMinutes = (all: Departure[], kept: Departure[], horizon: number) =>
   Math.floor(Math.min(horizon, ...all.filter((d) => !kept.includes(d)).map((d) => d.in)) / 60);
 
-const lineName = (r: number) => {
+export const lineName = (r: number) => {
   const [net, short, long] = transit.ROUTES[r];
   // Its long name as people read it, like its stops' (« Cambourg - Gare Saint-Benoît »); the short one as the network writes it.
   return { ligne: short || long, nom_ligne: short && long ? transit.stopName(long) : undefined, reseau: transit.NETWORKS[net]?.nom ?? net };
@@ -625,7 +626,10 @@ export async function transports(asked: string | undefined, ligne: string | unde
   if (!transit.enabled()) {
     return { ...text({ erreur: "Les horaires de bus ne sont disponibles que sur le serveur en ligne (https://rundata.re/mcp)." }), isError: true };
   }
-  if (!q && !ligne?.trim()) return { ...text({ erreur: "Donner un arrêt, un lieu ou une ligne.", conseil: STOP_HELP }), isError: true };
+  // Nothing asked (22/11/2026, an index of tools trying each one): what to give, and where the networks are, not an error.
+  if (!q && !ligne?.trim()) {
+    return text({ resume: `Donner un arrêt, un lieu ou une ligne pour ses prochains départs. Les réseaux de l'île et les départs des gares routières\u00a0: ${SITE_URL}/bus.`, conseil: STOP_HELP, lien: `${SITE_URL}/bus`, reseaux: networksOf(Object.keys(transit.NETWORKS)) });
+  }
   try {
     if (ligne?.trim()) {
       const answer = await lineAnswer(ligne.trim(), q, now, cache);
@@ -898,6 +902,68 @@ const SERVES_M = 600;
  * A line: its stops in order, direction by direction; its departures of the day, summed up; at a place asked about,
  * whether it stops there, else its nearest stop, and the next departures there. Undefined when no line has that name.
  */
+/**
+ * A line's day, as the tool and its page (web/ligne.ts) tell it: the day shown, today or else the next one the line runs
+ * in the two weeks to come (`ahead` days on, 14 when none), and each of its directions (at most four) with its stops in
+ * order and the starts of its trips that day. `hour`: the departures after it, one by one, in each direction.
+ */
+export async function lineDay(routes: number[], now: Date, hour?: number) {
+  const net = transit.ROUTES[routes[0]][0];
+  const pats = routes.flatMap(transit.patternsOf);
+  // The day shown: today, else the next day the line runs.
+  const today = day(now);
+  let ahead = 0;
+  let d = today;
+  while (ahead < 14 && !pats.some((p) => runsOn(p, d))) d = { ymd: addDays(today.ymd, ++ahead), weekday: (today.weekday + ahead) % 7 };
+  if (ahead === 14) return { net, pats, today, d, ahead };
+  const running = pats.filter((p) => runsOn(p, d));
+  const rows = await transit.patterns(running);
+  const tripsOn = (p: number) => (rows.get(p)?.trips ?? []).filter(([sv]) => transit.serviceRuns(net, sv, d.ymd, d.weekday));
+  // One pattern per first stop, last stop and headsign, the one with the most trips that day: its stops stand for the others'.
+  const combo = (p: number) => `${transit.ENDS[p][1]}|${transit.ENDS[p][2]}|${rows.get(p)?.headsign ?? ""}`;
+  const best = new Map<string, number>();
+  for (const p of running) {
+    const b = best.get(combo(p));
+    if (b === undefined || tripsOn(p).length > tripsOn(b).length) best.set(combo(p), p);
+  }
+  const reps = [...best.values()].sort((a, b) => tripsOn(b).length - tripsOn(a).length).slice(0, STOPS_READ);
+  const stopsOf = await transit.patternStops(reps);
+  // Directions: the network's when it gives them, else one per terminus.
+  const dir = (p: number) => {
+    const sens = stopsOf?.get(p)?.sens;
+    return sens != null ? `s${sens}` : transit.stop(transit.ENDS[p][2]).nom;
+  };
+  const repOf = new Map([...best].map(([k, p]) => [k, p]));
+  const dirs = [...new Set(reps.map(dir))];
+  const sens = dirs.slice(0, 4).map((key) => {
+    const mine = reps.filter((p) => dir(p) === key);
+    const main = [...mine].sort((a, b) => (stopsOf?.get(b)?.stops.length ?? 0) - (stopsOf?.get(a)?.stops.length ?? 0) || tripsOn(b).length - tripsOn(a).length)[0];
+    const members = running.filter((p) => { const r = repOf.get(combo(p)); return r !== undefined && dir(r) === key; });
+    const starts = members.flatMap((p) => tripsOn(p).map(([, start]) => start));
+    const ends = (p: number) => `${transit.stop(transit.ENDS[p][1]).nom} → ${transit.stop(transit.ENDS[p][2]).nom}`;
+    const variants = mine.filter((p) => ends(p) !== ends(main)).map((p) => `${ends(p)} (${tripsOn(p).length} départ${tripsOn(p).length > 1 ? "s" : ""})`);
+    const list = stopsOf?.get(main)?.stops.map(([id]) => transit.stop(id));
+    return {
+      main,
+      list,
+      starts,
+      names: list?.map((x) => x.nom),
+      out: {
+        direction: ends(main),
+        ...(list ? { nombre_arrets: list.length, arrets: byCommune(list) } : {}),
+        ...(variants.length ? { autres_parcours: variants } : {}),
+        departs_du_jour: daySummary(starts),
+        ...(hour !== undefined ? { departs_apres_l_heure_demandee: [...new Set(starts)].sort((a, b) => a - b).filter((t) => t >= hour).slice(0, 8).map(clock) } : {}),
+      } as Record<string, unknown>,
+    };
+  });
+  // The way back by the same stops is said, not listed again.
+  if (sens.length === 2 && sens[0].names && sens[1].names && reversed(sens[0].names, sens[1].names)) {
+    sens[1].out.arrets = "les mêmes arrêts, dans l'ordre inverse";
+  }
+  return { net, pats, today, d, ahead, running, rows, stopsOf, sens };
+}
+
 async function lineAnswer(ligne: string, asked: string, now: Date, cache?: Cache) {
   let routes = linesNamed(ligne, networkIn(`${asked} ${ligne}`));
   let nets = [...new Set(routes.map((r) => transit.ROUTES[r][0]))];
@@ -918,59 +984,16 @@ async function lineAnswer(ligne: string, asked: string, now: Date, cache?: Cache
   const net = nets[0];
   const name = lineName(routes[0]);
   const said_line = `${name.ligne}${name.nom_ligne ? ` (${name.nom_ligne})` : ""}, ${name.reseau}`;
-  const pats = routes.flatMap(transit.patternsOf);
-  // The day shown: today, else the next day the line runs.
-  const today = day(now);
-  let ahead = 0;
-  let d = today;
-  while (ahead < 14 && !pats.some((p) => runsOn(p, d))) d = { ymd: addDays(today.ymd, ++ahead), weekday: (today.weekday + ahead) % 7 };
-  if (ahead === 14) {
+  // Its page, for the lines that have one (web/ligne.ts).
+  const page = lineOfRoutes(routes);
+  const hour = hourAsked(asked);
+  const day_ = await lineDay(routes, now, hour);
+  const { pats, today, d, ahead } = day_;
+  if (!day_.sens) {
     return text({ resume: `La ligne ${said_line} n'a aucun départ dans les deux semaines qui viennent, d'après les horaires publiés.`, reseaux: networksOf([net]), sources: credits([transit.SOURCE]) });
   }
-  const running = pats.filter((p) => runsOn(p, d));
-  const rows = await transit.patterns(running);
-  const tripsOn = (p: number) => (rows.get(p)?.trips ?? []).filter(([sv]) => transit.serviceRuns(net, sv, d.ymd, d.weekday));
-  // One pattern per first stop, last stop and headsign, the one with the most trips that day: its stops stand for the others'.
-  const combo = (p: number) => `${transit.ENDS[p][1]}|${transit.ENDS[p][2]}|${rows.get(p)?.headsign ?? ""}`;
-  const best = new Map<string, number>();
-  for (const p of running) {
-    const b = best.get(combo(p));
-    if (b === undefined || tripsOn(p).length > tripsOn(b).length) best.set(combo(p), p);
-  }
-  const reps = [...best.values()].sort((a, b) => tripsOn(b).length - tripsOn(a).length).slice(0, STOPS_READ);
-  const stopsOf = await transit.patternStops(reps);
-  // Directions: the network's when it gives them, else one per terminus.
-  const dir = (p: number) => {
-    const sens = stopsOf?.get(p)?.sens;
-    return sens != null ? `s${sens}` : transit.stop(transit.ENDS[p][2]).nom;
-  };
-  const repOf = new Map([...best].map(([k, p]) => [k, p]));
-  const dirs = [...new Set(reps.map(dir))];
-  const hour = hourAsked(asked);
-  const sens = dirs.slice(0, 4).map((key) => {
-    const mine = reps.filter((p) => dir(p) === key);
-    const main = [...mine].sort((a, b) => (stopsOf?.get(b)?.stops.length ?? 0) - (stopsOf?.get(a)?.stops.length ?? 0) || tripsOn(b).length - tripsOn(a).length)[0];
-    const members = running.filter((p) => { const r = repOf.get(combo(p)); return r !== undefined && dir(r) === key; });
-    const starts = members.flatMap((p) => tripsOn(p).map(([, start]) => start));
-    const ends = (p: number) => `${transit.stop(transit.ENDS[p][1]).nom} → ${transit.stop(transit.ENDS[p][2]).nom}`;
-    const variants = mine.filter((p) => ends(p) !== ends(main)).map((p) => `${ends(p)} (${tripsOn(p).length} départ${tripsOn(p).length > 1 ? "s" : ""})`);
-    const list = stopsOf?.get(main)?.stops.map(([id]) => transit.stop(id));
-    return {
-      main,
-      names: list?.map((x) => x.nom),
-      out: {
-        direction: ends(main),
-        ...(list ? { nombre_arrets: list.length, arrets: byCommune(list) } : {}),
-        ...(variants.length ? { autres_parcours: variants } : {}),
-        departs_du_jour: daySummary(starts),
-        ...(hour !== undefined ? { departs_apres_l_heure_demandee: [...new Set(starts)].sort((a, b) => a - b).filter((t) => t >= hour).slice(0, 8).map(clock) } : {}),
-      } as Record<string, unknown>,
-    };
-  });
-  // The way back by the same stops is said, not listed again.
-  if (sens.length === 2 && sens[0].names && sens[1].names && reversed(sens[0].names, sens[1].names)) {
-    sens[1].out.arrets = "les mêmes arrêts, dans l'ordre inverse";
-  }
+  // Past the two weeks without a departure, the line's day is all there.
+  const { running, rows, stopsOf, sens } = day_ as Required<typeof day_>;
   const off = ahead ? await notToday(`${name.ligne} (${[name.nom_ligne, name.reseau].filter(Boolean).join(", ")})`, net, routes, pats, today, now, cache) : undefined;
   let resume = off
     ? `${off.text} Prochaine journée de service, ${dayName(d)}\u00a0: `
@@ -1043,6 +1066,7 @@ async function lineAnswer(ligne: string, asked: string, now: Date, cache?: Cache
   return text({
     resume,
     ligne: name,
+    ...(page ? { page: `${SITE_URL}${LINE_PATH}/${page.slug}` } : {}),
     jour: dayName(d),
     sens: sens.map((x) => x.out),
     ...(buses?.length ? { bus_en_circulation: buses } : {}),

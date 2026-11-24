@@ -57,6 +57,8 @@ interface Tally {
   keep?: (work: Promise<unknown>) => void;
   /** The reads of each source (http.ts), by its id: logged with the subrequests (worker.ts), to see how often each is asked. */
   reads: Map<string, number>;
+  /** The bytes of each copy read from the cache, by its key (`copyRead`): logged with the subrequests, the sizes only. */
+  copies: Map<string, number>;
   /** Subrequests set aside for work running beside the rest (`reserve`): left out of what `left` says is left. */
   reserved: number;
 }
@@ -117,8 +119,8 @@ export async function counted<T>(
   limit: number,
   fn: () => Promise<T>,
   keep?: (work: Promise<unknown>) => void,
-): Promise<{ value: T; used: number; reads: Map<string, number>; settled: () => Promise<{ used: number; refused: number; reads: Map<string, number> }> }> {
-  const tally: Tally = { used: 0, refused: 0, limit, shared: new Map<string, unknown>(), later: [], keep, reads: new Map(), reserved: 0 };
+): Promise<{ value: T; used: number; reads: Map<string, number>; settled: () => Promise<{ used: number; refused: number; reads: Map<string, number>; copies: Map<string, number> }> }> {
+  const tally: Tally = { used: 0, refused: 0, limit, shared: new Map<string, unknown>(), later: [], keep, reads: new Map(), copies: new Map(), reserved: 0 };
   const value = await current.run(tally, fn);
   const settled = async () => {
     // Work done later may hand over more work.
@@ -126,7 +128,7 @@ export async function counted<T>(
       n = tally.later.length;
       await Promise.allSettled(tally.later);
     }
-    return { used: tally.used, refused: tally.refused, reads: tally.reads };
+    return { used: tally.used, refused: tally.refused, reads: tally.reads, copies: tally.copies };
   };
   return { value, used: tally.used, reads: tally.reads, settled };
 }
@@ -172,6 +174,25 @@ export function count(n = 1, kind: boolean | "read" = false) {
 export function countRead(source: string) {
   const t = current.getStore();
   if (t) t.reads.set(source, (t.reads.get(source) ?? 0) + 1);
+}
+
+/**
+ * Counts the `bytes` of a copy read from the cache under `key` (worker.ts EdgeStore), the size only, never the value:
+ * nothing outside a counted invocation. Parsing these copies is most of a page's CPU, and the Worker's clock does not
+ * move while it computes, so their size is what can be measured (24/11/2026: the home page reads about 25).
+ */
+export function copyRead(key: string, bytes: number) {
+  const t = current.getStore();
+  if (t) t.copies.set(key, (t.copies.get(key) ?? 0) + bytes);
+}
+
+/** « , copies lues : 196 Ko (web:agenda 121, web:sport 60, web:meteo 14) »: the total and the three biggest, in Ko; "" without one. */
+export function copiesSaid(copies: Map<string, number>): string {
+  if (!copies.size) return "";
+  const ko = (n: number) => Math.round(n / 1000);
+  const total = [...copies.values()].reduce((a, b) => a + b, 0);
+  const top = [...copies].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 3);
+  return `, copies lues : ${ko(total)} Ko (${top.map(([k, n]) => `${k} ${ko(n)}`).join(", ")})`;
 }
 
 /** « , lectures : prefecture_communiques 2, ipgp_ovpf_seismes 1 »: the reads of each source, the most read first; "" without one. */

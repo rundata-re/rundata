@@ -7,7 +7,7 @@
  * live in KV instead: the event runs in some data center, the questions in all the others.
  */
 import { configurerEquipe, failed, handle } from "./app.js";
-import { BUILD_BUDGET, PAGE_BUDGET, SCHEDULED_BUDGET, count, counted, later, readsSaid, reponseSaid, scheduled, spent } from "./budget.js";
+import { BUILD_BUDGET, PAGE_BUDGET, SCHEDULED_BUDGET, copiesSaid, copyRead, count, counted, later, readsSaid, reponseSaid, scheduled, spent } from "./budget.js";
 import { Cache, CACHE_FORMAT, MemoryStore, TieredStore, type CacheEntry, type CacheStore } from "./cache.js";
 import { KvStore } from "./kv.js";
 import { toutesLesSources, VERSION } from "./server.js";
@@ -86,7 +86,12 @@ class EdgeStore implements CacheStore {
     try {
       count(1, "read");
       const r = await (await caches.open("upstream")).match(this.url(key));
-      return r ? ((await r.json()) as CacheEntry) : undefined;
+      if (!r) return undefined;
+      // Its size for the log line of the subrequests (budget.ts copyRead), in characters, about its bytes: the same parse
+      // as r.json(), its length added.
+      const text = await r.text();
+      copyRead(key, text.length);
+      return JSON.parse(text) as CacheEntry;
     } catch {
       return undefined; // a cache problem must never cost an answer
     }
@@ -458,7 +463,7 @@ export default {
     ctx.waitUntil(settled().then((total) => {
       const after = total.used > used ? `, dont ${total.used - used} après la réponse` : "";
       const refused = total.refused ? `, ${total.refused} refusées (budget de ${PAGE_BUDGET})` : "";
-      if (total.used) console.log(`sous-requêtes : ${total.used} (${path})${after}${refused}${readsSaid(total.reads)}`);
+      if (total.used) console.log(`sous-requêtes : ${total.used} (${path})${after}${refused}${readsSaid(total.reads)}${copiesSaid(total.copies)}`);
     }));
     // The wait of the visitor, apart from the invocation's duration (which counts the work after the response).
     console.log(reponseSaid(Date.now() - arrived, path));

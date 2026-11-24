@@ -7,6 +7,8 @@ import * as terrain from "../providers/terrain.js";
 import * as antennes from "../vie/antennes.js";
 import * as internet from "../vie/internet.js";
 import * as loyers from "../vie/loyers.js";
+import { bounded, LectureTardive } from "../lectures.js";
+import type { SourceInfo } from "../types.js";
 import { why } from "../types.js";
 import { a, a as aCommune, credits, de, nombre, text } from "./format.js";
 
@@ -295,12 +297,38 @@ export function streetLine(v: ReturnType<typeof streetMarket>): string {
   return kinds.length ? `${voie} ${kinds.join(", ")}` : `${voie} ${enregistrees(v.ventes)} dans DVF, trop peu par type de bien pour une médiane`;
 }
 
-/** The value, or undefined when the source failed (null stays "nothing at this point"). */
-async function settle<T>(source: string, p: Promise<{ value: T }>): Promise<T | undefined> {
+/** A source not read for the fiche, said in its `non_inclus`: what is missing, the source by its name, and why. */
+export interface Manque {
+  partie: string;
+  source: string;
+  raison: string;
+}
+
+// What each source gives the fiche, as `non_inclus` says it.
+const PARTIES: Record<string, string> = {
+  [terrain.SOURCES.ban.id]: "adresse",
+  [terrain.SOURCES.cadastre.id]: "parcelle cadastrale",
+  [terrain.SOURCES.gpu.id]: "zone du PLU",
+  [terrain.SOURCES.alti.id]: "altitude",
+  [terrain.SOURCES.dvf.id]: "ventes du secteur",
+  [terrain.SOURCES.dvfVoie.id]: "ventes",
+  [terrain.SOURCES.ppr.id]: "plans de prévention des risques",
+  [terrain.SOURCES.georisques.id]: "catastrophes naturelles et mouvements de terrain",
+  [annuaireSrc.SOURCE.id]: "mairie",
+};
+
+/**
+ * The value, or undefined when the source failed (null stays "nothing at this point"). Within a tool call, a source
+ * without a copy is waited for until the call's deadline plus 3 s (lectures.ts `bounded`), the same end for every read of
+ * the fiche: on 21/11/2026 three calls in a row took 19,5 to 19,9 s. The source not read goes in `missed`.
+ */
+async function settle<T>(source: SourceInfo, p: Promise<{ value: T }>, missed?: Manque[], partie?: string): Promise<T | undefined> {
   try {
-    return (await p).value;
+    return (await bounded(source.id, p, true)).value;
   } catch (err) {
-    console.error(`source ${source} indisponible:`, why(err));
+    console.error(`source ${source.id} indisponible:`, why(err));
+    const raison = err instanceof LectureTardive ? `pas de réponse en ${Math.round(err.ms / 1000)} s\u00a0; réessayer dans un instant` : DOWN;
+    if (missed && !missed.some((m) => m.source === source.nom)) missed.push({ partie: partie ?? PARTIES[source.id] ?? source.nom, source: source.nom, raison });
     return undefined;
   }
 }
@@ -335,14 +363,15 @@ const DVF_MUET = (now: Date) => nonLues(["Etalab"], now).replace(/^ventes non lu
  * name, when no other street of the commune has that name in the address base, and the code DVF gives that name is no
  * other street's there. null: the street not found for sure in DVF (nor its sales given); undefined: DVF did not answer.
  */
-async function streetSalesOf(cache: Cache, voie: { nom: string; code?: string; insee: string }, fromYear: number, toYear: number) {
-  if (voie.code) return settle(terrain.SOURCES.dvfVoie.id, terrain.salesOnStreet(cache, voie.insee, { code: voie.code }, fromYear, toYear));
+async function streetSalesOf(cache: Cache, voie: { nom: string; code?: string; insee: string }, fromYear: number, toYear: number, missed?: Manque[]) {
+  const V = "ventes de la voie";
+  if (voie.code) return settle(terrain.SOURCES.dvfVoie, terrain.salesOnStreet(cache, voie.insee, { code: voie.code }, fromYear, toYear), missed, V);
   // One after the other, DVF's files not read for a name two streets share. The address base not answering leaves the
   // street unsure as well.
-  if ((await settle(terrain.SOURCES.ban.id, terrain.homonymes(cache, voie.nom, voie.insee))) !== 1) return null;
-  const found = await settle(terrain.SOURCES.dvfVoie.id, terrain.salesOnStreet(cache, voie.insee, { nom: voie.nom }, fromYear, toYear));
+  if ((await settle(terrain.SOURCES.ban, terrain.homonymes(cache, voie.nom, voie.insee), missed, V)) !== 1) return null;
+  const found = await settle(terrain.SOURCES.dvfVoie, terrain.salesOnStreet(cache, voie.insee, { nom: voie.nom }, fromYear, toYear), missed, V);
   if (!found) return found;
-  return (await settle(terrain.SOURCES.ban.id, terrain.codePris(cache, voie.insee, found.code))) === false ? found : null;
+  return (await settle(terrain.SOURCES.ban, terrain.codePris(cache, voie.insee, found.code), missed, V)) === false ? found : null;
 }
 
 // The commune named after the last comma, or the commune of the quarter named there (« …, Bois de Nèfles »): only that
@@ -402,6 +431,10 @@ export function incertain(adresse: string, a: { label: string; type: string; sco
   return `Lieu incertain${N}: pour «${N}${adresse}${N}», la Base adresse nationale a retenu «${N}${a.label}${N}» (${precision})${voie ? `, une voie, qui n'est peut-être pas le lieu demandé` : ""}${faible ? `, avec une correspondance faible` : ""}. Le dire à l'utilisateur et lui demander l'adresse exacte (numéro, voie, commune) avant de se fier à cette fiche.`;
 }
 
+/** Said first when an address was asked and the address base did not answer in time: the answer is for a place's centre. */
+const nonLue = (adresse: string, at: string) =>
+  `Adresse non lue\u00a0: la ${terrain.SOURCES.ban.nom} n'a pas répondu pour «\u00a0${adresse}\u00a0». Réponse pour ${at}, pas pour cette adresse\u00a0: le dire à l'utilisateur, et redemander dans un instant.`;
+
 /** Said first when an address was asked and the address base does not find it: the answer is for a place's centre. */
 const introuvable = (adresse: string, at: string) =>
   `Adresse introuvable dans la Base adresse nationale\u00a0: «\u00a0${adresse}\u00a0». Réponse pour ${at}, pas pour cette adresse\u00a0: le dire à l'utilisateur.`;
@@ -427,6 +460,8 @@ export async function ficheDonnees(cache: Cache, adresse: string, now = new Date
   // The address base's answer may not be the place asked: said first (see incertain).
   let doute: string | undefined;
   let mairie: annuaireSrc.Office | undefined;
+  // The sources not read, said in `non_inclus` (settle).
+  const missed: Manque[] = [];
   const hall = townHallOf(adresse);
   if (hall) {
     // The directory down: the address base as for any place, with its doubt.
@@ -441,14 +476,14 @@ export async function ficheDonnees(cache: Cache, adresse: string, now = new Date
     where = { label: placeLabel(place.lieu), lon: place.lieu.lon, lat: place.lieu.lat, precision: "centre du lieu-dit ou de la commune", insee: INSEE[place.lieu.commune] };
   } else {
     const asked = communeOf(adresse);
-    const a = await settle(terrain.SOURCES.ban.id, terrain.geocode(cache, adresse, asked));
+    const a = await settle(terrain.SOURCES.ban, terrain.geocode(cache, adresse, asked), missed);
     // Another street than the one asked: no figures of it, nor of the place around; the streets of the commune whose
     // names come close instead.
     const street = a && (a.type === "street" || a.type === "housenumber") && kindOf(words(adresse)) ? a.street ?? a.label.replace(/ \d{5} .*$/, "") : undefined;
     if (a && street && !sameStreet(adresse, street)) {
       const insee = asked ?? a.insee;
       const commune = Object.keys(INSEE).find((c) => INSEE[c] === insee);
-      const near = ((await settle(terrain.SOURCES.ban.id, terrain.streets(cache, adresse.split(",")[0], insee))) ?? []).filter((x) => x !== street);
+      const near = ((await settle(terrain.SOURCES.ban, terrain.streets(cache, adresse.split(",")[0], insee))) ?? []).filter((x) => x !== street);
       const N = "\u00a0";
       const q = (x: string) => `«${N}${x}${N}»`;
       const at = commune ? ` ${aCommune(commune)}` : "";
@@ -475,6 +510,15 @@ export async function ficheDonnees(cache: Cache, adresse: string, now = new Date
     }
     if (where && ADDRESS.test(adresse) && VAGUE.has(where.precision)) perdue = true;
   }
+  // The address base not answering: never « introuvable », which the address may not be.
+  const banMuette = missed.some((m) => m.source === terrain.SOURCES.ban.nom);
+  if (!where && banMuette) {
+    return { erreur: ({
+        erreur: `La ${terrain.SOURCES.ban.nom} n'a pas répondu\u00a0: adresse non lue, réessayer dans un instant.`,
+        non_inclus: missed,
+        conseil: "Dire à l'utilisateur que l'adresse n'a pas pu être lue pour l'instant, sans dire qu'elle n'existe pas, et redemander dans un instant, avec la commune.",
+      }) };
+  }
   if (!where) {
     return { erreur: ({ erreur: `Adresse ou lieu introuvable à La Réunion : « ${adresse} ».`, conseil: "Donner une adresse (numéro, rue, commune) ou un lieu-dit." }) };
   }
@@ -485,29 +529,32 @@ export async function ficheDonnees(cache: Cache, adresse: string, now = new Date
   const year = new Date(now.getTime() + 4 * 3600_000).getUTCFullYear();
   const fromYear = year - 5;
   const known = where.insee?.startsWith("974") ? where.insee : undefined;
-  const parcelP = vague ? Promise.resolve(undefined) : settle(terrain.SOURCES.cadastre.id, terrain.parcel(cache, lon, lat));
+  const parcelP = vague ? Promise.resolve(undefined) : settle(terrain.SOURCES.cadastre, terrain.parcel(cache, lon, lat), missed);
   // Given coordinates name no commune: the parcel's id starts with its INSEE code.
   const inseeP = known ? Promise.resolve(known) : parcelP.then((x) => (x?.idu.startsWith("974") ? x.idu.slice(0, 5) : undefined));
   const [p, z, alt, dvf, ppr, cat, mvt, insee, sv] = await Promise.all([
     parcelP,
-    vague ? undefined : settle(terrain.SOURCES.gpu.id, terrain.zone(cache, lon, lat)),
-    vague ? undefined : settle(terrain.SOURCES.alti.id, terrain.altitude(cache, lon, lat)),
+    vague ? undefined : settle(terrain.SOURCES.gpu, terrain.zone(cache, lon, lat), missed),
+    vague ? undefined : settle(terrain.SOURCES.alti, terrain.altitude(cache, lon, lat), missed),
     // The Cerema's API first; not answering, Etalab's files of the commune (the same DGFiP data, 22/11/2026).
-    settle(terrain.SOURCES.dvf.id, terrain.sales(cache, lon, lat, fromYear)).then(async (x) => {
+    settle(terrain.SOURCES.dvf, terrain.sales(cache, lon, lat, fromYear), missed).then(async (x) => {
       if (x) return { ventes: x, source: terrain.SOURCES.dvf, asked: ["Cerema"] as ("Cerema" | "Etalab")[] };
       const c = await inseeP;
       if (!c?.startsWith("974")) return { ventes: undefined, source: undefined, asked: ["Cerema"] as ("Cerema" | "Etalab")[] };
-      const y = await settle(terrain.SOURCES.dvfVoie.id, terrain.salesAround(cache, c, lon, lat, fromYear, year));
+      const y = await settle(terrain.SOURCES.dvfVoie, terrain.salesAround(cache, c, lon, lat, fromYear, year), missed, PARTIES[terrain.SOURCES.dvf.id]);
       return { ventes: y, source: y ? terrain.SOURCES.dvfVoie : undefined, asked: ["Cerema", "Etalab"] as ("Cerema" | "Etalab")[] };
     }),
-    vague ? undefined : settle(terrain.SOURCES.ppr.id, terrain.plans(cache, lon, lat)),
-    inseeP.then((c) => (c ? settle(terrain.SOURCES.georisques.id, terrain.catnat(cache, c)) : undefined)),
-    vague ? undefined : settle(terrain.SOURCES.georisques.id, terrain.landslides(cache, lon, lat)),
+    vague ? undefined : settle(terrain.SOURCES.ppr, terrain.plans(cache, lon, lat), missed),
+    inseeP.then((c) => (c ? settle(terrain.SOURCES.georisques, terrain.catnat(cache, c), missed) : undefined)),
+    vague ? undefined : settle(terrain.SOURCES.georisques, terrain.landslides(cache, lon, lat), missed),
     inseeP,
-    voie ? streetSalesOf(cache, voie, fromYear, year) : undefined,
+    voie ? streetSalesOf(cache, voie, fromYear, year, missed) : undefined,
   ]);
 
   const s = dvf.ventes;
+  // The Cerema not answering, Etalab's files gave the area's sales: nothing missing.
+  if (dvf.source === terrain.SOURCES.dvfVoie) missed.splice(0, missed.length, ...missed.filter((m) => m.source !== terrain.SOURCES.dvf.nom));
+  const nonInclus = missed.length ? { non_inclus: missed } : {};
   const muet = nonLues(dvf.asked, now);
   const parts = [vague ? `${where.label}\u00a0: ${SANS_POINT}` : `${where.label} (${where.precision})`];
   if (alt != null) parts.push(`altitude ${nombre(alt)}\u00a0m`);
@@ -550,7 +597,7 @@ export async function ficheDonnees(cache: Cache, adresse: string, now = new Date
     const r_ = risksBlock(lon, lat, insee, undefined, cat, undefined);
     return { fiche: {
       ...(doute ? { avertissement: doute } : {}),
-      ...(perdue ? { avertissement: introuvable(adresse, `le centre ${where.precision === "centre de la commune" ? "de la commune de" : "de"} ${where.label}`) } : {}),
+      ...(perdue ? { avertissement: (banMuette ? nonLue : introuvable)(adresse, `le centre ${where.precision === "centre de la commune" ? "de la commune de" : "de"} ${where.label}`) } : {}),
       resume: `${parts.join("\u00a0; ")}.`,
       conseil: CONSEIL_POINT,
       lieu: { ...where, lon: Math.round(lon * 1e5) / 1e5, lat: Math.round(lat * 1e5) / 1e5 },
@@ -558,6 +605,7 @@ export async function ficheDonnees(cache: Cache, adresse: string, now = new Date
       ...(r ? { loyers_d_annonce: r.bloc } : {}),
       ...(net ? { internet_dans_la_commune: net.bloc } : {}),
       risques_dans_la_commune: { catastrophes_naturelles: r_.catastrophes_naturelles, seisme: r_.seisme, radon: r_.radon, cyclone_et_volcan: r_.cyclone_et_volcan, pour_aller_plus_loin: r_.pour_aller_plus_loin },
+      ...nonInclus,
       sources: credits(used),
     } };
   }
@@ -600,6 +648,7 @@ export async function ficheDonnees(cache: Cache, adresse: string, now = new Date
       "La zone du PLU ne dit pas tout : son règlement, les servitudes et les plans de prévention des risques (PPR) s'ajoutent. Se renseigner auprès du service urbanisme de la mairie.",
       "Ces informations sur les risques ne remplacent pas l'état des risques obligatoire pour une vente ou une location. La couleur exacte de la zone d'un PPR (rouge : construction interdite, bleue : sous conditions) se lit sur sa carte de zonage.",
     ],
+    ...nonInclus,
     sources: credits(used),
   } };
 }

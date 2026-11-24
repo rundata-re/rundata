@@ -10,9 +10,8 @@ import { bathRead, keptTap, silentBath, silentTap, storedCopy, tapRead, tooOld, 
 import * as potable from "../providers/eaupotable.js";
 import * as notices from "../providers/avis-eau.js";
 import { doNotDrink, drySaid, noticeRow } from "./coupures.js";
-import { UpstreamError, why } from "../types.js";
-import { later } from "../budget.js";
-import { callDeadline } from "../lectures.js";
+import { why } from "../types.js";
+import { bounded } from "../lectures.js";
 import { a, credits, enumeration, notFound, placeBlock, text } from "./format.js";
 
 export type Sujet = "robinet" | "baignade";
@@ -150,31 +149,11 @@ function keptRows(c: Ile["communes"][number], res: Resolution) {
   };
 }
 
-/**
- * In a tool call, a source read without a copy is waited for this long past the call's deadline for copies
- * (lectures.ts, 5 s): 8 s in all. Past it, the read is said not answered (the island's copy with its time, or the part
- * said missing) and ends after the answer, stored for the next question. 22/11/2026: the ARS's site silent, its two
- * tries (8 then 12 s) waited for, qualite_eau answered in 20 and 28 s, the assistants gone before it. Outside a tool
- * call (the island's copy, a summary brought up to date apart), the read is waited for as long as it takes.
+/*
+ * The ARS's and the bathing sites' reads without a copy are bounded in a tool call (lectures.ts `bounded`): the call's
+ * deadline plus 3 s, then said not answered and ended after the answer. 22/11/2026: the ARS's site silent, its two tries
+ * (8 then 12 s) waited for, qualite_eau answered in 20 and 28 s, the assistants gone before it.
  */
-const PAST_DEADLINE_MS = 3_000;
-
-export async function bounded<T>(source: string, read: Promise<T>): Promise<T> {
-  const until = callDeadline();
-  if (until == null) return read;
-  const ms = Math.max(0, until - Date.now()) + PAST_DEADLINE_MS;
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const late = new Promise<never>((_, reject) => (timer = setTimeout(() => reject(new UpstreamError(source, `pas de réponse en ${Math.round(ms / 1000)} s, lecture poursuivie après la réponse`)), ms)));
-  try {
-    return await Promise.race([read, late]);
-  } catch (err) {
-    later(read.catch(() => undefined));
-    throw err;
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
 async function robinet(cache: Cache, res: Resolution, now: Date) {
   const commune = res.lieu.commune;
   const insee = INSEE[commune];

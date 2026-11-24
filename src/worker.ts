@@ -36,6 +36,9 @@ import * as candhis from "./providers/candhis.js";
 import * as ffck from "./providers/ffck.js";
 import * as radar from "./providers/radar.js";
 import * as vigilanceCarte from "./providers/vigilance-carte.js";
+import * as mf from "./providers/vigilance.js";
+import { detecter } from "./alertes-etat.js";
+import type { VolcanAnswer } from "./web/data.js";
 import * as vigilanceEpisodes from "./providers/vigilance-episodes.js";
 import * as cmrsCarte from "./providers/cmrs-carte.js";
 import * as cmrsTrace from "./providers/cmrs-trace.js";
@@ -539,6 +542,12 @@ export default {
       // Last, with what is left: the agendas read only here.
       const agendas = kv ? await refreshPlanned(c).catch((err) => (console.error("agendas planifiés impossibles", why(err)), null)) : null;
       await Promise.all(held);
+      // The alerts a push would follow, from the copies just kept (alertes-etat.ts): a log line at each change, nothing
+      // sent. One KV read, one write only when the state changes.
+      if (kv) {
+        const [vig, vol] = await Promise.all([c.peek<mf.Vigilance>(mf.KEY), c.peek<VolcanAnswer>("web:volcan")]).catch(() => [undefined, undefined] as const);
+        await detecter(kv, vig?.value, vol?.value, new Date()).catch((err) => console.error("alertes push (essai) : état impossible", why(err)));
+      }
       const copies = { written: [...first.written, ...after.written], left: [...first.left, ...after.left] };
       return { arome, aromeUsed, stations, copies, agendas };
       // What a read hands over after it (a failed read written down) finishes within the event.

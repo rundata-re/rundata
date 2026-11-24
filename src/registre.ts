@@ -202,6 +202,18 @@ const SCHEDULED: Entry[] = [
   // Météo-France's official map (providers/vigilance-carte.ts), in the vigilance's copy, outside its cost: its state read
   // at each of its builds; a new bulletin kept (its time of issue read in the PDF, 40 ms in Node, the PDF and the state
   // written); a picture by Cloudflare's browser (the call, the picture and the state written), 24 a day at most.
+  // The alerts a push would follow (alertes-etat.ts): their state read at each event, from the copies just kept (no
+  // source read, the copies in memory), and written only when it changes, a few dozen times a year: not counted.
+  {
+    id: "alertes:etat",
+    trigger: "planifiée",
+    what: "alertes à suivre (vigilance orange ou rouge, alerte cyclonique, niveau du volcan) : leur état (KV), une ligne de journal à chaque changement, rien d'envoyé",
+    every: EVENT_MINUTES,
+    offset: 0,
+    run: { subrequests: 1, kvReads: 1, cpuMs: 1 },
+    from: ["src/alertes-etat.ts"],
+    basis: "code",
+  },
   {
     id: "vigilance:carte",
     trigger: "planifiée",

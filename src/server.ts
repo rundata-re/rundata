@@ -92,6 +92,7 @@ import { crues } from "./tools/crues.js";
 import * as irve from "./providers/irve.js";
 import { bornesRecharge } from "./tools/bornes.js";
 import * as baignades from "./providers/baignades.js";
+import * as merHistorique from "./providers/mer-historique.js";
 import * as requin from "./eau/requin.js";
 import * as eauPotable from "./providers/eaupotable.js";
 import { qualiteEau } from "./tools/eau.js";
@@ -138,7 +139,7 @@ import * as peche from "./tools/peche.js";
 import * as cetaces from "./tools/cetaces.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.943";
+export const VERSION = "1.0.944";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -282,7 +283,7 @@ const lieuAvecExemples = z
  * for the registry of producers and licences (producteurs.ts).
  */
 export const toutesLesSources = (inactives = false) =>
-  oncePerId([...weatherProviders().map((p) => p.source), ...(inactives ? [meteofranceStations.SOURCE] : []), ...(inactives || vigilance.enabled() ? [vigilance.SOURCE] : []), viirs.SOURCE, acspo.SOURCE, modis.SOURCE, coraux.SOURCE, houle.SOURCE, houle.SOURCE_MF, seismes.SOURCE, volcanSources.OVPF, volcanSources.PITONLIVE, edf.SOURCE, calendar.SCHOOL, calendar.HOLIDAYS, atmo.SOURCE, airMesures.SOURCE, capteurs.SOURCE, ...(inactives || autorisee(capteurs.SOCIAL_AUTORISATION) ? [capteurs.SOURCE_SOCIAL] : []), annuaire.SOURCE, ...Object.values(terrain.SOURCES), ...(inactives || transit.enabled() ? [transit.SOURCE, gtfsrt.SOURCE] : []), velos.SOURCE, maregraphes.SOURCE, vigicrues.SOURCE, irve.SOURCE, eauPotable.SOURCE, baignades.SOURCE, requin.SOURCE, onf.SOURCE, airesOnf.SOURCE, vigieau.SOURCE, avisEau.SOURCE, arretesVille.SOURCE, dae.SOURCE, ffck.SOURCE, ...Object.values(sportSources.SOURCES).filter((x) => inactives || (autorisee(`sport:${x.id}`) && autorisee(`agenda:${x.id}`))), gdacs.SOURCE, ...(inactives || cmrsTrace.enLigne() ? [cmrsTrace.SOURCE] : []), ...agendaSources.SOURCES_LUES.filter((s) => inactives || connecteursEnLigne() || s !== CONNECTEURS_SOURCE), ...Object.values(actuSources.SOURCES), raaPrefecture.SOURCE, ...Object.values(traceSources.SOURCES), ...(inactives || climat.enabled() ? [climat.SOURCE] : []), ...(inactives || climat.hourlyEnabled() ? [climat.SOURCE_HORAIRE] : []), ...(inactives || arome.enabled() ? [arome.SOURCE] : []), openmeteo.SOURCE, uv.SOURCE, ...(inactives || uvMesure.configured() ? [uvMesure.SOURCE, uvMesure.SOURCE_OZONE] : []), ensemble.SOURCE, ...(inactives || feux.enabled() ? [feux.SOURCE] : []),
+  oncePerId([...weatherProviders().map((p) => p.source), ...(inactives ? [meteofranceStations.SOURCE] : []), ...(inactives || vigilance.enabled() ? [vigilance.SOURCE] : []), viirs.SOURCE, acspo.SOURCE, modis.SOURCE, coraux.SOURCE, houle.SOURCE, houle.SOURCE_MF, seismes.SOURCE, volcanSources.OVPF, volcanSources.PITONLIVE, edf.SOURCE, calendar.SCHOOL, calendar.HOLIDAYS, atmo.SOURCE, airMesures.SOURCE, capteurs.SOURCE, ...(inactives || autorisee(capteurs.SOCIAL_AUTORISATION) ? [capteurs.SOURCE_SOCIAL] : []), annuaire.SOURCE, ...Object.values(terrain.SOURCES), ...(inactives || transit.enabled() ? [transit.SOURCE, gtfsrt.SOURCE] : []), velos.SOURCE, maregraphes.SOURCE, vigicrues.SOURCE, irve.SOURCE, eauPotable.SOURCE, baignades.SOURCE, requin.SOURCE, onf.SOURCE, airesOnf.SOURCE, vigieau.SOURCE, avisEau.SOURCE, arretesVille.SOURCE, dae.SOURCE, ffck.SOURCE, ...Object.values(sportSources.SOURCES).filter((x) => inactives || (autorisee(`sport:${x.id}`) && autorisee(`agenda:${x.id}`))), gdacs.SOURCE, ...(inactives || cmrsTrace.enLigne() ? [cmrsTrace.SOURCE] : []), ...agendaSources.SOURCES_LUES.filter((s) => inactives || connecteursEnLigne() || s !== CONNECTEURS_SOURCE), ...Object.values(actuSources.SOURCES), raaPrefecture.SOURCE, ...Object.values(traceSources.SOURCES), ...(inactives || climat.enabled() ? [climat.SOURCE] : []), ...(inactives || merHistorique.enabled() ? [merHistorique.SOURCE_CANDHIS, merHistorique.SOURCE_CRW] : []), ...(inactives || climat.hourlyEnabled() ? [climat.SOURCE_HORAIRE] : []), ...(inactives || arome.enabled() ? [arome.SOURCE] : []), openmeteo.SOURCE, uv.SOURCE, ...(inactives || uvMesure.configured() ? [uvMesure.SOURCE, uvMesure.SOURCE_OZONE] : []), ensemble.SOURCE, ...(inactives || feux.enabled() ? [feux.SOURCE] : []),
     // The vie pratique's and the power cuts' (annuaire_services_publics, electricite).
     carburantsPrix.SOURCE, radarMf.SOURCE, radarsFixes.SOURCE, accidentsRoute.SOURCE, BDTOPO, PHOTOS, courantMairies.SOURCE, tcoDecheteries.SOURCE, decheteriesAdeme.ADEME, santeSources.FINESS, santeSources.ARS_GARDE, santeSources.SANTE_FR, gardeArs.PDSA, collecteTco.SOURCE, ...Object.values(lieuxEnfants.SOURCES), marchesOsm.OSM, ...Object.values(marchesOsm.MAIRIES), loyersAnil.SOURCE, ecolesAnnuaire.SOURCE, carteScolaire.SOURCE, parcoursupFormations.SOURCE, ipsDepp.SOURCE_IPS, ipsDepp.SOURCE_VA, medecinsAmeli.SOURCE, electionsCommunes.SOURCE, internetArcep.SOURCE, antennesAnfr.SOURCE_MOBILE, antennesAnfr.SOURCE_RADIO, sitesHs.SOURCE, monumentsMerimee.SOURCE, lieuxRemarquables.SOURCE, sentiersMarmailles.SOURCE, canyonsParc.SOURCE, mairiesAnnexesSd.SOURCE, accueilJeuneEnfant.SOURCE,
     // The bike lanes, the bike racks and the speeds of the routes nationales, of /carte only.
@@ -468,11 +469,18 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "« la mer est à combien à Saint-Leu ? », « l'eau est bonne à Boucan ? »\u00a0; houle et vagues PRÉVUES (modèle, 4 jours) : " +
         "« la houle à Saint-Leu ? », « ça surfe à Saint-Pierre demain ? », « la mer est grosse à Saint-Gilles ? ». " +
         "La mesure (avec sa date et sa distance) et la prévision des vagues (hauteur, période, direction) sont dans deux blocs séparés. " +
-        "Aussi le risque de blanchissement des coraux selon NOAA (bloc coraux) et les règles d'approche des baleines, dauphins (bloc cetaces).",
-      inputSchema: { lieu },
+        "Aussi le risque de blanchissement des coraux selon NOAA (bloc coraux) et les règles d'approche des baleines, dauphins (bloc cetaces). " +
+        "Le PASSÉ (bloc historique, avec date ou historique) : houle MESURÉE aux bouées depuis 1996, eau par satellite depuis 2003, records, même jour chaque année.",
+      inputSchema: {
+        lieu,
+        date: z.string().max(TEXTE_MAX).optional()
+          .describe("Jour passé, « 2019-03-15 » : la mer ce jour-là et les autres années."),
+        historique: z.boolean().optional()
+          .describe("true : records et même jour les autres années."),
+      },
       annotations: { ...READ_ONLY },
     },
-    track("temperature_mer", (args) => withVigilance(cache, temperatureMer(cache, args.lieu))),
+    track("temperature_mer", (args) => withVigilance(cache, temperatureMer(cache, args.lieu, undefined, true, { date: args.date, historique: args.historique }))),
   );
 
   if (vigilance.enabled()) {
@@ -996,7 +1004,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "Sur 3 jours ou moins (7 avec detail « heure »), depuis 2000, aussi HEURE PAR HEURE, nuit dernière comprise : à quelle heure il a plu, quand le soleil s'est caché, rafale max et à quelle heure. " +
         "Pour toute question sur le temps qu'il a fait : « il a beaucoup plu ce mois-ci à Saint-Benoît ? », « record de chaleur à Saint-Denis ? », " +
         "« à quelle heure a-t-il plu hier à Cilaos ? », « il a plu combien hier au Tampon ? ». " +
-        "Pour maintenant et aujourd'hui depuis minuit (max, min, pluie), meteo_actuelle\u00a0; pour les jours à venir, prevision_meteo. " +
+        "Pour maintenant et aujourd'hui depuis minuit (max, min, pluie), meteo_actuelle\u00a0; pour les jours à venir, prevision_meteo\u00a0; la mer passée, temperature_mer. " +
         "/ Past MEASURED weather in Réunion Island: yesterday, last week, a month or a year, and records.",
       inputSchema: {
         lieu,

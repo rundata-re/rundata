@@ -9,6 +9,7 @@ import "./net.js";
 import { handle } from "../app.js";
 import { Cache } from "../cache.js";
 import * as climat from "../providers/climat.js";
+import * as merHistorique from "../providers/mer-historique.js";
 import * as meteofrance from "../providers/meteofrance.js";
 import { localClimat } from "./climat-local.js";
 import * as transit from "../providers/transit.js";
@@ -26,6 +27,8 @@ meteofrance.configure({
 // The past weather (historique_meteo) from a local copy of the archives: scripts/climat-local.ts.
 if (process.env.CLIMAT_SQLITE) {
   climat.configure(localClimat(process.env.CLIMAT_SQLITE), process.env.CLIMAT_H_SQLITE ? localClimat(process.env.CLIMAT_H_SQLITE) : undefined);
+  // The sea's history, in the same file when its tables were loaded there (scripts/mer.sql and a mer_jour.sql).
+  merHistorique.configure(localClimat(process.env.CLIMAT_SQLITE));
 }
 
 // The bus timetables from the rows of a build (scripts/build-transit.py writes dist/transit-rows.json).

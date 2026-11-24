@@ -92,6 +92,9 @@ export const FICHES: Record<string, Fiche> = {
   acspo: { famille: "domaine_public", producteurs: ["NOAA"] },
   viirs: { famille: "domaine_public", producteurs: ["NOAA"] },
   noaa_crw_dhw_5km: { famille: "domaine_public", producteurs: ["NOAA"] },
+  // The sea's history (/mer/historique): the same NOAA product read day by day since 2003, and the Candhis buoys' archive.
+  noaa_crw_coraltemp_archive: { famille: "domaine_public", producteurs: ["NOAA"] },
+  candhis_archive: { famille: "licence_ouverte", producteurs: ["Cerema"] },
   modis: { famille: "domaine_public", producteurs: ["NASA"] },
   nasa_firms: { famille: "domaine_public", producteurs: ["NASA"] },
   refmar: { famille: "licence_ouverte", producteurs: ["SHOM"] },

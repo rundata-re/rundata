@@ -410,8 +410,8 @@ describe("agenda", () => {
       vi.spyOn(console, "error").mockImplementation(() => {});
       await refreshPlanned(at(), NOW);
       expect(titles(await said())).toContain(AVC);
-      // Its site down: served for an hour and fifty minutes after its last reading, then no longer, said with that
-      // reading, never kept for 48 hours.
+      // Its site down: served for an hour and fifty minutes after its last reading, then no longer, said read without
+      // success at its try that failed after it (as sites_sans_reponse), never kept for 48 hours.
       site = () => new Response("", { status: 503 });
       t += 65 * 60_000;
       expect((await refreshPlanned(at(), new Date(t))).gardes).toEqual(["cilaos"]);
@@ -420,7 +420,7 @@ describe("agenda", () => {
       t += 10 * 60_000;
       const late = await said();
       expect(titles(late)).not.toContain(AVC);
-      expect(late.non_lus).toContain(`${CILAOS.nom} : dernière lecture ${leLocal(toLocal(NOW.toISOString()))}`);
+      expect(late.non_lus).toContain(`${CILAOS.nom} : dernière lecture sans succès (${leLocal(toLocal(new Date(NOW.getTime() + 65 * 60_000).toISOString()))})`);
       // A page that is not its list of articles (a maintenance page) is no reading: the copy kept.
       site = () => new Response("<html><body>Site en maintenance</body></html>");
       t += 10 * 60_000;

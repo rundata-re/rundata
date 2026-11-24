@@ -210,7 +210,10 @@ export const MAX_BYTES: Record<string, number> = {
   // 7 8xx on 20 and 21/11/2026; 7 249 on 23/11 at 08:14, about 6 715 once a place's `couverture` says the networks only
   // (713 bytes down to 239) and the rain's `convention` is shorter (153 to 93): the cap kept, now with room again.
   "meteo_actuelle (Saint-Denis)": 7_500, // 5 822
-  "prevision_meteo (Saint-Denis)": 13_000, // 11 410
+  // 13,7 Ko on 24/11/2026 at 17:32 with the UV index measured at Moufia (1.0.913: its block 918 bytes, its source, its
+  // sentence in `resume`, and a 535-byte copy of its error and citation in `avertissements`, now gone): about 13,2 Ko at
+  // that hour, 12,4 Ko at 22:00 (the day's parts and the night sky follow the hour). That plus about a twentieth.
+  "prevision_meteo (Saint-Denis)": 14_000, // 11 410
   // 14 827, then 10 671 with the whales' rules on /mer only. 12 3xx on 24/11/2026 at 17:32 with the last 30 days
   // (sur_30_jours, 821, the cap not raised with it); about 12 050 once its nature and NOAA's reference are said in
   // fewer words (REFERENCE_OUTIL): the size of the day plus a tenth, rounded up to 500.

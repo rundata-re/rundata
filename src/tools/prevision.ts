@@ -726,7 +726,8 @@ export async function previsionMeteo(cache: Cache, lieu: string | undefined, qua
   const uvShown = jours.some((j) => j.indice_uv_max) ? u : null;
   const ensShown = jours.some((j) => j.confiance) ? ens : null;
   avertissements.push(...uvWarnings(uvShown), ...ensWarnings(ensShown));
-  if (uvMesure_) avertissements.push(`Indice UV mesuré : ${uvMesure_.incertitude} Citer : ${uvMesure_.citation}`);
+  // The measured UV index's error and citation are said once, in its own block (`incertitude`, `citation`) and in
+  // `sources`: their copy here as a warning (535 bytes) put the answer past the daily check's cap (13,7 Ko on 24/11).
   return text({
     nature: "prevision",
     lieu: placeBlock(lieu, r),

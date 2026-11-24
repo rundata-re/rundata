@@ -176,7 +176,9 @@ describe("prevision_meteo and the place's page", () => {
     const sd = body(await previsionMeteo(await cache(), "Saint-Denis", undefined, NOW));
     expect(sd.indice_uv_mesure.resume).toMatch(/^Indice UV MESURÉ au Moufia \(Saint-Denis\), à \d+ km : 13 \(extrême\) à 12:17/);
     expect(sd.resume).toContain(sd.indice_uv_mesure.resume);
-    expect(sd.avertissements.join(" ")).toContain(uvm.INCERTITUDE);
+    // The error possible said once, in the block, never copied into the warnings (the answer's size).
+    expect(sd.indice_uv_mesure.incertitude).toBe(uvm.INCERTITUDE);
+    expect(sd.avertissements.join(" ")).not.toContain(uvm.INCERTITUDE);
     expect(sd.sources.map((s: { source: string }) => s.source)).toContain(uvm.SOURCE.nom);
     const html = placePage("https://rundata.re", pageOf("saint-denis")!, { value: { prevision: sd } as PlaceData, fetchedAt: NOW, stale: false }, NOW);
     expect(html).toContain(`<h2 id="h-uv">L'indice UV mesuré au Moufia</h2><span class="badge m">Mesure</span>`);

@@ -37,6 +37,9 @@ import kotlin.math.roundToLong
 
 /** Les mots de l'écran, repris du site. */
 object Mots {
+    /** « À 09:12, rundata.re ne répond pas » : l'échec avec son heure, quand elle est connue. */
+    fun echec(message: String, a: String?): String = a?.let { "À ${Quand.heure(it)}, $message" } ?: message
+
     const val TITRE = "rundata.re"
     const val SOUS_TITRE = "La Réunion en direct, d'après les données publiques."
     const val CHOISIR = "Choisir une commune"
@@ -87,7 +90,7 @@ fun EcranPrincipal(etat: Etat, choisir: (Commune) -> Unit, changer: () -> Unit, 
             is Etat.Choix -> ListeDesCommunes(etat.actuelle, choisir)
             is Etat.Chargement -> Carte(etat.commune, etat.precedente, Mots.CHARGEMENT, null, changer, ouvrir)
             is Etat.Prete -> Carte(etat.journee.commune, etat.journee, null, null, changer, ouvrir)
-            is Etat.Erreur -> Carte(etat.commune, etat.precedente, null, etat.message, changer, ouvrir, rafraichir)
+            is Etat.Erreur -> Carte(etat.commune, etat.precedente, null, Mots.echec(etat.message, etat.a), changer, ouvrir, rafraichir)
         }
     }
 }

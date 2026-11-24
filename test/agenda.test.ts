@@ -1602,16 +1602,20 @@ describe("agenda", () => {
     const c = new Cache(new MemoryStore(), () => t);
     await gather(c, NOW);
     t += 7 * 3600_000;
-    // The Kabardock answers, but slowly: past the short wait, within the long one.
+    // The Kabardock answers, but slowly: past the short wait, within the long one. It answers once the agenda with a copy
+    // has been served: with a fixed 300 ms, a loaded machine reached the short wait's end after the answer (24/11/2026,
+    // two cores kept busy beside the suite), and the copy was the new one.
+    let served!: () => void;
+    const keptServed = new Promise<void>((ok) => (served = ok));
     vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
-      if (url.includes("kabardock")) await new Promise((r) => setTimeout(r, 300));
+      if (url.includes("kabardock")) await keptServed;
       const f = file(url, typeof init?.body === "string" ? init.body : undefined);
       return f ? new Response(bytes(f)) : new Response("", { status: 503 });
     });
     const fresh = new Cache(new MemoryStore(), () => t);
     const started = Date.now();
-    // A long wait far above the Kabardock's 300 ms, so that a loaded machine never reaches it by its own slowness.
-    const [kept, none] = await Promise.all([gather(c, new Date(t), 10_000, 50), gather(fresh, new Date(t), 10_000, 50)]);
+    // A long wait of 10 s, so that a loaded machine never reaches it by its own slowness.
+    const [kept, none] = await Promise.all([gather(c, new Date(t), 10_000, 50).finally(served), gather(fresh, new Date(t), 10_000, 50)]);
     const k = kept.find((g) => g.agenda.id === "kabardock")?.value;
     expect(k?.stale).toBe(true);
     expect(k?.fetchedAt.getTime()).toBe(NOW.getTime());

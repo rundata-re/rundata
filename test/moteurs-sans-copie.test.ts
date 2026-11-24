@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { snapshot } from "../src/web/data.js";
 import { HOME_READER_WAIT_MS, ownWaits, withoutCopy } from "../src/web/site.js";
@@ -24,8 +24,16 @@ describe("a search engine's fetcher and a page's own copy this data center has n
     if (having) await snapshot(c, "web:lieu:maido", async () => "copie", () => {}, new Date(t));
     t = NOW.getTime();
     const [waitMs, reader] = ownWaits(asking(ua));
-    const got = await snapshot(c, "web:lieu:maido", slow(HOME_READER_WAIT_MS + 300), () => {}, NOW, waitMs ?? 300, reader, undefined, undefined, withoutCopy(asking(ua)));
-    return got?.value ?? null;
+    // The waits and the build on a fake clock, moved on to the build's end: what the page had then, rather than 1.1 s of
+    // the machine's for each view.
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      const page = snapshot(c, "web:lieu:maido", slow(HOME_READER_WAIT_MS + 300), () => {}, NOW, waitMs ?? 300, reader, undefined, undefined, withoutCopy(asking(ua)));
+      await vi.advanceTimersByTimeAsync(HOME_READER_WAIT_MS + 300);
+      return (await page)?.value ?? null;
+    } finally {
+      vi.useRealTimers();
+    }
   };
 
   it("waits for the build until a search engine's long wait, not a reader's short one", async () => {

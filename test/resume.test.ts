@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { coastwatch } from "./sst.js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { costOf, count, counted, measured, PAGE_BUDGET } from "../src/budget.js";
+import { costOf, count, counted, measured, oublierCouts, PAGE_BUDGET } from "../src/budget.js";
 import { Cache, type CacheEntry, MemoryStore, stampOf, TieredStore } from "../src/cache.js";
 import { configure } from "../src/providers/mf-auth.js";
 import { withLectures } from "../src/lectures.js";
@@ -766,7 +766,9 @@ describe("reading the copies", () => {
     // A build dearer than the cap still goes, first and alone: none waits for ever.
     const dear = { key: "web:trafic", age: Infinity, outdated: true, cost: 75, build: async () => ({}) };
     expect(refresh(cache, [dear, { ...dear, key: "web:volcan", cost: 5 }], () => {}, 25)).toEqual(["web:trafic"]);
-    // What this isolate measured (here, nothing) does not hide what the build took where its copy was built.
+    // What this isolate measured (here, nothing) does not hide what the build took where its copy was built. Nothing:
+    // what another file's pages took here forgotten first.
+    oublierCouts();
     await counted(PAGE_BUDGET, () => measured("web:trafic", async () => ({})));
     expect(costOf("web:trafic")).toBe(0);
     expect(refresh(cache, [{ ...dear, cost: 50 }, { ...dear, key: "web:volcan", cost: 11 }], () => {}, 25)).toEqual(["web:trafic"]);

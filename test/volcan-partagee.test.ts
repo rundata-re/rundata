@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { counted, SCHEDULED_BUDGET } from "../src/budget.js";
 import { Cache, MemoryStore, TieredStore } from "../src/cache.js";
 import type { Info } from "../src/providers/actualites.js";
@@ -11,8 +11,9 @@ import { volcanLive, volcanPage } from "../src/web/domains.js";
 import { esc } from "../src/web/map.js";
 import { type Kv, oublierEcritures, SHARED, SharedFallback, warmShared } from "../src/web/partagees.js";
 
-// What an earlier file wrote to KV, kept by partagees.ts as an isolate keeps it: forgotten, as in an isolate of this file's own.
-beforeAll(oublierEcritures);
+// What an earlier test or file wrote to KV, kept by partagees.ts as an isolate keeps it: forgotten before each test, which
+// has its own KV.
+beforeEach(oublierEcritures);
 
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url), "utf8");
 // 26/10/2026 at 19:26, heure de La Réunion.

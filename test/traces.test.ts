@@ -43,7 +43,9 @@ describe("traces GPS", () => {
     weekendFin = false;
     gone = undefined;
     vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
-      asked.push(url);
+      // The ONF's and the IGN's requests only: work an earlier file left running in this process asks its own sources
+      // meanwhile, such as the FFVL's or Météo-France's (24/11/2026, a loaded machine).
+      if (url.includes("geopf.fr") || url.includes("/query")) asked.push(url);
       if (down?.test(url)) return new Response("", { status: 503 });
       if (url.includes("geopf.fr")) {
         expect(JSON.parse(String(init?.body)).resource).toBe("ign_rge_alti_wld");

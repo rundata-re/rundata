@@ -196,27 +196,38 @@ describe("a page's own copy for a reader (web/site.ts `ownWaits`)", () => {
     expect(ownWaits(asking(PERSON))).toEqual([undefined, false]);
   });
 
-  /** A page's own copy `ageMin` old (none when null), its build taking BUILD_MS, read by `ua`. */
+  /**
+   * A page's own copy `ageMin` old (none when null), its build taking BUILD_MS, read by `ua`; `early`: answered before
+   * the build was done. The waits on a fake clock, rather than BUILD_MS of the machine's for each read.
+   */
   async function own(ua: string, ageMin: number | null) {
-    let t = NOW.getTime() - (ageMin ?? 0) * MIN;
-    const c = new Cache(new MemoryStore(), () => t);
-    let n = 0;
-    if (ageMin != null) await snapshot(c, "web:lieu:piton-de-la-fournaise", async () => ++n, () => {}, new Date(t));
-    t = NOW.getTime();
-    const slow = () => new Promise<number>((resolve) => setTimeout(() => resolve(++n), BUILD_MS));
-    const behind: Promise<unknown>[] = [];
-    const start = Date.now();
-    const got = await snapshot(c, "web:lieu:piton-de-la-fournaise", slow, (p) => behind.push(p), NOW, ...ownWaits(asking(ua)));
-    const waited = Date.now() - start;
-    await Promise.all(behind);
-    return { value: got?.value ?? null, waited, built: n };
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      let t = NOW.getTime() - (ageMin ?? 0) * MIN;
+      const c = new Cache(new MemoryStore(), () => t);
+      let n = 0;
+      if (ageMin != null) await snapshot(c, "web:lieu:piton-de-la-fournaise", async () => ++n, () => {}, new Date(t));
+      t = NOW.getTime();
+      const slow = () => new Promise<number>((resolve) => setTimeout(() => resolve(++n), BUILD_MS));
+      const behind: Promise<unknown>[] = [];
+      let answered = false;
+      const page = snapshot(c, "web:lieu:piton-de-la-fournaise", slow, (p) => behind.push(p), NOW, ...ownWaits(asking(ua))).then((r) => ((answered = true), r));
+      await vi.advanceTimersByTimeAsync(BUILD_MS - 1);
+      const early = answered;
+      await vi.advanceTimersByTimeAsync(1);
+      const got = await page;
+      await Promise.all(behind);
+      return { value: got?.value ?? null, early, built: n };
+    } finally {
+      vi.useRealTimers();
+    }
   }
 
   it("gives it the copy as it is past HOME_READER_WAIT_MS, 12 minutes or 2 hours old, its refresh going on after the answer", async () => {
     for (const age of [12, 120]) {
       const got = await own(OAI, age);
       expect(got.value, `${age} min`).toBe(1);
-      expect(got.waited).toBeLessThan(BUILD_MS);
+      expect(got.early).toBe(true);
       expect(got.built).toBe(2);
     }
   });
@@ -224,12 +235,12 @@ describe("a page's own copy for a reader (web/site.ts `ownWaits`)", () => {
   it("sends the page without its live block when there is no copy at all, as the home page does", async () => {
     const got = await own(CHATGPT, null);
     expect(got.value).toBeNull();
-    expect(got.waited).toBeLessThan(BUILD_MS);
+    expect(got.early).toBe(true);
     expect(got.built).toBe(1);
   });
 
   it("still makes the daily check of the sources wait for the refresh", async () => {
-    expect(await own("rundata-check/1.0", 12)).toMatchObject({ value: 2, built: 2 });
+    expect(await own("rundata-check/1.0", 12)).toMatchObject({ value: 2, early: false, built: 2 });
   });
 
   it("says the time of its measure on the page, and that it is not the weather of now past 90 minutes", () => {
@@ -362,20 +373,31 @@ describe("a fetcher that answers someone now and a copy refused for its age, thr
     t = now.getTime();
     const spies = (["log", "warn", "error"] as const).map((k) => vi.spyOn(console, k).mockImplementation(() => {}));
     const request = new Request("https://rundata.re/meteo/cilaos", { headers: { accept: "text/html", "user-agent": CHATGPT } });
-    const start = Date.now();
-    // The refresh is left behind: with sources that never answer, it never ends.
-    const r = (await site(request, c, () => {}, now))!;
-    const waited = Date.now() - start;
-    const lines = spies[0].mock.calls.map((x) => String(x[0]));
-    for (const s of spies) s.mockRestore();
-    return { status: r.status, retry: r.headers.get("retry-after"), html: await r.text(), lines, waited };
+    // The refresh is left behind: with sources that never answer, it never ends. The wait on a fake clock, rather than
+    // 1.3 s of the machine's measured against a bound: moved on by LIVE_READER_WAIT_MS, then left there. The page must
+    // come without more of it (`inTime`); what follows the wait (the page's rendering, its scripts' hashes) takes the
+    // machine's own time, a real 10 s at most.
+    const real = setTimeout;
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      const page = site(request, c, () => {}, now);
+      await vi.advanceTimersByTimeAsync(LIVE_READER_WAIT_MS);
+      const r = await Promise.race([page, new Promise<undefined>((ok) => real(() => ok(undefined), 10_000))]);
+      const inTime = r !== undefined;
+      if (!r) return { status: 0, retry: null, html: "", lines: [], inTime };
+      const lines = spies[0].mock.calls.map((x) => String(x[0]));
+      return { status: r.status, retry: r.headers.get("retry-after"), html: await r.text(), lines, inTime };
+    } finally {
+      vi.useRealTimers();
+      for (const s of spies) s.mockRestore();
+    }
   }
 
   it("gives it the page, 200, saying its measures load, when the sources are slower than its wait: no 503", async () => {
     const got = await ask(() => new Promise<Response>(() => {}));
     expect(got.status).toBe(200);
     expect(got.retry).toBeNull();
-    expect(got.waited).toBeLessThan(LIVE_READER_WAIT_MS + 500);
+    expect(got.inTime).toBe(true);
     expect(got.html).toContain("Les mesures se chargent");
     expect(got.html).not.toMatch(/17,3[\s\u202f]°C/);
     expect(got.lines).toContain(`copie refusée pour son âge : ${KEY}, âge 300 min`);

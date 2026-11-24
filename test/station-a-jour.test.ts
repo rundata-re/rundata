@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
-import { snapshot } from "../src/web/data.js";
+import { snapshot, WAIT_MS } from "../src/web/data.js";
 import { site, STATION_STALE_MINUTES, stationWaits } from "../src/web/site.js";
 import type { StationData } from "../src/web/station.js";
 
@@ -63,12 +63,21 @@ describe("a station's page for a person, its copy 52 minutes old, through site()
       String(url instanceof Request ? url.url : url).includes("meteofrance") ? new Promise(() => {}) : Promise.reject(new Error("hors ligne")),
     );
     const spies = (["log", "warn", "error"] as const).map((k) => vi.spyOn(console, k).mockImplementation(() => {}));
-    const start = Date.now();
-    const r = (await site(new Request("https://rundata.re/meteo/station/97422445", { headers: { accept: "text/html", "user-agent": PERSON } }), c, () => {}, NOW))!;
-    const took = Date.now() - start;
-    spies.forEach((s) => s.mockRestore());
-    expect(r.status).toBe(200);
-    expect(await r.text()).toContain("06:06");
-    expect(took).toBeGreaterThan(3000);
-  }, 30_000);
+    // The page's wait (WAIT_MS) on a fake clock, rather than 4 s of the machine's.
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      let answered = false;
+      const page = site(new Request("https://rundata.re/meteo/station/97422445", { headers: { accept: "text/html", "user-agent": PERSON } }), c, () => {}, NOW).then((r) => ((answered = true), r));
+      // Still waiting 3 s on, then the copy as it is once the wait is over.
+      await vi.advanceTimersByTimeAsync(3000);
+      expect(answered).toBe(false);
+      await vi.advanceTimersByTimeAsync(WAIT_MS);
+      const r = (await page)!;
+      expect(r.status).toBe(200);
+      expect(await r.text()).toContain("06:06");
+    } finally {
+      vi.useRealTimers();
+      spies.forEach((s) => s.mockRestore());
+    }
+  });
 });

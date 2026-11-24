@@ -64,6 +64,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   configure({});
@@ -75,9 +76,18 @@ async function view(edge: MemoryStore, kv: Kv) {
   vi.spyOn(console, "warn").mockImplementation(() => {});
   const pending: Promise<unknown>[] = [];
   const background = (p: Promise<unknown>) => void pending.push(p);
-  const [v, a] = await Promise.all([vigilanceNow(cache, background, BANNER_WAIT_MS, NOW), alerte(cache, background, NOW)]);
+  // Météo-France late: the pages' wait (BANNER_WAIT_MS) and its answer after it on a fake clock, rather than 1.8 s of
+  // the machine's. On time, the real clock: its answer is read and unzipped within the wait, which a fake one would end
+  // first.
+  const late = delayMs > BANNER_WAIT_MS;
+  if (late) vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+  const both = Promise.all([vigilanceNow(cache, background, BANNER_WAIT_MS, NOW), alerte(cache, background, NOW)]);
+  if (late) await vi.advanceTimersByTimeAsync(BANNER_WAIT_MS);
+  const [v, a] = await both;
   const asked = zips;
+  if (late) await vi.advanceTimersByTimeAsync(delayMs - BANNER_WAIT_MS);
   await Promise.all(pending);
+  vi.useRealTimers();
   const home = homePage(ORIGIN, { meteo: null, vigilance: v }, NOW, a);
   return { v, a, asked, tile: vigilanceTile(home), banner: banner(home) };
 }

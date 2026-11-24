@@ -134,9 +134,13 @@ describe("a run of the scheduled event", () => {
   it("costs a read of KV, a token and the image when cold; the image again then, but never a second token", async () => {
     meteofrance.configure({ applicationId: "test" });
     const asked: string[] = [];
+    // Only this run's requests: a fetch from the work an earlier file left going (its files share the process) is not
+    // one, and is refused as the network is in the tests.
     vi.stubGlobal("fetch", async (url: string) => {
-      asked.push(String(url).includes("/token") ? "jeton" : "radar");
-      return String(url).includes("/token") ? Response.json({ access_token: "t", expires_in: 3600 }) : new Response(h5);
+      const u = String(url);
+      if (u.includes("/token")) return asked.push("jeton"), Response.json({ access_token: "t", expires_in: 3600 });
+      if (u.includes("/DPRadar/")) return asked.push("radar"), new Response(h5);
+      throw new TypeError(`network refused in tests: ${u}`);
     });
     let kept: Historique | null = null;
     const store = { get: async () => kept, put: async (h: Historique) => void (kept = h) };

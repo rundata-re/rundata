@@ -28,7 +28,7 @@ describe("a test file that changes its modules", () => {
       .filter((f) => f.endsWith(".test.ts"))
       .filter((f) => {
         const s = readFileSync(new URL(f, dir), "utf8");
-        return /\bwarmShared\(/.test(s) && !/^beforeAll\(oublierEcritures\);$/m.test(s) && !/\.modulesNeufs\(\)\);$/m.test(s);
+        return /\bwarmShared\(/.test(s) && !/^before(All|Each)\(oublierEcritures\);$/m.test(s) && !/\.modulesNeufs\(\)\);$/m.test(s);
       });
     expect(sans).toEqual([]);
   });

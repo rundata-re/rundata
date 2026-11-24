@@ -162,6 +162,8 @@ describe("the home page's island", () => {
     expect(air(island(24, 2))).toMatchObject({ label: "moyen", place: "moyen (ozone) sur toute l&#39;île", value: "", track: false });
   });
 
+  // Its two vi.resetModules() and re-imports of accueil-carte pass the default 5 s on a loaded machine (24/11/2026, two
+  // cores kept busy beside the suite), as the test below does.
   it("keeps its drawing for copies that place the same things, and writes the page as a new drawing would", async () => {
     const at = (velos: number, mer: number): HomeLive => ({
       ...live,
@@ -185,7 +187,7 @@ describe("the home page's island", () => {
     // 130 bikes: a wider label, a new drawing.
     M.accueilCarte(at(130, 26.2), NOW);
     expect(M.dessinsGardes()).toBe(4);
-  });
+  }, 30_000);
 
   // Its vi.resetModules() and re-imports of cache, accueil-dessins and accueil-carte pass the default 5 s on a loaded machine.
   it("reads its drawings from KV where its isolate has none, and draws a page's map only once for every isolate", async () => {
@@ -230,6 +232,7 @@ describe("the home page's island", () => {
     expect(fresh.M.dessinsGardes()).toBe(0);
   }, 30_000);
 
+  // Its vi.resetModules() and re-imports too.
   it("draws its map itself when KV fails, to read or to write, and never fails the page", async () => {
     vi.resetModules();
     const { Cache, MemoryStore } = await import("../src/cache.js");
@@ -242,14 +245,17 @@ describe("the home page's island", () => {
     try {
       expect(await A.dessinsAccueil(new Cache(new MemoryStore(), Date.now, true, down, "1.0.540"), live, NOW, (p) => void after.push(p))).toBe("dessines");
       await Promise.all(after);
-      expect(errors.mock.calls.map((c) => c[0])).toEqual(["carte de l'accueil : dessins non lus en KV, dessinés ici", "carte de l'accueil : dessins non écrits en KV"]);
+      // Its own lines only: work an earlier file left running in this process logs its own failures meanwhile, such
+      // as « source ffvl indisponible » (24/11/2026, a shuffled suite).
+      const own = errors.mock.calls.map((c) => String(c[0])).filter((l) => l.startsWith("carte de l'accueil"));
+      expect(own).toEqual(["carte de l'accueil : dessins non lus en KV, dessinés ici", "carte de l'accueil : dessins non écrits en KV"]);
       expect(M.dessinsGardes()).toBe(2);
       expect(M.accueilCarte(live, NOW)).toBe(accueilCarte(live, NOW));
     } finally {
       errors.mockRestore();
       logs.mockRestore();
     }
-  });
+  }, 30_000);
 
   it("gives Vélos its track at 390 px with the bikes of three communes and the sea's six beaches, as online", () => {
     // Altervélo's stations where they are (station_information.json, read 12/11), the sea of the home page's six beaches.

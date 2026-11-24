@@ -235,6 +235,12 @@ export function costOf(key: string): number | undefined {
   return costs.get(key);
 }
 
+/**
+ * For the tests only: this isolate's memory of what the builds took, as a new isolate has it. Their files share their
+ * modules (vitest.config.ts): a test that reads `costOf` starts from it, as it would in an isolate of its own.
+ */
+export const oublierCouts = () => costs.clear();
+
 /** Subrequests the invocation has made so far; none outside a counted invocation. */
 export function spent(): number {
   return current.getStore()?.used ?? 0;

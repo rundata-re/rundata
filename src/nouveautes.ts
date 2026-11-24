@@ -59,6 +59,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded by marketing): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-24T12:32:00+04:00", texte: "Outils IA, qualité de l'eau\u00a0: une source lente n'est plus attendue au-delà de 8 s, la dernière lecture datée ou la partie manquante dite" },
   { date: "2026-11-24T11:43:00+04:00", texte: "Météo\u00a0: en accéléré, le rejeu de la pluie sur 7 jours passe désormais heure par heure sur les téléphones récents." },
   { date: "2026-11-24T11:39:00+04:00", texte: "Avec les enfants\u00a0: la liste des lieux mise à jour, avec de nouvelles aires de jeux au Tampon, à Saint-André et à Sainte-Marie." },
   { date: "2026-11-24T10:42:00+04:00", texte: "Électricité\u00a0: les centrales inscrites deux fois au registre d'EDF ne comptent plus qu'une fois (La Possession, Sainte-Rose)." },

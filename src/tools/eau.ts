@@ -10,7 +10,9 @@ import { bathRead, keptTap, silentBath, silentTap, storedCopy, tapRead, tooOld, 
 import * as potable from "../providers/eaupotable.js";
 import * as notices from "../providers/avis-eau.js";
 import { doNotDrink, drySaid, noticeRow } from "./coupures.js";
-import { why } from "../types.js";
+import { UpstreamError, why } from "../types.js";
+import { later } from "../budget.js";
+import { callDeadline } from "../lectures.js";
 import { a, credits, enumeration, notFound, placeBlock, text } from "./format.js";
 
 export type Sujet = "robinet" | "baignade";
@@ -92,6 +94,8 @@ export function tapSentence(row: ReturnType<typeof networkRow>, where: string): 
   return `Eau du robinet, réseau ${row.reseau} ${where} : ${last}\u00a0; ${bad}.`;
 }
 
+/** The ARS's site did not answer in the call's time, and no copy of the site: said, with what to do instead. */
+const BAIGNADE_MUETTE = "Le site de l'ARS, qui publie les résultats des plages et bassins, ne répond pas pour le moment\u00a0: réessayer plus tard, ou regarder l'affichage sur la plage.";
 const ANALYSES_MUETTES = "Les analyses du contrôle sanitaire de l'ARS (Hub'Eau) ne répondent pas pour le moment.";
 
 /**
@@ -146,11 +150,36 @@ function keptRows(c: Ile["communes"][number], res: Resolution) {
   };
 }
 
+/**
+ * In a tool call, a source read without a copy is waited for this long past the call's deadline for copies
+ * (lectures.ts, 5 s): 8 s in all. Past it, the read is said not answered (the island's copy with its time, or the part
+ * said missing) and ends after the answer, stored for the next question. 22/11/2026: the ARS's site silent, its two
+ * tries (8 then 12 s) waited for, qualite_eau answered in 20 and 28 s, the assistants gone before it. Outside a tool
+ * call (the island's copy, a summary brought up to date apart), the read is waited for as long as it takes.
+ */
+const PAST_DEADLINE_MS = 3_000;
+
+export async function bounded<T>(source: string, read: Promise<T>): Promise<T> {
+  const until = callDeadline();
+  if (until == null) return read;
+  const ms = Math.max(0, until - Date.now()) + PAST_DEADLINE_MS;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const late = new Promise<never>((_, reject) => (timer = setTimeout(() => reject(new UpstreamError(source, `pas de réponse en ${Math.round(ms / 1000)} s, lecture poursuivie après la réponse`)), ms)));
+  try {
+    return await Promise.race([read, late]);
+  } catch (err) {
+    later(read.catch(() => undefined));
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function robinet(cache: Cache, res: Resolution, now: Date) {
   const commune = res.lieu.commune;
   const insee = INSEE[commune];
   if (!insee) return { resume: "Commune introuvable pour l'eau du robinet." };
-  const [analyses, avis] = await Promise.all([potable.commune(cache, insee, now).catch((err: unknown) => err as Error), notice(cache, commune, now)]);
+  const [analyses, avis] = await Promise.all([bounded(potable.SOURCE.id, potable.commune(cache, insee, now)).catch((err: unknown) => err as Error), notice(cache, commune, now)]);
   const warn = avis ? { resume_avis: avis.said, avis_ne_pas_boire: avis.row } : {};
   if (analyses instanceof Error) {
     // Hub'Eau silent for more than 7 days, by the island's copy: said since when, as on /eau (23/11/2026).
@@ -296,7 +325,7 @@ export function siteNamed(lieu: string): baignades.Site | null {
 async function siteRows(cache: Cache, sites: baignades.Site[], now: Date, from?: { lon: number; lat: number }) {
   return Promise.all(sites.map(async (s) => {
     try {
-      return { row: siteRow((await baignades.results(cache, s, now)).value, now, from), copie: undefined };
+      return { row: siteRow((await bounded(baignades.SOURCE.id, baignades.results(cache, s, now))).value, now, from), copie: undefined };
     } catch (err) {
       const copy = await storedCopy(cache, now);
       // Read more than 7 days ago: not shown, the ARS's site said silent since then, as on /eau (23/11/2026).
@@ -427,6 +456,12 @@ export async function qualiteEau(cache: Cache, lieu: string | undefined, sujet?:
   for (const k of ["eau_du_robinet", "baignade"]) {
     const p = parts[k] as { resume?: string } | undefined;
     if (p?.resume) summary.push(p.resume);
+  }
+  // A part that did not answer, the other one did: said in the resume, not only in `indisponible` (24/11/2026: the
+  // answer without the bathing sites said nothing of them).
+  if (summary.length) {
+    if (failed.includes("robinet") && !parts.eau_du_robinet) summary.push(ANALYSES_MUETTES);
+    if (failed.includes("baignade") && !parts.baignade) summary.push(BAIGNADE_MUETTE);
   }
   // Both parts: their sentences are the answer's resume, said there once, not again in each part (Saint-Paul's were
   // 2.3 KB twice).

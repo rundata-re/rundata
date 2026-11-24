@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import bundle from "../src/dae/dae.json" with { type: "json" };
+import enfantsListe from "../src/vie/enfants.json" with { type: "json" };
 import { COMMON } from "../src/tools/eau.js";
 import { communePage } from "../src/web/commune.js";
 import { coupuresCommunePage } from "../src/web/coupures.js";
@@ -17,6 +18,8 @@ const ORIGIN = "https://rundata.re";
 const NOW = new Date("2026-10-24T06:00:00Z");
 // The day the bundled list of defibrillators was rebuilt (scripts/build-dae.py): « 05/11 ».
 const DAE_LUE = bundle.construit.slice(5).split("-").reverse().join("/");
+// The day the bundled list of the places for children was rebuilt (scripts/build-enfants.py).
+const ENFANTS_LUE = enfantsListe.construit.slice(5).split("-").reverse().join("/");
 const cached = <T>(value: T) => ({ value, fetchedAt: NOW, stale: false });
 const answer = (tool: string) => JSON.parse(readFileSync(new URL(`./fixtures/pages/${tool}.json`, import.meta.url), "utf8"));
 /** The figure holding the page's island map. */
@@ -46,7 +49,7 @@ describe("the charter of the maps", () => {
     const enfants = figure(enfantsPage(ORIGIN, null, NOW));
     expect(enfants.match(/<circle class="sh"[^>]*fill="([^"]+)"/g)?.every((c) => c.endsWith('fill="#14202b"'))).toBe(true);
     expect(enfants).not.toContain("#e8590c");
-    expect(enfants).toContain('<span class="mls">Lieux d&#39;OpenStreetMap, Data ES et Basilic, liste lue le 25/10.</span>');
+    expect(enfants).toContain(`<span class="mls">Lieux d&#39;OpenStreetMap, Data ES et Basilic, liste lue le ${ENFANTS_LUE}.</span>`);
   });
 
   it("draws each mark of the legend as on the map, never a coloured word, then what was measured and when", () => {

@@ -294,7 +294,7 @@ describe("a commune's children's page", () => {
 
   it("puts each of the commune's places on its map, a dot leading to its row, each id once", () => {
     const n = enfants.inCommune("Saint-Denis").length;
-    expect(n).toBe(118);
+    expect(n).toBe(119);
     const dots = [...map.matchAll(/<a class="sp" href="#lieu-(\d+)" data-i="(\d+)" data-t="([a-z_]+)" data-pn="[^"]+"[^>]*><title>/g)];
     expect(dots).toHaveLength(n);
     // Each place is a row of the list below: its dot out of the Tab order.

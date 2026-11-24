@@ -79,7 +79,9 @@ describe("annuaire_services_publics: which answer for which words", () => {
 
 describe("annuaire_services_publics: the date of a bundled list, never « à l'instant » (23/11/2026)", () => {
   afterEach(() => vi.unstubAllGlobals());
-  const NOW = new Date("2026-11-23T09:00:00Z");
+  // Never before the bundled lists: one rebuilt after « now » would have no day yet (tools/fraicheur.ts). They are
+  // rebuilt from the day's sources, never later than today.
+  const NOW = new Date(Math.max(Date.parse("2026-11-23T09:00:00Z"), Date.now()));
 
   it.each([
     ["aire de jeux", "Saint-Pierre"],

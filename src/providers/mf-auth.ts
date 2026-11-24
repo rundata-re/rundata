@@ -6,7 +6,7 @@
  * expires, or after a 401.
  */
 import { count, perInvocation } from "../budget.js";
-import { USER_AGENT } from "../http.js";
+import { delai, USER_AGENT } from "../http.js";
 import { UpstreamError, why } from "../types.js";
 
 const TOKEN_URL = "https://portail-api.meteofrance.fr/token";
@@ -90,7 +90,7 @@ async function newToken(source: string, reason: string): Promise<string> {
         "User-Agent": USER_AGENT,
       },
       body: "grant_type=client_credentials",
-      signal: AbortSignal.timeout(15_000),
+      signal: delai(15_000),
     });
   } catch (err) {
     throw new UpstreamError(source, `jeton : ${err instanceof Error ? err.message : String(err)}`);

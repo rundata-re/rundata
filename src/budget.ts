@@ -134,10 +134,18 @@ export async function counted<T>(
 }
 
 /**
+ * For the tests only (test/fin-de-fichier.ts), unset in the Worker: told of each work handed to `later`, which the end
+ * of a test, and of a test file, waits for; and the signal that cuts the reads of the work a test or a test file left
+ * running, once it is over (http.ts `delai`), before they reach the next one's fetch.
+ */
+export const finDeFichier: { suivre?: (work: Promise<unknown>) => void; coupure?: () => AbortSignal | undefined } = {};
+
+/**
  * Work to finish after the response, wherever it starts (a page, a tool): the Worker keeps the invocation alive for it.
  * Outside a counted invocation (Node, tests) it just runs.
  */
 export function later(work: Promise<unknown>) {
+  finDeFichier.suivre?.(work);
   const t = current.getStore();
   if (!t) return;
   t.later.push(work);

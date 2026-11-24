@@ -208,6 +208,8 @@ export function copiePlanifiee(bundle: Pick<Bundle, "peek">, agenda: Agenda): Ca
 
 /** Beside its copy, when the last reading of an agenda read by the scheduled event failed (tools/agenda.ts). */
 export const echecPlanifie = (agenda: Agenda) => `echec:${agenda.id}`;
+/** That failure's value when the site answered with no event and the copy was kept: it answered (`nonServie`). */
+export const ECHEC_VIDE = "vide";
 
 /**
  * Why the copy of an agenda read by the scheduled event is not served, to be said rather than nothing (La Réunion's
@@ -217,9 +219,14 @@ export const echecPlanifie = (agenda: Agenda) => `echec:${agenda.id}`;
 export function nonServie(bundle: Pick<Bundle, "peek">, agenda: Agenda): { depuis: string } | { essai?: string } | undefined {
   const local = (t: number) => toLocal(new Date(t).toISOString());
   const hit = bundle.peek(`agenda:${agenda.id}`);
-  if (hit) return hit.ageMs <= gardeMs(agenda) ? undefined : { depuis: local(hit.fetchedAt) };
   const failed = bundle.peek(echecPlanifie(agenda));
-  return failed ? { essai: local(failed.fetchedAt) } : {};
+  if (!hit) return failed ? { essai: local(failed.fetchedAt) } : {};
+  if (hit.ageMs <= gardeMs(agenda)) return undefined;
+  // A try that failed after its last good reading: said as one, so that its site is said without answer (tools/agenda.ts
+  // `silentOf`). On 24/11/2026, saintjoseph.re, read once on 23/11 at 18:26 and failing since, was said « dernière lecture
+  // le 23/11 à 18:26 », and resume_du_jour no longer said that it did not answer. Not a site that answered with nothing
+  // (ECHEC_VIDE): it answered.
+  return failed && failed.value !== ECHEC_VIDE && failed.fetchedAt > hit.fetchedAt ? { essai: local(failed.fetchedAt) } : { depuis: local(hit.fetchedAt) };
 }
 
 /**

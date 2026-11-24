@@ -461,7 +461,7 @@ export async function refreshPlanned(cache: Cache, now = new Date()): Promise<{ 
       if (!value.length && !agenda.videLu && (old?.value as src.Evenement[] | undefined)?.length) {
         console.error(`source ${agenda.source.id} (${agenda.id}) : aucun événement, la copie est gardée`);
         out.gardes.push(agenda.id);
-        bundle.set(echec(agenda), true);
+        bundle.set(echec(agenda), src.ECHEC_VIDE);
         continue;
       }
       bundle.set(`agenda:${agenda.id}`, value);

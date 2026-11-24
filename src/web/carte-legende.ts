@@ -8,6 +8,15 @@ import { esc } from "./map.js";
 /** A count, which is neither good nor bad: the night's colour, on every map that counts (/enfants, /defibrillateurs). */
 export const COUNT_COLOR = "#14202b";
 
+/**
+ * The discs that hold a figure in white (/bornes, /velos, /eau): each colour over 4.5:1 under its white figure (WCAG 1.4.3),
+ * the same in both themes, since a disc keeps its colour on the map. They are the site's colours already chosen by marketing:
+ * the green of « ouvert » and « bonne » (--vert of the light theme, 5.73:1), the grey of « pas de vigilance » (--vg0, 5.46:1),
+ * the orange of an average water (--q-moyenne of the light theme, 5.18:1). Before (24/11/2026): #2b8a3e 4.37:1, #868e96
+ * 3.32:1, #e8590c 3.58:1.
+ */
+export const ROND = { vert: "#237534", gris: "#5f6b75", orange: "#c2410c" } as const;
+
 /** A mark as the map draws it (map.ts, marker()): a disc, a pill, a hollow ring (nothing lately), the hot spot's triangle, a venue's small point, or a
  * commune's colour on a map of zones (`aplat`: /secheresse, /coupures-eau, /velos). */
 export interface Cle {

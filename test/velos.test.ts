@@ -96,7 +96,11 @@ describe("Altervélo", () => {
       { kind: "mk", href: "#c-l-etang-sale", label: "L&#39;Étang-Salé : 12\u00a0vélos disponibles, voir le détail" },
     ]);
     // The legend draws both: a commune with bikes, one with none.
-    expect(html).toContain('<circle r="34" fill="#2b8a3e"/><text y="11">3</text></svg>vélos disponibles dans la commune</span>');
+    expect(html).toContain('<circle r="34" fill="#237534"/><text y="11">3</text></svg>vélos disponibles dans la commune</span>');
+    // On the map as in the legend, the white figure over 4.5:1 on its disc (ROND, carte-legende.ts): grey when none is free.
+    expect(html).toMatch(/r="34" fill="#5f6b75"\/><text x="[\d.]+" y="[\d.]+" class="mv">0<\/text>/);
+    expect(html).toMatch(/r="34" fill="#237534"\/><text x="[\d.]+" y="[\d.]+" class="mv">7<\/text>/);
+    expect(html).not.toMatch(/fill="#(?:2b8a3e|868e96)"/);
     expect(html).toContain('<text y="11">0</text></svg>aucun vélo disponible</span>');
     expect(deadAnchors(html)).toEqual([]);
     expect(tabStops(html)).toBe(0);

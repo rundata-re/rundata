@@ -19,14 +19,17 @@ class CopieTest {
     private val resume = requireNotNull(javaClass.getResource("/mcp/resume-saint-pierre-2.json")).readText()
     private val vigilance = requireNotNull(javaClass.getResource("/mcp/vigilance-saint-pierre.json")).readText()
 
-    /** Le serveur de l'essai : compte les lectures de chaque outil ; `panne` : il ne répond plus. */
+    /**
+     * Le serveur de l'essai : compte les lectures de chaque outil ; `panne` : il ne répond plus. Les outils sont lus en
+     * même temps (`async`) et le moteur d'essai de Ktor répond sur plusieurs fils : le compte se fait sans en perdre.
+     */
     private class Serveur(val resume: String, val vigilance: String) {
-        val lectures = mutableMapOf<String, Int>()
+        val lectures = java.util.concurrent.ConcurrentHashMap<String, Int>()
         var panne = false
         val mcp = RundataMcp(HttpClient(MockEngine { r ->
             val corps = (r.body as TextContent).text
             val outil = Regex("\"name\":\"([a-z_]+)\"").find(corps)!!.groupValues[1]
-            lectures[outil] = (lectures[outil] ?: 0) + 1
+            lectures.merge(outil, 1, Int::plus)
             val texte = when (outil) {
                 "resume_du_jour" -> resume
                 "vigilance_meteo" -> vigilance

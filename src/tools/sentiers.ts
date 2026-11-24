@@ -103,6 +103,44 @@ const day = (iso: string) => iso.slice(0, 10).split("-").reverse().join("/");
 
 const mid = (s: { points: [number, number][] }) => s.points[Math.floor(s.points.length / 2)];
 
+/** A trail of the bundle the ONF's map of the day no longer lists, said as such (horsCarte). */
+export interface HorsCarte {
+  texte: string;
+  carte_officielle: string;
+  /** A deviation's main trail, and its state on the same map. */
+  principal?: { sentier: string; etat: string; cause?: string; precision?: string; page: string };
+}
+
+/**
+ * A trail of the bundle the ONF's map read no longer lists: neither open nor closed, said with the map's day and the
+ * official map, and for a deviation its main trail and that one's state (24/11/2026: the Trou de Fer's deviation by
+ * the RF Fleurs Jaunes, gone from the map while the Trou de Fer was closed, its page still « Ouvert d'après la carte de
+ * l'ONF du 23/11 » from the trace kept; rule 3, never « ouvert » by deduction). Undefined when the map lists it.
+ */
+export function horsCarte(nom: string, t: { onf: string[] }, carte: onf.Carte): HorsCarte | undefined {
+  const names = new Set(carte.sentiers.map((s) => s.nom));
+  if (t.onf.some((n) => names.has(n))) return undefined;
+  const t0 = carte.mise_a_jour ? Date.parse(carte.mise_a_jour) : NaN;
+  const jour = Number.isFinite(t0) ? ` du ${new Date(t0 + 4 * 3600_000).toISOString().slice(5, 10).split("-").reverse().join("/")}` : "";
+  const main = /^(.+?)\s+[-–]\s+d[ée]viation\b/i.exec(nom)?.[1];
+  const m = main ? traces.SENTIERS[main] : undefined;
+  let principal: HorsCarte["principal"];
+  if (main && m) {
+    const segs = carte.sentiers.filter((s) => m.onf.includes(s.nom));
+    const shut = segs.find((s) => s.statut === "fermé");
+    const etat = shut ? "fermé" : segs.some((s) => s.statut === "ouvert") ? "ouvert" : segs.length ? "hors gestion ONF" : "absent de la carte";
+    principal = { sentier: main, etat, cause: shut?.cause, precision: shut?.info, page: `${SITE_URL}/sentiers/${m.slug}` };
+  }
+  const dePrincipal = principal
+    ? ` C'est une déviation du ${principal.sentier}, ${principal.etat} d'après la même carte${principal.cause ? `\u00a0: ${principal.cause}` : ""}.`
+    : "";
+  return {
+    texte: `${nom} n'est plus sur la carte de l'ONF${jour}\u00a0: son état n'est pas connu ici, ni ouvert ni fermé.${dePrincipal} Voir la carte officielle de l'ONF avant de partir.`,
+    carte_officielle: onf.SOURCE.url,
+    ...(principal ? { principal } : {}),
+  };
+}
+
 /**
  * The communes of a trail, given all its sections: those where the middle of one of them lies, in the sections' order. One
  * rule for the tool, the communes' pages and their feeds, and the closed trails by commune: a trail of the commune is said
@@ -734,10 +772,15 @@ export async function sentiersRandonnee(cache: Cache, lieu: string | undefined, 
   }
 
   if (receptionSaid && !zone) parts.push(receptionSaid);
+  // A trail asked by its name that the map of the day no longer lists: said first, as its page says it (horsCarte).
+  const offMap = Object.entries(traces.SENTIERS)
+    .filter(([nom]) => q.includes(normalize(nom)))
+    .flatMap(([nom, t]) => { const h = horsCarte(nom, t, carte); return h ? [{ sentier: nom, ...h }] : []; });
   return text({
     ...(warn ? { avertissement: { message: warn.message, sentiers_fermes: warn.sentiers_fermes } } : {}),
     lieu: res ? placeBlock(lieu, res) : undefined,
-    resume: parts.join(" "),
+    hors_carte: offMap.length ? offMap : undefined,
+    resume: [...offMap.map((x) => x.texte), ...parts].join(" "),
     randonnees: hikes.length ? hikes.map((h) => routeRow(h, carte, now)) : undefined,
     sentiers_nommes: namedTrails.length ? namedTrails.map((t) => t.row) : undefined,
     ...(zoneOut ? { autour: zoneOut } : {}),

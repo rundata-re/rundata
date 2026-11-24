@@ -54,7 +54,7 @@ import { COMMON as EAU_COMMON } from "../tools/eau.js";
 import { credits } from "../tools/format.js";
 import * as onf from "../providers/sentiers.js";
 import * as feux from "../providers/feux.js";
-import { communesOf, horsGestion, routeRow, secteur, SECTEURS, sentiersRandonnee, trailKm, trailPlace } from "../tools/sentiers.js";
+import { communesOf, horsCarte, type HorsCarte, horsGestion, routeRow, secteur, SECTEURS, sentiersRandonnee, trailKm, trailPlace } from "../tools/sentiers.js";
 import { pathOf } from "./map.js";
 import { MESURES, mesure } from "./mesure.js";
 import { type PlusRecent, restrictionsEau } from "../tools/secheresse.js";
@@ -978,6 +978,8 @@ export interface TraceAnswer {
   depart?: { lat: number; lon: number };
   /** The forest roads closed to traffic near a hike's start (ROAD_NEAR_M), and when the ONF's map was read. */
   routes_fermees?: { routes: { route: string; cause?: string }[]; lu: string };
+  /** An ONF trail its map of the day no longer lists: said instead of a state (tools/sentiers.ts horsCarte). */
+  hors_carte?: HorsCarte;
   /** When the ONF last edited its map (ISO), for the line under the trace's map; missing when it was not read. */
   carte_mise_a_jour?: string;
   /** When rundata.re read the ONF's map (ISO), said beside the map's own date: « relue le 04/11 à 14:05 ». */
@@ -1009,6 +1011,8 @@ export function toLineM(lon: number, lat: number, line: [number, number][]): num
 
 /** An open trail's state in its copy; the page adds the map's date (web/domains.ts, tracePage). */
 export const OUVERT_ONF = "Ouvert d'après l'ONF";
+/** « la carte de l'ONF du 24/11 », from a trail's sentence off the map (horsCarte). */
+const HORS_CARTE = (h: HorsCarte) => /la carte de l'ONF(?: du \d\d\/\d\d)?/.exec(h.texte)![0];
 
 /**
  * A trail neither open nor closed on the ONF's map whose section still carries a notice there (« Fermé le 02/06/26 »
@@ -1024,8 +1028,40 @@ export function noticeOf(troncons: { cause?: string; info?: string }[]): string 
 /** An ONF trail: its line and state read from the ONF, its altitudes from the IGN. */
 export async function buildTrail(cache: Cache, t: { nom: string } & traces.SentierStats, now = new Date()): Promise<TraceAnswer> {
   // The whole map only for its date: the island's pages share it (onf.KEY), its trail is read on its own.
-  const [tr, read] = await Promise.all([traces.traceOnf(cache, t).then((x) => x.value), onf.carte(cache).catch(() => null)]);
+  const [got, read] = await Promise.all([traces.traceOnf(cache, t).then((x) => x.value, (err: unknown) => err), onf.carte(cache).catch(() => null)]);
   const carte = read?.value;
+  // Off the map of the day: neither open nor closed, its kept trace drawn without a state (tools/sentiers.ts horsCarte).
+  const hors = carte ? horsCarte(t.nom, t, carte) : undefined;
+  // Not found on the map nor by its name: the error, as before, for a trail the map still lists.
+  if (got instanceof Error && !hors) throw got;
+  const tr = got instanceof Error ? null : (got as traces.TraceOnf);
+  if (hors) {
+    const pieces = tr ? tr.troncons.map((x) => x.points) : [];
+    const m = traces.measure(pieces);
+    return {
+      nom: t.nom,
+      slug: t.slug,
+      genre: "sentier",
+      km: t.km || m.km,
+      dplus: t.dplus ?? m.dplus,
+      dmoins: t.dmoins ?? m.dmoins,
+      alt_min: t.alt_min ?? m.alt_min,
+      alt_max: t.alt_max ?? m.alt_max,
+      etat: `Plus sur ${HORS_CARTE(hors)}\u00a0: état non connu`,
+      ferme: false,
+      troncons: [],
+      lignes: pieces.map((x) => lineOf(x, "inconnu")),
+      profil: tr ? profileOf(pieces) : [],
+      randonnees: hikesThrough(t.nom),
+      fermes: [],
+      inconnus: [],
+      hors_carte: hors,
+      carte_mise_a_jour: carte?.mise_a_jour,
+      carte_lue: read?.fetchedAt.toISOString(),
+      sources: credits([onf.SOURCE, traces.SOURCES.ign]),
+    };
+  }
+  if (!tr) throw new Error(`trace absente : ${t.nom}`);
   const pieces = tr.troncons.map((x) => x.points);
   const m = traces.measure(pieces);
   const shut = tr.troncons.filter((x) => x.statut === "fermé");

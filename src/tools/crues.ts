@@ -126,10 +126,24 @@ function vigilanceBlock(v: vc.Vigilance) {
   return { active: false, ...(v.date ? { aucun_bulletin_depuis: dm(v.date), pourquoi: `${ONLY_IN_VIGILANCE}.` } : {}), rivieres: v.rivieres };
 }
 
-/** « mesures de 12:40 »: the newest reading among the gauges given, said before the vigilance; nothing without one. */
-function measuredAt(levels: Level[]): string | undefined {
-  const t = Math.max(...levels.map((l) => l.hauteur?.t ?? -Infinity));
-  return Number.isFinite(t) ? `mesures de ${hm(t)}` : undefined;
+/**
+ * « de 12:40 », or « de 12:35 à 12:40 » when the readings are not all of the same time: one time said for all gave a
+ * gauge read at 11:30 the time 11:35, where /crues says each gauge's own (24/11/2026, Saint-Benoît).
+ */
+const span = (ts: number[]) => {
+  const [lo, hi] = [hm(Math.min(...ts)), hm(Math.max(...ts))];
+  return lo === hi ? `de ${hi}` : `de ${lo} à ${hi}`;
+};
+
+/**
+ * « mesures de 12:40 », or « mesures de 12:35 à 12:40 »: the times of the gauges given, said before the vigilance;
+ * nothing without one. A late gauge says its own time in its sentence, so the span is that of the others, when any.
+ */
+export function measuredAt(levels: Level[], now: Date): string | undefined {
+  const read = levels.filter((l) => l.hauteur);
+  if (!read.length) return undefined;
+  const fresh = read.filter((l) => !late(l, now));
+  return `mesures ${span((fresh.length ? fresh : read).map((l) => l.hauteur!.t))}`;
 }
 
 /** The gauges of a river the question names (« la rivière des Galets », « ravine Saint-Gilles »). */
@@ -166,11 +180,11 @@ export function islandLevels(levels: Level[], now: Date, readAt: number): string
   const none = silent.filter((l) => !l.hauteur && l.vide);
   const behind = silent.filter((l) => !none.includes(l));
   const end = (none.length ? ` ${cap(vc.NONE_PUBLISHED)}\u00a0: ${named(none)}.` : "") + (behind.length ? ` Sans mesure récente\u00a0: ${named(behind)}.` : "");
-  const at = hm(Math.max(...fresh.map((l) => l.hauteur!.t)));
+  const at = (ls: Level[]) => span(ls.map((l) => l.hauteur!.t));
   const rising = fresh.filter((l) => l.hauteur!.tendance === "en hausse");
-  if (rising.length) return `En hausse sur la dernière demi-heure (mesures de ${at})\u00a0: ${rising.map((l) => sentence(l)).join("\u00a0; ")}.${end}`;
-  if (fresh.length === 1) return `La seule station à jour, ${fresh[0].station.nom} (${fresh[0].station.riviere}), n'est pas en hausse sur la dernière demi-heure (mesure de ${at}).${end}`;
-  return `Aucune des ${fresh.length} stations à jour n'est en hausse sur la dernière demi-heure (mesures de ${at}).${end}`;
+  if (rising.length) return `En hausse sur la dernière demi-heure (mesures ${at(rising)})\u00a0: ${rising.map((l) => sentence(l)).join("\u00a0; ")}.${end}`;
+  if (fresh.length === 1) return `La seule station à jour, ${fresh[0].station.nom} (${fresh[0].station.riviere}), n'est pas en hausse sur la dernière demi-heure (mesure ${at(fresh)}).${end}`;
+  return `Aucune des ${fresh.length} stations à jour n'est en hausse sur la dernière demi-heure (mesures ${at(fresh)}).${end}`;
 }
 
 async function read(cache: Cache, ids: string[] | undefined, now: Date) {
@@ -238,7 +252,7 @@ export async function crues(cache: Cache, lieu: string | undefined, now = new Da
     const { say, common } = context(v, failed);
     const mine = river.map((s) => level(s, h, q));
     const ref = landmark(river[0]);
-    const at = measuredAt(mine);
+    const at = measuredAt(mine, now);
     return text({
       resume: say(`${mine.map((l) => sentence(l, now)).join("\u00a0; ")}${at ? ` (${at})` : ""}.${ref ? ` Pour repère, la plus petite crue de référence ${a(river[0].nom)} : ${ref}.` : ""}`),
       ...(v ? { vigilance_crues: vigilanceBlock(v) } : {}),
@@ -258,7 +272,7 @@ export async function crues(cache: Cache, lieu: string | undefined, now = new Da
   const { say, common } = context(v, failed);
   const ref = landmark(shown[0].s);
   const levels = shown.map((x) => level(x.s, h, q));
-  const at = measuredAt(levels);
+  const at = measuredAt(levels, now);
   return text({
     lieu: placeBlock(lieu, res),
     resume: say(

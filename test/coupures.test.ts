@@ -98,6 +98,11 @@ describe("coupures d'eau", () => {
     const now = new Date("2026-11-24T04:00:00Z");
     expect(resumeAvis([a, b], now)).toBe("Interruption de la distribution, mercredi 25/11 de 08:00 à 15:00 (rue des Salins)\u00a0; Interruption de la distribution, mercredi 25/11 de 08:00 à 15:00 (secteur de Bernica)");
     expect(noticeRow(a, now)).toMatchObject({ titre: "Interruption de la distribution", lieu: "rue des Salins" });
+    // runéo's two notices of 24/11/2026 for Saint-Pierre (991 at 07:45, 992 at 08:17): the same title, the same end, their
+    // sectors cut from the excerpt. The résumé said the same words twice; /coupures-eau tells them apart by their time.
+    const fuite = { ...a, distributeur: "runéo", titre: "Incident : fuite sur le réseau", lieu: undefined, jour: undefined, debut: undefined, fin: "2026-11-24T12:00", secteurs: [], secteurs_complets: false };
+    const [f991, f992] = [{ ...fuite, publie: "2026-11-24T03:45:00Z" }, { ...fuite, publie: "2026-11-24T04:17:00Z" }];
+    expect(resumeAvis([f992, f991], now)).toBe("Incident : fuite sur le réseau, jusqu'au mardi 24/11 à 12:00, avis du 24/11 à 08:17\u00a0; Incident : fuite sur le réseau, jusqu'au mardi 24/11 à 12:00, avis du 24/11 à 07:45");
     // The page's card says it too.
     expect(noticeCard(noticeRow(b, now))).toContain("Lieu : secteur de Bernica");
   });

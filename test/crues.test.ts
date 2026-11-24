@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { handle } from "../src/app.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { parseVigilance, STATIONS, type Vigilance } from "../src/providers/vigicrues.js";
-import { crues, crueDite, islandLevels, levelRow, riverAsked, sentence, vigilanceText } from "../src/tools/crues.js";
+import { crues, crueDite, islandLevels, levelRow, measuredAt, riverAsked, sentence, vigilanceText } from "../src/tools/crues.js";
 
 // Vigicrues Réunion on 23/10/2026 at 23:45 UTC (03:45 in La Réunion): no flood vigilance, the ravine des Cabris
 // rising a few centimetres from dry.
@@ -94,13 +94,21 @@ describe("Vigicrues Réunion", () => {
       `La seule station à jour, ${name(0)} (${STATIONS[0].riviere}), n'est pas en hausse sur la dernière demi-heure (mesure de 03:45). Sans mesure récente\u00a0: ${name(1)}, ${name(2)}.`,
     );
     // n ≥ 2, none silent: no ending.
-    expect(islandLevels([lvl(0, "03:40"), lvl(1, "03:45")], now, read)).toBe("Aucune des 2 stations à jour n'est en hausse sur la dernière demi-heure (mesures de 03:45).");
+    // Read at two times: both said, never the newest for all (24/11/2026: « mesures de 11:35 » for a gauge read at 11:30,
+    // its own time on /crues).
+    expect(islandLevels([lvl(0, "03:40"), lvl(1, "03:45")], now, read)).toBe("Aucune des 2 stations à jour n'est en hausse sur la dernière demi-heure (mesures de 03:40 à 03:45).");
+    expect(islandLevels([lvl(0, "03:45"), lvl(1, "03:45")], now, read)).toBe("Aucune des 2 stations à jour n'est en hausse sur la dernière demi-heure (mesures de 03:45).");
+    // The place's résumé: the span of the gauges said with no time of their own; a late one says its own (« à 03:00 »).
+    expect(measuredAt([lvl(0, "03:40"), lvl(1, "03:45"), lvl(2, "03:00"), lvl(3)], now)).toBe("mesures de 03:40 à 03:45");
+    expect(measuredAt([lvl(0, "03:45"), lvl(1, "03:45")], now)).toBe("mesures de 03:45");
+    expect(measuredAt([lvl(0, "03:00"), lvl(1, "02:50")], now)).toBe("mesures de 02:50 à 03:00");
+    expect(measuredAt([lvl(3)], now)).toBeUndefined();
     // A rise: only the stations measured lately; a late one rising is not said rising, only without a recent measurement.
     const rise = islandLevels([lvl(0, "03:45", "en hausse", 0.42), lvl(1, "03:45"), lvl(2, "03:00", "en hausse")], now, read);
     expect(rise).toBe(`En hausse sur la dernière demi-heure (mesures de 03:45)\u00a0: ${name(0)} (${STATIONS[0].riviere}, ${STATIONS[0].commune}) : 0,42 m, en hausse. Sans mesure récente\u00a0: ${name(2)}.`);
     // More than five silent: counted, not named.
     const many = islandLevels([lvl(0, "03:40"), lvl(1, "03:45"), ...[2, 3, 4, 5, 6, 7].map((i) => lvl(i))], now, read);
-    expect(many).toBe("Aucune des 2 stations à jour n'est en hausse sur la dernière demi-heure (mesures de 03:45). Sans mesure récente\u00a0: 6 stations.");
+    expect(many).toBe("Aucune des 2 stations à jour n'est en hausse sur la dernière demi-heure (mesures de 03:40 à 03:45). Sans mesure récente\u00a0: 6 stations.");
     expect(many).not.toContain(name(2));
   });
 
@@ -110,7 +118,7 @@ describe("Vigicrues Réunion", () => {
     const lvl = (i: number, hhmm?: string, vide?: true) => ({ station: STATIONS[i], ...(hhmm ? { hauteur: { t: at(hhmm), v: 0.18, tendance: "stable" as const, max3h: 0.18 } } : {}), ...(vide ? { vide } : {}) });
     const name = (i: number) => STATIONS[i].nom;
     expect(islandLevels([lvl(0, "03:40"), lvl(1, "03:45"), lvl(2, undefined, true), lvl(3, "03:00"), lvl(4)], now, at("03:48"))).toBe(
-      `Aucune des 2 stations à jour n'est en hausse sur la dernière demi-heure (mesures de 03:45). Aucune mesure publiée par Vigicrues depuis au moins 3 h\u00a0: ${name(2)}. Sans mesure récente\u00a0: ${name(3)}, ${name(4)}.`,
+      `Aucune des 2 stations à jour n'est en hausse sur la dernière demi-heure (mesures de 03:40 à 03:45). Aucune mesure publiée par Vigicrues depuis au moins 3 h\u00a0: ${name(2)}. Sans mesure récente\u00a0: ${name(3)}, ${name(4)}.`,
     );
     expect(islandLevels([lvl(0, "03:40"), lvl(1, "03:45"), lvl(2, undefined, true)], now, at("03:48"))).not.toContain("Sans mesure récente");
     expect(sentence(lvl(2, undefined, true), now)).toBe(`${name(2)} (${STATIONS[2].riviere}, ${STATIONS[2].commune}) : aucune mesure publiée par Vigicrues depuis au moins 3 h`);
@@ -148,7 +156,7 @@ describe("Vigicrues Réunion", () => {
     const r = body(await crues(cache(), "Saint-Gilles", NOW));
     expect(r.stations[0]).toMatchObject({ station: "Saint-Gilles - RN1a", riviere: "ravine Saint-Gilles", hauteur_m: 0.177, tendance_30_min: "stable" });
     expect(r.stations[0].distance_km).toBeLessThan(2);
-    expect(r.resume).toMatch(/^Rivières suivies près de Saint-Gilles-les-Bains, mesures de 03:45 : Saint-Gilles - RN1a/);
+    expect(r.resume).toMatch(/^Rivières suivies près de Saint-Gilles-les-Bains, mesures de 03:30 à 03:45 : Saint-Gilles - RN1a/);
     expect(r.resume).toMatch(/Pour repère, la plus petite crue de référence à Saint-Gilles - RN1a : 0,7 m \([a-zé]/);
     expect(r.resume).not.toMatch(/\([^()]*\([^()]*\)\)/);
     expect(asked.filter((a) => a.startsWith("valeurs.php")).every((a) => Number(a.split(" ")[2]) <= 4)).toBe(true);
@@ -157,7 +165,7 @@ describe("Vigicrues Réunion", () => {
 
   it("gives a river's levels with their time, before the vigilance", async () => {
     const r = body(await crues(cache(), "la rivière des Galets", NOW));
-    expect(r.resume).toMatch(/^[^.]*rivière des Galets[^.]* \(mesures de \d\d:\d\d\)\. .*Pas de vigilance crues en cours : toutes les rivières suivies sont au vert\. Aucun bulletin de vigilance depuis le 07\/08 à 06:22/);
+    expect(r.resume).toMatch(/^[^.]*rivière des Galets[^.]* \(mesures de 03:35 à 03:45\)\. .*Pas de vigilance crues en cours : toutes les rivières suivies sont au vert\. Aucun bulletin de vigilance depuis le 07\/08 à 06:22/);
   });
 
   it("says a vigilance in force first, before the levels, for the island, a river and a place", async () => {

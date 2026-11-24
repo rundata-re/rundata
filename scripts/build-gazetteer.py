@@ -44,6 +44,10 @@ out center tags;"""
 # OSM element), read by id with the query above.
 EXTRA = [
     ("Cambaie", "lieu_dit", "way", 477835389),  # Z.A.C. de Cambaie, Saint-Paul
+    # Asked by name and found nowhere (24/11/2026): the church of Piton Sainte-Rose, spared by the lava of 1977, and the
+    # quartier of Saint-Paul along its chemin, which OSM has only as the road.
+    ("Notre-Dame des Laves", "site", "way", 159689256),
+    ("Tour des Roches", "quartier", "relation", 1298777),
 ]
 QUERY = QUERY.replace("\n);", "".join(f"\n  {t}(id:{i});" for _, _, t, i in EXTRA) + "\n);")
 
@@ -84,6 +88,9 @@ BDTOPO = {
     # The named roads, not the streets, lanes and paths of the layer.
     "route_numerotee_ou_nommee": {"Route nommée": "route"},
 }
+# Names the rule above leaves out that people ask for (24/11/2026): Sainte-Marie's quartier of Beauséjour, a word alone
+# ranked 5, and Saint-Denis's Bas de la Rivière, a quartier ranked 6.
+KEEP = {"Beauséjour", "les Bas de la Rivière"}
 ROAD = re.compile(r"^(?:(?:nouvelle|ancienne) )?route\b", re.I)
 # How the BD TOPO ranks a name, 1 the best known: among places of a kind that share a name, the best known comes first,
 # which the resolver keeps when nothing else tells them apart. OSM's places, that have none, are put in the middle.
@@ -258,7 +265,7 @@ def bdtopo_places(cache):
                 continue
             # A name of one word is a common one as often as not (« École », « le Barrage », « la Pente »): taken only
             # when the BD TOPO ranks it well known; and not the small quartiers, named as their residences.
-            if (len(re.sub(r"^(le|la|les|l) ", "", norm(nom)).split()) == 1 and imp > 3) or (layer == "zone_d_habitation" and imp > 5):
+            if nom not in KEEP and ((len(re.sub(r"^(le|la|les|l) ", "", norm(nom)).split()) == 1 and imp > 3) or (layer == "zone_d_habitation" and imp > 5)):
                 continue
             lon, lat = middle(f["geometry"])
             # As the BD TOPO writes them, a capital first (« le Gol les Hauts »: « Le Gol les Hauts »).

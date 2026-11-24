@@ -95,6 +95,10 @@ interface Entry {
 // Aliases that name an area, a cirque or the volcan, for the one place of it that answers stand for: a match, but not
 // that place's name (« Mafate » is the cirque, La Nouvelle one of its îlets).
 const STAND_INS = new Set(["Cirque de Mafate", "Mafate", "Volcan", "Piton de la Fournaise"]);
+// A short name that people use as often for other places than the one of that name: « la Plaine » is the Plaine des
+// Cafres or the Plaine des Palmistes as much as the quartier of Saint-Paul (24/11/2026). Those come first among the
+// others, so that an answer for the wrong plain is said.
+const ALSO_MEANT: Record<string, string[]> = { plaine: ["La Plaine des Cafres", "La Plaine-des-Palmistes"] };
 
 const PLACES = [...gazetteer.places, ...gazetteer.places_ign] as Place[];
 const byName = new Map(PLACES.map((p) => [p.nom, p]));
@@ -259,7 +263,9 @@ function resolve(text: string): Resolution | null {
     // A commune's own name means the commune (« Saint-Joseph », not the lieu-dit of Sainte-Suzanne): nothing more said.
     if (best.place.type === "commune") return { lieu: best.place, correspondance: "exacte", autres: [] };
     const communes = new Set([best.place.commune]);
-    const autres = ranked.slice(1).flatMap((e) => (e.standIn || communes.has(e.place.commune) || !communes.add(e.place.commune) ? [] : [e.place])).slice(0, 3);
+    const fresh = (p: Place) => !communes.has(p.commune) && !!communes.add(p.commune);
+    const also = (ALSO_MEANT[q.join(" ")] ?? []).flatMap((n) => byName.get(n) ?? []).filter(fresh);
+    const autres = [...also, ...ranked.slice(1).flatMap((e) => (!e.standIn && fresh(e.place) ? [e.place] : []))].slice(0, 3);
     return { lieu: best.place, correspondance: "exacte", autres };
   }
   if (q.every((t) => KIND_WORDS.has(t))) return null;

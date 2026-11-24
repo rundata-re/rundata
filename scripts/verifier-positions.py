@@ -69,17 +69,24 @@ def km(lon1, lat1, lon2, lat2):
     return 2 * 6371.0 * math.asin(math.sqrt(a))
 
 
+# The waits before asking again a server that says it is busy, each twice the one before, as Overpass asks (« Retry your
+# request using exponential backoff », its 502 of 24/11/2026, « All query workers are busy and the request queue is
+# full »): five tries over 7.5 minutes at most, within the job's 30.
+ATTENTES = (30, 60, 120, 240)
+
+
 def get(url, data=None, headers=None):
-    """One request; asked once more a minute later when the server says it is busy (Overpass often does)."""
-    for essai in (1, 2):
+    """One request; asked again after each of ATTENTES while the server says it is busy (Overpass often does)."""
+    for attente in (*ATTENTES, None):
         req = urllib.request.Request(url, data=data, headers={"User-Agent": UA, **(headers or {})})
         try:
             with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
                 return r.read()
         except urllib.error.HTTPError as e:
-            if essai == 2 or e.code not in (429, 502, 503, 504):
+            if attente is None or e.code not in (429, 502, 503, 504):
                 raise
-            time.sleep(60)
+            print(f"{urllib.parse.urlsplit(url).netloc} occupé (HTTP {e.code}), nouvel essai dans {attente} s", flush=True)
+            time.sleep(attente)
 
 
 def nombre(s):
@@ -194,12 +201,19 @@ def ecarts_centres():
 
 
 _OSM = []
+_OSM_ECHEC = []
 
 
 def lieux_osm():
-    """OpenStreetMap's town halls and bus stops of the island, read once for both steps."""
+    """OpenStreetMap's town halls and bus stops of the island, read once for both steps; a failure too, said by both."""
+    if _OSM_ECHEC:
+        raise _OSM_ECHEC[0]
     if not _OSM:
-        _OSM.extend(json.loads(get(OVERPASS, urllib.parse.urlencode({"data": OSM_LIEUX}).encode()))["elements"])
+        try:
+            _OSM.extend(json.loads(get(OVERPASS, urllib.parse.urlencode({"data": OSM_LIEUX}).encode()))["elements"])
+        except Exception as e:
+            _OSM_ECHEC.append(e)
+            raise
     return _OSM
 
 

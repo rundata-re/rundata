@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
@@ -18,6 +19,37 @@ describe("le contrôle du lundi des listes embarquées", () => {
       expect(py.indexOf("sys.exit(verifier("), s).toBeGreaterThan(0);
       expect(py.indexOf("sys.exit(verifier("), s).toBeLessThan(py.indexOf(".write_text("));
     }
+  });
+
+
+  it("asks Overpass again while it is busy, each wait twice the one before, and says a failure once for both steps", () => {
+    // Overpass at capacity answered 502 to both tries of 24/11/2026 (run 45382196547), « Retry … using exponential backoff ».
+    const code = [
+      "import importlib.util, io, urllib.error, urllib.request",
+      "spec = importlib.util.spec_from_file_location('v', 'scripts/verifier-positions.py')",
+      "v = importlib.util.module_from_spec(spec); spec.loader.exec_module(v)",
+      "waits, calls = [], []",
+      "v.time.sleep = waits.append",
+      "def busy(n):",
+      "    def urlopen(req, timeout):",
+      "        calls.append(1)",
+      "        if len(calls) <= n: raise urllib.error.HTTPError(req.full_url, 502, 'Bad Gateway', {}, io.BytesIO())",
+      "        return io.BytesIO(b'{\"elements\": [1]}')",
+      "    return urlopen",
+      "v.urllib.request.urlopen = busy(3)",
+      "print(v.get(v.OVERPASS), waits, len(calls))",
+      "waits.clear(); calls.clear(); v.urllib.request.urlopen = busy(99)",
+      "for step in ('centres', 'arrets'):",
+      "    try: v.lieux_osm()",
+      "    except urllib.error.HTTPError as e: print(step, e.code)",
+      "print(waits, len(calls))",
+    ].join("\n");
+    const r = spawnSync("python3", ["-I", "-c", code], { encoding: "utf8", cwd: new URL("..", import.meta.url) });
+    if (r.error) throw r.error;
+    expect(r.stderr).toBe("");
+    const lines = r.stdout.trim().split("\n").filter((l) => !l.includes("occupé"));
+    expect(lines).toEqual(["b'{\"elements\": [1]}' [30, 60, 120] 4", "centres 502", "arrets 502", "[30, 60, 120, 240] 5"]);
+    expect(r.stdout).toContain("overpass-api.de occupé (HTTP 502), nouvel essai dans 30 s");
   });
 
   it("checks the places we give against a second source, failing only on a gap the reference does not hold", () => {

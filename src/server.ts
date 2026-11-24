@@ -141,7 +141,7 @@ import * as peche from "./tools/peche.js";
 import * as cetaces from "./tools/cetaces.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.961";
+export const VERSION = "1.0.962";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -214,7 +214,7 @@ type Extra = { requestId?: string | number; requestInfo?: { headers?: Record<str
 
 // The three hints are said outright, destructiveHint too, though implied by readOnlyHint: the ChatGPT apps review asks
 // for them on every tool (test/serveur.test.ts checks it).
-export const SOURCES_COURT = "Réponse courte : le nombre de producteurs par famille de licence. Chaque source avec son organisme, sa licence, l'attribution à citer et son lien : rappeler l'outil avec detail, ou https://rundata.re/chiffres#sources.";
+export const SOURCES_COURT = "Réponse courte : le nombre de producteurs par famille de licence. Chaque source avec son organisme, sa licence, l'attribution à citer et son lien, et pourquoi chaque site non repris ne l'est pas : rappeler l'outil avec detail, ou https://rundata.re/chiffres#sources.";
 
 /**
  * Each family of licence once, as /chiffres counts them (Licence Ouverte, ODbL, information publique…), with the number
@@ -1186,8 +1186,10 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
           : { producteurs_par_licence: parLicence(sources.filter(comptee)), detail: SOURCES_COURT }),
         envoyees_a_rundata: sources.filter((s) => !comptee(s)),
         // The media and sites whose terms forbid reading them by a program, the halls and sports sites whose terms forbid
-        // taking their information without their accord: not read (tools/non-repris.ts).
-        non_reprises: [FICHE_LA1ERE, FICHE_REUNION_FR, ...fichesNonReprises()],
+        // taking their information without their accord: not read (tools/non-repris.ts). Short by default: each named with
+        // its terms, its reason with detail (a quarter of the answer, one more paragraph with each site, 24/11/2026).
+        non_reprises: [FICHE_LA1ERE, FICHE_REUNION_FR, ...fichesNonReprises()]
+          .map((f) => (args.detail === true ? f : { nom: f.nom, statut: f.statut, conditions: f.conditions })),
         lieux: GAZETTEER_ATTRIBUTION,
         // The agendas read are told by evenements, which answers on them.
         couverture: { meteo: weatherCoverage(), mer: seaCoverage(), previsions: forecastCoverage() },

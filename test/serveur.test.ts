@@ -298,6 +298,10 @@ describe("the serveur block", () => {
     // Held offline under its cap in the check of the sources, with room for new tools and sources.
     expect(new TextEncoder().encode(JSON.stringify(short)).length).toBeLessThan(MAX_BYTES.sources_donnees - 2_000);
     expect(short.chiffres.sources).toBe(full.sources.length);
+    // The sites not read: named with their terms; why, with detail (24/11/2026: 3.5 KB of a 14 KB answer).
+    expect(short.non_reprises.map((f: { nom: string }) => f.nom)).toEqual(full.non_reprises.map((f: { nom: string }) => f.nom));
+    expect(short.non_reprises.every((f: object) => !("texte" in f) && "conditions" in f)).toBe(true);
+    expect(full.non_reprises.every((f: { texte?: string }) => f.texte)).toBe(true);
     // The producers of each domain and the agendas read: with detail and on /chiffres, not in the short answer.
     expect(short.chiffres.par_domaine.every((d: object) => !("producteurs" in d))).toBe(true);
     expect(full.chiffres.par_domaine.every((d: { producteurs: unknown }) => Array.isArray(d.producteurs))).toBe(true);

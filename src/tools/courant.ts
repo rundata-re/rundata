@@ -287,14 +287,21 @@ export function nextSlot(a: Pick<CourantRow, "creneaux">, now: Date): { quand: s
   return { quand, autres: coming.length - 1 };
 }
 
-/** « coupure d'électricité programmée le lundi 26/10 de 09:00 à 15:00 », for the summary's one line. */
+/**
+ * « coupure d'électricité programmée le lundi 26/10 de 09:00 à 15:00, secteurs Rue Médard, Rue des Jésuites », for the
+ * summary's one line: every range of the next day of cut, each with its streets, in the words of the tool electricite
+ * (slotText). Its first range only, without its street, left out Saint-André's second cut of the day, 10:00 to 14:00
+ * ruelle Lacotte, that the page and the tool electricite gave (24/11/2026).
+ */
 export function shortOf(a: Pick<CourantRow, "nature" | "creneaux" | "pdf">, now: Date): string {
   if (a.nature === "en cours") return "coupure d'électricité en cours selon la mairie";
-  const next = (a.creneaux ?? []).find((s) => ends(s) >= localDay(now));
+  const coming = (a.creneaux ?? []).filter((s) => ends(s) >= localDay(now));
+  const next = coming[0];
   if (!next) return "coupure d'électricité annoncée par la mairie";
   if (a.pdf) return `coupure d'électricité annoncée par EDF le ${dayFr(next.jour, now)}, heures et secteurs dans l'avis de la mairie`;
-  const when = next.au ? `du ${dayFr(next.jour, now)} au ${dayFr(next.au, now)}` : `le ${dayFr(next.jour, now)}${hours(next)}`;
-  return `coupure d'électricité programmée ${when}`;
+  // The ranges of that day; a range of several days from it is the one said.
+  const day = next.au ? [next] : coming.filter((s) => !s.au && s.jour === next.jour);
+  return `coupure d'électricité programmée ${day.map((s) => slotText(s, now)).join("\u00a0; ")}`;
 }
 
 /**

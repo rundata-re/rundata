@@ -422,3 +422,32 @@ describe("Saint-André's PDF letters of EDF", () => {
     }
   });
 });
+
+describe("every cut of the day in the day's summary", () => {
+  // Saint-André's notice of 19/11/2026: three ranges, two of them on Tuesday 24/11, each with its street.
+  const avis = {
+    commune: "Saint-André",
+    titre: "INFORMATION – COUPURES D’ÉLECTRICITÉ À SAINT-ANDRÉ",
+    publie: "2026-11-19T04:53:00Z",
+    lien: "https://www.saint-andre.re/information-coupures/",
+    nature: "programmée" as const,
+    creneaux: [
+      { jour: "2026-11-23", de: "09:00", a: "12:30", secteurs: ["237 avenue de la République"], autres_lieux: true },
+      { jour: "2026-11-24", de: "09:00", a: "10:30", secteurs: ["650 chemin Balance, à proximité du terrain de football"] },
+      { jour: "2026-11-24", de: "10:00", a: "14:00", secteurs: ["N176 ruelle Lacotte"] },
+    ],
+    secteurs: [],
+  };
+  const copy: CourantAnswer = { avis: [avis], lues: ["Saint-André"], indisponibles: [], sources: [] };
+  // Tuesday 24 November 2026, 07:45 at La Réunion.
+  const TUESDAY = new Date("2026-11-24T03:45:00Z");
+
+  it("gives both of Saint-André's cuts of the day with their streets, as the tool electricite does", () => {
+    const day = resume(pageOf("saint-andre")!, { courant: { value: copy, fetchedAt: TUESDAY, stale: false } } as never, TUESDAY);
+    const both = "coupure d'électricité programmée le mardi 24/11 de 09:00 à 10:30, secteur 650 chemin Balance, à proximité du terrain de football ; le mardi 24/11 de 10:00 à 14:00, secteur N176 ruelle Lacotte";
+    expect(day.resume).toContain(both);
+    // The tool electricite (and /electricite) says the same ranges in the same words: its sentence of the notice.
+    expect(sentence(avis, TUESDAY)).toContain(both.replace("coupure d'électricité programmée", "coupure programmée"));
+    expect(day.coupures_electricite!.avis![0].creneaux).toHaveLength(3);
+  });
+});

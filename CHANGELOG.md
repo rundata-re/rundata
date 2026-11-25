@@ -6,6 +6,11 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Mercredi 25 novembre 2026
 
+- Associations : les associations déclarées à La Réunion (RNA), à chercher par commune et par mot, avec leur objet et leur année de création.
+- Élections : les bureaux de vote de chaque commune, par lieu avec leur adresse, d'après l'Insee, et le lien officiel pour connaître le sien.
+- Communes : le maire et les adjoints de chaque commune, d'après le Répertoire national des élus.
+- Carte : les vues en cartes au-dessus de la grande carte, chacune avec sa petite carte de l'île et une ligne en direct.
+- Événements : une heure de début seule (« à partir de 8h », « dès 19h30 ») est lue, aussi dans le texte complet de l'annonce.
 - Agenda : les manifestations que le TCO annonce dans l'Ouest, placées dans leur commune quand l'annonce en nomme une seule.
 
 ## Mardi 24 novembre 2026

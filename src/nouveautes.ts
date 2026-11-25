@@ -59,6 +59,11 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded for the site): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-25T11:07:00+04:00", texte: "Associations\u00a0: les associations déclarées à La Réunion (RNA), à chercher par commune et par mot, avec leur objet et leur année de création." },
+  { date: "2026-11-25T11:07:00+04:00", texte: "Élections\u00a0: les bureaux de vote de chaque commune, par lieu avec leur adresse, d'après l'Insee, et le lien officiel pour connaître le sien." },
+  { date: "2026-11-25T11:07:00+04:00", texte: "Communes\u00a0: le maire et les adjoints de chaque commune, d'après le Répertoire national des élus." },
+  { date: "2026-11-25T11:07:00+04:00", texte: "Carte\u00a0: les vues en cartes au-dessus de la grande carte, chacune avec sa petite carte de l'île et une ligne en direct." },
+  { date: "2026-11-25T11:07:00+04:00", texte: "Événements\u00a0: une heure de début seule («\u00a0à partir de 8h\u00a0», «\u00a0dès 19h30\u00a0») est lue, aussi dans le texte complet de l'annonce." },
   { date: "2026-11-25T00:06:00+04:00", texte: "Agenda\u00a0: les manifestations que le TCO annonce dans l'Ouest, placées dans leur commune quand l'annonce en nomme une seule." },
   { date: "2026-11-24T23:09:00+04:00", texte: "Calendrier de collecte des déchets rue par rue aussi dans l'Est\u00a0: Saint-André, Bras-Panon, Saint-Benoît, Salazie et La Plaine-des-Palmistes." },
   { date: "2026-11-24T20:37:00+04:00", texte: "Carte de la qualité de l'eau des plages\u00a0: moins de traits passent sous le rond d'une autre plage." },

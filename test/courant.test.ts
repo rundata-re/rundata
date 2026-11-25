@@ -212,7 +212,7 @@ describe("the power cuts the mairies relay", () => {
     expect(none("Sainte-Marie")).toBe("rundata.re n'a lu aucun avis de coupure d'électricité pour Sainte-Marie, et ne sait donc pas si une coupure y est prévue.");
     // The communes of the honesty line: every mairie read, with or without a recent notice (all read here, none by its written
     // agreement: what it says then, test/autorisations.test.ts).
-    expect(honesty()).toBe("EDF publie ses coupures pour travaux sur son site, mais ses mentions légales interdisent d'en reprendre le contenu sans son accord (lues le 03/11/2026). rundata.re reprend celles que relaient les mairies sur leurs sites\u00a0: aujourd'hui Sainte-Marie, Saint-Philippe, Cilaos, Saint-André et Sainte-Suzanne, quand leurs avis sont lisibles.");
+    expect(honesty()).toBe("EDF publie ses coupures pour travaux sur son site, mais ses mentions légales interdisent d'en reprendre le contenu sans son accord (lues le 03/11/2026). rundata.re reprend celles que relaient les mairies sur leurs sites\u00a0: aujourd'hui Sainte-Marie, Saint-Philippe, Cilaos, Saint-André et Sainte-Suzanne, quand leurs avis sont lisibles. Les coupures pour travaux qu'EDF annonce dans toute l'île sont sur son site\u00a0: https://reunion.edf.fr/edf-a-la-reunion/actualites-a-la-reunion/infos-coupures-pour-travaux.");
     const cached = { value: copy, fetchedAt: NOW, stale: false };
     expect(courantBlock(cached, "Le Port", NOW)).toMatchObject({ avis: [], note: none("Le Port") });
     expect(courantBlock(cached, "Sainte-Marie", NOW).avis.map((x) => x.publie_le)).toEqual(["21/10 10:00"]);
@@ -244,6 +244,18 @@ describe("the power cuts the mairies relay", () => {
     expect(html).toContain("aujourd&#39;hui Sainte-Marie, Saint-Philippe, Cilaos, Saint-André et Sainte-Suzanne, quand leurs avis sont lisibles.");
     expect(html).toContain("<p><b>Panne chez vous ? Le service dépannage d&#39;EDF Réunion répond au 0800 333 974 (numéro vert).</b></p>");
     expect(html).toMatch(/Dernier avis de coupure d&#39;électricité publié par la mairie de Sainte-Marie le 21\/10 : .*<a href="https:\/\/example\.org\/[^"]+" rel="noopener">l'avis →<\/a>/);
+  });
+});
+
+describe("EDF's page of cuts for works", () => {
+  const URL = "https://reunion.edf.fr/edf-a-la-reunion/actualites-a-la-reunion/infos-coupures-pour-travaux";
+  it("is given as a link, its direct address, in the tool's words and on /electricite, its content never taken", () => {
+    // The tool: the link written out, without « ?ref ».
+    expect(honesty().endsWith(`Les coupures pour travaux qu'EDF annonce dans toute l'île sont sur son site\u00a0: ${URL}.`)).toBe(true);
+    // The page: the same sentence, the address a link that may be cut on a narrow screen.
+    const copy = { avis: [], a_savoir: honesty() };
+    const html = electricitePage("https://rundata.re", { value: { resume: "", avertissements: [], sources: [], coupures_annoncees: copy }, fetchedAt: new Date(), stale: false } as never);
+    expect(html).toContain(`sont sur son site\u00a0: <a href="${URL}" style="overflow-wrap:anywhere">${URL}</a>.`);
   });
 });
 

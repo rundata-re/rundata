@@ -98,6 +98,15 @@ function rpcError(status: number, message: string): Response {
   return Response.json({ jsonrpc: "2.0", error: { code: status === 413 ? -32000 : -32600, message }, id: null }, { status });
 }
 
+/**
+ * Whether a JSON-RPC body holds a request, the only message a server answers: an object with a method and an id. A
+ * body of notifications or responses only gets 202 from the transport, with nothing for a server to do.
+ */
+export function hasRequest(body: unknown): boolean {
+  const isRequest = (m: unknown) => !!m && typeof m === "object" && typeof (m as { method?: unknown }).method === "string" && "id" in m;
+  return Array.isArray(body) ? body.some(isRequest) : isRequest(body);
+}
+
 /** No stream to offer (see below): what the transport answers to a method it does not know, with the right Allow. */
 function notAllowed(): Response {
   return Response.json({ jsonrpc: "2.0", error: { code: -32000, message: "Method not allowed." }, id: null }, { status: 405, headers: { allow: "POST, OPTIONS" } });
@@ -164,16 +173,9 @@ async function answer(request: Request, cache: Cache, background: Background, re
       watching.done(405, "Method not allowed.");
       return withCors(notAllowed());
     }
-    // Tool calls are recorded by `watching`, with more than the server knows; the server says which found nothing.
-    const server = createServer(cache, (hit) => {
-      if (hit.kind !== "mcp") record(hit);
-      else if (hit.outcome === "vide" && hit.id !== undefined) watching.vide(hit.id);
-    }, background);
-    // The tools never change while the server runs, and a stateless server could not send the notification anyway.
-    server.server.registerCapabilities({ tools: { listChanged: false } });
-    const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
-    await server.connect(transport);
-    watching.attach(transport);
+    // The body first, then the server: a body too large, a refused batch or a body with no request (notifications,
+    // responses) is answered without building the server (createServer, its tools and its validator), which cost
+    // these requests about 12 and 18 ms of CPU each on 25/11/2026 (Worker's logs, cpu_ms over 24 h).
     const read = await readBody(request);
     if ("tooLarge" in read) {
       const message = `Request body larger than ${MAX_BODY} bytes.`;
@@ -187,6 +189,13 @@ async function answer(request: Request, cache: Cache, background: Background, re
       return withCors(rpcError(400, refused));
     }
     if ("body" in read) watching.read(read.body);
+    if ("body" in read && !hasRequest(read.body)) {
+      // The transport alone checks the headers and the messages as with a server, and answers 202 (or its error).
+      const bare = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
+      const response = await bare.handleRequest(read.request, { parsedBody: read.body });
+      watching.done(response.status);
+      return withCors(response);
+    }
     // The app's calls: answered from the copy of this data center when it has one, kept when it has none (appli.ts).
     const key = "body" in read && appliDe(request.headers.get("user-agent") ?? "") ? cleCopie(read.body) : undefined;
     const store = key ? copies() : undefined;
@@ -197,6 +206,16 @@ async function answer(request: Request, cache: Cache, background: Background, re
         return withCors(kept);
       }
     }
+    // Tool calls are recorded by `watching`, with more than the server knows; the server says which found nothing.
+    const server = createServer(cache, (hit) => {
+      if (hit.kind !== "mcp") record(hit);
+      else if (hit.outcome === "vide" && hit.id !== undefined) watching.vide(hit.id);
+    }, background);
+    // The tools never change while the server runs, and a stateless server could not send the notification anyway.
+    server.server.registerCapabilities({ tools: { listChanged: false } });
+    const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
+    await server.connect(transport);
+    watching.attach(transport);
     const response = await transport.handleRequest(read.request, "body" in read ? { parsedBody: read.body } : undefined);
     watching.done(response.status);
     if (key && store) {

@@ -97,8 +97,16 @@ export function liveCommunes(c: CourantAnswer, now: Date): string[] {
 export function honesty(): string {
   const read = cc.MAIRIES.map((m) => m.commune);
   return `EDF publie ses coupures pour travaux sur son site, mais ses mentions légales interdisent d'en reprendre le contenu sans son accord (lues le 03/11/2026). ` +
-    `rundata.re reprend celles que relaient les mairies sur leurs sites${read.length ? `\u00a0: aujourd'hui ${list(read)}, quand ${read.length > 1 ? "leurs" : "ses"} avis sont lisibles` : ""}.`;
+    `rundata.re reprend celles que relaient les mairies sur leurs sites${read.length ? `\u00a0: aujourd'hui ${list(read)}, quand ${read.length > 1 ? "leurs" : "ses"} avis sont lisibles` : ""}. ${TRAVAUX_PHRASE}`;
 }
+
+/**
+ * EDF's page of its cuts for works over the whole island: given as a link, never read nor taken (its legal notice, read
+ * on 03/11/2026). Its direct address, without « ?ref ». /electricite makes it a link (web/domains.ts).
+ */
+export const TRAVAUX_EDF = "https://reunion.edf.fr/edf-a-la-reunion/actualites-a-la-reunion/infos-coupures-pour-travaux";
+/** The validated sentence (25/11/2026), the link written out for the tool. */
+export const TRAVAUX_PHRASE = `Les coupures pour travaux qu'EDF annonce dans toute l'île sont sur son site\u00a0: ${TRAVAUX_EDF}.`;
 
 /**
  * A mairie followed whose site did not answer at the last read (tools/injoignable.ts): with its notices kept, the hour

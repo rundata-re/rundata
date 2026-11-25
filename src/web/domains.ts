@@ -17,7 +17,7 @@ import type { Cached } from "../cache.js";
 import { normalize } from "../places/resolve.js";
 import * as traces from "../providers/traces.js";
 import { SUJETS } from "../providers/actualites.js";
-import { nextSlot, type CourantRow } from "../tools/courant.js";
+import { nextSlot, type CourantRow, TRAVAUX_EDF } from "../tools/courant.js";
 import { MAIRIES } from "../providers/coupures-courant.js";
 import { PERIMEE_MIN, perimeeTexte } from "../tools/electricite.js";
 import { copieAncienne, copieAncienneCourte, VOIR_COURANT, VOIR_EAU } from "../tools/copie-ancienne.js";
@@ -344,7 +344,7 @@ export function electricitePage(origin: string, data: Cached<ElectriciteAnswer> 
   const cuts = c
     ? `<section id="coupures" aria-labelledby="h-coupures">
   <div class="sec-h"><h2 id="h-coupures">Coupures d'électricité annoncées par les mairies</h2>
-  ${c.a_savoir ? `<p>${esc(c.a_savoir)}</p>` : ""}${c.depannage ? `<p><b>${esc(c.depannage)}</b></p>` : ""}</div>
+  ${c.a_savoir ? `<p>${esc(c.a_savoir).replace(esc(TRAVAUX_EDF), `<a href="${TRAVAUX_EDF}" style="overflow-wrap:anywhere">${esc(TRAVAUX_EDF)}</a>`)}</p>` : ""}${c.depannage ? `<p><b>${esc(c.depannage)}</b></p>` : ""}</div>
   ${c.lu_le ? copieBandeau(copieAncienne("courant", new Date(c.lu_le), now, "page"), esc(VOIR_COURANT)) : ""}
   ${(c.injoignable ?? []).map((s) => `<p class="note">${silentText(s)}</p>`).join("")}
   ${c.avis?.length

@@ -946,14 +946,5 @@
    "signe": "hors d'ordre sur le tracé"
   }
  },
- "centres": {
-  "La Plaine-des-Palmistes": {
-   "ecart_m": 1472,
-   "mairie": "way/67317511"
-  },
-  "Saint-Paul": {
-   "ecart_m": 1274,
-   "mairie": "node/4435765589"
-  }
- }
+ "centres": {}
 }

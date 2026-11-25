@@ -3,7 +3,7 @@ import { handle } from "../src/app.js";
 import { Cache } from "../src/cache.js";
 import { ALERTES_EN_LIGNE, ouvrir } from "../src/web/alertes-drapeau.js";
 import { ARRETER, BOUTON, ETATS, PATH, PRET_MS } from "../src/web/alertes-page.js";
-import { legalPage } from "../src/web/pages.js";
+import { legalPage } from "../src/web/legal-page.js";
 import { serviceWorker } from "../src/web/pwa.js";
 import { estDeclare } from "../src/web/scripts-declares.js";
 

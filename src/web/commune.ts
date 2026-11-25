@@ -106,7 +106,7 @@ interface Tile {
   full?: boolean;
 }
 
-/** The columns of the grid of tiles: 2 on a phone, 3 from 46rem, 4 from 66rem (pages.ts `.tiles`). */
+/** The columns of the grid of tiles: 2 on a phone, 3 from 46rem, 4 from 66rem (style.ts `.tiles`). */
 export const COLUMNS = [2, 3, 4] as const;
 
 /**

@@ -129,7 +129,7 @@ const warnings = (list: string[]) =>
 /**
  * The notices of cuts the scheduled event has not read again for a while (tools/copie-ancienne.ts), said before the
  * rest: `voir`, the « Voir … » of the page, its links given (HTML). The card has no title: its sign sits beside the
- * sentence (« enligne », pages.ts), not alone on a line above it as over a title.
+ * sentence (« enligne », style.ts), not alone on a line above it as over a title.
  */
 export const copieBandeau = (texte: string | undefined, voir = "") =>
   texte ? `<div class="card warn enligne">${icon("alert")}<p>${esc(texte)}${voir ? ` ${voir}` : ""}</p></div>` : "";
@@ -137,7 +137,7 @@ export const copieBandeau = (texte: string | undefined, voir = "") =>
 /**
  * A tool's name or a layer's code, escaped, that may be cut after each « . » and « _ » on a narrow screen
  * (annuaire_services_ / publics, ind_atmo_ / 2021) rather than in the middle of a word, by overflow-wrap:anywhere
- * (pages.ts): its « _ » through soulignesCoupables(), in a span without hyphenation, as every identifier joined by
+ * (style.ts): its « _ » through soulignesCoupables(), in a span without hyphenation, as every identifier joined by
  * « _ ». <wbr> holds no character, so a copy of the text is the text. Never in a link: Chrome names it with a space for
  * each <wbr> (« data. gouv. fr »). A declaration, not a const: pages.ts and home.ts call it while the modules load.
  */
@@ -164,7 +164,7 @@ export function nomsCoupables(html: string): string {
  * An identifier from a source, its parts joined by « _ » (« 2026_PORT_05 », « DGFIP4_Trésorerie », « date_debut »), in
  * escaped HTML: Chrome and Safari see one word in it and, past its line, cut it between two letters (« 2026_POR|T_05 »,
  * « date_d|ebut » at 160 px, Safari's page zoom at 200 % on a 320 px screen). A <wbr> after each « _ » between two
- * letters or digits, the one place where it may go to the next line, and no hyphen in it (.ident, pages.ts). In the text
+ * letters or digits, the one place where it may go to the next line, and no hyphen in it (.ident, style.ts). In the text
  * between the tags only, never in an attribute; on a link's text through lienNom() (Chrome names a link with a space for
  * each <wbr>). A word split from its spaces, so that no pattern runs over the whole text. A declaration, as
  * nomsCoupables(): lienNom() calls it while the modules load.

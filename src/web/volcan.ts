@@ -54,7 +54,7 @@ const GOUV = `${lienNom(PREFECTURE.url, "reunion.gouv.fr")}`;
 /**
  * Escaped text whose « , » never starts a line: Chrome and Safari cut a word with its comma between the two when the word
  * fits its line and the comma does not (« …de la Fournaise » then « , 1 km » on /volcan at 160 px, Safari's page zoom at
- * 200 % on a 320 px screen). Each « , » followed by a space goes in a .virg (pages.ts), where it takes no room: it hangs past
+ * 200 % on a 320 px screen). Each « , » followed by a space goes in a .virg (style.ts), where it takes no room: it hangs past
  * the end of the line, in the card's padding, and the space after it is widened by as much, so that the words around it
  * stay where they were. In the text between the tags only; the text read and copied is the same.
  */

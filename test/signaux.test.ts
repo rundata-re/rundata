@@ -3,7 +3,7 @@ import { configurerEquipe, handle, JETON_EQUIPE } from "../src/app.js";
 import { Cache } from "../src/cache.js";
 import { point, type Hit } from "../src/metrics.js";
 import { connecteurPage } from "../src/web/connecteur.js";
-import { legalPage } from "../src/web/pages.js";
+import { legalPage } from "../src/web/legal-page.js";
 import { CSS } from "../src/web/style.js";
 import { lire, SIGNAL_SCRIPT, VENU } from "../src/web/signaux.js";
 

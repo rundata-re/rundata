@@ -834,7 +834,7 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
 
   const s = enTete(l.place?.value.meteo?.stations);
   // The measure older than OLD_MINUTES at this view (a copy of the day given to a search engine's fetcher as it is,
-  // web/site.ts `communeWaits`; a source that does not answer): the same note as a place's page (web/pages.ts).
+  // web/site.ts `communeWaits`; a source that does not answer): the same note as a place's page (web/lieu-page.ts).
   const mesureA = s && l.place ? new Date(l.place.fetchedAt.getTime() - s.age_min * 60_000) : undefined;
   const perimee = s && mesureA && ageMinutes(mesureA, now) > OLD_MINUTES
     ? `<p class="note">${esc(`Dernière mesure lue à la station ${s.station} : ${leJour(s.heure_mesure)}. Ce n'est pas le temps qu'il fait maintenant.`)}</p>`

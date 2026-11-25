@@ -6,7 +6,7 @@ import * as openmeteo from "../src/providers/openmeteo.js";
 import * as uvm from "../src/providers/uv-mesure.js";
 import { previsionMeteo } from "../src/tools/prevision.js";
 import { createServer } from "../src/server.js";
-import { placePage } from "../src/web/pages.js";
+import { placePage } from "../src/web/lieu-page.js";
 import { pageOf } from "../src/web/places.js";
 import type { PlaceData } from "../src/web/data.js";
 

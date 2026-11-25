@@ -1,7 +1,7 @@
 /**
  * /meteo, the weather of the whole island: what every station measured last, on the map and in the list, the sea off
  * the coast, the links to each place's forecast, the records of the stations of reference, and how to read it all. The
- * page of each commune or famous place is in pages.ts, the sea in mer-page.ts, the vigilance in vigilance-page.ts.
+ * page of each commune or famous place is in lieu-page.ts, the sea in mer-page.ts, the vigilance in vigilance-page.ts.
  */
 import { faqPage, texteStable, type Faq } from "./texte-stable.js";
 import chaud from "../historique/plus-chaud.json" with { type: "json" };
@@ -19,7 +19,7 @@ import { pleinEcran } from "./plein-ecran.js";
 import { ALTITUDES_CREDIT, METEO_SCRIPT, RADAR_CREDIT, stationsMap } from "./meteo-carte.js";
 import { coupable } from "./domains.js";
 import { script } from "./scripts-declares.js";
-import { ask, chip, coldest, connector, CONFIANCE_ANCRE, credits, deg, fit, icon, ISLAND, layout, leAt, lesJours, meteoLive, metres, placeLinks, seaName, shortName, SITE, stationId, stationItem, stationsList, thin, warmest, withTempAll } from "./pages.js";
+import { ask, chip, coldest, connector, credits, deg, fit, icon, ISLAND, layout, leAt, lesJours, meteoLive, metres, placeLinks, seaName, shortName, SITE, stationId, stationItem, stationsList, thin, warmest, withTempAll } from "./pages.js";
 
 /** The map and every station, from the coast to the summits. */
 function weatherLive(data: Cached<HomeData> | null, now: Date): string {
@@ -41,6 +41,9 @@ function weatherLive(data: Cached<HomeData> | null, now: Date): string {
     `${d.indisponibles.length ? `<p class="note">Momentanément indisponible : ${esc(d.indisponibles.join(", "))}.</p>` : ""}</div></div><p class="sources">Sources : ${credits(d.sources)}.</p>`;
 }
 
+/** The id of what the confidence says on /meteo, where each place page's forecast links. */
+export const CONFIANCE_ANCRE = "confiance";
+
 const WEATHER_NOTES = `<section aria-labelledby="h-notes">
   <div class="sec-h"><p class="eyebrow">Bon à savoir</p><h2 id="h-notes">Comment lire ces données</h2></div>
   <div class="three">
@@ -50,6 +53,11 @@ const WEATHER_NOTES = `<section aria-labelledby="h-notes">
   </div>
 </section>`;
 
+/**
+ * The block « Records » of /meteo: the records of each station of reference of /historique (one per climate), since
+ * the first daily measurement Météo-France published for it, from its copy (recordsReference()), never written by hand. A record
+ * missing is left out, a station without any too, and the block without any station.
+ */
 export function recordsSection(h: HistoriqueAnswer | undefined): string {
   // A box per record: its words, its figure big, its date small (the cards of a station's page, station.ts).
   const box = (cls: string, label: string, x: { valeur: number; date: string } | undefined, v: (n: number) => string) =>

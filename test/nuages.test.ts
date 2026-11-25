@@ -10,7 +10,7 @@ import { nuitOf } from "../src/tools/calendrier.js";
 import { previsionMeteo, stepSky } from "../src/tools/prevision.js";
 import type { Forecast, ForecastHour } from "../src/types.js";
 import { randonneesPage } from "../src/web/domains.js";
-import { placePage } from "../src/web/pages.js";
+import { placePage } from "../src/web/lieu-page.js";
 import { pageOf } from "../src/web/places.js";
 import { withVolcan } from "../src/web/volcan-alerte.js";
 

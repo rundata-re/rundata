@@ -5,7 +5,7 @@ import { Cache, MemoryStore } from "../src/cache.js";
 import * as climat from "../src/providers/climat.js";
 import { confianceExplication } from "../src/tools/prevision.js";
 import { historiqueMeteo, reperesMois, type ReperesMois } from "../src/tools/historique.js";
-import { placePage, reperesBlock } from "../src/web/pages.js";
+import { placePage, reperesBlock } from "../src/web/lieu-page.js";
 import { meteoPage } from "../src/web/meteo-page.js";
 import { pageOf } from "../src/web/places.js";
 

@@ -11,7 +11,7 @@ import { resume } from "../src/tools/resume.js";
 import { aujourdhuiPage } from "../src/web/aujourdhui.js";
 import { communePage } from "../src/web/commune.js";
 import { esc } from "../src/web/map.js";
-import { placePage } from "../src/web/pages.js";
+import { placePage } from "../src/web/lieu-page.js";
 import { PAGES } from "../src/web/places.js";
 import { a, ailleurs, communeDite } from "../src/tools/format.js";
 

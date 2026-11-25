@@ -7,7 +7,7 @@ import { meteoActuelle } from "../src/tools/meteo.js";
 import { phrases } from "../src/tools/format.js";
 import { CONVENTION, hierPartiel, recentRainBlock } from "../src/tools/pluie-recente.js";
 import type { Fit } from "../src/tools/representativeness.js";
-import { placePage } from "../src/web/pages.js";
+import { placePage } from "../src/web/lieu-page.js";
 import { pageOf } from "../src/web/places.js";
 
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url), "utf8");

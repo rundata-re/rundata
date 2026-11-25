@@ -22,7 +22,7 @@ import { bornesPage, daePage, eauPage, tracePage, velosPage } from "../src/web/d
 import { agendaPage } from "../src/web/agenda.js";
 import { enfantsCommunePage, enfantsPage } from "../src/web/enfants.js";
 import { concertsPage, weekendPage } from "../src/web/evenements.js";
-import { placePage } from "../src/web/pages.js";
+import { placePage } from "../src/web/lieu-page.js";
 import { seaPage } from "../src/web/mer-page.js";
 import { pageOf } from "../src/web/places.js";
 

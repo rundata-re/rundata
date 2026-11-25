@@ -9,7 +9,7 @@ import { fourchette } from "../src/tools/format.js";
 import { parsePeriod, previsionMeteo } from "../src/tools/prevision.js";
 import { resume } from "../src/tools/resume.js";
 import { aujourdhuiPage } from "../src/web/aujourdhui.js";
-import { placePage } from "../src/web/pages.js";
+import { placePage } from "../src/web/lieu-page.js";
 import { SHARED_AFTER } from "../src/web/partagees.js";
 import { pageOf } from "../src/web/places.js";
 

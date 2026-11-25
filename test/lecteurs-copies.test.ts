@@ -5,7 +5,7 @@ import { BANNER_WAIT_MS, snapshot } from "../src/web/data.js";
 import { homePage, type HomeLive } from "../src/web/home.js";
 import { scheduledEvery } from "../src/web/partagees.js";
 import type { MeteoAnswer } from "../src/tools/meteo.js";
-import { placePage } from "../src/web/pages.js";
+import { placePage } from "../src/web/lieu-page.js";
 import { pageOf } from "../src/web/places.js";
 import { HOME_READER_WAIT_MS, homeWaits, LIVE_READER_WAIT_MS, oldCopy, ownWaits, readerOf, site } from "../src/web/site.js";
 

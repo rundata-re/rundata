@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { ask, credits, placePage } from "../src/web/pages.js";
+import { ask, credits } from "../src/web/pages.js";
+import { placePage } from "../src/web/lieu-page.js";
 import { pageOf } from "../src/web/places.js";
 import { INSTALL } from "../src/web/pwa.js";
 

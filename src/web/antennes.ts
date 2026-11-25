@@ -4,7 +4,8 @@
  * by the page's address too (« #orange-5g »), and the dots coloured by operator or by generation; without the script,
  * every mobile support coloured by operator. A dot per support, filled when an antenna is active (en service, or
  * techniquement opérationnel for the 5G), a ring when only planned. The map zooms as the hikes' does, with the IGN's
- * backgrounds, closer with one of them (a town's streets). Then the communes' counts. Never coverage nor exposure.
+ * backgrounds, closer with one of them (a town's streets). A click on a dot opens its sheet (web/antennes-fiche.ts).
+ * Then the communes' counts. Never coverage nor exposure.
  */
 import type { Cached } from "../cache.js";
 import { INSEE } from "../places/insee.js";
@@ -18,6 +19,7 @@ import { MAX_ZOOM } from "./carte-zoom.js";
 import { esc, FOND_ZOOM, islandMap, project, zoomIsland } from "./map.js";
 import { credits, layout, type Live } from "./pages.js";
 import { script } from "./scripts-declares.js";
+import { ficheScript, MOTS as FICHE } from "./antennes-fiche.js";
 
 export const PATH = "/antennes";
 
@@ -182,7 +184,7 @@ function map(): string {
   // Without the script: every mobile support, coloured by operator, as the filters' first choice.
   const supports = antennes.SUPPORTS.map((s, i) => {
     const [x, y] = project(s.lon, s.lat), l = look(parsed[i], [], [], "o")!;
-    return `<circle class="s k${l[1]}${l[0] ? " r" : ""}" cx="${x}" cy="${y}" r="6" data-g="${codes[i]}"/>`;
+    return `<circle class="s k${l[1]}${l[0] ? " r" : ""}" cx="${x}" cy="${y}" r="6" data-g="${codes[i]}" data-i="${s.id}"/>`;
   }).join("");
   const emetteurs = antennes.EMETTEURS.map((e) => {
     const [x, y] = project(e.lon, e.lat);
@@ -196,7 +198,8 @@ function map(): string {
   const compte = `<span class="lg">${esc(phrase(all.filter((l) => !l[0]).length, all.filter((l) => l[0]).length, 0, []))}</span>`;
   return `<figure class="card mapcard antmap">${filtres}` +
     zoomIsland(islandMap({ overlay: `<g class="ants">${supports}${emetteurs}</g>`, peaks: true, fond: "a", label: "Carte de La Réunion (974) : les supports d'antennes déclarés à l'ANFR, filtrés par opérateur et par type" }), "a", { id: "amap", mostFd: MAX_ZOOM * FOND_ZOOM / 2 }) +
-    `${script(TAILLE_SCRIPT)}<figcaption class="note">${legende}${formes}${compte}</figcaption></figure>${script(FILTRES_SCRIPT)}`;
+    `${script(TAILLE_SCRIPT)}<figcaption class="note">${legende}${formes}${compte}<span class="aide">${esc(FICHE.aide)}</span></figcaption></figure>` +
+    `<div class="card antfiche" id="antfiche" aria-live="polite" hidden></div>${script(FILTRES_SCRIPT)}${script(ficheScript())}`;
 }
 
 function table(): string {

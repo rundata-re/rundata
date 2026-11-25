@@ -1685,6 +1685,8 @@ export interface Journee {
    */
   mix?: [number, number, number, number, number, number][];
   mis_a_jour?: string;
+  /** rundata.re's archive's first hour (ISO, providers/edf.ts `archiver`), written in the page under the chart. */
+  archive_depuis?: string;
 }
 
 /** EDF's lines as the chart's points, or undefined when there are too few to draw. */
@@ -1715,9 +1717,9 @@ export const buildElectricite = async (cache: Cache, now = new Date()): Promise<
   const c = await day;
   // The day's hours into rundata.re's archive, at most once an hour, outside the copy's cost and with what is left;
   // its failure leaves the copy as it is.
-  if (c) await unmeasured(() => edf.archiver(cache, c.value, now));
+  const depuis = c ? await unmeasured(() => edf.archiver(cache, c.value, now)) : undefined;
   const j = c && journeeOf(c.value);
-  return j ? { ...d, journee: j } : d;
+  return j ? { ...d, journee: { ...j, ...(depuis && { archive_depuis: depuis }) } } : d;
 };
 
 export interface CalendrierAnswer {

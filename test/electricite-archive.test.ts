@@ -60,6 +60,22 @@ describe("rundata.re's archive of EDF's production", () => {
     expect(((puts.mock.calls[1][1] as CacheEntry).value as edf.Archive).heures.map((x) => x[0])).toEqual([h(H0), h(H0) + 1, h(H0) + 2]);
   });
 
+  it("gives the archive's first hour for the page, as read, then as this isolate knows it without reading again", async () => {
+    const store = new MemoryStore();
+    const gets = vi.spyOn(store, "get");
+    const cache = new Cache(new MemoryStore(), () => H0 + 3 * 3600_000, true, store);
+    const first = new Date(h(H0) * 3600_000).toISOString();
+    expect(await edf.archiver(cache, { lignes: lignes(H0, 25) }, new Date(H0 + 3 * 3600_000))).toBe(first);
+    // The same hour again: not read, the same first hour.
+    expect(await edf.archiver(cache, { lignes: lignes(H0, 25) }, new Date(H0 + 3 * 3600_000))).toBe(first);
+    expect(gets).toHaveBeenCalledTimes(1);
+    // A new isolate whose pass leaves too little: nothing read, nothing to say.
+    edf.oublierArchive();
+    expect((await counted(100, () => edf.archiver(cache, { lignes: lignes(H0, 25) }, new Date(H0 + 3 * 3600_000)))).value).toBeUndefined();
+    // A new hour later: the first hour stays the archive's, not the day's.
+    expect(await edf.archiver(cache, { lignes: lignes(H0 + 3600_000, 37) }, new Date(H0 + 5 * 3600_000))).toBe(first);
+  });
+
   it("waits for a pass that leaves enough after it, outside the copy's cost", async () => {
     const store = new MemoryStore();
     const gets = vi.spyOn(store, "get");

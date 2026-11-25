@@ -165,28 +165,36 @@ const ARCHIVE_RESERVE = 115;
 
 /** The last hour archived by this isolate: the next build of the hour need not read the archive again. */
 let archivee = -Infinity;
+/** The archive's first hour as this isolate last read or wrote it (hours since 1970, UTC). */
+let premiere: number | undefined;
 
 /**
  * Adds the day's complete hours to the archive when its last hour is missing: a read of KV, and a write once an hour,
  * outside the build's cost (web/data.ts: `unmeasured`). A failure is logged, never thrown: the page's copy is written
- * all the same.
+ * all the same. Returns the archive's first hour (ISO), for « rundata.re les garde depuis le … » written in the page
+ * (web/electricite-carte.ts): as read now, or as this isolate last read it; undefined when it has not read it.
  */
-export async function archiver(cache: Cache, j: Journee, now = new Date()): Promise<void> {
+export async function archiver(cache: Cache, j: Journee, now = new Date()): Promise<string | undefined> {
   try {
     const nouvelles = heuresOf(j.lignes);
     const last = nouvelles.at(-1)?.[0];
-    if (last === undefined || last <= archivee || left() < ARCHIVE_COST + ARCHIVE_RESERVE) return;
-    const before = (await cache.kept<Archive>(ARCHIVE_KEY))?.value.heures ?? [];
-    if ((before.at(-1)?.[0] ?? -Infinity) < last) await cache.keep(ARCHIVE_KEY, { heures: fusion(before, nouvelles, now) } satisfies Archive, (ARCHIVE_JOURS + 30) * 86_400);
-    archivee = last;
+    if (last !== undefined && last > archivee && left() >= ARCHIVE_COST + ARCHIVE_RESERVE) {
+      const before = (await cache.kept<Archive>(ARCHIVE_KEY))?.value.heures ?? [];
+      const after = (before.at(-1)?.[0] ?? -Infinity) < last ? fusion(before, nouvelles, now) : before;
+      if (after !== before) await cache.keep(ARCHIVE_KEY, { heures: after } satisfies Archive, (ARCHIVE_JOURS + 30) * 86_400);
+      archivee = last;
+      premiere = after[0]?.[0];
+    }
   } catch (err) {
     console.error("edf : archive non écrite", err instanceof Error ? err.message : String(err));
   }
+  return premiere === undefined ? undefined : new Date(premiere * 3600_000).toISOString();
 }
 
-/** Forgets the last hour archived (the tests: each its own isolate). */
+/** Forgets the last hour archived and the archive's first hour (the tests: each its own isolate). */
 export function oublierArchive(): void {
   archivee = -Infinity;
+  premiere = undefined;
 }
 
 /**

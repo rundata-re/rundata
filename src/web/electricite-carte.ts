@@ -299,8 +299,10 @@ export function productionChart(j: Journee): string {
   // full (in the buttons, two lines on a phone).
   const durees = `<div class="ech-d" role="group" aria-label="Durée du graphique" hidden><button type="button" aria-pressed="true" data-d="j1">24\u00a0h</button>` +
     `<button type="button" aria-pressed="false" data-d="j7" hidden>7\u00a0jours</button><button type="button" aria-pressed="false" data-d="j30" hidden>30\u00a0jours</button></div><p class="mls ech-dd" hidden></p>`;
+  // The archive's first day, written by the server for a reader without the script (the script writes it again).
+  const depuis = j.archive_depuis && !Number.isNaN(Date.parse(j.archive_depuis)) ? dm(Date.parse(j.archive_depuis)) : "";
   const source = `Production d'électricité de l'île sur 24\u00a0h, toutes les 5\u00a0minutes, estimée par EDF${j.mis_a_jour ? ` (mise à jour le ${esc(j.mis_a_jour.replace(" ", " à "))})` : ""}. Part renouvelable selon les filières d'EDF, sans les batteries.`;
-  const archive = `Moyennes par heure (7\u00a0jours) ou par 3\u00a0heures (30\u00a0jours), calculées par rundata.re d'après la production qu'EDF publie toutes les 5\u00a0minutes. EDF ne garde que les 24\u00a0dernières heures<span class="ech-depuis" hidden>\u00a0: rundata.re les garde depuis le <span class="ech-dp"></span></span>.`;
+  const archive = `Moyennes par heure (7\u00a0jours) ou par 3\u00a0heures (30\u00a0jours), calculées par rundata.re d'après la production qu'EDF publie toutes les 5\u00a0minutes. EDF ne garde que les 24\u00a0dernières heures<span class="ech-depuis"${depuis ? "" : " hidden"}>\u00a0: rundata.re les garde depuis le <span class="ech-dp">${depuis}</span></span>.`;
   // The points for the script, in whole MW: what it says is rounded the same. With each filière's MW when the copy has
   // them (`m`), and each group's MW installed (`i`), for the map's rounds: none in a copy kept before them.
   const mix = j.mix?.length === pts.length ? j.mix : undefined;

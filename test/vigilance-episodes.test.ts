@@ -5,7 +5,7 @@ import { configure as mfConfigure } from "../src/providers/mf-auth.js";
 import * as mf from "../src/providers/vigilance.js";
 import * as episodes from "../src/providers/vigilance-episodes.js";
 import { vigilanceMeteo } from "../src/tools/vigilance.js";
-import { vigilancePage } from "../src/web/pages.js";
+import { vigilancePage } from "../src/web/vigilance-page.js";
 import { unzip } from "../src/zip.js";
 
 const NOW = new Date("2026-11-24T06:00:00Z");

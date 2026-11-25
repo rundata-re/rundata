@@ -37,7 +37,8 @@ import { fond, FONDS, MENTION, MOTIF_CREDIT, MOTIF_PAGES, MOTIF_PATH, SANS_FOND,
 import files from "../src/web/fonds.json" with { type: "json" };
 import { homePage } from "../src/web/home.js";
 import { kitPage } from "../src/web/kit-cyclone.js";
-import { notFoundPage, offlinePage, vigilancePage } from "../src/web/pages.js";
+import { notFoundPage, offlinePage } from "../src/web/pages.js";
+import { vigilancePage } from "../src/web/vigilance-page.js";
 import { seaPage } from "../src/web/mer-page.js";
 import { meteoPage } from "../src/web/meteo-page.js";
 import { CSS } from "../src/web/style.js";

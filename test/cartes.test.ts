@@ -5,7 +5,8 @@ import type { EauAnswer, HistoriqueAnswer, SeaData } from "../src/web/data.js";
 import { eauPage } from "../src/web/domains.js";
 import { historiquePage } from "../src/web/historique.js";
 import { project } from "../src/web/map.js";
-import { anchorId, seaPage } from "../src/web/pages.js";
+import { anchorId } from "../src/web/pages.js";
+import { seaPage } from "../src/web/mer-page.js";
 import { deadAnchors, doubleIds, mapLinks, tabStops } from "./cartes.js";
 
 const NOW = new Date("2026-10-24T06:00:00Z");

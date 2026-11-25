@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { HomeData, SeaData, StationNow } from "../src/web/data.js";
-import { meteoLive, seaPage } from "../src/web/pages.js";
+import { meteoLive } from "../src/web/pages.js";
+import { seaPage } from "../src/web/mer-page.js";
 import { meteoPage } from "../src/web/meteo-page.js";
 
 const O = "https://rundata.re";

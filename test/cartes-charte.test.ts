@@ -14,7 +14,7 @@ import { historiquePage } from "../src/web/historique.js";
 import { enfantsPage } from "../src/web/enfants.js";
 import { POINTS_SCRIPT } from "../src/web/carte-points.js";
 import { islandMap } from "../src/web/map.js";
-import { seaPage } from "../src/web/pages.js";
+import { seaPage } from "../src/web/mer-page.js";
 import { CSS } from "../src/web/style.js";
 import { pageOf } from "../src/web/places.js";
 

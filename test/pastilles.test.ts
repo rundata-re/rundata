@@ -10,7 +10,7 @@ import { daePage, duAu, eauPage, onfDot, randonneesPage } from "../src/web/domai
 import { sentiersPage } from "../src/web/sentiers.js";
 import { historiquePage } from "../src/web/historique.js";
 import { enfantsCommunePage, enfantsPage } from "../src/web/enfants.js";
-import { seaPage } from "../src/web/pages.js";
+import { seaPage } from "../src/web/mer-page.js";
 import { pageOf } from "../src/web/places.js";
 import { pressePage } from "../src/web/presse.js";
 import { publierPage } from "../src/web/publier.js";

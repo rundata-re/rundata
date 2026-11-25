@@ -6,7 +6,7 @@ import { aujourdhuiPage } from "../src/web/aujourdhui.js";
 import type { AgendaAnswer, SeaData } from "../src/web/data.js";
 import { signalHeure } from "../src/web/domains.js";
 import { agendaPage } from "../src/web/agenda.js";
-import { seaPage } from "../src/web/pages.js";
+import { seaPage } from "../src/web/mer-page.js";
 import { pageOf } from "../src/web/places.js";
 
 // Friday 6 November 2026, 14:15 at La Réunion. A copy of a page is read any day: each says the day of what it tells,

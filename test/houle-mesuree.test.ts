@@ -6,7 +6,7 @@ import * as candhis from "../src/providers/candhis.js";
 import { coastwatch, parseAscii } from "./sst.js";
 import { BOUEE_MAX_KM, COVERAGE, coverage, SATELLITES, TOUR, temperatureMer } from "../src/tools/mer.js";
 import { buildSea } from "../src/web/data.js";
-import { seaPage } from "../src/web/pages.js";
+import { seaPage } from "../src/web/mer-page.js";
 
 // The sea of test/mer-taille.test.ts (waves of Open-Meteo, ACSPO's grid, corals), and what the scheduled event keeps of
 // the Candhis buoys: 97410 Saint-Pierre (large) as getCampListeTR gave it on 23/11/2026 at 05:20 UTC, moved to 40

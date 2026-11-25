@@ -20,6 +20,9 @@ import { TTL_S } from "../push/abonnements.js";
 import { ABONNEMENT_PATH, CLE_PATH } from "./alertes.js";
 
 export const PATH = "/alertes";
+/** How long the button waits for the service worker to be ready: one that cannot install never is, and the page says
+ * the alerts are unavailable instead of staying silent. */
+export const PRET_MS = 10_000;
 
 const TITLE = "Les alertes sur votre téléphone";
 const LEAD =
@@ -39,6 +42,7 @@ export const ARRETER = "Ne plus recevoir";
 /**
  * The script of the button. Without Push (an old browser, an iPhone's Safari outside the home screen) it says so and
  * shows no button. Each step that fails leaves the phone as it was: a subscription the site refused is unsubscribed.
+ * A service worker that is not ready after PRET_MS (one that could not install) is a failure like the others.
  */
 const SCRIPT = `(()=>{const E=${inScript(ETATS)},$=(i)=>document.getElementById(i);
 const msg=$("alertes-etat"),go=$("alertes-go"),stop=$("alertes-stop");
@@ -46,7 +50,7 @@ const show=(k,sub)=>{msg.textContent=k?E[k]:"";msg.hidden=!k;go.hidden=!!sub;sto
 const ios=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
 const home=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
 if(!("serviceWorker"in navigator)||!("PushManager"in window)||!("Notification"in window)){show(ios&&!home?"iphone":"indisponible",false);go.hidden=true;return}
-const reg=()=>navigator.serviceWorker.register(${inScript("/sw.js")}).then(()=>navigator.serviceWorker.ready);
+const reg=()=>navigator.serviceWorker.register(${inScript("/sw.js")}).then(()=>Promise.race([navigator.serviceWorker.ready,new Promise((_,n)=>setTimeout(()=>n(new Error("sw")),${PRET_MS}))]));
 const key=(s)=>{const b=atob(s.replace(/-/g,"+").replace(/_/g,"/")+"=".repeat((4-s.length%4)%4));return Uint8Array.from(b,(c)=>c.charCodeAt(0))};
 // The page's own reads, in the browser (registre.ts counts only the Worker's reads of other sites).
 const cle=()=>fetch(${inScript(CLE_PATH)});

@@ -1,8 +1,8 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { handle } from "../src/app.js";
 import { Cache } from "../src/cache.js";
 import { ALERTES_EN_LIGNE, ouvrir } from "../src/web/alertes-drapeau.js";
-import { ARRETER, BOUTON, ETATS, PATH } from "../src/web/alertes-page.js";
+import { ARRETER, BOUTON, ETATS, PATH, PRET_MS } from "../src/web/alertes-page.js";
 import { legalPage } from "../src/web/pages.js";
 import { serviceWorker } from "../src/web/pwa.js";
 import { estDeclare } from "../src/web/scripts-declares.js";
@@ -95,5 +95,44 @@ describe("the service worker and the alerts", () => {
     await w.fire("notificationclick", click(undefined));
     expect(w.opened).toEqual([`${O}/vigilance`, `${O}/`, `${O}/`]);
     expect(w.focused).toEqual([`${O}/volcan`]);
+  });
+});
+
+describe("the button's script", () => {
+  afterEach(() => vi.useRealTimers());
+
+  it("says the alerts are unavailable when the service worker never gets ready, instead of staying silent", async () => {
+    ouvrir(true);
+    const html = await (await get(PATH)).text();
+    const code = html.split("<script>").map((x) => x.split("</script>")[0]).find((x) => x.includes("pushManager"))!;
+    vi.useFakeTimers();
+    const el = (id: string) => {
+      const on: Record<string, () => Promise<void>> = {};
+      return { id, hidden: id !== "alertes-go", disabled: false, textContent: "", on, addEventListener: (t: string, f: () => Promise<void>) => (on[t] = f) };
+    };
+    const els = Object.fromEntries(["alertes-etat", "alertes-go", "alertes-stop"].map((i) => [i, el(i)]));
+    const lus: string[] = [];
+    const navigator = {
+      userAgent: "Mozilla/5.0 (Linux; Android 14)",
+      serviceWorker: { register: async () => ({}), ready: new Promise(() => {}) },
+    };
+    const Notification = { requestPermission: async () => "granted", permission: "granted" };
+    new Function("document", "navigator", "window", "matchMedia", "Notification", "fetch", "setTimeout", code)(
+      { getElementById: (i: string) => els[i] },
+      navigator,
+      { PushManager: {}, Notification },
+      () => ({ matches: true }),
+      Notification,
+      async (u: string) => (lus.push(u), { ok: true, json: async () => ({ cle: "AAAA" }) }),
+      setTimeout,
+    );
+    const clic = els["alertes-go"].on.click();
+    await vi.advanceTimersByTimeAsync(PRET_MS - 1);
+    expect(els["alertes-etat"].hidden).toBe(true);
+    await vi.advanceTimersByTimeAsync(1);
+    await clic;
+    expect(els["alertes-etat"]).toMatchObject({ hidden: false, textContent: ETATS.indisponible });
+    expect(els["alertes-go"]).toMatchObject({ hidden: false, disabled: false });
+    expect(lus).toEqual([]);
   });
 });

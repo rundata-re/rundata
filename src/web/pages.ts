@@ -419,7 +419,8 @@ e.preventDefault();if(!t.matches("a[href]")){t.setAttribute("tabindex","-1");t.s
 
 const SCRIPT = `${EVITE_SCRIPT}
 const menu=document.querySelector("details.menu");if(menu){document.addEventListener("click",(e)=>{if(menu.open&&!menu.contains(e.target))menu.open=false});
-document.addEventListener("keydown",(e)=>{if(e.key==="Escape"&&menu.open){menu.open=false;menu.querySelector("summary").focus()}})}
+document.addEventListener("keydown",(e)=>{if(e.key==="Escape"&&menu.open){menu.open=false;menu.querySelector("summary").focus()}});
+menu.querySelectorAll('a[href^="#"]').forEach((a)=>a.addEventListener("click",()=>{menu.open=false}))}
 ${UNFOLD_SCRIPT}
 document.querySelectorAll("[data-copy]").forEach((b)=>b.addEventListener("click",async()=>{const t=document.getElementById(b.dataset.copy);
 const o=b.textContent;if(b.dataset.signal&&location.pathname==="/mcp")sig("c");try{await navigator.clipboard.writeText(t.textContent);b.textContent="Copié ✓";setTimeout(()=>b.textContent=o,2500)}catch{getSelection().selectAllChildren(t)}}));
@@ -575,7 +576,7 @@ const MENU = [
  * Five or six links in the bar: their names without their icons, and the accounts in the menu below 75rem, so that the
  * bar never scrolls.
  */
-function header(path: string, origin: string, u: Urgent): string {
+function header(path: string, origin: string, u: Urgent, avis = true): string {
   // Without the ?ref= a link may carry: the clubs' space is still the page shown.
   const current = (p: string) => (inCategory(path, p.split("?")[0]) ? ' aria-current="page"' : "");
   const menu = byUse(MENU.filter((m) => m.key !== "associations" || enLigne()), u);
@@ -600,7 +601,7 @@ function header(path: string, origin: string, u: Urgent): string {
   <a class="cta-ia" href="/mcp" aria-label="Brancher mon IA"${current("/mcp")}>${icon("spark")}<span class="ia-l">Brancher mon IA</span><span class="ia-c">Mon IA</span></a>
   <details class="menu"><summary aria-label="Menu\u00a0: toutes les rubriques"><span class="g">${icon("grid")}</span><span class="x">${icon("close")}</span><span class="m" aria-hidden="true">Menu</span></summary>
     <nav class="sheet" aria-label="Catégories"><div class="wrap">
-      ${link(COMMUNES, "kcomm k-communes")}
+      ${avis ? `<p><a class="sheet-app sheet-avis" href="#avis">Donner un avis →</a></p>\n      ` : ""}${link(COMMUNES, "kcomm k-communes")}
       ${groups}
       ${sheet.length ? `<p class="sheet-h">Suivre rundata.re</p>\n      <p class="social sheet-follow">${paired(sheet)}</p>` : ""}
       <p class="sheet-h">Le connecteur pour votre IA</p>
@@ -814,7 +815,7 @@ ${head.jsonld.length ? `<script type="application/ld+json">${JSON.stringify(head
 </head>
 <body>
 <a class="evite" href="#contenu">${head.en ? "Skip to content" : "Aller au contenu"}</a>
-${head.en ? header(head.path, origin, urgent(head)).replace("<header ", '<header lang="fr" ') : header(head.path, origin, urgent(head))}
+${head.en ? header(head.path, origin, urgent(head), !head.shell && !head.sansAvis).replace("<header ", '<header lang="fr" ') : header(head.path, origin, urgent(head), !head.shell && !head.sansAvis)}
 <main id="contenu">
 ${head.shell ? "" : `${head.en ? '<div lang="fr" style="display:contents">' : ""}${banner(head.alerte, head.path)}
 ${head.volcan ? "" : bannerHtml(volcanBanner(), head.path)}${head.en ? "</div>" : ""}`}

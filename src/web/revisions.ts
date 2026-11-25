@@ -144,7 +144,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // `coupures_annoncees` with each range of hours of a day (21/11/2026).
   // `coupures_annoncees` with « et d'autres lieux nommés dans l'avis » (21/11/2026).
   // `coupures_annoncees.lu_le`, the hour of the notices' read, for the page's warning when it is old (23/11/2026).
-  electricite: 27,
+  // `journee.archive_depuis`, the archive's first hour, written by the server under the chart (25/11/2026).
+  electricite: 28,
   // A title written all in capitals in the case of a sentence, its employer named (« Commune du Tampon »).
   emploi: 9,
   // The children's trails (sentiers marmailles) by the commune of their outline (24/11/2026).

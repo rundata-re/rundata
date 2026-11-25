@@ -49,6 +49,9 @@ describe("the 24 hours of /electricite", () => {
     // 24/11/2026: « rundata.re les garde depuis le . » before the archive's first hour was read; hidden until the script
     // has a date to write in it.
     expect(html).toContain('heures<span class="ech-depuis" hidden>\u00a0: rundata.re les garde depuis le <span class="ech-dp"></span></span>.');
+    // The archive's first day known to the server: written in the page, for a reader without the script.
+    expect(productionChart({ ...j, archive_depuis: "2026-11-01T20:00:00.000Z" })).toContain('heures<span class="ech-depuis">\u00a0: rundata.re les garde depuis le <span class="ech-dp">02/11</span></span>.');
+    expect(productionChart({ ...j, archive_depuis: "pas une date" })).toContain('<span class="ech-depuis" hidden>');
     const ech = JSON.parse(html.match(/data-ech="([^"]+)"/)![1].replace(/&quot;/g, '"'));
     expect(ech.p).toEqual([[0, 268, 14, 284], [5, 269, 14, 281]]);
     // Each filière's whole MW, for the chart « Par filière » and the map's rounds, with each group's MW installed.

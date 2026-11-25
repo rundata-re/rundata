@@ -810,6 +810,14 @@ describe("agenda", () => {
       expect(saintLouis.every((a) => a.source.licence === "Reprise autorisée à des fins d'information, sans usage commercial (mentions légales du site)" && a.site_commune === "site de la commune de Saint-Louis")).toBe(true);
     });
 
+    it("reads Le Tampon's start time after the day said again lower in its text (its feed, 25/11/2026)", () => {
+      // « Samedi 28 novembre 2026 » at the head; « le samedi 28 novembre 2026, sur deux sites » lower; « à partir de 8h »
+      // 575 characters after the first: the earliest of the two sites' hours.
+      const [e] = parseRss(fixture("rss_le-tampon-environnement.xml"), "Ville du Tampon", "Le Tampon", true);
+      expect(e.titre).toBe("Journée de l’environnement 2026");
+      expect(e.seances).toEqual([{ debut: "2026-11-28T08:00" }]);
+    });
+
     it("says what else is read in Saint-Leu, its news being no full agenda: Le Séchoir's programme", async () => {
       const b = body(await agenda(cache(), "Saint-Leu", undefined, undefined, NOW));
       expect(b.resume).toContain("Saint-Leu : seuls les événements annoncés dans les actualités de la Ville de Saint-Leu sont lus, ce n'est pas un agenda complet\u00a0; s'y ajoutent le programme du Séchoir");

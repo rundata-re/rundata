@@ -124,7 +124,7 @@ describe("the order of the pages", () => {
     // Out of the home page's top since it was made lighter (04/11/2026): in the footer of every page.
     const foot = homePage(O, null, NOW).split('<footer class="foot')[1];
     for (const s of SOCIAL) {
-      const link = `<a href="${s.nom === "GitHub" ? s.url : `${s.url}?ref=site`}" rel="noopener" aria-label="rundata.re sur ${s.nom}">`;
+      const link = `<a href="${s.nom === "GitHub" || s.nom === "Facebook" ? s.url : `${s.url}?ref=site`}" rel="noopener" aria-label="rundata.re sur ${s.nom}">`;
       // Each logo is drawn from its <symbol>, written once per page.
       const logo = `<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#c-${s.nom.toLowerCase()}"/></svg>`;
       // In the bar, the networks to follow; the WhatsApp channel and the code in the menu and the footer only.

@@ -182,8 +182,13 @@ export const BAR_LEFT_OUT = ["WhatsApp", "GitHub"];
 /** The accounts that have an address. */
 export const followed = (list = SOCIAL) => list.filter((s) => s.url);
 
-/** Visits from the site's own links are counted apart (src/metrics.ts); not on GitHub, which brings none back to count. */
-const fromSite = (url: string) => (url === GITHUB ? url : `${url}${url.includes("?") ? "&" : "?"}ref=site`);
+/**
+ * `?ref=site` on the links to the accounts, for the network's own statistics: rundata.re never sees it (src/metrics.ts
+ * counts the visits that come to the site). Not on GitHub, nor on Facebook, where `ref` is a parameter of Facebook's
+ * own: on 25/11/2026 a reader said that on some older Android phones the link with `?ref=site` did not open the Page.
+ */
+const SANS_REF = new Set(["GitHub", "Facebook"]);
+const fromSite = (s: Social) => (SANS_REF.has(s.nom) ? s.url : `${s.url}${s.url.includes("?") ? "&" : "?"}ref=site`);
 
 /**
  * Each account's logo is written once per page, as a <symbol> at the top of the bar (`accountSymbols`), and every link
@@ -207,7 +212,7 @@ export function accountSymbols(): string {
 const accountLinks = (list = SOCIAL, logoOnly = false) =>
   followed(list).map((s) => {
     const logo = ownLogo(s) ? `<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#${symbolId(s)}"/></svg>` : s.svg;
-    return `<a href="${esc(fromSite(s.url))}" rel="noopener" aria-label="rundata.re sur ${esc(s.nom)}">${logo}${logoOnly ? "" : esc(s.nom)}</a>`;
+    return `<a href="${esc(fromSite(s))}" rel="noopener" aria-label="rundata.re sur ${esc(s.nom)}">${logo}${logoOnly ? "" : esc(s.nom)}</a>`;
   });
 
 /** The links two by two, each group kept on one line, the last one by three when they are odd: never one left alone. */
@@ -515,7 +520,7 @@ function share(origin: string, head: Head): string {
   const text = `${head.title.replace(/ · (?:La Réunion \(974\)|974)$/, "")} : ${origin}${head.path}?ref=wa`;
   // A name of one letter (X) is read « X majuscule »: the link says whose account it is, in words.
   const link = (s: Social, label = s.nom) =>
-    `<a href="${esc(fromSite(s.url))}" rel="noopener"${/^\p{L}$/u.test(label) ? ` aria-label="rundata.re sur ${esc(label)}"` : ""}>${esc(label)}</a>`;
+    `<a href="${esc(fromSite(s))}" rel="noopener"${/^\p{L}$/u.test(label) ? ` aria-label="rundata.re sur ${esc(label)}"` : ""}>${esc(label)}</a>`;
   // The two promises first, Facebook's fact every morning and the WhatsApp channel's outings on Friday; then the
   // other networks, a plain list of where rundata.re is, with no rhythm promised (wording validated on 22/11/2026): « Suivez
   // rundata.re : une info utile chaque matin sur Facebook, les sorties du week-end le vendredi sur notre chaîne

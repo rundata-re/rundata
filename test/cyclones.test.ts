@@ -10,7 +10,8 @@ import { alertePage } from "../src/web/alerte-cyclone.js";
 import { basinMap } from "../src/web/cyclones-bassin.js";
 import type { CyclonesAnswer } from "../src/web/data.js";
 import { cyclonesPage } from "../src/web/cyclones.js";
-import { CYCLONE_SCALE, vigilancePage } from "../src/web/pages.js";
+import { CYCLONE_SCALE } from "../src/web/pages.js";
+import { vigilancePage } from "../src/web/vigilance-page.js";
 import { ecolesPage } from "../src/web/ecoles.js";
 
 // GDACS on 24/10/2026: no system in the basin since the end of the 2025-2026 season (Indusa, April). The timeline is

@@ -1,7 +1,7 @@
 /**
  * /meteo, the weather of the whole island: what every station measured last, on the map and in the list, the sea off
  * the coast, the links to each place's forecast, the records of the stations of reference, and how to read it all. The
- * page of each commune or famous place and the vigilance are in pages.ts, the sea in mer-page.ts.
+ * page of each commune or famous place is in pages.ts, the sea in mer-page.ts, the vigilance in vigilance-page.ts.
  */
 import { faqPage, texteStable, type Faq } from "./texte-stable.js";
 import chaud from "../historique/plus-chaud.json" with { type: "json" };

@@ -3,7 +3,8 @@ import { uvWarnings } from "../src/tools/prevision.js";
 import { ecartsCourts } from "../src/tools/format.js";
 import { communePage } from "../src/web/commune.js";
 import type { HomeData, PlaceData, StationAnswer, StationNow } from "../src/web/data.js";
-import { lesJours, meteoLive, meteoPage } from "../src/web/pages.js";
+import { lesJours, meteoLive } from "../src/web/pages.js";
+import { meteoPage } from "../src/web/meteo-page.js";
 import { pageOf } from "../src/web/places.js";
 
 // The audit of the data of 04/11/2026: the weather, the forecast and the sea.

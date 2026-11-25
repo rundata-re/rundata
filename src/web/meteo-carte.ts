@@ -187,7 +187,7 @@ function windMark(x0: number, y0: number, s: StationNow, at?: [number, number]):
   return `<g class="sh l-v wv"><rect x="${x - 46}" y="${y - 24}" width="96" height="48" rx="24"/>${arrow}<text x="${x + 18}" y="${y + 11}">${s.vent}</text></g>`;
 }
 
-/** The wind legend's colours (.wgrad, pages.ts) at their speeds in km/h, 0 to 60. */
+/** The wind legend's colours (.wgrad, style.ts) at their speeds in km/h, 0 to 60. */
 const WIND_STOPS: [number, number[]][] = [[0, [70, 104, 176]], [10.2, [46, 150, 172]], [19.8, [74, 170, 98]], [30, [222, 184, 62]], [45, [222, 112, 46]], [60, [178, 44, 72]]];
 /** A wind speed's colour, as the legend's scale. */
 export function windColor(v: number): string {
@@ -496,7 +496,7 @@ export function stationsMap(every: StationNow[], altPath = ALT_PATH): string {
   const bubble = `<a class="mtip" data-mtip hidden aria-hidden="true" tabindex="-1" href="#stations"><span class="mt-p"></span><b class="mt-v"></b><span class="mt-d"></span><span class="mt-go">Voir la station →</span></a>`;
   // The replay bar just under the map, before the legend: on a phone, the map, the lengths and the slider fit in one
   // screen (the user, 01/11/2026, as /electricite).
-  // The tabs in a bar, which the full screen's button joins (pages.ts).
+  // The tabs in a bar, which the full screen's button joins (style.ts).
   // The amateur stations' box, unticked (the user, 10/11/2026): its words are the user's; ticked, the legend says what
   // the dotted outline is.
   const box = amateurs.length ? `<label class="amchk"><input type="checkbox" id="wx-am"> Stations amateur</label>` : "";
@@ -548,7 +548,7 @@ if(window.ResizeObserver)new ResizeObserver(set).observe(svg);new MutationObserv
  * (`vatt`, still laid out) until the page is ready, then the points come: the names' script reads the style of every
  * mark while the page loads, slowly for marks hidden, and the page took 30 % longer to be ready (DCL, CPU ×4, 10/11/2026).
  * Each point in its station's group (`.mo`), on its place, with its touch area (HIT / 2). Unticked, the figure takes the class `sansv`, which hides the discs, pills and
- * their ties (pages.ts); ticked again, the points hidden.
+ * their ties (style.ts); ticked again, the points hidden.
  */
 export const VALEURS_JS = `(()=>{const b=document.getElementById("wx-val"),f=b&&b.closest("figure");if(!f)return;const N="http://www.w3.org/2000/svg";let made=false;
 const el=(n,a)=>{const e=document.createElementNS(N,n);for(const k in a)e.setAttribute(k,a[k]);return e};

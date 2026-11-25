@@ -2,7 +2,7 @@ import { runInNewContext } from "node:vm";
 import { describe, expect, it } from "vitest";
 import { LISTE_STATIONS_JS, METEO_SCRIPT } from "../src/web/meteo-carte.js";
 
-// The stations' list of /meteo, folded to its 12 first rows (pages.ts: #stl.plie, nth-child(n+13) not shown), run on
+// The stations' list of /meteo, folded to its 12 first rows (style.ts: #stl.plie, nth-child(n+13) not shown), run on
 // a page of 60 stations with a link to `hash`: what is unfolded and brought into view, at the load or on a new link.
 const FOLD = 12;
 function page(hash: string, opts: { commune?: string; loading?: boolean } = {}) {

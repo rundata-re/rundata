@@ -7,7 +7,7 @@ import { activityPosts, phaseOf, type PitonState } from "../src/providers/volcan
 import { buildVolcan } from "../src/web/data.js";
 import { volcanLive, volcanPage } from "../src/web/volcan.js";
 import { homePage, type HomeLive } from "../src/web/home.js";
-import { meteoPage } from "../src/web/pages.js";
+import { meteoPage } from "../src/web/meteo-page.js";
 import { alerteVolcan, bannerText, homeCard, volcanH1, volcanMeta, volcanTitle, withVolcan } from "../src/web/volcan-alerte.js";
 
 // The prefecture's release of 24/10/2026, alert 1 (its page as captured, and its card in the list), and pitonlive at

@@ -8,7 +8,7 @@ import { INSEE } from "../src/places/insee.js";
 import { stationHistory } from "../src/tools/historique.js";
 import { inseeCommune } from "../src/web/meteo-carte.js";
 import { esc } from "../src/web/map.js";
-import { meteoPage } from "../src/web/pages.js";
+import { meteoPage } from "../src/web/meteo-page.js";
 import { type StationData, STATIONS, stationOf, stationPage, stationPath, stationTitle } from "../src/web/station.js";
 import { sautsDeTitre } from "./cartes.js";
 

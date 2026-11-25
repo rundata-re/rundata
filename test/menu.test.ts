@@ -8,7 +8,8 @@ import * as enfants from "../src/vie/enfants.js";
 import type { Alerte } from "../src/web/data.js";
 import { homePage, type HomeLive } from "../src/web/home.js";
 import { esc } from "../src/web/map.js";
-import { BAR_LEFT_OUT, meteoPage, SOCIAL } from "../src/web/pages.js";
+import { BAR_LEFT_OUT, SOCIAL } from "../src/web/pages.js";
+import { meteoPage } from "../src/web/meteo-page.js";
 import { CSS, STYLE_PATH } from "../src/web/style.js";
 import { type VolcanAlerte, withVolcan } from "../src/web/volcan-alerte.js";
 

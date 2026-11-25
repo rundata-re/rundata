@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { meteoPage, RELOAD_SCRIPT, since } from "../src/web/pages.js";
+import { RELOAD_SCRIPT, since } from "../src/web/pages.js";
+import { meteoPage } from "../src/web/meteo-page.js";
 
 type Listener = (e: { persisted?: boolean }) => void;
 

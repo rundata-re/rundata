@@ -11,7 +11,8 @@ import { site } from "../src/web/site.js";
 import { demos, homePage, type HomeLive } from "../src/web/home.js";
 import { esc } from "../src/web/map.js";
 import { NIVEAUX } from "../src/tools/volcan-acces.js";
-import { DESCRIPTION_MAX, meteoPage } from "../src/web/pages.js";
+import { DESCRIPTION_MAX } from "../src/web/pages.js";
+import { meteoPage } from "../src/web/meteo-page.js";
 import { alerteVolcan, bannerText, homeCard, mediaHeadlines, mediaSection, tileLive, type VolcanAlerte, volcanMeta, withVolcan } from "../src/web/volcan-alerte.js";
 
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url), "utf8");

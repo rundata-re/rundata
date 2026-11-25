@@ -6,7 +6,8 @@ import { buildDae } from "../src/web/data.js";
 import { coupable, daePage, lienNom, soulignesCoupables } from "../src/web/domains.js";
 import { homePage, type HomeLive } from "../src/web/home.js";
 import { marchesPage } from "../src/web/marches-publics.js";
-import { legalPage, meteoPage, seaPage, vigilancePage } from "../src/web/pages.js";
+import { legalPage, seaPage, vigilancePage } from "../src/web/pages.js";
+import { meteoPage } from "../src/web/meteo-page.js";
 import { CSS } from "../src/web/style.js";
 import { render } from "../src/web/publier.js";
 

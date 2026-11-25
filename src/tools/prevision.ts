@@ -551,7 +551,7 @@ function sourcesOf(f?: Forecast, u?: Cached<uv.UvCell[]> | null, e?: ensemble.En
 
 /**
  * What the confidence says, after « Confiance : »: in each answer that gives one, with the time of the scenarios'
- * computation, and once on /meteo (web/pages.ts), without it, where each place page's forecast links.
+ * computation, and once on /meteo (web/meteo-page.ts), without it, where each place page's forecast links.
  */
 export const confianceExplication = (calcul?: string) =>
   `elle dit si les ${ensemble.MODEL.membres} scénarios du Centre européen de prévision (ECMWF) s'accordent, sur un carré d'environ ${ensemble.MODEL.maille_km} km` +

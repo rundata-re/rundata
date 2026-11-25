@@ -39,9 +39,11 @@ def phone(t):
 
 
 # A school's site as the directory gives it, where it is known to have moved (checked by hand, 24/11/2026: each followed
-# to where it now answers). None: the site is gone and nothing replaces it, the link is left out.
+# to where it now answers). None: the site is gone and nothing replaces it, the link is left out. The collège Alexandre
+# Monnet's own site is gone; the La Salle collèges' common site presents it (read 25/11/2026: the collège, its number
+# 02 62 90 92 91, as the directory gives it, and its news; its own page in that site's menu answers 404).
 WEB_DEPLACE = {
-    "college-alexandre-monnet.ac-reunion.fr": None,
+    "college-alexandre-monnet.ac-reunion.fr": "https://colleges-st-michel-monnet.re/",
     "etab.ac-reunion.fr/lyc-amiral-bouvet": "https://etab.ac-reunion.fr/lyc-jean-claude-fruteau/",
     "lycee-lgeoffroy.ac-reunion.fr": "https://lislet-geoffroy.re/",
     "stmichel.re": "https://colleges-st-michel-monnet.re/",

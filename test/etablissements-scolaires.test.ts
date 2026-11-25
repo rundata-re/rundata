@@ -264,5 +264,7 @@ describe("the schools' sites linked from the pages (src/vie/ecoles.json)", () =>
     for (const now of ["https://etab.ac-reunion.fr/lyc-jean-claude-fruteau/", "https://lislet-geoffroy.re/", "https://colleges-st-michel-monnet.re/", "https://ecolemaritime.re/"]) {
       expect(webs, now).toContain(now);
     }
+    // The collège Alexandre Monnet's site gone, the La Salle collèges' common site, which presents it (25/11/2026).
+    expect(ecoles.LIST.find((e) => e.uai === "9741546M")?.web).toBe("https://colleges-st-michel-monnet.re/");
   });
 });

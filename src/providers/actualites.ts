@@ -151,6 +151,19 @@ export function firstSentence(text: string): string | undefined {
 }
 
 /**
+ * The quote that opens a text and the first sentence after it: what tells where the news is (`local`), when the text opens on someone's
+ * words (Clicanoo, 23/11/2026: « Il faut faire de la pédagogie sur ce dossier. » before « …le vice-président du
+ * Département délégué à l'eau… », the island's news left out). What is shown stays the first sentence.
+ */
+export function chapeau(text: string): string | undefined {
+  const t = text.replace(/\s+/g, " ").trim();
+  const q = /^[«“"][^»”"]{1,300}[»”"]\s*/u.exec(t);
+  if (!q || t.length <= q[0].length) return firstSentence(t);
+  // The quote too: one that says the island (« La Réunion mérite mieux ») still tells it.
+  return `${q[0].trim()} ${firstSentence(t.slice(q[0].length)) ?? ""}`.trim();
+}
+
+/**
  * A text without the section a medium puts before it in capitals (06/11/2026: « LIBRE EXPRESSION Sous le bruit… »,
  * « KWAFÉ ZORDI Alors que… »): a run of words in capitals followed by a word that starts a sentence. Only when the run
  * holds 8 capitals or more, so that acronyms that start the text stay (« EDF Réunion annonce… », « CGTR FO Les… »).
@@ -458,7 +471,7 @@ export function parseRss(xml: string, media: string, skip?: RegExp, rubriques?: 
     if (skip && categories.some((c) => skip.test(c))) return null;
     const titre = plain(tag(head, "title"));
     const body = plain(tag(head, "description").slice(0, BODY_MAX + 400));
-    if (!local(titre, firstSentence(body), categories.some((c) => rubriqueLocale(c) || !!rubriques?.test(c)), body.slice(0, BODY_MAX))) return null;
+    if (!local(titre, chapeau(body), categories.some((c) => rubriqueLocale(c) || !!rubriques?.test(c)), body.slice(0, BODY_MAX))) return null;
     return info(media, titre, plain(tag(head, "link")), new Date(plain(tag(head, "pubDate"))), body);
   }).filter((x): x is Info => x !== null);
 }

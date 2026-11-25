@@ -509,6 +509,13 @@ const PRICE = /€|eur\b|gratuit|tarif|entr[ée]e|libre|inscri|r[ée]serv|payant
 
 const OA_STATUS: Record<number, Statut> = { 4: "reporté", 5: "complet", 6: "annulé" };
 
+/**
+ * An event's page on openagenda.com at its French address: the export gives /<agenda>/events/<id>, which answers 307
+ * to /fr/<agenda>/events/<id> (the sitemap's outgoing links, 24/11/2026). A page in a language already
+ * is left as it is.
+ */
+const oaLien = (u: string) => u.replace(/^https:\/\/openagenda\.com\/(?![a-z]{2}\/)/, "https://openagenda.com/fr/");
+
 export function parseOpenAgenda(body: { events: OaEvent[] }, nom: string): Evenement[] {
   return body.events.map((e) => {
     const l = e.location ?? {};
@@ -525,7 +532,7 @@ export function parseOpenAgenda(body: { events: OaEvent[] }, nom: string): Evene
       prix: PRICE.test(fr(e.conditions) ?? "") ? clean(fr(e.conditions)!) : undefined,
       categories: (e.keywords?.fr ?? []).slice(0, 5),
       ...extrait(clean(fr(e.description) ?? "")),
-      lien: e.canonicalUrl,
+      lien: oaLien(e.canonicalUrl),
       publie_par: nom,
       ...oaImage(e),
     };
@@ -563,6 +570,8 @@ const SINGLE = new RegExp(`${WEEKDAY}${DAY}\\s+${MONTH}${YEAR}`, "iu");
 const MONTH_ONLY = new RegExp(`^${MONTH}\\s+(20\\d\\d)\\b`, "iu");
 // « de 6h à 14h », « De 9h00 à 16h00 », « 18h-23h »
 const HOURS = /\b(\d{1,2})\s?h\s?(\d\d)?\s*(?:à|a|-|–)\s*(\d{1,2})\s?h\s?(\d\d)?/iu;
+/** A start time alone, after its day: « à partir de 8h », « dès 19h30 », « à 20h » (Le Tampon, 24/11/2026). */
+const START = /(?<!\p{L})(?:à partir de|dès|à)\s+(\d{1,2})\s?h\s?(\d\d)?(?![\d\p{L}])/iu;
 
 const iso = (y: number, m: number, d: number) => `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 const lastDay = (y: number, m: number) => new Date(Date.UTC(y, m, 0)).getUTCDate();
@@ -609,10 +618,15 @@ export function datesIn(text: string, published: Date): Seance[] {
     days = [{ debut: iso(y, mo, 1), fin: iso(y, mo, lastDay(y, mo)) }];
   }
   if (days.some((d) => Number(d.debut.slice(8, 10)) > lastDay(Number(d.debut.slice(0, 4)), Number(d.debut.slice(5, 7))))) return [];
-  const h = HOURS.exec(text.slice(m.index, m.index + 400));
+  const after = text.slice(m.index, m.index + 400);
+  const hm = (hh: string, mm?: string) => `${hh.padStart(2, "0")}:${mm ?? "00"}`;
+  const h = HOURS.exec(after);
   if (h && days.every((d) => !d.fin) && Number(h[1]) < 24 && Number(h[3]) < 24) {
-    const hm = (hh: string, mm?: string) => `${hh.padStart(2, "0")}:${mm ?? "00"}`;
     days = days.map((d) => ({ debut: `${d.debut}T${hm(h[1], h[2])}`, fin: `${d.debut}T${hm(h[3], h[4])}` }));
+  } else if (!h && days.every((d) => !d.fin)) {
+    // No span: a start time alone, the first one after the day; two sites at 8h and 9h give 8h, the earliest said.
+    const st = START.exec(after);
+    if (st && Number(st[1]) < 24 && Number(st[2] ?? 0) < 60) days = days.map((d) => ({ debut: `${d.debut}T${hm(st[1], st[2])}` }));
   }
   return days;
 }
@@ -634,9 +648,16 @@ export function parseRss(xml: string, nom: string, commune: string, first = fals
     // An excerpt cut before its day (« un marché de Noël qui se tiendra… […] », Saint-André, 21/11/2026): the day in
     // the post's whole text, which WordPress gives in content:encoded; the excerpt stays what is shown.
     const whole = () => clean(tag(item, "content:encoded"));
-    const seances = datesIn(titre, published).length ? datesIn(`${titre} ${texte}`, published)
+    let seances = datesIn(titre, published).length ? datesIn(`${titre} ${texte}`, published)
       : datesIn(texte, published).length ? datesIn(texte, published) : datesIn(whole(), published);
     if (!seances.length) return [];
+    // The excerpt gives the day without its hour (Le Tampon's, cut before « à partir de 8h », 24/11/2026): the hour of
+    // that same day in the whole text. Its day stays the excerpt's: another day there is not taken.
+    if (seances.every((x) => x.debut.length === 10 && !x.fin)) {
+      const days = seances.map((x) => x.debut).join();
+      const avec = datesIn(whole(), published);
+      if (avec.length && avec.map((x) => x.debut.slice(0, 10)).join() === days && avec[0].debut.length > 10) seances = avec;
+    }
     const lien = clean(tag(item, "link"));
     const statut = statusOf(titre, texte);
     return [{

@@ -14,7 +14,7 @@ const LT = 60;
 const SPACE = 32;
 const R = 114;
 
-// « rundata.re » in the prose of a page, in a span without hyphenation (.ident, pages.ts): under 19.9 rem, where the page
+// « rundata.re » in the prose of a page, in a span without hyphenation (.ident, style.ts): under 19.9 rem, where the page
 // is hyphenated, Safari cuts it « runda-ta.re ». In a link's name too (a span without <wbr> leaves its accessible name as
 // written); not in the tab's title, an <option> or an SVG, where a span is shown as text or hides it; nor in a path (« rundata.re/<wbr class="adr">associations », cheminsTexte) or a longer
 // name (« mcp.rundata.re », « rundata.reunion »). In a page's <h1>, wider than its line at 160 px (168 px in a 144 px

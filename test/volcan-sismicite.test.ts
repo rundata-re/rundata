@@ -109,7 +109,7 @@ describe("the located earthquakes per day under the volcano", () => {
       expect(row.split('<span class="virg">, </span>').join("|")).not.toMatch(/[<,] /);
       expect(row.replaceAll('<span class="virg">, </span>', ", ")).toMatch(/, \d+(?:,\d)?\u00a0km (?:sous le|au-dessus du) niveau de la mer$/);
     }
-    // The comma takes no room and the space after it gives it back (pages.ts): the words stay where they were.
+    // The comma takes no room and the space after it gives it back (style.ts): the words stay where they were.
     expect(CSS).toContain(".virg{letter-spacing:-.35em;word-spacing:.7em}");
     // In the text only, a decimal comma left alone.
     expect(virgulesTenues('<a title="a, b">sous X, 1,2\u00a0km</a>')).toBe('<a title="a, b">sous X<span class="virg">, </span>1,2\u00a0km</a>');

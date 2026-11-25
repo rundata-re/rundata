@@ -2,7 +2,7 @@ import { readdirSync, statSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { zoomControls } from "../src/web/carte-zoom.js";
 import { communeMap, FONDS, FONDS_SCRIPT, IGN_TUILES, islandMap, mapCredit, RELIEF_FIN, RELIEF_FIN_N, RELIEF_FIN_ZOOM, traceMap } from "../src/web/map.js";
-import { legalPage } from "../src/web/pages.js";
+import { legalPage } from "../src/web/legal-page.js";
 import { politique } from "../src/web/securite.js";
 
 const commune = communeMap({ commune: "Saint-Paul", spots: [{ lon: 55.27, lat: -21.01, i: 0, t: "parc", f: "jeux", name: "Un parc" }], label: "Carte", id: "ecm" });

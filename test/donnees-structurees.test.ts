@@ -4,7 +4,8 @@ import { collectePage } from "../src/web/collecte.js";
 import { coupuresCommunePage } from "../src/web/coupures.js";
 import { coupuresPage } from "../src/web/domains.js";
 import { enfantsCommunePage, enfantsPage } from "../src/web/enfants.js";
-import { ISLAND, legalPage } from "../src/web/pages.js";
+import { ISLAND } from "../src/web/pages.js";
+import { legalPage } from "../src/web/legal-page.js";
 import { pageOf } from "../src/web/places.js";
 import { pressePage } from "../src/web/presse.js";
 

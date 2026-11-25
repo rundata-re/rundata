@@ -7,7 +7,7 @@ import { gererPage, lienPage, proposerPage } from "../src/web/propositions.js";
 import type { Ligne } from "../src/propositions.js";
 import { departureLi, jourMois, lienNom, nomsCoupables } from "../src/web/domains.js";
 import { traficPage } from "../src/web/trafic.js";
-import { legalPage } from "../src/web/pages.js";
+import { legalPage } from "../src/web/legal-page.js";
 import { CSS } from "../src/web/style.js";
 import { ouvrir as ouvrirAssociations } from "../src/web/associations-drapeau.js";
 import { ouvrir as ouvrirConnecteurs } from "../src/web/connecteurs-drapeau.js";

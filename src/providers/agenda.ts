@@ -653,10 +653,19 @@ export function parseRss(xml: string, nom: string, commune: string, first = fals
     if (!seances.length) return [];
     // The excerpt gives the day without its hour (Le Tampon's, cut before « à partir de 8h », 24/11/2026): the hour of
     // that same day in the whole text. Its day stays the excerpt's: another day there is not taken.
+    // The day said again lower in the text, the hour after it (Le Tampon's « le samedi 28 novembre 2026, sur deux
+    // sites… à partir de 8h », 575 characters after the day at its head, 25/11/2026): each mention of a day read in turn.
     if (seances.every((x) => x.debut.length === 10 && !x.fin)) {
       const days = seances.map((x) => x.debut).join();
-      const avec = datesIn(whole(), published);
-      if (avec.length && avec.map((x) => x.debut.slice(0, 10)).join() === days && avec[0].debut.length > 10) seances = avec;
+      const w = whole();
+      const starts = [0, ...[...w.matchAll(new RegExp(SINGLE.source, "giu"))].map((x) => x.index).filter((i) => i > 0)];
+      for (const i of starts) {
+        const avec = datesIn(w.slice(i), published);
+        if (avec.length && avec.map((x) => x.debut.slice(0, 10)).join() === days && avec[0].debut.length > 10) {
+          seances = avec;
+          break;
+        }
+      }
     }
     const lien = clean(tag(item, "link"));
     const statut = statusOf(titre, texte);

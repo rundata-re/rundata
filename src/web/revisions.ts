@@ -50,7 +50,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Its coverage says the mairies whose sites were all read and announce nothing to come, dated (24/11/2026).
   // Tales, magic and puppets each their own genre, no longer « cirque » (« Contes avec Aïdée », 24/11/2026).
   // An event's start time alone (« à partir de 8h »), the whole text's hour for a cut excerpt, OpenAgenda's links in /fr/ (25/11/2026).
-  agenda: 51,
+  // A feed's hour said after a later mention of its day (Le Tampon's « Journée de l'environnement », 25/11/2026).
+  agenda: 52,
   // The sensors of sensors.social besides Sensor.Community's: each value with its network, and its credit (09/11/2026).
   // Tomorrow's index by commune, when Atmo Réunion diffused it, under the day's (21/11/2026).
   // The communes at the worst « pour Le Port et Saint-Pierre », counted beyond 3; tomorrow « Pas une mesure : … » (21/11/2026).
@@ -270,33 +271,35 @@ export const SOURCE_REVISION: Readonly<Record<string, number>> = {
   // (CIREST, the halls' agenda:<hall> included), and the seven below raised with it.
   // An event's start time alone (« à partir de 8h », datesIn), the whole text's hour for a cut excerpt (parseRss) and
   // OpenAgenda's links in /fr/ (oaLien): every agenda, the keys below raised with it (25/11/2026).
-  agenda: 2,
+  // A feed's hour said after a later mention of its day (parseRss, Le Tampon's « Journée de l'environnement »,
+  // 25/11/2026): every agenda read from a feed, the keys below raised with it.
+  agenda: 3,
   // Read again with its written agreement of 28/10/2026, without the price and the sentence an older entry kept.
-  "agenda:bras_panon": 3,
+  "agenda:bras_panon": 4,
   // Read again with its written agreement of 06/11/2026, from its list: an older entry, read from its feed, is not served.
-  "agenda:etang_sale": 3,
+  "agenda:etang_sale": 4,
   // Read again with its written agreement of 16/11/2026, as its own source: an older entry was read as the mairies'.
   // The day of a post whose excerpt is cut before it, read in its whole text (content:encoded, 21/11/2026).
-  "agenda:saint_andre": 4,
+  "agenda:saint_andre": 5,
   // The WordPress agendas, with their venue's position when the site gives one (« Y aller » of /evenements).
   // The volley league's weekend with its matches (`matchs`), for the sport tool to say another date.
   // The events not yet over (tribeUrl, `ends_after`): one begun before today kept, as the league's weekend of 04-07/11.
   // `ends_after` the day before (the API ignores the time): one ending later today kept too.
-  "agenda:lrvb": 6,
-  "agenda:saint_paul": 5,
-  "agenda:le_port": 5,
-  "agenda:trois_bassins": 5,
-  "agenda:sainte_marie": 5,
+  "agenda:lrvb": 7,
+  "agenda:saint_paul": 6,
+  "agenda:le_port": 6,
+  "agenda:trois_bassins": 6,
+  "agenda:sainte_marie": 6,
   // A show without a venue in its field placed where its text says (lieuDit, « Bouches Cousues »); the events not yet
   // over, as the WordPress agendas above, a show of tonight included (« Bouches Cousues » of 05/11 20:00).
-  "agenda:sechoir": 6,
+  "agenda:sechoir": 7,
   // Two sessions of a show at two venues kept as two events (KiLLT).
-  "agenda:luc_donat": 3,
+  "agenda:luc_donat": 4,
   // Read again as the commune's public information (20/11/2026), each event with its own page's link: an older entry
   // linked its home page.
-  "agenda:le_tampon": 2,
+  "agenda:le_tampon": 3,
   // An event without a place no longer takes the start of its text for one (20/11/2026).
-  "agenda:petite_ile": 2,
+  "agenda:petite_ile": 3,
   // With the time Atmo Réunion diffused the index (date_dif, `diffuse_le`), which an older entry lacks.
   atmo: 1,
   // A notice that awaits the return to normal keeps « ne pas boire » (#723), and a sector followed by the advice without

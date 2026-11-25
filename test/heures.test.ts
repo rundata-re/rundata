@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { heure, minutees, paire, tranche } from "../src/tools/format.js";
 import { hoursOn, hoursText, openNow } from "../src/tools/annuaire.js";
-import { placePage } from "../src/web/pages.js";
+import { placePage } from "../src/web/lieu-page.js";
 import { pageOf } from "../src/web/places.js";
 
 // One way to write a time in the answers (27/10/2026): « 19:12 » with its minutes, « 18 h » on the hour and

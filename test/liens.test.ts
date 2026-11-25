@@ -5,7 +5,7 @@ import { traficPage } from "../src/web/trafic.js";
 import { agendaPage } from "../src/web/agenda.js";
 import { weekendPage } from "../src/web/evenements.js";
 import { cloudSeaTold, communeEvents, forecastLinks, hikesNear, summitOf, weatherNear } from "../src/web/liens.js";
-import { placePage } from "../src/web/pages.js";
+import { placePage } from "../src/web/lieu-page.js";
 import { pageOf } from "../src/web/places.js";
 
 const NOW = new Date("2026-10-27T06:00:00Z");

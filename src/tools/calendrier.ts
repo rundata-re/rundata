@@ -89,7 +89,7 @@ export const SOLEIL_NOTE =
   "Calculé pour un horizon dégagé\u00a0; dans les cirques et les ravines, le relief cache le soleil plus longtemps\u00a0: " +
   "il s'y lève plus tard et s'y couche plus tôt.";
 
-/** Under the sky of the night (web/pages.ts, a place of the Hauts): what of it is computed, said as such (wording validated on 04/11). */
+/** Under the sky of the night (web/lieu-page.ts, a place of the Hauts): what of it is computed, said as such (wording validated on 04/11). */
 export const NUIT_NOTE =
   "Nuit noire et Lune\u00a0: calculées, pas mesurées, par les formules astronomiques usuelles, à quelques minutes près, pour " +
   "l'horizon dégagé\u00a0; dans les cirques et les ravines, le relief cache le ciel plus bas.";

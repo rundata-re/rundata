@@ -3,7 +3,7 @@ import { CITATION } from "../src/maree/calcul.js";
 import * as climat from "../src/providers/climat.js";
 import * as onf from "../src/providers/sentiers.js";
 import * as traces from "../src/providers/traces.js";
-import { placePage } from "../src/web/pages.js";
+import { placePage } from "../src/web/lieu-page.js";
 import { pageOf } from "../src/web/places.js";
 
 const O = "https://rundata.re";

@@ -3,7 +3,7 @@ import { handle } from "../src/app.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { CSR_URL, inForce, noneLine, requinBlock, SOURCE, STORIES, T, ZONES, zonesNear } from "../src/eau/requin.js";
 import { bathingPage, LINE } from "../src/web/baignade.js";
-import { placePage } from "../src/web/pages.js";
+import { placePage } from "../src/web/lieu-page.js";
 import { seaPage } from "../src/web/mer-page.js";
 import { coastal, PAGES, pageOf } from "../src/web/places.js";
 

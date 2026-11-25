@@ -5,7 +5,7 @@ import { parse, read } from "../src/providers/maregraphes.js";
 import { gaugeRow, gauges, maree, NEAR_KM, nearest, tidesAt } from "../src/tools/maree.js";
 import { GAUGES } from "../src/providers/maregraphes.js";
 import { communePage } from "../src/web/commune.js";
-import { placePage } from "../src/web/pages.js";
+import { placePage } from "../src/web/lieu-page.js";
 import { seaMeasure, seaPage } from "../src/web/mer-page.js";
 import { CSS } from "../src/web/style.js";
 import { coastal, PAGES } from "../src/web/places.js";

@@ -132,9 +132,10 @@ import { rejeuScript, rejeuScriptPath } from "./meteo-carte.js";
 import { CURSEUR_FILE, curseurScript, curseurScriptPath } from "./carte-curseur.js";
 import { cumulsScript, cumulsScriptPath } from "./pluie-cumuls.js";
 import { chiffresScript, chiffresScriptPath } from "./en-chiffres.js";
-import { legalPage, notFoundPage, offlinePage, placePage } from "./pages.js";
+import { legalPage, notFoundPage, offlinePage } from "./pages.js";
 import { seaPage } from "./mer-page.js";
 import { vigilancePage } from "./vigilance-page.js";
+import { placePage } from "./lieu-page.js";
 import { meteoPage } from "./meteo-page.js";
 import { CSS, FONT_PATH, STYLE_PATH } from "./style.js";
 import { OFFLINE_PATH, serviceWorker, SW_PATH } from "./pwa.js";
@@ -378,7 +379,7 @@ export const withoutCopy = (request: Request): number | undefined => (isReader(r
 // 4.9 s on /meteo/<lieu> (122 views, up to 17.5 s) and 4.6 s on /aujourdhui/<commune>. Its slow views each built the
 // page from nothing (75 to 100 subrequests): the copy of the place (web/data.ts ISLAND_PAGES for the communes), built by
 // the views only, was past OLD_MINUTES where few read it, and counted as none for it. A measure past OLD_MINUTES is said
-// so on /meteo/<lieu> (web/pages.ts) and /communes/<commune> (web/commune.ts), and left out of /aujourdhui/<commune>
+// so on /meteo/<lieu> (web/lieu-page.ts) and /communes/<commune> (web/commune.ts), and left out of /aujourdhui/<commune>
 // past 30 minutes (tools/resume.ts `METEO_MAX_MIN`); the vigilance banner is read apart, as for every view. A copy from
 // before midnight still waits for its refresh, as before; the fetchers that answer someone now, people and the daily
 // check of the sources keep theirs.

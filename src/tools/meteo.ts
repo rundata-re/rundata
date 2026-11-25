@@ -112,7 +112,7 @@ const TOUR_METEOFRANCE = [
 ];
 
 /**
- * Past this age a station's measure is said old (« Mesure ancienne »), here and on the place's page (web/pages.ts). A
+ * Past this age a station's measure is said old (« Mesure ancienne »), here and on the place's page (web/lieu-page.ts). A
  * station that sends its hour at once (Mare à Vieille Place) reaches 63 min before its next hour, without a fault;
  * one that misses more leaves the readings (SLOTS, providers/meteofrance.ts). /meteo read 19 times, 06/11/2026.
  */

@@ -386,7 +386,7 @@ export async function recordsReference(cache: Cache, now: Date): Promise<Records
 }
 
 /**
- * « Repères du mois » of a place's weather page (web/pages.ts, wording validated on 14/11/2026): this month's 1991-2020 normals of
+ * « Repères du mois » of a place's weather page (web/lieu-page.ts, wording validated on 14/11/2026): this month's 1991-2020 normals of
  * the station that speaks best for the place among those that have all three (maximum, minimum, rain), and its records
  * of the month since its first measure, from the archive. Its first part from the bundled normals, its records from two
  * queries at most (the stored records, then the days of the years after them).

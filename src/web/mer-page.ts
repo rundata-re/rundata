@@ -1,7 +1,7 @@
 /**
  * /mer, the sea around the island: the water's temperature at each beach, the swell measured and forecast, the tides,
- * the bathing water, the risk of coral bleaching and the whales' season. The page of each commune or famous place and the
- * layout shared by every page are in pages.ts, the vigilance in vigilance-page.ts.
+ * the bathing water, the risk of coral bleaching and the whales' season. The page of each commune or famous place is in
+ * lieu-page.ts, the layout shared by every page in pages.ts, the vigilance in vigilance-page.ts.
  */
 import { courbesSection } from "./mer-courbes.js";
 import { porte } from "./aller.js";

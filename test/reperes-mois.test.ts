@@ -5,7 +5,8 @@ import { Cache, MemoryStore } from "../src/cache.js";
 import * as climat from "../src/providers/climat.js";
 import { confianceExplication } from "../src/tools/prevision.js";
 import { historiqueMeteo, reperesMois, type ReperesMois } from "../src/tools/historique.js";
-import { meteoPage, placePage, reperesBlock } from "../src/web/pages.js";
+import { placePage, reperesBlock } from "../src/web/pages.js";
+import { meteoPage } from "../src/web/meteo-page.js";
 import { pageOf } from "../src/web/places.js";
 
 // « Repères du mois » of a place's weather page (wording validated on 14/11/2026; the records' sentence, 19/11/2026), from real

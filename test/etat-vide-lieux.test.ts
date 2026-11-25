@@ -2,7 +2,8 @@ import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { connecteurPage } from "../src/web/connecteur.js";
 import type { HomeData, StationNow } from "../src/web/data.js";
-import { meteoPage, placeLinks } from "../src/web/pages.js";
+import { placeLinks } from "../src/web/pages.js";
+import { meteoPage } from "../src/web/meteo-page.js";
 import { PAGES } from "../src/web/places.js";
 
 const NOW = new Date("2026-11-06T17:00:00Z");

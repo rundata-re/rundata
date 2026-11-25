@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { HomeData, SeaData, StationNow } from "../src/web/data.js";
-import { meteoLive, meteoPage, seaPage } from "../src/web/pages.js";
+import { meteoLive, seaPage } from "../src/web/pages.js";
+import { meteoPage } from "../src/web/meteo-page.js";
 
 const O = "https://rundata.re";
 const NOW = new Date("2026-11-06T17:00:00Z");

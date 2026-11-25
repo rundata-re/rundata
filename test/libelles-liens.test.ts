@@ -4,7 +4,7 @@ import type { HikeCard, RandonneesAnswer } from "../src/web/data.js";
 import { etatOnf, randonneesPage, sectorLinks } from "../src/web/domains.js";
 import { communeHikes } from "../src/web/liens.js";
 import { cibles, norm, trouve } from "../src/web/menu.js";
-import { meteoPage } from "../src/web/pages.js";
+import { meteoPage } from "../src/web/meteo-page.js";
 import { pageOf } from "../src/web/places.js";
 
 // Links of the same words for two pages (« écoles », « Volcan », « Randonnée », a trail's name): each now reads apart,

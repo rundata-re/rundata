@@ -3,7 +3,7 @@ import { chiffres, inventaire } from "../src/chiffres.js";
 import { toutesLesSources } from "../src/server.js";
 import { chiffresPage } from "../src/web/chiffres.js";
 import { homePage } from "../src/web/home.js";
-import { meteoPage } from "../src/web/pages.js";
+import { meteoPage } from "../src/web/meteo-page.js";
 
 // The footer's count of sources is counted once per process, with the readers set then: this file's own modules.
 await vi.hoisted(async () => (await import("./modules-neufs.js")).modulesNeufs());

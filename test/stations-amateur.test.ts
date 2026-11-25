@@ -6,7 +6,8 @@ import { enTete } from "../src/tools/representativeness.js";
 import { amateur, islandTour, meteoActuelle } from "../src/tools/meteo.js";
 import type { StationAnswer, StationNow } from "../src/web/data.js";
 import { stationsMap, VALEURS_JS, windArrow, windColor } from "../src/web/meteo-carte.js";
-import { chip, meteoPage, placePage } from "../src/web/pages.js";
+import { chip, placePage } from "../src/web/pages.js";
+import { meteoPage } from "../src/web/meteo-page.js";
 import { CSS } from "../src/web/style.js";
 import { PAGES } from "../src/web/places.js";
 

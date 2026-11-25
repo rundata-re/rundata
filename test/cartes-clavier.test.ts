@@ -7,7 +7,7 @@ import { bornesPage, daePage } from "../src/web/domains.js";
 import { cruesPage } from "../src/web/crues.js";
 import { agendaPage } from "../src/web/agenda.js";
 import { islandMap } from "../src/web/map.js";
-import { meteoPage } from "../src/web/pages.js";
+import { meteoPage } from "../src/web/meteo-page.js";
 import { deadAnchors, mapLinks, mapPoints, tabStops } from "./cartes.js";
 
 // The maps of the pages that list the same places under them: their points out of the Tab order, as /ecoles' and

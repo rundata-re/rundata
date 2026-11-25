@@ -3,7 +3,8 @@ import type { Alerte } from "../src/web/data.js";
 import { hasZones, zoneClavier, ZONES_SCRIPT } from "../src/web/defilement.js";
 import { homePage } from "../src/web/home.js";
 import { islandMap } from "../src/web/map.js";
-import { layout, meteoPage, notFoundPage } from "../src/web/pages.js";
+import { layout, notFoundPage } from "../src/web/pages.js";
+import { meteoPage } from "../src/web/meteo-page.js";
 
 // Every page: « Aller au contenu » first, then the bar; the vigilance's band, the title's and the text in one main
 // landmark. Before, 13 stops of Tab through the bar on each page, and the title outside any landmark on all 50 pages read.

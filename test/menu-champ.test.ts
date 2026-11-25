@@ -5,7 +5,8 @@ import { feuxLive } from "../src/web/domains.js";
 import { homePage } from "../src/web/home.js";
 import { esc } from "../src/web/map.js";
 import { CHAMP, champScript, cibles, GROUPES, norm, SYNONYMES, trouve } from "../src/web/menu.js";
-import { icon, meteoPage } from "../src/web/pages.js";
+import { icon } from "../src/web/pages.js";
+import { meteoPage } from "../src/web/meteo-page.js";
 import { CSS } from "../src/web/style.js";
 import { meteoPath, PAGES } from "../src/web/places.js";
 

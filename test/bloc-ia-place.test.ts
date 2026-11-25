@@ -3,7 +3,8 @@ import { communePage } from "../src/web/commune.js";
 import { volcanPage } from "../src/web/volcan.js";
 import { airPage } from "../src/web/air.js";
 import { feuxPage } from "../src/web/feux.js";
-import { ask, askAfterData, meteoPage, seaPage, vigilancePage } from "../src/web/pages.js";
+import { ask, askAfterData, seaPage, vigilancePage } from "../src/web/pages.js";
+import { meteoPage } from "../src/web/meteo-page.js";
 import { pageOf } from "../src/web/places.js";
 
 // The question to an assistant (« Domann out IA ») after the page's first block of data, by one rule in layout(), and

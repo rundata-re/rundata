@@ -59,6 +59,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded for the site): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-25T17:17:00+04:00", texte: "Menu\u00a0: «\u00a0Donner un avis\u00a0» en tête, sur toutes les pages, mène directement au formulaire d'avis en bas de page." },
   { date: "2026-11-25T11:07:00+04:00", texte: "Associations\u00a0: les associations déclarées à La Réunion (RNA), à chercher par commune et par mot, avec leur objet et leur année de création." },
   { date: "2026-11-25T11:07:00+04:00", texte: "Élections\u00a0: les bureaux de vote de chaque commune, par lieu avec leur adresse, d'après l'Insee, et le lien officiel pour connaître le sien." },
   { date: "2026-11-25T11:07:00+04:00", texte: "Communes\u00a0: le maire et les adjoints de chaque commune, d'après le Répertoire national des élus." },

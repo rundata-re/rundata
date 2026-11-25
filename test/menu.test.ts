@@ -8,7 +8,7 @@ import * as enfants from "../src/vie/enfants.js";
 import type { Alerte } from "../src/web/data.js";
 import { homePage, type HomeLive } from "../src/web/home.js";
 import { esc } from "../src/web/map.js";
-import { BAR_LEFT_OUT, SOCIAL } from "../src/web/pages.js";
+import { BAR_LEFT_OUT, layout, SOCIAL } from "../src/web/pages.js";
 import { meteoPage } from "../src/web/meteo-page.js";
 import { CSS, STYLE_PATH } from "../src/web/style.js";
 import { type VolcanAlerte, withVolcan } from "../src/web/volcan-alerte.js";
@@ -26,6 +26,19 @@ const menu = (html: string) => [...sheet(html).matchAll(/<a class="(?:kcomm )?k-
 const groupes = (html: string) =>
   [...sheet(html).matchAll(/<p class="sheet-h">([^<]+)<\/p>\s*<ul class="grid groupe">(.*?)<\/ul>/gs)].map((m) => [m[1], [...m[2].matchAll(/ href="([^"]+)"/g)].map((h) => h[1])]);
 const tiles = (html: string) => [...html.match(/<ul class="tiles"[^>]*>(.*?)<\/ul>/s)![1].matchAll(/<li class="tile k-([a-z]+)/g)].map((m) => m[1]);
+
+describe("the feedback in the menu", () => {
+  it("opens the menu with « Donner un avis », to the form at the foot of the page, and leaves it out of a page without the form", () => {
+    const html = homePage(O, null, NOW);
+    // First in the menu, on every page that has the form (#avis); the script closes the menu on the way.
+    expect(sheet(html)).toMatch(/^\s*<div class="wrap">\s*<p><a class="sheet-app sheet-avis" href="#avis">Donner un avis →<\/a><\/p>/);
+    expect(html).toContain('<aside class="avis wrap" id="avis"');
+    expect(html).toContain(`menu.querySelectorAll('a[href^="#"]').forEach((a)=>a.addEventListener("click",()=>{menu.open=false}))`);
+    // A page without the form: no link to nowhere.
+    const sans = layout(O, { title: "T", description: "D", path: "/t", jsonld: [], sansAvis: true }, "", "");
+    expect(sans).not.toContain('href="#avis"');
+  });
+});
 
 describe("the order of the pages", () => {
   it("puts the events, the hikes and the weather in the bar, without the vigilance, the volcano, the sea or the buses when all is quiet", () => {

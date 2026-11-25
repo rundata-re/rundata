@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Mercredi 25 novembre 2026
 
+- Menu : « Donner un avis » en tête, sur toutes les pages, mène directement au formulaire d'avis en bas de page.
 - Associations : les associations déclarées à La Réunion (RNA), à chercher par commune et par mot, avec leur objet et leur année de création.
 - Élections : les bureaux de vote de chaque commune, par lieu avec leur adresse, d'après l'Insee, et le lien officiel pour connaître le sien.
 - Communes : le maire et les adjoints de chaque commune, d'après le Répertoire national des élus.

@@ -5,7 +5,7 @@ import * as atmo from "../src/providers/atmo.js";
 import { parse } from "../src/providers/atmo.js";
 import { airEvery, qualiteAir } from "../src/tools/air.js";
 import { airPage } from "../src/web/air.js";
-import { CSS } from "../src/web/pages.js";
+import { CSS } from "../src/web/style.js";
 import { sourceRevision } from "../src/web/revisions.js";
 import { esc } from "../src/web/map.js";
 import { typo } from "../src/web/typo.js";

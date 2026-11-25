@@ -5,7 +5,8 @@ import type { DepuisMinuit } from "../src/web/data.js";
 import { departureLi } from "../src/web/domains.js";
 import { homePage } from "../src/web/home.js";
 import type { StationNow } from "../src/web/data.js";
-import { CSS, EVITE_SCRIPT, meteoPage, notFoundPage, sinceMidnightCard, stationsList } from "../src/web/pages.js";
+import { EVITE_SCRIPT, meteoPage, notFoundPage, sinceMidnightCard, stationsList } from "../src/web/pages.js";
+import { CSS } from "../src/web/style.js";
 import { lu as luCss, separateursEnFlex } from "./lecteur.js";
 
 // What TalkBack reads (test/lecteur.ts), with the site's sheet: a space is the layout's, not the HTML's alone.

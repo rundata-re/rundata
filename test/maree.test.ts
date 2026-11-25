@@ -5,7 +5,8 @@ import { parse, read } from "../src/providers/maregraphes.js";
 import { gaugeRow, gauges, maree, NEAR_KM, nearest, tidesAt } from "../src/tools/maree.js";
 import { GAUGES } from "../src/providers/maregraphes.js";
 import { communePage } from "../src/web/commune.js";
-import { CSS, placePage, seaMeasure, seaPage } from "../src/web/pages.js";
+import { placePage, seaMeasure, seaPage } from "../src/web/pages.js";
+import { CSS } from "../src/web/style.js";
 import { coastal, PAGES } from "../src/web/places.js";
 
 // Fifteen hours of both SHOM tide gauges, 23/10/2026 from 08:40 to 23:40 UTC (12:40 to 03:40 in La Réunion).

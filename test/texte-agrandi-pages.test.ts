@@ -1,7 +1,8 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { nobreak } from "../src/web/domains.js";
-import { adressesCoupables, credits, CSS, lienAdresse } from "../src/web/pages.js";
+import { adressesCoupables, credits, lienAdresse } from "../src/web/pages.js";
+import { CSS } from "../src/web/style.js";
 import { nouveautesPage } from "../src/web/nouveautes.js";
 
 // /meteo, /mer, /vigilance, /carburants, a commune's page at 320 px with the text at 150 % and at 280 px: nothing wider

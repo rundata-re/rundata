@@ -15,7 +15,8 @@ import type { StationNow } from "./data.js";
 import { ZOOM_SCRIPT, zoomButtons } from "./carte-zoom.js";
 import { apart, esc, FIN_SCRIPT, H, islandMap, KM, nameWithShown, project, W } from "./map.js";
 import { CLASSES, PATH as PLUIE_RADAR } from "./pluie-radar.js";
-import { chip, deg, metres, shortName, stationId, STOPS, thin, leAt, duAt } from "./pages.js";
+import { chip, deg, metres, shortName, stationId, thin, leAt, duAt } from "./pages.js";
+import { STOPS } from "./style.js";
 import { hash } from "./pwa.js";
 import { PREMIER_JOUR } from "./radar-semaine.js";
 import { DUREES, FINS, jourPath, JOURS, joursOf, PATHS as REJEU_PATHS } from "./rejeu.js";
@@ -504,7 +505,7 @@ export function stationsMap(every: StationNow[], altPath = ALT_PATH): string {
   // hidden without a script, which draws the points.
   const values = `<label class="amchk" data-js hidden><input type="checkbox" id="wx-val" checked> Valeurs</label>`;
   // « Radar » and « Pluviomètres » (the user, 16/11/2026: « des options radar et pluviomètres, cochées par défaut qu'on
-  // peut décocher »; the validated words), on a line of their own under the boxes, on the rain's tab only (CSS, pages.ts):
+  // peut décocher »; the validated words), on a line of their own under the boxes, on the rain's tab only (CSS, style.ts):
   // each hides its layer and its legend, live and in the replay. Shown by the site's script, which draws both.
   const pluvio = nRain ? `<div class="wxchk wxpv" data-js hidden><label class="amchk"><input type="checkbox" id="wx-rd" checked> Radar</label><label class="amchk"><input type="checkbox" id="wx-pv" checked> Pluviomètres</label></div>` : "";
   // The map zooms in its full screen only, its buttons in the bar there (the user, 10/11/2026: « plus de commandes comme
@@ -1421,7 +1422,7 @@ const land=()=>Lp||(Lp=new Promise((ok,ko)=>{const im=new Image();im.onload=()=>
 const a=x.getImageData(0,0,im.width,im.height).data;LW=im.width;LH=im.height;ok(L=a.filter((v,i)=>i%4===0))};im.onerror=ko;im.src=pr.dataset.alt}));
 // The rose zones live (the user, 16/11/2026): the rain gauges' last hour (data-pz, stationsMap), worked out once on the
 // land's grid and drawn as in the replay (pluvioZone, pluvioBands) on a canvas under the radar's, 640 pixels across at
-// most, again for a new size or theme; its legend shown with them. Hidden while a replay plays (CSS, pages.ts). The
+// most, again for a new size or theme; its legend shown with them. Hidden while a replay plays (CSS, style.ts). The
 // amateur stations' (data-pz-am) with them while « Stations amateur » is ticked, each way worked out once.
 const PLD=pr.dataset.pz?JSON.parse(pr.dataset.pz):[],PLA=pr.dataset.pzAm?JSON.parse(pr.dataset.pzAm):[],PLB=document.getElementById("wx-am"),PLZ=${PLUVIO_JS},plZone=${pluvioZone},plBands=${pluvioBands},PLN=document.querySelector(".pz-now"),PLG={};let PLC=null,PLK="";
 const rose=()=>{if(!PLD.length||!L||!cw)return;const am=PLA.length&&PLB&&PLB.checked?1:0,th=dark()?1:0,rs=Math.min(1,640/cw),W2=Math.round(cw*rs),H2=Math.round(ch*rs),key=am+"|"+th+"|"+W2+"|"+H2;if(key===PLK)return;PLK=key;
@@ -1829,7 +1830,7 @@ else if(r&&r.m){w="mesuré";said+=", mesuré"}else if(r){w="estimé";said+=", es
 const im=l==="p"&&r&&(r.m||(r.a&&(r.f<.5?r.a:r.z))),de=r&&r.h?r.h.end-108e5:im&&im.e&&im.e.de?Date.parse(im.e.de):0,hx=(a,z)=>{const x=lx(a),y=lx(z);return x.getUTCMinutes()||y.getUTCMinutes()?p2(x.getUTCHours())+":"+p2(x.getUTCMinutes())+"–"+p2(y.getUTCHours())+":"+p2(y.getUTCMinutes()):x.getUTCHours()+"\u00a0h–"+y.getUTCHours()+"\u00a0h"};
 if(r&&r.h)t=r.h.end;hd.textContent=d!=="6h"||dm(S)!==dm(E)?days(!end&&de,t,BA(d)==="7j"||d==="jour"):"";hh.textContent=!end&&de?hx(de,t):hmm(t);
 // The rain gauges' 3 hours over 7 days are drawn where the radar's images are (rj-g): « Pluviomètres » hides them there,
-// « Radar » elsewhere (CSS, pages.ts). The word names what the boxes leave shown: the radar, the rose zones, or both.
+// « Radar » elsewhere (CSS, style.ts). The word names what the boxes leave shown: the radar, the rose zones, or both.
 fig.classList.toggle("rj-g",!end&&l==="p"&&!!(r&&r.h));let po=false;if(PZC){const on=l==="p"&&!end;PZC.style.display=on?"":"none";po=on&&pz(t,de)}
 if(l==="p"&&!end){const pR=ck("wx-rd"),pV=ck("wx-pv"),at0=dm(t)+" à "+hmm(t);if(r&&r.h){if(!pV){w="";said=at0}}else if(!pR){w=pV&&BA(d)!=="7j"?"pluviomètres":"";said=at0+(po&&pV?", pluie autour des pluviomètres":"")}
 else if(po&&pV&&w==="estimé par radar"){w=PZW;said+=", et pluie autour des pluviomètres"}}hs.textContent=w;

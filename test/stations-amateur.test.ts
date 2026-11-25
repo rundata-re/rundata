@@ -6,7 +6,8 @@ import { enTete } from "../src/tools/representativeness.js";
 import { amateur, islandTour, meteoActuelle } from "../src/tools/meteo.js";
 import type { StationAnswer, StationNow } from "../src/web/data.js";
 import { stationsMap, VALEURS_JS, windArrow, windColor } from "../src/web/meteo-carte.js";
-import { chip, CSS, meteoPage, placePage } from "../src/web/pages.js";
+import { chip, meteoPage, placePage } from "../src/web/pages.js";
+import { CSS } from "../src/web/style.js";
 import { PAGES } from "../src/web/places.js";
 
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url), "utf8");

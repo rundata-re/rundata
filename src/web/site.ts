@@ -132,7 +132,8 @@ import { rejeuScript, rejeuScriptPath } from "./meteo-carte.js";
 import { CURSEUR_FILE, curseurScript, curseurScriptPath } from "./carte-curseur.js";
 import { cumulsScript, cumulsScriptPath } from "./pluie-cumuls.js";
 import { chiffresScript, chiffresScriptPath } from "./en-chiffres.js";
-import { CSS, FONT_PATH, legalPage, meteoPage, notFoundPage, offlinePage, placePage, seaPage, STYLE_PATH, vigilancePage } from "./pages.js";
+import { legalPage, meteoPage, notFoundPage, offlinePage, placePage, seaPage, vigilancePage } from "./pages.js";
+import { CSS, FONT_PATH, STYLE_PATH } from "./style.js";
 import { OFFLINE_PATH, serviceWorker, SW_PATH } from "./pwa.js";
 import { meteoPath, pageOf, PAGES, PRINCIPAL } from "./places.js";
 import { pressePage, pressFigures, toolCount } from "./presse.js";
@@ -652,7 +653,7 @@ export async function site(request: Request, cache: Cache, background: Backgroun
 const STYLE_FILE = /^\/style-\w+\.css$/;
 
 /**
- * The pages' stylesheet (web/pages.ts), kept a year at its address. Another address, asked by a page of an earlier
+ * The pages' stylesheet (web/style.ts), kept a year at its address. Another address, asked by a page of an earlier
  * version (a copy kept offline, a version still rolling out), gets today's for a few minutes only.
  */
 function stylesheet(path: string): Response | null {

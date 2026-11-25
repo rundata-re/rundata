@@ -37,7 +37,8 @@ import { fond, FONDS, MENTION, MOTIF_CREDIT, MOTIF_PAGES, MOTIF_PATH, SANS_FOND,
 import files from "../src/web/fonds.json" with { type: "json" };
 import { homePage } from "../src/web/home.js";
 import { kitPage } from "../src/web/kit-cyclone.js";
-import { CSS, meteoPage, notFoundPage, offlinePage, seaPage, vigilancePage } from "../src/web/pages.js";
+import { meteoPage, notFoundPage, offlinePage, seaPage, vigilancePage } from "../src/web/pages.js";
+import { CSS } from "../src/web/style.js";
 import { proposerPage } from "../src/web/propositions.js";
 import { annuaireEcolesPage } from "../src/web/ecoles-annuaire.js";
 import { withVolcan } from "../src/web/volcan-alerte.js";

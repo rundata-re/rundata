@@ -6,7 +6,8 @@ import { buildDae } from "../src/web/data.js";
 import { coupable, daePage, lienNom, soulignesCoupables } from "../src/web/domains.js";
 import { homePage, type HomeLive } from "../src/web/home.js";
 import { marchesPage } from "../src/web/marches-publics.js";
-import { CSS, legalPage, meteoPage, seaPage, vigilancePage } from "../src/web/pages.js";
+import { legalPage, meteoPage, seaPage, vigilancePage } from "../src/web/pages.js";
+import { CSS } from "../src/web/style.js";
 import { render } from "../src/web/publier.js";
 
 // An identifier from a source, joined by « _ », goes to the next line after a « _ » only: Chrome and Safari cut

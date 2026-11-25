@@ -5,7 +5,7 @@ import { handle } from "../src/app.js";
 import { Cache } from "../src/cache.js";
 import * as propositions from "../src/propositions.js";
 import { FORMS_CSS } from "../src/web/formulaires-style.js";
-import { CSS } from "../src/web/pages.js";
+import { CSS } from "../src/web/style.js";
 import * as formulaires from "../src/web/propositions.js";
 
 // Thursday 29 October 2026, 10:00 at La Réunion.

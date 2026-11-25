@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CSS } from "../src/web/pages.js";
+import { CSS } from "../src/web/style.js";
 
 // The header's « Menu » button never shrinks. At 320 px it ended 14 px past the margin, cut with a fallback font, and
 // off the screen with the browser's text at 125 or 150 %. The bar wraps, so the button stays on the screen, and below

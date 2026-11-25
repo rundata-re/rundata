@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CSS } from "../src/web/pages.js";
+import { CSS } from "../src/web/style.js";
 
 // The home page's night sky drew its stars over the title: a white star under the « 974 » at 1024 px (2.02:1 at the
 // worst pixel, 04/11/2026) and under the white words at 390, 820 and 1920 px. The stars now keep out of the text

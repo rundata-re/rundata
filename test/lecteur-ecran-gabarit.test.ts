@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CSS } from "../src/web/pages.js";
+import { CSS } from "../src/web/style.js";
 
 // What a screen reader gets from the shared CSS, checked in Chrome's accessibility tree on 24/11/2026: under 640 px a
 // `display:none` head took the column headers out of the stacked tables, and the breadcrumb's « › » was read between links.

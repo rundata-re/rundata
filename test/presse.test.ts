@@ -7,7 +7,7 @@ import { IDS } from "../src/providers/irve.js";
 import icons from "../src/web/icons.json" with { type: "json" };
 import visuals from "../src/web/presse.json" with { type: "json" };
 import { homePage } from "../src/web/home.js";
-import { CSS } from "../src/web/pages.js";
+import { CSS } from "../src/web/style.js";
 import { insecables } from "../src/typographie.js";
 
 const NOW = new Date("2026-10-24T04:00:00Z");

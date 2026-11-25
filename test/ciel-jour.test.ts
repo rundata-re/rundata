@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CSS } from "../src/web/pages.js";
+import { CSS } from "../src/web/style.js";
 
 // The home page's « 974 », in the brand's yellow, over the daytime sky: the sky's lower half was too light under the
 // bottom of its letters at 1024 px and wider (2.87:1 in the light theme, 3.07:1 in the dark one, measured at the worst

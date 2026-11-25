@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { daePage, wholeName } from "../src/web/domains.js";
-import { CSS } from "../src/web/pages.js";
+import { CSS } from "../src/web/style.js";
 
 // The long words at 320 px (UX review of 04/11/2026): none out of its box, not one word changed. In the menu and in the
 // table of Parcoursup's courses, the word hyphenated in French where it no longer fits (the page in `lang="fr"`); on a

@@ -10,7 +10,8 @@ import type { MeteoAnswer, PlaceData } from "../src/web/data.js";
 import {
   archiveOf, type Chiffres, chiffresDe, chiffresScript, CSS_CHIFFRES, chiffresScriptPath, DEFAUT, dessine, dit, enChiffres, FIGURES, KEY, LARGEUR, leadOf, type Reglages,
 } from "../src/web/en-chiffres.js";
-import { CSS, placePage } from "../src/web/pages.js";
+import { placePage } from "../src/web/pages.js";
+import { CSS } from "../src/web/style.js";
 import { pageOf } from "../src/web/places.js";
 import { site } from "../src/web/site.js";
 

@@ -4,7 +4,8 @@ import { DAES } from "../src/providers/dae.js";
 import { CATEGORIES } from "../src/web/categories.js";
 import { communePage } from "../src/web/commune.js";
 import { homePage, type HomeLive } from "../src/web/home.js";
-import { CSS, meteoPage } from "../src/web/pages.js";
+import { meteoPage } from "../src/web/pages.js";
+import { CSS } from "../src/web/style.js";
 import { pageOf } from "../src/web/places.js";
 
 const NOW = new Date("2026-10-23T14:40:00Z");

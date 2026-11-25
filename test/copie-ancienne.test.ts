@@ -6,7 +6,8 @@ import { courantBlock, type CourantAnswer } from "../src/tools/courant.js";
 import { copieBandeau, coupuresPage, electriciteCommune, electricitePage } from "../src/web/domains.js";
 import { coupuresCommunePage } from "../src/web/coupures.js";
 import { pageOf } from "../src/web/places.js";
-import { CSS, icon } from "../src/web/pages.js";
+import { icon } from "../src/web/pages.js";
+import { CSS } from "../src/web/style.js";
 
 // 23/11/2026 at 12:00 in La Réunion.
 const NOW = new Date("2026-11-23T08:00:00Z");

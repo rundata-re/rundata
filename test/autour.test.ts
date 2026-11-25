@@ -7,7 +7,7 @@ import { buildDae } from "../src/web/data.js";
 import { etage, nomDae } from "../src/tools/dae.js";
 import { nombre } from "../src/tools/format.js";
 import { AUTOUR_SCRIPT, daePage } from "../src/web/domains.js";
-import { CSS } from "../src/web/pages.js";
+import { CSS } from "../src/web/style.js";
 
 const ORIGIN = "https://rundata.re";
 const NOW = new Date("2026-10-23T14:40:00Z");

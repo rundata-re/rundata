@@ -7,7 +7,7 @@ import { REGISTRY } from "../src/registre.js";
 import { emploi, lignes, NON_REPRIS, pourOutil, type OffreRow } from "../src/tools/emploi.js";
 import { buildEmploi, emploiPage, intituleCoupable } from "../src/web/emploi.js";
 import { esc } from "../src/web/map.js";
-import { CSS } from "../src/web/pages.js";
+import { CSS } from "../src/web/style.js";
 
 // The feed of La Réunion read on 29/10/2026 at 12:20, two offers' pages and the first search page read at 12:26-12:28,
 // cut to what is read of them (and without the recruiters' names).

@@ -6,7 +6,8 @@ import * as seismes from "../src/providers/seismes.js";
 import * as vigieau from "../src/providers/vigieau.js";
 import { credits } from "../src/tools/format.js";
 import { communePage } from "../src/web/commune.js";
-import { CSS, layout, sourcesLast } from "../src/web/pages.js";
+import { layout, sourcesLast } from "../src/web/pages.js";
+import { CSS } from "../src/web/style.js";
 import { pageOf } from "../src/web/places.js";
 
 const O = "https://rundata.re";

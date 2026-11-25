@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { accueilCarte, IDS, problemes, sujets, type HomeLive } from "../src/web/accueil-carte.js";
-import { CSS } from "../src/web/pages.js";
+import { CSS } from "../src/web/style.js";
 
 // 10:30 in La Réunion.
 const NOW = new Date("2026-11-10T06:30:00Z");

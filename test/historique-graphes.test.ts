@@ -10,7 +10,7 @@ import { historiqueMeteo } from "../src/tools/historique.js";
 import type { HistoriqueAnswer } from "../src/web/data.js";
 import { heroHistorique, historiquePage } from "../src/web/historique.js";
 import { GRAPHES_SCRIPT, graphes, warmer } from "../src/web/historique-graphes.js";
-import { CSS } from "../src/web/pages.js";
+import { CSS } from "../src/web/style.js";
 
 // Real rows of the archive (scripts/build-climat.py): the six stations of the tour, 2025 and 2026 up to 23 October.
 const NOW = new Date("2026-10-24T08:00:00Z");

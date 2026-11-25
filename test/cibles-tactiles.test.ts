@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { annuaireEcolesPage } from "../src/web/ecoles-annuaire.js";
 import { enfantsPage } from "../src/web/enfants.js";
-import { CSS } from "../src/web/pages.js";
+import { CSS } from "../src/web/style.js";
 
 // Touch targets of 24 px at least at 320 and 390 px (WCAG 2.5.8), and no text under 12 px, without moving the page.
 describe("touch targets and small texts", () => {

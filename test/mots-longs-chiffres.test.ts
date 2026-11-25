@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { enGrand, motsLongs, syllabes } from "../src/tools/format.js";
-import { CSS } from "../src/web/pages.js";
+import { CSS } from "../src/web/style.js";
 
 const vu = (s: string) => s.replaceAll("­", "-");
 

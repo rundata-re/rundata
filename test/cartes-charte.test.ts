@@ -14,7 +14,8 @@ import { historiquePage } from "../src/web/historique.js";
 import { enfantsPage } from "../src/web/enfants.js";
 import { POINTS_SCRIPT } from "../src/web/carte-points.js";
 import { islandMap } from "../src/web/map.js";
-import { CSS, seaPage } from "../src/web/pages.js";
+import { seaPage } from "../src/web/pages.js";
+import { CSS } from "../src/web/style.js";
 import { pageOf } from "../src/web/places.js";
 
 // The charter of the maps (wording validated on 31/10/2026): the same kind of map, the same look.

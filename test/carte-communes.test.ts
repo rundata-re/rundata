@@ -4,7 +4,7 @@ import { NAME_UNITS, nameBox, PLACES, SURVOL_SCRIPT } from "../src/web/carte-com
 import { POINTS_SCRIPT } from "../src/web/carte-points.js";
 import { COMMUNES, communePage, communesPage } from "../src/web/commune.js";
 import { H, islandMap, W } from "../src/web/map.js";
-import { CSS } from "../src/web/pages.js";
+import { CSS } from "../src/web/style.js";
 import { pageOf } from "../src/web/places.js";
 import { tabStops } from "./cartes.js";
 

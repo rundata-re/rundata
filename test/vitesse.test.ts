@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { journeeOf } from "../src/web/data.js";
 import { installationsReplay, productionChart } from "../src/web/electricite-carte.js";
 import { IMAGES_FAST, IMAGES_HEURES, IMAGES_MAX, IMAGES_OVER, imagesMaxFor, imagesMaxOf, keepsUp, rejeuScript, skipNear, skipOf, unionOf } from "../src/web/meteo-carte.js";
-import { CSS } from "../src/web/pages.js";
+import { CSS } from "../src/web/style.js";
 import { VITESSE_JS, VITESSES, vitesseBouton } from "../src/web/vitesse.js";
 
 // EDF's lines of 31/10/2026 05:15 and 05:20 (test/electricite-carte.test.ts).

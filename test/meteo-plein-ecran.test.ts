@@ -4,7 +4,7 @@ import { MOTS, ZOOM_SCRIPT } from "../src/web/carte-zoom.js";
 import type { StationNow } from "../src/web/data.js";
 import { FIN_SCRIPT, H, NOMS_SCRIPT, project, RELIEF_FIN, RELIEF_FIN_N, RELIEF_PX, W } from "../src/web/map.js";
 import { MARQUES_JS, MARQUES_PX, METEO_SCRIPT, stationsMap, ZOOM_METEO } from "../src/web/meteo-carte.js";
-import { CSS } from "../src/web/pages.js";
+import { CSS } from "../src/web/style.js";
 import { pleinEcran } from "../src/web/plein-ecran.js";
 
 // Two of Météo-France's stations, an anemometer of the FFVL a few hundred metres from one (its pill moved apart), and

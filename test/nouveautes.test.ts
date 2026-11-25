@@ -2,7 +2,8 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { changelog, NOUVEAUTES, parJour } from "../src/nouveautes.js";
 import { cheminsTexte } from "../src/web/adresse.js";
-import { CSS, DESCRIPTION_MAX } from "../src/web/pages.js";
+import { DESCRIPTION_MAX } from "../src/web/pages.js";
+import { CSS } from "../src/web/style.js";
 import { chiffreMot, DESCRIPTION, nouveautesPage, TITLE } from "../src/web/nouveautes.js";
 import { withSigles } from "../src/web/sigles.js";
 

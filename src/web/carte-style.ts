@@ -1,5 +1,5 @@
 /**
- * The style of /carte (web/carte.ts), in the site's sheet: a module of its own, so that the sheet (web/pages.ts) does not
+ * The style of /carte (web/carte.ts), in the site's sheet: a module of its own, so that the sheet (web/style.ts) does not
  * import the page. The rain's scale is the first, fourth and last colours of /meteo's (RAIN_WASH, web/meteo-carte.ts).
  */
 /**

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { CARTE_CSS } from "../src/web/carte-style.js";
-import { CSS } from "../src/web/pages.js";
+import { CSS } from "../src/web/style.js";
 
 // A 320 px phone, the text at 100, 150 and 200 % (chrome-headless-shell 1248, 07/11/2026): a word cut anywhere or
 // past the screen in /carte's layers, the map buttons and a commune's election results.

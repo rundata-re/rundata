@@ -5,7 +5,7 @@ import type { RandonneesAnswer } from "../src/web/data.js";
 import { NOT_ON_ONF, onfDay, onfRead, randonneesPage, tracePage, traceSource } from "../src/web/domains.js";
 import { sentiersPage } from "../src/web/sentiers.js";
 import { OUVERT_ONF } from "../src/web/data.js";
-import { CSS } from "../src/web/pages.js";
+import { CSS } from "../src/web/style.js";
 import island from "../src/places/island.json" with { type: "json" };
 import { esc, FONDS_SCRIPT, FOND_ZOOM, FRAME_MARGIN, FRAME_MOST, frameOf, H, NOMS_SCRIPT, traceMap, W } from "../src/web/map.js";
 import routes from "../src/web/routes.json" with { type: "json" };

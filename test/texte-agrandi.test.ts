@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CSS } from "../src/web/pages.js";
+import { CSS } from "../src/web/style.js";
 import { FORMS_CSS } from "../src/web/formulaires-style.js";
 import { ELECTRICITE_CSS } from "../src/web/electricite-carte.js";
 

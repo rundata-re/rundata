@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CSS } from "../src/web/pages.js";
+import { CSS } from "../src/web/style.js";
 
 // « Ouvert », « bonne », vigilance verte: one green for the site, darker in the light theme and lighter in the dark one,
 // so that it reads over 4.5:1 in both (wording validated on 04/11/2026: #237534 is 5.73:1 on white, #4cc765 7.84:1 on #0f1d2c).

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CSS } from "../src/web/pages.js";
+import { CSS } from "../src/web/style.js";
 
 // The neutral grey of « pas de vigilance » and the orange of an average water quality (wording validated on 06/11/2026): each read
 // over 4.5:1, the grey under white text, the orange on the cards in both themes; the bars that used the grey keep their contrast.

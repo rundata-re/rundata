@@ -9,7 +9,7 @@ import { communePage } from "../src/web/commune.js";
 import { pageOf } from "../src/web/places.js";
 import { zoomControls } from "../src/web/carte-zoom.js";
 import { IGN_TUILES } from "../src/web/map.js";
-import { CSS } from "../src/web/pages.js";
+import { CSS } from "../src/web/style.js";
 
 const parse = (c: string) => [...c.matchAll(/([a-z])(\d*)(?:\+(\d+))?/g)].map((m) => [m[1], m[2], m[3] ?? ""] as [string, string, string]);
 

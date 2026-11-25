@@ -3,7 +3,7 @@ import * as enfants from "../src/vie/enfants.js";
 import { ARM_MS, LINGER_MS, LIST_MAX, MOTS, MOUSE_PX, POINTS_CSS, POINTS_SCRIPT, TAP_PX } from "../src/web/carte-points.js";
 import { enfantsCommunePage, enfantsPage } from "../src/web/enfants.js";
 import { esc } from "../src/web/map.js";
-import { CSS } from "../src/web/pages.js";
+import { CSS } from "../src/web/style.js";
 import { pageOf } from "../src/web/places.js";
 
 const O = "https://rundata.re";

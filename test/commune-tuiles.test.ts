@@ -5,7 +5,7 @@ import { enGrand } from "../src/tools/format.js";
 import { BIKES_STALE_MS, COLUMNS, COMMUNES, communePage, measuredAt, spans } from "../src/web/commune.js";
 import { type CommuneData, pointJustice } from "../src/web/data.js";
 import { H, W } from "../src/web/map.js";
-import { CSS } from "../src/web/pages.js";
+import { CSS } from "../src/web/style.js";
 import { pageOf } from "../src/web/places.js";
 
 const ORIGIN = "https://rundata.re";

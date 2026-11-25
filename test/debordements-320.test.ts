@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CSS } from "../src/web/pages.js";
+import { CSS } from "../src/web/style.js";
 
 // A 320 px phone with the text at 200 %: /meteo was 352 px wide, the home page 333 px; each block now inside its column.
 describe("three blocks that widened the page at 320 px with the text at 200 %", () => {

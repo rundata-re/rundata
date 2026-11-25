@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { Cache } from "../src/cache.js";
-import { CSS, narrowTwins, STYLE_PATH } from "../src/web/pages.js";
+import { CSS, narrowTwins, STYLE_PATH } from "../src/web/style.js";
 import { pleinEcran } from "../src/web/plein-ecran.js";
 import { hash } from "../src/web/pwa.js";
 import { site } from "../src/web/site.js";

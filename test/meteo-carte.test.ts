@@ -50,7 +50,8 @@ import {
   windAt,
   windPill,
 } from "../src/web/meteo-carte.js";
-import { CSS, METEOR_CREDIT, meteoPage, stationId } from "../src/web/pages.js";
+import { METEOR_CREDIT, meteoPage, stationId } from "../src/web/pages.js";
+import { CSS } from "../src/web/style.js";
 import { site } from "../src/web/site.js";
 
 const NOW = new Date("2026-10-22T05:30:00Z");

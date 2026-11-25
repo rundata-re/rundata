@@ -115,7 +115,7 @@ describe("sharing and following", () => {
     const html = placePage(O, pageOf("cilaos")!, null, NOW);
     const text = "Météo Cilaos en direct et prévisions : https://rundata.re/meteo/cilaos?ref=wa";
     expect(html).toContain(`<a class="sh wa" href="https://wa.me/?text=${encodeURIComponent(text)}" target="_blank" rel="noopener">Partager sur WhatsApp`);
-    expect(html).toContain(`<p>Suivez rundata.re\u00a0: une info utile chaque matin sur <a href="https://www.facebook.com/rundata.re?ref=site" rel="noopener">Facebook</a>, les sorties du week-end le vendredi sur sa <a href="https://www.whatsapp.com/channel/0029VbEDFav5Ui2agqGyG63Q?ref=site" rel="noopener">chaîne WhatsApp</a>. Aussi sur <a href="https://www.instagram.com/rundata.re/?ref=site" rel="noopener">Instagram</a>, <a href="https://www.threads.com/@rundata.re?ref=site" rel="noopener">Threads</a>, <a href="https://www.tiktok.com/@rundatare?ref=site" rel="noopener">TikTok</a>, <a href="https://www.youtube.com/@rundatare?ref=site" rel="noopener">YouTube</a> et <a href="https://x.com/rundata_re?ref=site" rel="noopener" aria-label="rundata.re sur X">X</a>.</p>`);
+    expect(html).toContain(`<p>Suivez rundata.re\u00a0: une info utile chaque matin sur <a href="https://www.facebook.com/rundata.re" rel="noopener">Facebook</a>, les sorties du week-end le vendredi sur sa <a href="https://www.whatsapp.com/channel/0029VbEDFav5Ui2agqGyG63Q?ref=site" rel="noopener">chaîne WhatsApp</a>. Aussi sur <a href="https://www.instagram.com/rundata.re/?ref=site" rel="noopener">Instagram</a>, <a href="https://www.threads.com/@rundata.re?ref=site" rel="noopener">Threads</a>, <a href="https://www.tiktok.com/@rundatare?ref=site" rel="noopener">TikTok</a>, <a href="https://www.youtube.com/@rundatare?ref=site" rel="noopener">YouTube</a> et <a href="https://x.com/rundata_re?ref=site" rel="noopener" aria-label="rundata.re sur X">X</a>.</p>`);
     expect(html.indexOf('class="share wrap"')).toBeLessThan(html.indexOf('id="avis"'));
   });
 
@@ -163,17 +163,19 @@ describe("rundata.re's accounts", () => {
     expect(CSS).toContain(".social>.suivre{display:block}");
   });
 
-  it("are in every footer, with their logo, their name and ?ref=site", () => {
+  it("are in every footer, with their logo, their name and ?ref=site, but for Facebook and GitHub", () => {
     const html = placePage(O, pageOf("cilaos")!, null, NOW);
     const foot = html.slice(html.indexOf('<footer class="foot'));
-    expect(foot).toContain(`<p class="social"><span class="suivre">Suivre rundata.re :</span> <span><span class="pair"><a href="https://www.facebook.com/rundata.re?ref=site" rel="noopener" aria-label="rundata.re sur Facebook"><svg`);
+    expect(foot).toContain(`<p class="social"><span class="suivre">Suivre rundata.re :</span> <span><span class="pair"><a href="https://www.facebook.com/rundata.re" rel="noopener" aria-label="rundata.re sur Facebook"><svg`);
     expect(foot).toContain(`<a href="https://www.instagram.com/rundata.re/?ref=site" rel="noopener" aria-label="rundata.re sur Instagram"><svg`);
     expect(foot).toContain(`<a href="https://www.threads.com/@rundata.re?ref=site" rel="noopener" aria-label="rundata.re sur Threads"><svg`);
     expect(foot).toContain(`<a href="https://www.tiktok.com/@rundatare?ref=site" rel="noopener" aria-label="rundata.re sur TikTok"><svg`);
     expect(foot).toContain(`<a href="https://www.youtube.com/@rundatare?ref=site" rel="noopener" aria-label="rundata.re sur YouTube"><svg`);
     expect(foot).toContain(`<a href="https://x.com/rundata_re?ref=site" rel="noopener" aria-label="rundata.re sur X"><svg`);
     expect(foot).toContain(`<a href="https://www.whatsapp.com/channel/0029VbEDFav5Ui2agqGyG63Q?ref=site" rel="noopener" aria-label="rundata.re sur WhatsApp"><svg`);
-    // The code last, with no ?ref=site: GitHub brings no visit back to count.
+    // Facebook with no ?ref=site: `ref` is Facebook's own parameter, and some older Android phones did not open the Page
+    // with it (25/11/2026). The code last, with no ?ref=site: GitHub brings no visit back to count.
+    expect(html).not.toContain("facebook.com/rundata.re?ref");
     expect(foot).toContain(`<a href="https://github.com/rundata-re/rundata" rel="noopener" aria-label="rundata.re sur GitHub"><svg`);
     // Two by two, so that a narrow line never leaves one alone.
     expect(foot).toMatch(/<\/svg>Facebook<\/a><a [^>]+><svg[^]*?<\/svg>Instagram<\/a><\/span><span class="pair"><a [^>]+><svg[^]*?<\/svg>Threads<\/a><a [^>]+><svg[^]*?<\/svg>TikTok<\/a><\/span><span class="pair"><a [^>]+><svg[^]*?<\/svg>YouTube<\/a><a [^>]+><svg[^]*?<\/svg>X<\/a><\/span><span class="pair"><a [^>]+><svg[^]*?<\/svg>WhatsApp<\/a><a [^>]+><svg[^]*?<\/svg>GitHub<\/a><\/span><\/span><\/p>/);

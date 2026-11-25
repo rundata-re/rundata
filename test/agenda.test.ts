@@ -150,6 +150,17 @@ describe("agenda", () => {
     expect(datesIn("Rien de daté ici", pub)).toEqual([]);
   });
 
+  it("reads a start time alone after the day, and no hour but a start's (Le Tampon, 24/11/2026)", () => {
+    const pub = new Date("2026-11-10T08:00:00Z");
+    expect(datesIn("le samedi 28 novembre 2026, sur deux sites. SIDR des 400 : à partir de 8h, sous le chapiteau", pub)).toEqual([{ debut: "2026-11-28T08:00" }]);
+    expect(datesIn("Vendredi 27 novembre 2026 dès 19h30 au kiosque", pub)).toEqual([{ debut: "2026-11-27T19:30" }]);
+    expect(datesIn("Concert le 27 novembre 2026 à 20h", pub)).toEqual([{ debut: "2026-11-27T20:00" }]);
+    // A span still wins, as before; a number of hours or a range of days has no start time.
+    expect(datesIn("Samedi 28 novembre 2026, à partir de 8h, de 9h à 12h", pub)).toEqual([{ debut: "2026-11-28T09:00", fin: "2026-11-28T12:00" }]);
+    expect(datesIn("Du 24 au 28 novembre 2026 à partir de 8h", pub)).toEqual([{ debut: "2026-11-24", fin: "2026-11-28" }]);
+    expect(datesIn("Samedi 28 novembre 2026 : 24h de la BD", pub)).toEqual([{ debut: "2026-11-28" }]);
+  });
+
   it("keeps the hours a mairie typed, whatever time zone its site claims", () => {
     // Saint-Paul's site says Europe/Paris; its page shows « 8h00 » for these morning sessions.
     const [e] = parseTribe(JSON.parse(fixture("tribe_saint-paul.json")), "Mairie de Saint-Paul", "Saint-Paul");
@@ -778,6 +789,16 @@ describe("agenda", () => {
       expect(parseRss(item("Le 12 décembre 2026, un concert.", "<p>Le 13 décembre 2026, un concert.</p>"), "Ville de Saint-André", "Saint-André", true)[0].seances).toEqual([{ debut: "2026-12-12" }]);
       // No day anywhere: no event.
       expect(parseRss(item(cut, "<p>Un marché de Noël.</p>"), "Ville de Saint-André", "Saint-André", true)).toEqual([]);
+    });
+
+    it("takes the hour from a post's whole text when its excerpt gives the day only (Le Tampon, 24/11/2026)", () => {
+      // letampon.fr/agenda/feed/ on 24/11/2026: the excerpt cut before the hours, which the whole text gives.
+      const item = `<rss><channel><item><title>Journée de l’environnement 2026</title><link>https://letampon.fr/agenda/journee-de-lenvironnement-2026/</link><pubDate>Tue, 10 Nov 2026 04:00:00 +0000</pubDate><description><![CDATA[Samedi 28 novembre 2026 Journée de l’environnement – Distribution gratuite de plantes 2026 La Ville du Tampon organise sa traditionnelle distribution gratuite de plantes le [&#8230;] L’article Journée de l’environnement 2026 est apparu en premier sur Le Tampon.]]></description><content:encoded><![CDATA[<p>Samedi 28 novembre 2026</p><p>La Ville du Tampon organise sa traditionnelle distribution gratuite de plantes le <strong>samedi 28 novembre 2026</strong>, sur deux sites de la commune. Au total, 20 000 plantes seront distribuées gratuitement.</p><h3>Deux sites de distribution</h3><ul><li><strong>SIDR des 400</strong> : à partir de 8h, sous le chapiteau situé à proximité du marché forain – 15 000 plantes.</li><li><strong>Site de Miel Vert</strong> : à partir de 9h – 5 000 plantes.</li></ul>]]></content:encoded></item></channel></rss>`;
+      const [e] = parseRss(item, "Ville du Tampon", "Le Tampon");
+      expect(e.seances).toEqual([{ debut: "2026-11-28T08:00" }]);
+      // The whole text gives the hour of the excerpt's day only: another day there is not taken.
+      const autre = item.replace("<strong>samedi 28 novembre 2026</strong>", "<strong>dimanche 29 novembre 2026</strong>").replace("<p>Samedi 28 novembre 2026</p>", "");
+      expect(parseRss(autre, "Ville du Tampon", "Le Tampon")[0].seances).toEqual([{ debut: "2026-11-28" }]);
     });
 
     it("reads Saint-Louis's whole agenda, whose events keep their title as the commune writes it", () => {
@@ -1957,8 +1978,9 @@ describe("Saint-Pierre's news (Drupal, parseDrupalNews)", () => {
     // Saturday 24/10/2026 at 04:00 in La Réunion: the feed read on 20/11, ten items.
     const list = read(xml, "2026-10-25T00:00:00Z");
     expect(list.map((e) => [e.titre, e.seances])).toEqual([
-      // A news item: its day in its title (newsEvent, as the other mairies' news).
-      ["Commémoration du 11 novembre 1918", [{ debut: "2026-11-11" }]],
+      // A news item: its day in its title (newsEvent, as the other mairies' news), its hour in its text (« Le mercredi
+      // 11 novembre à 11h »).
+      ["Commémoration du 11 novembre 1918", [{ debut: "2026-11-11T11:00" }]],
       // An event's node: its start, local, and its end, in UTC in its <time> (16:00Z is 20:00 in La Réunion).
       ["Le street art et son impact dans la cité une conférence de Cyrille Gouyette au Kerveguen", [{ debut: "2026-11-06T18:00", fin: "2026-11-06T20:00" }]],
       // Its end at midnight, as the site writes « dim 15/11/2026 - 00:00 » for an end without an hour: that day.

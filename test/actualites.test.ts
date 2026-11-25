@@ -107,6 +107,21 @@ describe("actualités", () => {
     expect(vauban.communes).toEqual(["Saint-Denis"]);
   });
 
+  it("reads past a quote that opens the text to tell the island's news (Clicanoo, 23/11/2026)", () => {
+    const item = (titre: string, description: string) => `<rss><channel><item><title>${titre}</title><link>https://www.clicanoo.re/article/politique/2026/11/23/a</link><pubDate>Mon, 23 Nov 2026 19:11:08 +0400</pubDate><description>${description}</description></item></channel></rss>`;
+    // A headline without a place, a first sentence quoting someone: the sentence after it says the island's council.
+    const [meren] = parseRss(item("MEREN : un élu répond aux accusations de « vol d'eau » et interpelle sur les réseaux hydrauliques de l'Est",
+      "« Il faut faire de la pédagogie sur ce dossier. » Interrogé ce lundi 23 novembre, le vice-président du Département délégué à l'eau entend dissiper les malentendus."), "Clicanoo");
+    expect(meren?.titre).toMatch(/^MEREN/);
+    // What is shown of it stays its first sentence, the quote.
+    expect(meren?.resume).toBe("« Il faut faire de la pédagogie sur ce dossier.");
+    // A quote that says the island tells it, whatever follows.
+    expect(parseRss(item("Un appel aux élus", "« La Réunion mérite mieux que ces querelles. » Le texte circule depuis samedi."), "Clicanoo")).toHaveLength(1);
+    // France's news stays out, whatever follows its quote.
+    expect(parseRss(item("Des jeunes dénoncent le « permis de tuer » dans l'hémicycle, à l'invitation d'un député",
+      "« Assassinés par la République. » Samedi, six jeunes militants se sont filmés dans l'hémicycle désert de l'Assemblée nationale."), "Clicanoo")).toEqual([]);
+  });
+
   it("reads the feeds: titles, times with their offset, first sentences, and leaves out a radio's games", () => {
     const freedom = parseRss(fixture("freedom.xml"), "Freedom", /jeux|podcast|actus radio/i);
     expect(freedom.some((i) => /Freedo Quotidien/.test(i.titre))).toBe(false);
@@ -499,7 +514,7 @@ describe("actualités", () => {
   // A change that keeps something else (a link, a field, a medium, a filter) changes it: add its fingerprint here and
   // raise SOURCE_REVISION["actualites:fil"] (and RENDU_REVISION.actualites), so that the entry read by the old code is
   // read again after the deploy. A fixture changed alone: add its fingerprint and raise the number all the same.
-  const FIL = ["b7e88ffb49a93884", "44c0eb346a5da96e", "95031bc5918208dd", "d177bf8851fdca3e", "e8416969f0a2d8cc", "3091f8c4c8a956ed", "257b273333650345", "69195050c2791723", "dcf1a479d2810ca3", "a79102468fde6006", "ea2fd4bd49be75b4"];
+  const FIL = ["b7e88ffb49a93884", "44c0eb346a5da96e", "95031bc5918208dd", "d177bf8851fdca3e", "e8416969f0a2d8cc", "3091f8c4c8a956ed", "257b273333650345", "69195050c2791723", "dcf1a479d2810ca3", "a79102468fde6006", "ea2fd4bd49be75b4", "e67521815e8d3c38"];
 
   it("keeps, from the same pages, what its revision says: one fingerprint per revision of actualites:fil", async () => {
     const { value } = await fil(cache(), NOW);

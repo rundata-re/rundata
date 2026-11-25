@@ -157,6 +157,20 @@ describe("events' state and kind", () => {
     expect(e.statut).toBe("annulé");
   });
 
+  it("links an OpenAgenda event at its French page, where openagenda.com sends it (307), never twice (24/11/2026)", () => {
+    const at = { uid: 1, title: { fr: "Bal" }, timings: [{ begin: "2026-10-24T18:00:00+04:00", end: "2026-10-24T23:00:00+04:00" }] };
+    const liens = parseOpenAgenda({ events: [
+      { ...at, canonicalUrl: "https://openagenda.com/reseau-des-mediatheques-cinor/events/34441219_collecte-solidaire-de-jouets-5454888" },
+      { ...at, canonicalUrl: "https://openagenda.com/fr/office-de-tourisme-intercommunal-du-nord-de-la-reunion/events/47708955_reunion-graffiti" },
+      { ...at, canonicalUrl: "https://openagenda.com/en/x/events/1" },
+    ] }, "CINOR").map((e) => e.lien);
+    expect(liens).toEqual([
+      "https://openagenda.com/fr/reseau-des-mediatheques-cinor/events/34441219_collecte-solidaire-de-jouets-5454888",
+      "https://openagenda.com/fr/office-de-tourisme-intercommunal-du-nord-de-la-reunion/events/47708955_reunion-graffiti",
+      "https://openagenda.com/en/x/events/1",
+    ]);
+  });
+
   it("keeps OpenAgenda's picture only under the Licence Ouverte, its credits or else its licensor as author", () => {
     const at = { uid: 1, title: { fr: "Bal" }, timings: [{ begin: "2026-10-24T18:00:00+04:00", end: "2026-10-24T23:00:00+04:00" }], canonicalUrl: "https://o/1" };
     const image = { base: "https://img.openagenda.com/main/", filename: "abc.base.image.jpg" };

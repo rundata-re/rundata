@@ -4,7 +4,7 @@ import { handle } from "../src/app.js";
 import { Cache } from "../src/cache.js";
 import * as coraux from "../src/providers/coraux.js";
 import { corauxBlock, temperatureMer } from "../src/tools/mer.js";
-import { reefSection } from "../src/web/pages.js";
+import { reefSection } from "../src/web/mer-page.js";
 
 // NOAA Coral Reef Watch's 5 km grid over the island, 7 days without a gap (05/04 to 11/04/2025, read on 07/11/2026): a
 // heat wave, the DHW over 15 °C-weeks at the three points, but a HotSpot under 1 °C all week at Saint-Gilles.

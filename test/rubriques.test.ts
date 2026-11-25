@@ -6,7 +6,7 @@ import { traficPage } from "../src/web/trafic.js";
 import { decheteriesPage } from "../src/web/decheteries.js";
 import { esc } from "../src/web/map.js";
 import { marchesPage } from "../src/web/marches-publics.js";
-import { seaPage } from "../src/web/pages.js";
+import { seaPage } from "../src/web/mer-page.js";
 
 // One name per section, shared by the menu, the breadcrumb and the start of the H1 (the validated words, 04/11/2026).
 const O = "https://rundata.re";

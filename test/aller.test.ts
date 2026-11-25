@@ -9,7 +9,7 @@ import { bathingPage } from "../src/web/baignade.js";
 import type { BorneStation, EauAnswer, SeaData } from "../src/web/data.js";
 import { decheteriesPage } from "../src/web/decheteries.js";
 import { borneRow, eauPage } from "../src/web/domains.js";
-import { seaPage } from "../src/web/pages.js";
+import { seaPage } from "../src/web/mer-page.js";
 import { CSS } from "../src/web/style.js";
 import { site } from "../src/web/site.js";
 import { Cache, MemoryStore } from "../src/cache.js";

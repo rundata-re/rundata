@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { Cache } from "../src/cache.js";
 import * as cetaces from "../src/tools/cetaces.js";
 import { temperatureMer } from "../src/tools/mer.js";
-import { whaleSection } from "../src/web/pages.js";
+import { whaleSection } from "../src/web/mer-page.js";
 
 const CSV = readFileSync(new URL("./fixtures/coraux_dhw_5km_7j.csv", import.meta.url), "utf8");
 const body = (r: { content: { text: string }[] }) => JSON.parse(r.content[0].text);

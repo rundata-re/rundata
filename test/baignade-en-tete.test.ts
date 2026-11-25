@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { REGLE_COURTE } from "../src/eau/requin.js";
 import { SATELLITES, temperatureMer } from "../src/tools/mer.js";
-import { seaPage } from "../src/web/pages.js";
+import { seaPage } from "../src/web/mer-page.js";
 import { esc } from "../src/web/map.js";
 import { coastwatch, parseAscii } from "./sst.js";
 

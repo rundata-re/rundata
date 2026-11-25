@@ -6,7 +6,7 @@ import {
 } from "../src/tools/peche.js";
 import { lien } from "../src/tools/citer.js";
 import { pechePage, TITLE } from "../src/web/peche.js";
-import { seaPage } from "../src/web/pages.js";
+import { seaPage } from "../src/web/mer-page.js";
 
 const O = "https://rundata.re";
 const NOW = new Date("2026-10-31T12:00:00Z");

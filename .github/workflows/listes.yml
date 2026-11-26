@@ -8,10 +8,10 @@
 # 90 Mo for the antennas, 100 Mo for the monuments), a few requests to the Région's portal (its OpenDataSoft API,
 # Licence Ouverte, paced by the scripts) and a few minutes of a GitHub runner a week, free for a public repository;
 # nothing on Cloudflare (no request to the Worker, no KV, no D1).
-# Then thirteen lists that change seldom, each by what tells it moved (the source's date, its quarter or vintage, or its
+# Then fourteen lists that change seldom, each by what tells it moved (the source's date, its quarter or vintage, or its
 # content when that is small): the ONF's areas and trails, OpenStreetMap's hikes, the collèges' map, the Cnaf's places,
 # the ARCEP's connections, the DEPP's indices, the rents, Parcoursup, the speed cameras, FINESS, the bike lanes and racks,
-# the speeds of the routes nationales, the road accidents. A request or a few each, paced by the scripts. These say
+# the speeds of the routes nationales, the road accidents, the operators' declared mobile coverage (the Arcep's quarter). A request or a few each, paced by the scripts. These say
 # apart a list that aged (the source moved on: the job stays green, the list goes into the summary and the artifact
 # listes-vieillies.json) and a check that broke (red).
 # Then the places we give against a second source (scripts/verifier-positions.py): the annuaire's offices against their
@@ -148,6 +148,12 @@ jobs:
         id: velo
         continue-on-error: true
         run: python3 -I scripts/verifier.py build-velo.py --verifier 2
+      # A newer quarter of the Arcep's coverage maps that has La Réunion: the map of /antennes has aged. One request, and one
+      # a minute for each newer quarter.
+      - name: Couverture mobile déclarée (Arcep)
+        id: couverture
+        continue-on-error: true
+        run: python3 -I scripts/verifier.py build-couverture.py --verifier
       # An office the annuaire places far from its address, a commune's point far from its town hall: « y aller », the
       # distances and the nearest office are given wrong. Said to its producer, or the list rebuilt. A bus stop misplaced
       # by its network: the walk to it, the connections on foot and « y aller » are given wrong; said to the network.
@@ -155,7 +161,7 @@ jobs:
         id: positions
         continue-on-error: true
         run: python3 -I scripts/verifier-positions.py --verifier
-      # The thirteen run through scripts/verifier.py: a list that aged (its source moved on) is a warning in its step, a
+      # The fourteen run through scripts/verifier.py: a list that aged (its source moved on) is a warning in its step, a
       # line of the job's summary and of listes-vieillies.json, and the job stays green, for nothing is broken:
       # someone rebuilds the list and proposes it. Only a broken check (a source that did not answer, an exception) is red.
       - name: Listes vieillies et vérifications cassées

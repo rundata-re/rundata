@@ -8,12 +8,13 @@
   - each bus stop of the island's GTFS (the networks of scripts/build-transit.py, one download each) against OSM's bus
     stops (the same Overpass request): only the few a producer may have misplaced are watched, see cas_reseau().
 
-The gaps found today are in scripts/positions-reference.json. The job fails only on a gap that is new, or that grew by
-more than MARGE metres since: the failure is the alert, someone looks at the place and says it to its producer, or
-rebuilds the list. A bus stop is a case or not: only a new case fails. A gap of the reference that closed is printed, without failing. Each source that does not answer is
-said, and fails the step: no gap is read from a missing source.
+The gaps found today are in scripts/positions-reference.json. Only a gap that is new, or that grew by more than MARGE
+metres since, is said: as an aged list of scripts/verifier.py (1, a warning, the job stays green), someone looks at the
+place and says it to its producer, or rebuilds the list. A bus stop is a case or not: only a new case is said. A gap of
+the reference that closed is printed. Each source that does not answer is a broken check (2, red): no gap is read from a
+missing source.
 
-Usage: python3 -I scripts/verifier-positions.py --verifier      # compare with the reference, exit 1 on a new gap
+Usage: python3 -I scripts/verifier-positions.py --verifier      # compare with the reference: 1 on a new gap, 2 on a silent source
        python3 -I scripts/verifier-positions.py --ecrire        # rewrite the reference with today's gaps, and the town
                                                                 # halls of src/places/mairies-osm.json
 """
@@ -441,7 +442,7 @@ def main():
         return
 
     ref = json.loads(REFERENCE.read_text())
-    echecs = list(erreurs)
+    echecs = []
     if "annuaire" in out:
         echecs += comparer("annuaire", ref.get("annuaire", {}), out["annuaire"], ECART_ANNUAIRE_M)
     if "centres" in out:
@@ -450,9 +451,24 @@ def main():
         echecs += comparer_arrets(ref.get("arrets", {}), out["arrets"])
     for e in echecs:
         print(e)
+    v, code = _commun(), 0
     if echecs:
-        sys.exit(1)
-    print("aucun écart nouveau")
+        code = v.vieillie("Positions", "verifier-positions.py", "l'annuaire, la BAN, OpenStreetMap et les GTFS", ecart=len(echecs),
+                          consigne=f"{len(echecs)} écarts nouveaux ou qui grandissent. Regarder chaque lieu et le dire à son producteur, "
+                                   "ou reconstruire la liste ; un écart admis : scripts/verifier-positions.py --ecrire.")
+    for e in erreurs:
+        code = v.cassee("Positions", e)
+    if not echecs and not erreurs:
+        print("aucun écart nouveau")
+    sys.exit(code)
+
+
+def _commun():
+    """scripts/verifier.py, the checks shared by the build scripts (`python3 -I` does not put scripts/ on the path)."""
+    spec = importlib.util.spec_from_file_location("verifier", Path(__file__).with_name("verifier.py"))
+    v = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(v)
+    return v
 
 
 if __name__ == "__main__":

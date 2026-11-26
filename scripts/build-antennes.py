@@ -16,6 +16,7 @@ check, .github/workflows/listes.yml).
 """
 import argparse
 import csv
+import importlib.util
 import io
 import json
 import sys
@@ -207,9 +208,17 @@ def main():
     print(dest, len(supports), "supports mobiles au", mob_day, ";", len(radio), "supports radio et TV au", radio_day)
 
 
+def _commun():
+    """scripts/verifier.py, the checks shared by the build scripts (`python3 -I` does not put scripts/ on the path)."""
+    spec = importlib.util.spec_from_file_location("verifier", Path(__file__).with_name("verifier.py"))
+    v = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(v)
+    return v
+
+
 def verifier(dest, supports, radio, mob_day, radio_day, ecart):
     """The bundled list against the ANFR's newest files, without writing: each support by its id, mobile and broadcast,
-    added, gone, or changed (an operator, a generation's state, a height). 1 (the job's failure, its alert) past `ecart`."""
+    added, gone, or changed (an operator, a generation's state, a height). 1 (an aged list: a warning, the job stays green) past `ecart`."""
     bundled = json.loads(dest.read_text(encoding="utf-8"))
     total = 0
     for name, before, now, day, was in (("mobiles", bundled["supports"], supports, mob_day, bundled["mobile"]["fichier_du"]),
@@ -227,8 +236,8 @@ def verifier(dest, supports, radio, mob_day, radio_day, ecart):
             print(f"  changé : {y['id']} ({y['insee']}) : {', '.join(sorted(k for k in x.keys() | y.keys() if x.get(k) != y.get(k)))}")
         total += len(added) + len(gone) + len(changed)
     if total > ecart:
-        print(f"::error::La liste des antennes a {total} écarts avec les fichiers de l'ANFR (seuil {ecart}) : lancer scripts/build-antennes.py et proposer la PR.")
-        return 1
+        return _commun().vieillie("Antennes", "build-antennes.py", "les fichiers de l'ANFR", ecart=total,
+                                   consigne=f"{total} écarts, seuil {ecart}. Lancer scripts/build-antennes.py et proposer la PR.")
     return 0
 
 

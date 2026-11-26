@@ -76,10 +76,9 @@ describe("le contrôle du lundi des listes embarquées", () => {
     expect(r.stdout).toContain("overpass.private.coffee n'a pas répondu non plus (HTTPError: HTTP Error 502: Bad Gateway)");
   });
 
-  it("checks the places we give against a second source, failing only on a gap the reference does not hold", () => {
+  it("checks the places we give against a second source, saying only a gap the reference does not hold", () => {
     const yml = read(".github/workflows/listes.yml");
-    expect(yml).toContain("python3 -I scripts/verifier-positions.py --verifier");
-    expect(yml).toContain("steps.positions.outcome != 'success'");
+    expect(yml).toContain("run: python3 -I scripts/verifier.py verifier-positions.py --verifier");
     const py = read("scripts/verifier-positions.py");
     // One request to each source, under the reader's name, and the reference rewritten only on demand.
     expect(py).toContain('(Path(__file__).parent / "user-agent.txt").read_text(');
@@ -111,12 +110,8 @@ describe("le contrôle du lundi des listes embarquées", () => {
     for (const [c, v] of Object.entries(ref.centres)) expect(v.ecart_m, c).toBeGreaterThan(1000);
   });
 
-  it("is run by the Monday job, each list on its own step, any difference failing it", () => {
+  it("is run by the Monday job, each list on its own step, any difference saying it aged", () => {
     const yml = read(".github/workflows/listes.yml");
-    for (const s of ["build-canyons", "build-marmailles", "build-monuments"]) expect(yml, s).toContain(`run: python3 -I scripts/${s}.py --verifier 0`);
-    // The step that says what is to be redone names each of them.
-    expect(yml).toContain("steps.canyons.outcome != 'success'");
-    expect(yml).toContain("steps.marmailles.outcome != 'success'");
-    expect(yml).toContain("steps.monuments.outcome != 'success'");
+    for (const s of ["build-canyons", "build-marmailles", "build-monuments"]) expect(yml, s).toContain(`run: python3 -I scripts/verifier.py ${s}.py --verifier 0`);
   });
 });

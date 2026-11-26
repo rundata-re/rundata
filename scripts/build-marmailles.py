@@ -138,10 +138,18 @@ def main():
     print(f"{len(walks)} sentiers -> {dest.relative_to(ROOT)}, {dest.stat().st_size // 1024} Ko")
 
 
+def _commun():
+    """scripts/verifier.py, the checks shared by the build scripts (`python3 -I` does not put scripts/ on the path)."""
+    spec = importlib.util.spec_from_file_location("verifier", Path(__file__).with_name("verifier.py"))
+    v = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(v)
+    return v
+
+
 def verifier(rows, ecart):
     """The bundled list against the portal's of today, without writing: each entry by its id, all its fields (the ONF
     trails it follows included), not the day it was built. The portal's date of change moves with no change of content
-    (16/11/2026). 1 (the job's failure, its alert) when more than `ecart` were added, are gone or changed."""
+    (16/11/2026). 1 (an aged list: a warning, the job stays green) when more than `ecart` were added, are gone or changed."""
     bundled = json.loads((ROOT / "src/vie/marmailles.json").read_text(encoding="utf-8"))
     before, now = {r["id"]: r for r in bundled["sentiers"]}, {r["id"]: r for r in rows}
     added, gone = [i for i in now if i not in before], [i for i in before if i not in now]
@@ -157,8 +165,8 @@ def verifier(rows, ecart):
         print(f"  changé : {now[i]['nom']} ({', '.join(f)})")
     n = len(added) + len(gone) + len(changed)
     if n > ecart:
-        print(f"::error::La liste des sentiers marmailles a {n} écarts avec les sentiers marmailles du portail de la Région (seuil {ecart}) : lancer scripts/build-marmailles.py et proposer la PR.")
-        return 1
+        return _commun().vieillie("Sentiers marmailles", "build-marmailles.py", "les sentiers marmailles du portail de la Région", ecart=n,
+                                   consigne=f"{n} écarts, seuil {ecart}. Lancer scripts/build-marmailles.py et proposer la PR.")
     return 0
 
 

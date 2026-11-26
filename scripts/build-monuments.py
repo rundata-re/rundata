@@ -15,6 +15,7 @@ Usage: python3 -I scripts/build-monuments.py [--csv merimee.csv --du 2026-10-29]
 """
 import argparse
 import csv
+import importlib.util
 import io
 import json
 import re
@@ -111,11 +112,19 @@ def main():
     print(f"{len(rows)} rows of 974, {len(out)} monuments, {sum('lon' in m for m in out)} with a point -> {dest.relative_to(ROOT)}")
 
 
+def _commun():
+    """scripts/verifier.py, the checks shared by the build scripts (`python3 -I` does not put scripts/ on the path)."""
+    spec = importlib.util.spec_from_file_location("verifier", Path(__file__).with_name("verifier.py"))
+    v = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(v)
+    return v
+
+
 def verifier(rows, ecart, bundled, du=None):
     """
     The bundled list `bundled` against `rows`, rebuilt from the day's file, without writing: each monument by its
     reference in the base Mérimée, all its fields (name, communes, address, protection, centuries, point), not the day
-    it was built. 1 (the job's failure, its alert) when more than `ecart` were added, are gone or changed, else 0.
+    it was built. 1 (an aged list: a warning, the job stays green) when more than `ecart` were added, are gone or changed, else 0.
     """
     before, now = {m["ref"]: m for m in bundled["monuments"]}, {m["ref"]: m for m in rows}
     added, gone = [r for r in now if r not in before], [r for r in before if r not in now]
@@ -131,8 +140,8 @@ def verifier(rows, ecart, bundled, du=None):
         print(f"  changé : {now[r]['nom']} ({r} : {', '.join(f)})")
     n = len(added) + len(gone) + len(changed)
     if n > ecart:
-        print(f"::error::La liste des monuments historiques a {n} écarts avec la base Mérimée (seuil {ecart}) : lancer scripts/build-monuments.py et proposer la PR.")
-        return 1
+        return _commun().vieillie("Monuments historiques", "build-monuments.py", "la base Mérimée", ecart=n,
+                                   consigne=f"{n} écarts, seuil {ecart}. Lancer scripts/build-monuments.py et proposer la PR.")
     return 0
 
 

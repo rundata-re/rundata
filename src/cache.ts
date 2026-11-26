@@ -83,6 +83,17 @@ export const unreadable = (key: string, entry: { version?: string } | undefined,
   return revision == null || Number(revision) < floor;
 };
 
+/**
+ * The small views kept beside a copy, by the copy's key: written with it in the data center's stores, its time, stamp
+ * and cost with it, so that a page that needs a few fields of a large copy reads the view (`peek` of its key), as
+ * current as the copy. A copy written before its view existed has none: its readers find nothing, as without a copy,
+ * until it is built again. A change of a view's function raises the copy's family's revision (web/revisions.ts).
+ */
+const VIEWS = new Map<string, { key: string; f: (value: any) => unknown }>();
+export function keepView<T, U>(key: string, derivedKey: string, f: (value: T) => U): void {
+  VIEWS.set(key, { key: derivedKey, f });
+}
+
 /** Where entries live: process memory on Node; memory in front of the Cloudflare cache in the Worker. */
 export interface CacheStore {
   /** `freshAfter`: an entry fetched since then will do, so slower stores need not be asked (nor paid for). */
@@ -253,6 +264,24 @@ export class Cache {
     this.wide = this.lectures ? new TieredStore(store, this.lectures) : store;
   }
 
+  /**
+   * Writes `e` under `key` in the data center's stores, and the copy's view (`keepView`) beside it, with its time, stamp
+   * and cost. A view that cannot be made (an odd copy) or written (past the invocation's subrequests) waits for the
+   * copy's next write.
+   */
+  private async put(key: string, e: CacheEntry): Promise<void> {
+    await this.store.put(key, e);
+    const v = VIEWS.get(key);
+    if (!v) return;
+    let value: unknown;
+    try {
+      value = v.f(e.value);
+    } catch {
+      return;
+    }
+    await this.store.put(v.key, { ...e, value }).catch(() => undefined);
+  }
+
   /** The time the stores are read at, ms (its clock: tests set it). */
   time(): number {
     return this.now();
@@ -266,7 +295,7 @@ export class Cache {
     // Noted for a slow view's line (attentes.ts): what the request waited for.
     return attendu(key, (async () => {
       const hit = await this.store.get(key, this.now() - freshSeconds * 1000);
-      return this.noted(key, freshSeconds, await this.serve(key, hit, freshSeconds, load, (e) => this.store.put(key, e), backoffSeconds, behindSilent));
+      return this.noted(key, freshSeconds, await this.serve(key, hit, freshSeconds, load, (e) => this.put(key, e), backoffSeconds, behindSilent));
     })());
   }
 
@@ -279,7 +308,7 @@ export class Cache {
    */
   async getCopy<T>(key: string, freshSeconds: number, load: () => Promise<T>, lu: (value: T) => string | undefined, source?: string): Promise<Cached<T>> {
     const hit = await attendu(key, this.store.get(key, this.now() - freshSeconds * 1000));
-    const c = await attendu(key, this.serve(key, hit, freshSeconds, load, (e) => this.store.put(key, e)));
+    const c = await attendu(key, this.serve(key, hit, freshSeconds, load, (e) => this.put(key, e)));
     const at = Date.parse(lu(c.value) ?? "");
     const said = Number.isNaN(at) ? c : { ...c, fetchedAt: new Date(Math.min(at, c.fetchedAt.getTime())) };
     // Read from KV, the copy has no source of its own (`withSource` sees none): without `source`, a copy served for lack
@@ -333,7 +362,7 @@ export class Cache {
    */
   async getFrom<T>(key: string, have: Cached<T> | undefined, freshSeconds: number, load: () => Promise<T>, islandEvery?: number): Promise<Cached<T>> {
     const hit = have && { value: have.value, fetchedAt: have.fetchedAt.getTime(), ...(have.cost != null && { cost: have.cost }), ...(have.from && { from: have.from }), ...(!have.outdated && { version: stampOf(key, this.version) }) };
-    const put = islandEvery != null ? (e: CacheEntry) => this.islandPut(key, e, islandEvery) : (e: CacheEntry) => this.store.put(key, e);
+    const put = islandEvery != null ? (e: CacheEntry) => this.islandPut(key, e, islandEvery) : (e: CacheEntry) => this.put(key, e);
     return this.noted(key, freshSeconds, await this.serve(key, hit, freshSeconds, load, put));
   }
 
@@ -344,7 +373,7 @@ export class Cache {
    * everywhere, so two builds a few seconds apart in two data centers may still both write.
    */
   private async islandPut(key: string, e: CacheEntry, everySeconds: number): Promise<void> {
-    await this.store.put(key, e);
+    await this.put(key, e);
     if (!this.lectures) return;
     const there = await this.lectures.get(key).catch(() => undefined);
     if (there && there.fetchedAt > e.fetchedAt - everySeconds * 1000) return;
@@ -412,7 +441,7 @@ export class Cache {
       }
       if (far && (!hit || far.fetchedAt > hit.fetchedAt)) {
         hit = far;
-        await this.store.put(key, far).catch(() => undefined);
+        await this.put(key, far).catch(() => undefined);
       }
     }
     if (unreadable(key, hit, this.version)) return undefined;

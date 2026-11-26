@@ -35,6 +35,7 @@ import {
   roadNewsRead,
   withRoadNews,
   buildRandonnees,
+  RANDONNEES_TUILES,
   buildSecheresse,
   buildCoupures,
   buildSport,
@@ -525,11 +526,15 @@ export const tileFreshMs = (now: Date) => Math.min(FRESH_SECONDS, sinceMidnight(
  * brought up to date afterwards, as far as the invocation's subrequests go (tools/resume.ts, `refresh`). `own`
  * undefined: a page without data of its own (a feed), which never holds up a refresh.
  */
+/** The small view a tile reads of a large copy (data.ts `randonneesTuiles`), by the copy's key: its build and refresh stay the copy's. */
+const TILE_VIEWS: Record<string, string> = { "web:randonnees": RANDONNEES_TUILES };
+const peekTile = (cache: Cache, key: string, freshAfter: number) => cache.peek<any>(TILE_VIEWS[key] ?? key, freshAfter);
+
 async function tileCopies(cache: Cache, keys: string[], background: Background, own: Cached<unknown> | null | undefined, now: Date): Promise<(Cached<any> | null)[]> {
   // One read each, as long as the invocation has subrequests left: a tile past them waits for the next view.
   const budget = left();
   const fresh = tileFreshMs(now);
-  const copies = await Promise.all(keys.map((k, i) => (i < budget ? cache.peek<any>(k, now.getTime() - fresh) : Promise.resolve(undefined))));
+  const copies = await Promise.all(keys.map((k, i) => (i < budget ? peekTile(cache, k, now.getTime() - fresh) : Promise.resolve(undefined))));
   // A copy of another revision is shown until its turn, which comes first (cache.ts, `outdated`).
   const age = (c: Cached<unknown> | null | undefined) => (c && !c.outdated ? now.getTime() - c.fetchedAt.getTime() : Infinity);
   // Only what the tiles' builds took last time (here, or where their copies were built) and is left: otherwise their
@@ -1193,7 +1198,7 @@ async function pages(request: Request, cache: Cache, background: Background, now
       alerte(cache, background, now),
     ]);
     // The state of the hikes around: the hikers' page's last copy, as it is, never built for this page.
-    const hikes = hikesNear(p.place.lon, p.place.lat).length ? await cache.peek<RandonneesAnswer>("web:randonnees", now.getTime() - FRESH_SECONDS * 1000).catch(() => undefined) : undefined;
+    const hikes = hikesNear(p.place.lon, p.place.lat).length ? await cache.peek<RandonneesAnswer>(RANDONNEES_TUILES, now.getTime() - FRESH_SECONDS * 1000).catch(() => undefined) : undefined;
     return page(path, (live) => (live ? placePage(origin, p, data, now, a, hikes ?? null) : placePage(origin, p, null, now, a)), data, background, [rebuild(cache, `web:lieu:${p.slug}`, () => buildPlace(cache, p, now))]);
   }
   if (path === "/communes" || path === "/communes/") {

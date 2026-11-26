@@ -148,4 +148,32 @@ describe("the small view of /volcan's copy", () => {
     expect(await fallback.get(VOLCAN_ETAT)).toEqual(newer);
     expect(await new SharedFallback(new MemoryStore(), new FakeKv(), () => t).get(VOLCAN_ETAT)).toBeUndefined();
   });
+
+  it("says the copy's failed refresh noted in KV when it is late, so that no tile sets out to build it there", async () => {
+    const v = await buildVolcan(sources(), NOW);
+    const t = NOW.getTime();
+    const kv = new FakeKv();
+    // The copy of two hours ago, its refresh every 30 minutes: late. Its source silent since, noted by another center.
+    await kv.put(kvKey("web:volcan"), JSON.stringify({ value: v, fetchedAt: t - 2 * 3600_000 }));
+    const echec = { at: t - 5 * 60_000, source: "ipgp_ovpf_seismes" };
+    await kv.put(`copie-echec:web:volcan`, JSON.stringify(echec));
+    const fallback = new SharedFallback(new MemoryStore(), kv, () => t);
+    expect((await fallback.get(VOLCAN_ETAT, t - 5 * 60_000))?.echec).toEqual(echec);
+    const cache = new Cache(new TieredStore(new MemoryStore(), new SharedFallback(new MemoryStore(), kv, () => t)), () => t, false);
+    expect((await cache.peek(VOLCAN_ETAT, t - 5 * 60_000))?.failedAt).toBe(echec.at);
+    // Read only for a late view wanted newer: a caller content with it reads no failure.
+    const reads = new FakeKv();
+    reads.data = kv.data;
+    await new SharedFallback(new MemoryStore(), reads, () => t).get(VOLCAN_ETAT);
+    expect(reads.reads.get("copie-echec:web:volcan")).toBeUndefined();
+    // Nor for a view due but not late: 20 minutes old, refreshed every 30.
+    const due = new FakeKv();
+    await due.put(kvKey("web:volcan"), JSON.stringify({ value: v, fetchedAt: t - 20 * 60_000 }));
+    await due.put(`copie-echec:web:volcan`, JSON.stringify(echec));
+    expect((await new SharedFallback(new MemoryStore(), due, () => t).get(VOLCAN_ETAT, t - 5 * 60_000))?.echec).toBeUndefined();
+    expect(due.reads.get("copie-echec:web:volcan")).toBeUndefined();
+    // A failure older than the copy: the source answered since.
+    await kv.put(`copie-echec:web:volcan`, JSON.stringify({ ...echec, at: t - 3 * 3600_000 }));
+    expect((await new SharedFallback(new MemoryStore(), kv, () => t).get(VOLCAN_ETAT, t - 5 * 60_000))?.echec).toBeUndefined();
+  });
 });

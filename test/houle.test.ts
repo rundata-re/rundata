@@ -5,7 +5,7 @@ import { Cache, MemoryStore, TieredStore, type CacheEntry } from "../src/cache.j
 import { coastwatch, parseAscii } from "./sst.js";
 import * as houle from "../src/providers/houle.js";
 import * as uv from "../src/providers/uv.js";
-import { SATELLITES, temperatureMer } from "../src/tools/mer.js";
+import { SATELLITES, temperatureMer, WEBCAMS_PLAGES } from "../src/tools/mer.js";
 import { previsionMeteo } from "../src/tools/prevision.js";
 
 // Recorded from Open-Meteo for 22 to 25/10/2026: the ECMWF wave model at the beaches of the page /mer, and the CAMS
@@ -112,6 +112,8 @@ describe("the waves in temperature_mer", () => {
     expect(s.nature).toBe("prevision");
     expect(s.modele).toEqual({ nom: "MFWAM de Météo-France", maille_km: 9, mise_a_jour: "toutes les 12 h" });
     expect(s.point_du_modele.distance_km).toBeLessThan(6);
+    // On the coast, the beaches' webcams too, linked only, as on /mer.
+    expect(r.webcams_plages).toEqual(WEBCAMS_PLAGES);
     expect(s.maintenant).toEqual({ heures: "jeudi 22/10 9\u00a0h", hauteur: "1,2 m", houle_principale: "1 m", periode_moyenne: "10 s", venant: "du sud" });
     expect(s.jours[0]).toMatchObject({ houle_principale: expect.stringMatching(/ m$/), periode_moyenne: expect.stringMatching(/ s$/) });
     expect(s.jours[0].periode).toBeUndefined();
@@ -166,6 +168,7 @@ describe("the waves in temperature_mer", () => {
     const r = body(await temperatureMer(isolate(), "Cilaos", NOW));
     expect(r.etat_de_la_mer).toBeUndefined();
     expect(r.resume).toMatch(/Pas de prévision de vagues à moins de 15 km de Cilaos/);
+    expect(r.webcams_plages).toBeUndefined();
     expect(r.sources.map((x: { source: string }) => x.source)).not.toContain(houle.SOURCE.nom);
     expect(r.sources.map((x: { source: string }) => x.source)).not.toContain(houle.SOURCE_MF.nom);
   });

@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Jeudi 26 novembre 2026
 
+- Mer : un lien vers les webcams des plages en direct, sur le site de l'IRT.
 - Ouest : les tournées reportées et les déchèteries fermées annoncées par le TCO, sur /collecte, /decheteries et dans les réponses.
 - Déchèteries : les bennes pleines en direct aussi au Tampon et à Saint-Joseph, avec les horaires, d'après les agents de la CASUD.
 - Collecte : noms de rue écrits en entier au Nord et dans le Sud (« Chemin » et non « Ch »), précisions de tronçon après une virgule.

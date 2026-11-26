@@ -94,6 +94,7 @@ export const NOUVEAUTES: { date: string; texte: string }[] = [
   { date: "2026-11-24T13:18:00+04:00", texte: "transports\u00a0: un trajet d'un lieu à un autre («\u00a0Trou d'Eau vers Saint-Pierre\u00a0») donne ses bus du jour, directs ou avec une correspondance" },
   { date: "2026-11-24T13:06:00+04:00", texte: "Bus\u00a0: une page par ligne Car Jaune, Alternéo et Estival, avec les départs du jour et ses arrêts dans l'ordre, depuis /bus." },
   { date: "2026-11-24T13:06:00+04:00", texte: "Assistants IA\u00a0: une route demandée (RN2, route des Tamarins, route de Cilaos…) donne les nouvelles des médias qui la nomment." },
+  { date: "2026-11-24T12:50:06+04:00", texte: "Accueil\u00a0: le texte posé sur la photo du bandeau se lit bien à toute heure, à l'aube, le jour et le soir, sur téléphone comme sur ordinateur." },
   { date: "2026-11-24T12:32:00+04:00", texte: "Outils IA, qualité de l'eau\u00a0: une source lente n'est plus attendue au-delà de 8 s, la dernière lecture datée ou la partie manquante dite" },
   { date: "2026-11-24T11:43:00+04:00", texte: "Météo\u00a0: en accéléré, le rejeu de la pluie sur 7 jours passe désormais heure par heure sur les téléphones récents." },
   { date: "2026-11-24T11:39:00+04:00", texte: "Avec les enfants\u00a0: la liste des lieux mise à jour, avec de nouvelles aires de jeux au Tampon, à Saint-André et à Sainte-Marie." },

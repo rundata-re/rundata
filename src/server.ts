@@ -145,7 +145,7 @@ import * as peche from "./tools/peche.js";
 import * as cetaces from "./tools/cetaces.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.1039";
+export const VERSION = "1.0.1040";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -357,7 +357,7 @@ const listesGardees = new Map<string, ListToolsResult>();
 /**
  * A tool's arguments, as the SDK registers them (z.object of the shape), its JSON Schema made once per isolate: the
  * SDK 2 makes it at each registration, so for each of the ~32 tools of the server built for each request, about 2.4 ms
- * of CPU a request (26/11/2026, round 436). The shapes are fixed (no value of the request or the day in them); their
+ * of CPU a request (26/11/2026). The shapes are fixed (no value of the request or the day in them); their
  * field names and descriptions are checked, and a shape that changed is made again.
  */
 const schemasGardes = new Map<string, { signature: string; schema: z.ZodObject }>();

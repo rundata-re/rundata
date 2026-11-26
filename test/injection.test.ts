@@ -1,12 +1,12 @@
 import { readFileSync } from "node:fs";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as transit from "../src/providers/transit.js";
 import { findStops, stopPageDepartures } from "../src/tools/transports.js";
 import { searchPage, stopPage } from "../src/web/arret.js";
-import type { Cached } from "../src/cache.js";
-import type { ActualitesAnswer, AgendaAnswer, ElectriciteAnswer } from "../src/web/data.js";
+import { Cache, type Cached, MemoryStore } from "../src/cache.js";
+import { type ActualitesAnswer, type AgendaAnswer, buildSecheresse, type ElectriciteAnswer } from "../src/web/data.js";
 import { agendaPage } from "../src/web/agenda.js";
-import { actualitesPage, coupuresPage, courantItem, electriciteCommune, noticeCard } from "../src/web/domains.js";
+import { actualitesPage, coupuresPage, courantItem, electriciteCommune, noticeCard, secheressePage } from "../src/web/domains.js";
 import { concertsPage, weekendPage } from "../src/web/evenements.js";
 import { pointsSvg } from "../src/web/evenements-carte.js";
 import { type Fiche, fichePage, fichePassee } from "../src/web/fiche-evenement.js";
@@ -128,6 +128,35 @@ describe("a text read elsewhere, trapped, never comes out as a tag", () => {
     expect(page).toContain(`<a href="https://exemple.re/a" rel="noopener">${ECHAPPE}</a>`);
     expect(page).toContain(`Réseau ${ECHAPPE}`);
     expect(page).toContain(`Arrêté ${ECHAPPE}`);
+  });
+
+  it("in the drought's levels, order and uses (/secheresse)", async () => {
+    // VigiEau's zones of 24/10/2026, as test/secheresse.test.ts reads them, then every text read elsewhere set to the trap.
+    const vigieau = readFileSync(new URL("./fixtures/vigieau/zones_974.json", import.meta.url), "utf8");
+    vi.stubGlobal("fetch", async () => new Response(vigieau, { headers: { "content-type": "application/json" } }));
+    const d = await buildSecheresse(new Cache(new MemoryStore()));
+    vi.unstubAllGlobals();
+    const value = {
+      ...d, resume: PIEGE, vigieau: PIEGE, a_savoir: PIEGE,
+      arrete_plus_recent: { texte: PIEGE, lien: "https://exemple.re/p.pdf" },
+      arrete: { numero: PIEGE, signe_le: PIEGE, en_vigueur_depuis: PIEGE, publie: "", lien: "https://exemple.re/a.pdf", remplace: "" },
+      communes: d.communes.map((c, i) => ({ ...c, commune: i ? c.commune : PIEGE, nappes: i === 1 ? PIEGE : c.nappes, vigieau_differe: [{ ressource: "eau du robinet", arrete: "crise", vigieau: PIEGE }] })),
+      interdits: d.interdits.map((x) => ({ ...x, communes: [...x.communes, PIEGE], restrictions: [...x.restrictions, { usage: PIEGE, restriction: PIEGE }] })),
+    };
+    const page = secheressePage(O, { value, fetchedAt: new Date(), stale: false });
+    sansInjection(page);
+    // Each place where a text read elsewhere is shown.
+    expect(page).toContain(`<b>${ECHAPPE}</b> <a href="https://exemple.re/p.pdf">`);
+    expect(page).toContain(`arrêté préfectoral ${ECHAPPE} du ${ECHAPPE}</a>, en vigueur depuis le ${ECHAPPE}.`);
+    expect(page).toContain(`<p class="note" style="color:var(--on-night-muted)">${ECHAPPE}</p>`);
+    expect(page).toMatch(new RegExp(`<th scope="row" class="tgt" id="[^"]*">${ECHAPPE.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}</th>`));
+    expect(page).toContain(`<span class="lvl" style="--c:#868e96">${ECHAPPE}</span>`);
+    expect(page).toContain(`VigiEau\u00a0: ${ECHAPPE}</small>`);
+    expect(page).toContain(`<th scope="row">${ECHAPPE}</th>`);
+    expect(page).toContain(`>${ECHAPPE}</td>`);
+    expect(page).toContain(`, ${ECHAPPE}</small></th>`);
+    expect(page).toContain(`<p class="note">${ECHAPPE}</p>`);
+    expect(secheressePage(O, { value: { ...value, communes: [], interdits: [] }, fetchedAt: new Date(), stale: false })).toContain(`<p class="lead">${ECHAPPE}</p>`);
   });
 
   it("in the headlines (/actualites)", () => {

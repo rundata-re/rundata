@@ -3,10 +3,12 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import * as transit from "../src/providers/transit.js";
 import { findStops, stopPageDepartures } from "../src/tools/transports.js";
 import { searchPage, stopPage } from "../src/web/arret.js";
-import type { ActualitesAnswer, AgendaAnswer } from "../src/web/data.js";
+import type { Cached } from "../src/cache.js";
+import type { ActualitesAnswer, AgendaAnswer, ElectriciteAnswer } from "../src/web/data.js";
 import { agendaPage } from "../src/web/agenda.js";
-import { actualitesPage } from "../src/web/domains.js";
+import { actualitesPage, courantItem, electriciteCommune, noticeCard } from "../src/web/domains.js";
 import { weekendPage } from "../src/web/evenements.js";
+import { fichePage } from "../src/web/fiche-evenement.js";
 
 /**
  * The pages that show a text read elsewhere (an event's title, a headline, a stop's name), rendered with that text set
@@ -105,5 +107,39 @@ describe("a text read elsewhere, trapped, never comes out as a tag", () => {
       const found = findStops("gare routière Saint-Pierre").groups.map((g) => transit.pageOfStop(g.ids[0])!).filter(Boolean);
       sansInjection(searchPage(O, PIEGE, found.map((p) => piege(p, new Set(["nom"])))));
     });
+  });
+});
+
+describe("a link read elsewhere never runs a script", () => {
+  // Escaped, « javascript:… » would still run on a tap: a link of another site goes through href() (web/html.ts), which
+  // writes « # » for a scheme that is not the web's, a mail or a phone. Elsewhere (a filter's key in data-k) the link
+  // is only a text, escaped.
+  const J = " JavaScript:alert(3)";
+  const sansScript = (page: string) => {
+    expect(horsJsonLd(page)).not.toMatch(/(href|src)="\s*javascript:/i);
+    expect(page).toContain('href="#"');
+  };
+
+  it("in the headlines, the live pages and the prefecture's releases (/actualites)", () => {
+    const now = new Date("2026-10-24T08:05:00Z");
+    const value = piege(copie<ActualitesAnswer>("actualites"), new Set(["lien"]), J);
+    sansScript(actualitesPage(O, { value, fetchedAt: now, stale: false }, now));
+  });
+
+  it("on an event's page, its announcement, its tickets and the medium that says it is cancelled", () => {
+    const now = new Date("2026-10-24T04:00:00Z");
+    const value = piege(copie<AgendaAnswer>("agenda"), new Set(["lien", "billetterie"]), J);
+    const r = { ...value.evenements[0], statut: "ANNULÉ", statut_d_apres: { media: "Un média", lien: J } } as typeof value.evenements[number];
+    sansScript(fichePage(O, r, { value, fetchedAt: now, stale: false }, undefined));
+  });
+
+  it("in a water cut's notice, and a power cut's on /electricite and a commune's tile", () => {
+    const avis = { titre: "Coupure d'eau", communes: ["Saint-Louis"], distributeur: "runéo", publie_le: "20/11/2026 à 09:40", lien: J, texte: "Coupure." };
+    sansScript(noticeCard(avis as never));
+    sansScript(courantItem({ texte: "Coupure de courant.", lien: J, nature: "programmée" } as never));
+    const now = new Date("2026-11-20T06:30:00Z");
+    const avisCourant = [{ texte: "…", commune: "Saint-André", nature: "programmée", lien: J, creneaux: [{ jour: "2026-11-23", de: "09:00", a: "12:30", secteurs: [] }] }];
+    const copy = { value: { coupures_annoncees: { avis: avisCourant }, sources: [] }, fetchedAt: now, stale: false } as unknown as Cached<ElectriciteAnswer>;
+    sansScript(electriciteCommune(copy, "Saint-André", now).foot ?? "");
   });
 });

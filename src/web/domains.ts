@@ -54,6 +54,7 @@ import { aller, MOTS as ALLER_MOTS, permis, porte, type Porte, retire, SHEET as 
 import { noteLa1ere } from "../tools/non-repris.js";
 import { journeyForm, nowAsked } from "./itineraire.js";
 import { script } from "./scripts-declares.js";
+import { href as lienSur } from "./html.js";
 
 const FOURNAISE = { lon: 55.7083, lat: -21.2444, name: "Piton de la Fournaise" };
 // What a search engine shows of a title.
@@ -284,8 +285,8 @@ export const silentItem = (s: { texte: string; site: string }) => `<li><span cla
 export function courantItem(x: Pick<CourantRow, "texte" | "lien" | "nature" | "pdf">): string {
   const li = x.nature === "en cours" ? '<li class="warn">' : "<li>";
   const end = x.pdf ? /(l'avis publié par la mairie|dans l'avis)$/.exec(x.texte) : null;
-  if (!end) return `${li}${esc(x.texte)} <a href="${esc(x.lien)}" rel="noopener">l'avis →</a></li>`;
-  return `${li}${esc(x.texte.slice(0, end.index))}<a class="tap" href="${esc(x.lien)}" rel="noopener">${esc(end[1])} (PDF) →</a></li>`;
+  if (!end) return `${li}${esc(x.texte)} <a href="${lienSur(x.lien)}" rel="noopener">l'avis →</a></li>`;
+  return `${li}${esc(x.texte.slice(0, end.index))}<a class="tap" href="${lienSur(x.lien)}" rel="noopener">${esc(end[1])} (PDF) →</a></li>`;
 }
 
 /** EDF's words that a resident does not know, said once on /electricite (UX review of 04/11/2026). */
@@ -446,7 +447,7 @@ export function electriciteCommune(data: Cached<ElectriciteAnswer> | null, commu
     // The notice's word, « programmée »; « en cours » only when the mairie's notice says so, never from the hour.
     live: { valeur: cut.nature === "en cours" ? "Coupure en cours" : "Coupure programmée", detail: esc(when), entier: true },
     ...(share || old ? { more: old + share } : {}),
-    foot: `<a href="${esc(cut.lien)}" rel="noopener">L'avis de la mairie${cut.pdf ? " (PDF)" : ""} →</a>`,
+    foot: `<a href="${lienSur(cut.lien)}" rel="noopener">L'avis de la mairie${cut.pdf ? " (PDF)" : ""} →</a>`,
   };
 }
 
@@ -906,7 +907,7 @@ function siteLine(s: EauAnswer["baignades"][number], g: Porte): string {
  * link (23/11/2026: Dionéo's for one sector of Saint-Denis was on /coupures-eau only).
  */
 function dryLine(dry: { dit: string; lien?: string }, commune: string): string {
-  return `<p><b>${esc(dry.dit)}</b>${dry.lien ? ` <a href="${esc(dry.lien)}" rel="noopener">L'avis complet<span class="sr"> : ${esc(commune)}</span> →</a>` : ""}</p>`;
+  return `<p><b>${esc(dry.dit)}</b>${dry.lien ? ` <a href="${lienSur(dry.lien)}" rel="noopener">L'avis complet<span class="sr"> : ${esc(commune)}</span> →</a>` : ""}</p>`;
 }
 
 function tapCard(c: EauAnswer["communes"][number], dry?: { dit: string; lien?: string }): string {
@@ -1649,13 +1650,13 @@ export function secheressePage(origin: string, data: Cached<SecheresseAnswer> | 
 
   // A newer order than the levels shown, out in the recueil and not taken into account yet: said first.
   const recent = d?.arrete_plus_recent
-    ? `<p class="note" style="color:var(--on-night-muted)"><b>${esc(d.arrete_plus_recent.texte)}</b> <a href="${esc(d.arrete_plus_recent.lien)}">Lire l'arrêté (PDF)</a></p>`
+    ? `<p class="note" style="color:var(--on-night-muted)"><b>${esc(d.arrete_plus_recent.texte)}</b> <a href="${lienSur(d.arrete_plus_recent.lien)}">Lire l'arrêté (PDF)</a></p>`
     : "";
   const status = recent + (!d
     ? loading("Les restrictions d'eau")
     : d.communes.length
       ? `<div class="now"><span class="big">${hit.length}</span><p>commune${hit.length > 1 ? "s" : ""} sur 24 en alerte ou plus pour l'eau du robinet${d.arrete
-          ? `, d'après l'<a href="${esc(d.arrete.lien)}">arrêté préfectoral ${esc(d.arrete.numero)} du ${esc(d.arrete.signe_le ?? "")}</a>, en vigueur depuis le ${esc(d.arrete.en_vigueur_depuis ?? "")}`
+          ? `, d'après l'<a href="${lienSur(d.arrete.lien)}">arrêté préfectoral ${esc(d.arrete.numero)} du ${esc(d.arrete.signe_le ?? "")}</a>, en vigueur depuis le ${esc(d.arrete.en_vigueur_depuis ?? "")}`
           : d.arrete_du ? `, d'après l'arrêté préfectoral en vigueur depuis le ${esc(d.arrete_du)}` : ""}.</p></div>` +
         (d.vigieau ? `<p class="note" style="color:var(--on-night-muted)">${esc(d.vigieau)}</p>` : "")
       : `<p class="lead">${esc(d.resume)}</p>`);
@@ -1744,13 +1745,13 @@ const dateOfNotice = (n: CoupuresAnswer["avis"][number]) => (n.publie_le ? `publ
 export function noticeCard(n: CoupuresAnswer["avis"][number]): string {
   // An image or a PDF: nothing is read from it, the link only.
   if (n.forme) return `<li class="card"><h3>${nobreak(n.communes.join(", "))} <span class="note">${nobreak(n.distributeur)}, ${dateOfNotice(n)}</span></h3>` +
-    `<p>${n.lien ? `<a href="${esc(n.lien)}" rel="noopener">${esc(n.titre)} →</a>` : esc(n.titre)}</p></li>`;
+    `<p>${n.lien ? `<a href="${lienSur(n.lien)}" rel="noopener">${esc(n.titre)} →</a>` : esc(n.titre)}</p></li>`;
   // Only the start written (La Créole): said as a start, not as the hour of the cut; only the end: « Jusqu'au … ».
   const span = n.coupure ? periodeCoupure(n.coupure) : "";
   const cut = n.coupure && span ? `<p><b>${esc(n.coupure.de && n.coupure.a ? span : span.charAt(0).toUpperCase() + span.slice(1))}</b>${n.coupure.etat ? ` <span class="note">(${esc(n.coupure.etat)})</span>` : ""}</p>` : "";
   return `<li class="card${n.ne_pas_boire ? " warn" : ""}"><h3>${n.ne_pas_boire ? "Ne pas boire l'eau · " : ""}${nobreak(n.communes.join(", "))} <span class="note">${nobreak(n.distributeur)}, ${dateOfNotice(n)}</span></h3>` +
     `<p>${esc(n.titre)}</p>${n.precision ? `<p class="note">${esc(n.precision)}</p>` : ""}${cut}${n.secteurs_complets ? `<p class="note">Secteurs : ${esc(sectorsSaid(n.secteurs))}</p>` : n.lieu ? `<p class="note">Lieu : ${esc(n.lieu)}</p>` : ""}` +
-    `<p class="note">${nobreak(n.texte)}${n.lien ? ` <a href="${esc(n.lien)}" rel="noopener">${n.extrait_coupe && !n.secteurs_complets ? "Les secteurs concernés dans l'avis complet" : "L'avis complet"}<span class="sr"> : ${esc(n.communes.join(", "))}</span> →</a>` : ""}</p></li>`;
+    `<p class="note">${nobreak(n.texte)}${n.lien ? ` <a href="${lienSur(n.lien)}" rel="noopener">${n.extrait_coupe && !n.secteurs_complets ? "Les secteurs concernés dans l'avis complet" : "L'avis complet"}<span class="sr"> : ${esc(n.communes.join(", "))}</span> →</a>` : ""}</p></li>`;
 }
 
 /**
@@ -2032,7 +2033,7 @@ const newsTime = (r: Pick<NewsRow, "publie" | "il_y_a">) => (r.il_y_a ? leAt(r.p
 
 function newsRow(r: NewsRow): string {
   const small = [r.media + (r.aussi?.length ? ` (aussi ${r.aussi.map((x) => x.media).join(", ")})` : ""), r.communes?.join(", ")].filter(Boolean).map((x) => esc(x!)).join(" · ");
-  return `<li data-k="${esc(r.lien)}" data-c="${esc((r.communes ?? []).join("|"))}" data-s="${esc((r.sujets ?? []).join("|"))}"><span><a href="${esc(r.lien)}" rel="noopener"${fenetre(r.lien)}>${esc(r.titre)}</a>` +
+  return `<li data-k="${esc(r.lien)}" data-c="${esc((r.communes ?? []).join("|"))}" data-s="${esc((r.sujets ?? []).join("|"))}"><span><a href="${lienSur(r.lien)}" rel="noopener"${fenetre(r.lien)}>${esc(r.titre)}</a>` +
     `${r.resume ? `<small>${esc(r.resume)}</small>` : ""} <small>${small}<span class="nt">${small ? " · " : ""}${esc(newsTime(r))}</span></small></span> <span class="q-none">${esc(newsTime(r))}</span></li>`;
 }
 
@@ -2066,7 +2067,7 @@ export function actualitesPage(origin: string, data: Cached<ActualitesAnswer> | 
   const top = d ? (d.en_direct.length ? d.en_direct : d.infos).slice(0, 6) : [];
   const side = d
     ? `<figure class="card mapcard"><h2 style="color:var(--on-night)">${d.en_direct.length ? "En direct" : "À la une"}</h2><ul class="plain">${top.map((r) =>
-        `<li><b style="color:var(--on-night)">${esc(newsTime(r))}</b> <a href="${esc(r.lien)}" rel="noopener"${fenetre(r.lien)} style="color:var(--on-night)">${esc(r.titre)}</a>` +
+        `<li><b style="color:var(--on-night)">${esc(newsTime(r))}</b> <a href="${lienSur(r.lien)}" rel="noopener"${fenetre(r.lien)} style="color:var(--on-night)">${esc(r.titre)}</a>` +
         `<span class="note" style="color:var(--on-night-muted)"> · ${esc(r.media)}${r.communes?.length ? ` · ${esc(r.communes.join(", "))}` : ""}</span></li>`).join("")}</ul></figure>`
     : "";
 
@@ -2080,7 +2081,7 @@ export function actualitesPage(origin: string, data: Cached<ActualitesAnswer> | 
     ? `<section aria-labelledby="h-direct">
   <div class="sec-h"><p class="eyebrow">Heure par heure</p><h2 id="h-direct">Le direct ${/^[aeiouyéèêiî]/i.test(d.en_direct[0].media) ? "d'" : "de "}${esc(d.en_direct[0].media)}</h2>
   <p>Les entrées du direct, la plus récente en haut, avec leur première phrase et ce qu'elles disent des communes. Le texte complet est sur le site du média.</p></div>
-  <ul class="rows eau news">${d.en_direct.map((r) => `<li><span><a href="${esc(r.lien)}" rel="noopener"${fenetre(r.lien)}>${esc(r.titre)}</a>${r.resume ? `<small>${esc(r.resume)}</small>` : ""}` +
+  <ul class="rows eau news">${d.en_direct.map((r) => `<li><span><a href="${lienSur(r.lien)}" rel="noopener"${fenetre(r.lien)}>${esc(r.titre)}</a>${r.resume ? `<small>${esc(r.resume)}</small>` : ""}` +
     `${r.communes?.length ? `<small>${esc(r.communes.join(", "))}</small>` : ""} <small class="nt">${esc(newsTime(r))}</small></span> <span class="q-none">${esc(newsTime(r))}</span></li>`).join("")}</ul>
 </section>`
     : "";
@@ -2089,7 +2090,7 @@ export function actualitesPage(origin: string, data: Cached<ActualitesAnswer> | 
     ? `<section aria-labelledby="h-pref">
   <div class="sec-h"><p class="eyebrow">Officiel</p><h2 id="h-pref">Communiqués de la préfecture</h2><p>Mesures de sécurité, interdictions, routes, eau : les consignes officielles priment.</p></div>
   ${d.prefecture_injoignable ? `<p class="note">${silentText(d.prefecture_injoignable)}</p>` : ""}
-  <ul class="rows eau news">${d.prefecture.map((r) => `<li><span><a href="${esc(r.lien)}" rel="noopener">${esc(r.titre)}</a> <small class="nt">${esc(newsTime(r))}</small></span> <span class="q-none">${esc(newsTime(r))}</span></li>`).join("")}</ul>
+  <ul class="rows eau news">${d.prefecture.map((r) => `<li><span><a href="${lienSur(r.lien)}" rel="noopener">${esc(r.titre)}</a> <small class="nt">${esc(newsTime(r))}</small></span> <span class="q-none">${esc(newsTime(r))}</span></li>`).join("")}</ul>
 </section>`
     : "";
 

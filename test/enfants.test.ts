@@ -294,7 +294,8 @@ describe("a commune's children's page", () => {
 
   it("puts each of the commune's places on its map, a dot leading to its row, each id once", () => {
     const n = enfants.inCommune("Saint-Denis").length;
-    expect(n).toBe(119);
+    // 120 with the playground of Domenjod, in Saint-Denis's contour (the nearest place had put it in Sainte-Marie).
+    expect(n).toBe(120);
     const dots = [...map.matchAll(/<a class="sp" href="#lieu-(\d+)" data-i="(\d+)" data-t="([a-z_]+)" data-pn="[^"]+"[^>]*><title>/g)];
     expect(dots).toHaveLength(n);
     // Each place is a row of the list below: its dot out of the Tab order.
@@ -390,5 +391,15 @@ describe("a commune's children's page", () => {
     expect(mapLinks(all).filter((l) => l.href.startsWith("/enfants/"))).toHaveLength(24);
     expect(flat(all)).toContain("La carte des lieux du Port");
     expect(flat(all)).toContain("La carte des lieux des Avirons");
+  });
+});
+
+describe("the commune of a place for children", () => {
+  // Near a boundary, the nearest place of the gazetteer may be across it: the commune comes from the official contour
+  // (geo.api.gouv.fr), as the other lists. Two playgrounds the nearest place had put next door (24/11/2026).
+  it("is the one whose contour holds it, not the nearest place's", () => {
+    const at = (lien: string) => enfants.LIEUX.find((l) => l.lien === lien)!;
+    expect(at("https://www.openstreetmap.org/way/1238360218").commune).toBe("Le Tampon");
+    expect(at("https://www.openstreetmap.org/node/6981664033").commune).toBe("Saint-Denis");
   });
 });

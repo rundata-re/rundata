@@ -4,6 +4,10 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 <!-- Généré à partir de src/nouveautes.ts par `npm run changelog` : modifier la liste là-bas. -->
 
+## Jeudi 26 novembre 2026
+
+- Avec les enfants : chaque lieu est placé dans sa commune d'après le contour officiel, comme l'aire de jeux de Domenjod.
+
 ## Mercredi 25 novembre 2026
 
 - Antennes : touchez une antenne de la carte pour voir sa fiche ANFR (opérateurs, bandes, mise en service, hauteur, azimuts).

@@ -191,6 +191,10 @@ export async function read(): Promise<Vigilance> {
 }
 
 /** The copy of the scheduled event when fresh (from any data center, through KV), else read here. */
-export async function vigilance(cache: Cache): Promise<Cached<Vigilance>> {
-  return cache.get(KEY, FRESH_SECONDS, read);
+/**
+ * `graceSeconds`: a copy older than FRESH_SECONDS but younger than this is served at once, Météo-France read again after
+ * the answer (cache.ts `serve`), never waited for.
+ */
+export async function vigilance(cache: Cache, graceSeconds?: number): Promise<Cached<Vigilance>> {
+  return cache.get(KEY, FRESH_SECONDS, read, undefined, false, graceSeconds);
 }

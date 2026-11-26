@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { counted } from "../src/budget.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { configure } from "../src/providers/mf-auth.js";
 import * as mf from "../src/providers/vigilance.js";
@@ -73,12 +74,29 @@ const said = (after: string) => [
 ];
 
 describe("the vigilance while Météo-France is late", () => {
+  it("serves the last reading kept within 15 min without waiting for Météo-France, read again after the answer", async () => {
+    const store = new MemoryStore();
+    await store.put(mf.KEY, { value: await yellow(), fetchedAt: NOW.getTime() - 10 * 60_000 });
+    const cache = new Cache(store, () => NOW.getTime(), false);
+    let served: unknown;
+    // In a Worker's invocation, kept alive for the read (its waitUntil).
+    const kept: Promise<unknown>[] = [];
+    const page = counted(50, () => vigilanceNow(cache, () => {}, BANNER_WAIT_MS, NOW), (w) => void kept.push(w)).then((r) => (served = r.value));
+    await vi.advanceTimersByTimeAsync(1);
+    await page;
+    expect(served).toMatchObject({ stale: true, fetchedAt: new Date(NOW.getTime() - 10 * 60_000) });
+    expect(kept).toHaveLength(1);
+    // Météo-France's answer, after the page's: kept for the next views.
+    await vi.advanceTimersByTimeAsync(BANNER_WAIT_MS + 300);
+    await vi.waitFor(async () => expect((await store.get(mf.KEY))!.fetchedAt).toBe(NOW.getTime()));
+    // Past 15 min, the page waits for it as before (below), and says the reading's time.
+  });
+
   it("serves the last reading kept, without its time within 15 min: tile and banner", async () => {
     const { v, a, tile, banner, logs } = await late(10);
     expect(v?.stale).toBe(true);
-    // One line for each page that stopped waiting (the tile's, the banner's), once Météo-France has answered.
-    expect(logs).toHaveLength(2);
-    for (const l of logs) expect(l).toMatch(/^source mf_vigilance trop lente : lecture gardée du 26\/10 04:00 servie, lue après \d+ ms \(attente 1500 ms\)$/);
+    // No page waited for Météo-France: no line.
+    expect(logs).toHaveLength(0);
     expect(v?.fetchedAt).toEqual(new Date(NOW.getTime() - 10 * 60_000));
     expect(a?.texte).toBe("Vigilance Météo-France : jaune fortes pluies / orages (Est).");
     expect(a?.lue).toBeUndefined();

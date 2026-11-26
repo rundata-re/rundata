@@ -298,11 +298,11 @@ export class Cache {
    * `backoffSeconds`: how long a failure is remembered (in this process) before the source is asked again. `behindSilent`:
    * once the source is found silent, its next try goes on after the answer, the last copy served (`serve`).
    */
-  get<T>(key: string, freshSeconds: number, load: () => Promise<T>, backoffSeconds = FAILURE_BACKOFF_SECONDS, behindSilent = false): Promise<Cached<T>> {
+  get<T>(key: string, freshSeconds: number, load: () => Promise<T>, backoffSeconds = FAILURE_BACKOFF_SECONDS, behindSilent = false, graceSeconds?: number): Promise<Cached<T>> {
     // Noted for a slow view's line (attentes.ts): what the request waited for.
     return attendu(key, (async () => {
       const hit = await this.store.get(key, this.now() - freshSeconds * 1000);
-      return this.noted(key, freshSeconds, await this.serve(key, hit, freshSeconds, load, (e) => this.put(key, e), backoffSeconds, behindSilent));
+      return this.noted(key, freshSeconds, await this.serve(key, hit, freshSeconds, load, (e) => this.put(key, e), backoffSeconds, behindSilent, graceSeconds));
     })());
   }
 
@@ -525,6 +525,7 @@ export class Cache {
     put: (e: CacheEntry) => Promise<void>,
     backoffSeconds = FAILURE_BACKOFF_SECONDS,
     behindSilent = false,
+    graceSeconds?: number,
   ): Promise<Cached<T>> {
     // A copy the code can no longer read is not one: built as if there were none, and nothing to serve if that fails.
     if (unreadable(key, hit, this.version)) hit = undefined;
@@ -551,6 +552,12 @@ export class Cache {
     if (behindSilent && hit && silent && !isScheduled()) {
       later(pending.catch(() => undefined));
       return copyOf<T>(hit, hit.echec?.source ?? (failed?.error instanceof UpstreamError ? failed.error.source : hit.from));
+    }
+    // A copy past its freshness but within `graceSeconds`: served at once, as the copy it is, the read going on after the
+    // answer (`later`) for the next views. The scheduled event still waits for it.
+    if (graceSeconds != null && hit && !isScheduled() && this.now() - hit.fetchedAt < graceSeconds * 1000 && !outdated(key, hit, this.version)) {
+      later(pending.catch(() => undefined));
+      return { value: hit.value as T, fetchedAt: new Date(hit.fetchedAt), stale: true, ...(hit.from && { from: hit.from }) };
     }
     // A tool call past its time (lectures.ts) does not wait for a source it has a copy of: the copy is its answer, said
     // as such, and the read ends after it, its result stored for the next question.

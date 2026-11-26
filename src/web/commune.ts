@@ -821,7 +821,7 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
     ...(rents(p) ? [{ icon: "key", nom: "Loyers d'annonce", live: rents(p), foot: `<a href="${loyers.SOURCE.url}" rel="noopener">La carte des loyers de l'ANIL</a>` }] : []),
     ...(connexion(p) ? [{ icon: "wifi", nom: "Fibre", live: connexion(p), foot: `<a href="https://maconnexioninternet.arcep.fr/" rel="noopener">Votre adresse sur Ma connexion internet</a>` }] : []),
     ...(antennas(p) ? [{ icon: "antenna", nom: "Antennes", href: "/antennes", live: antennas(p, l.hs), foot: `<a href="/mcp">Votre adresse : demandez à votre IA →</a>` }] : []),
-    ...(nursery(p) ? [{ icon: "kids", nom: "Crèches", href: "/enfants#creches", live: nursery(p), foot: `${lienNom("https://monenfant.fr", "Trouver une crèche\u00a0: monenfant.fr", ' rel="noopener"')}` }] : []),
+    ...(nursery(p) ? [{ icon: "kids", nom: "Crèches", href: p.nom === "Saint-Denis" ? "/enfants/saint-denis#creches" : "/enfants#creches", live: nursery(p), foot: `${lienNom("https://monenfant.fr", "Trouver une crèche\u00a0: monenfant.fr", ' rel="noopener"')}` }] : []),
     ...(afterBac(p) ? [{ icon: "book", nom: "Après le bac", href: `${ECOLES}#apres-bac`, live: afterBac(p) }] : []),
     ...(roadAccidents(p) ? [{ icon: "car", nom: "Accidents de la route", href: "/trafic#accidents", live: roadAccidents(p) }] : []),
   ];

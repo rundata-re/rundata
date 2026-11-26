@@ -3,12 +3,15 @@
  * childcare: the commune's own figures from the CAF, as its page says them; below 10 000 inhabitants the commune has
  * none, and its intercommunalité's are said as such, never as the commune's; without a place, the island, each commune
  * that has a figure and each intercommunalité, as the table of /enfants. A theoretical offer, of December of a year:
- * never a free place, never a crèche's name (the list is on monenfant.fr, which does not allow its reuse).
+ * never a free place. No crèche named but Saint-Denis's, from the list its CCAS publishes (vie/creches-saint-denis.ts, of
+ * July 2023, said with its date): the others' list is on monenfant.fr, which does not allow its reuse.
  * The sentences are shared with the pages (web/commune.ts, web/enfants.ts): one wording for both.
  */
 import { resolvePlace } from "../places/resolve.js";
 import * as creches from "../vie/creches.js";
+import * as saintDenis from "../vie/creches-saint-denis.js";
 import { SITE_URL } from "./citer.js";
+import { de } from "../articles.js";
 import { credits, jourDuFichier, nombre, notFound, placeBlock, text } from "./format.js";
 
 /**
@@ -28,7 +31,11 @@ export const accueil = "ce sont des places d'accueil, pas des places libres aujo
 /** The same, as a sentence of the answer. */
 export const ACCUEIL = `${accueil[0].toUpperCase()}${accueil.slice(1)}.`;
 const TROUVER = "Pour trouver une crèche et ses places : monenfant.fr, de la CAF.";
-const SANS_NOM = "Aucune crèche n'est nommée ici : leur liste est sur monenfant.fr, dont les conditions d'utilisation ne permettent pas de la reprendre.";
+const SANS_NOM = "Aucune crèche n'est nommée ici, sauf à Saint-Denis : leur liste est sur monenfant.fr, dont les conditions d'utilisation ne permettent pas de la reprendre.";
+/** The crèches of Saint-Denis given, the nearest to the place asked; the commune's children's page has them all. */
+const MAX_CRECHES = 15;
+/** Before the list of Saint-Denis: what it is, of when, and to check. */
+export const LISTE_SAINT_DENIS = `Crèches : ${saintDenis.LISTE_DU}, les établissements alors ouverts. ${saintDenis.VERIFIER}`;
 
 /** After « 21,6 places » : the rest of a commune's figures, in the words of its page. */
 export const offreDite = (o: creches.Offre) =>
@@ -63,6 +70,11 @@ export function crechesAnswer(lieu: string | undefined) {
   }
   const commune = res.lieu.commune;
   const own = creches.ofCommune(commune);
+  const named = commune === saintDenis.COMMUNE
+    ? saintDenis.nearest(res.lieu.lon, res.lieu.lat, MAX_CRECHES).map((c) => ({
+      nom: c.nom, detail: saintDenis.detail(c), adresse: c.adresse, distance_km: Math.round(c.km * 10) / 10,
+    }))
+    : undefined;
   const e = creches.epciOf(commune);
   return text({
     lieu: placeBlock(asked!, res),
@@ -76,5 +88,15 @@ export function crechesAnswer(lieu: string | undefined) {
     intercommunalite: e ? { nom: e.nom, communes: creches.nomsDe(e), ...chiffres(e) } : undefined,
     ile: chiffres(creches.ILE),
     ...commun,
+    ...(named ? {
+      liste_des_creches: {
+        a_dire: LISTE_SAINT_DENIS,
+        nombre: saintDenis.LISTE.length,
+        donnees: `les ${MAX_CRECHES} plus proches ${de(res.lieu.nom)}, toutes sur ${SITE_URL}/enfants/saint-denis#creches`,
+        creches: named,
+      },
+      a_savoir: [SEUIL_PHRASE, ACCUEIL, LISTE_SAINT_DENIS, TROUVER],
+      sources: credits([creches.SOURCE, saintDenis.SOURCE]),
+    } : {}),
   });
 }

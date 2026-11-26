@@ -188,6 +188,7 @@ export const FICHES: Record<string, Fiche> = {
   region_sentiers_marmailles: { famille: "licence_ouverte", producteurs: ["Conseil Général de La Réunion", "AGORAH"] },
   parc_national_canyons: { famille: "licence_ouverte", producteurs: ["Parc national de La Réunion"] },
   caf_accueil_jeune_enfant: { famille: "licence_ouverte", producteurs: ["Caisse nationale des Allocations familiales"] },
+  ccas_saint_denis_eaje: { famille: "licence_ouverte", producteurs: ["Centre communal d'action sociale (CCAS) de Saint-Denis"] },
   // The layers « Vélo » and « Vitesses sur les routes nationales » of /carte.
   region_voie_velo: { famille: "licence_ouverte", producteurs: ["Région Réunion"] },
   geovelo_amenagements_cyclables: { famille: "odbl", producteurs: ["Geovelo", OSM] },

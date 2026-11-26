@@ -59,6 +59,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded for the site): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-26T10:07:00+04:00", texte: "Ouest\u00a0: les tournées reportées et les déchèteries fermées annoncées par le TCO, sur /collecte, /decheteries et dans les réponses." },
   { date: "2026-11-26T09:47:00+04:00", texte: "Déchèteries\u00a0: les bennes pleines en direct aussi au Tampon et à Saint-Joseph, avec les horaires, d'après les agents de la CASUD." },
   { date: "2026-11-26T09:37:00+04:00", texte: "Collecte\u00a0: noms de rue écrits en entier au Nord et dans le Sud («\u00a0Chemin\u00a0» et non «\u00a0Ch\u00a0»), précisions de tronçon après une virgule." },
   { date: "2026-11-26T09:02:00+04:00", texte: "Collecte des déchets\u00a0: le jour de passage rue par rue aussi dans le Sud, au Tampon, à Saint-Joseph, Saint-Philippe et L'Entre-Deux (CASUD)." },

@@ -8,6 +8,8 @@ import { porte, type Porte } from "./aller.js";
 import type { Cached } from "../cache.js";
 import { slugify } from "./places.js";
 import * as dech from "../vie/decheteries.js";
+import * as tcoCommuniques from "../providers/tco-communiques.js";
+import { DECHETERIE_UNREAD } from "../tools/decheteries.js";
 import type { Alerte, DechetsAnswer } from "./data.js";
 import { connectorCta, crumbBar, crumbs, loading, sourcesNote, webPage } from "./domains.js";
 import { esc } from "./map.js";
@@ -46,6 +48,13 @@ function siteCard(s: dech.SiteNow, g: Porte, unread = false): string {
   return `<div class="card">${icon("pin")}<h3><a href="${esc(s.lien)}" rel="noopener">${esc(s.nom)}</a></h3>${s.adresse ? `<p>${esc(s.adresse)}</p>` : ""}${hours}${go ? `<p>${go}</p>` : ""}${state}</div>`;
 }
 
+/** The TCO's notices that close a déchèterie, running now, with their communes; their feed not read, said. */
+function closures(data: Cached<DechetsAnswer> | null, now: Date): string {
+  if (data?.value.avis_non_lus) return `<p class="note">${esc(DECHETERIE_UNREAD)}</p>`;
+  return tcoCommuniques.running(data?.value.avis ?? [], now, "decheterie").map((c) =>
+    `<p class="card" role="note">${esc(tcoCommuniques.line(c))} (${esc(c.communes.join(", "))}). <a href="${esc(c.lien)}" rel="noopener">Lire le communiqué</a></p>`).join("");
+}
+
 function elsewhereCard(s: dech.Elsewhere, g: Porte): string {
   const go = g.aller({ nom: s.nom, lat: s.lat, lon: s.lon, adresse: s.adresse ? `${s.adresse}, ${s.commune}` : undefined, ou: s.commune });
   const hours = dech.hoursOf(s).replace(s.epci.nom, `<a href="${esc(s.epci.site)}" rel="noopener">${esc(s.epci.nom)}</a>`);
@@ -76,6 +85,7 @@ export function decheteriesPage(origin: string, data: Cached<DechetsAnswer> | nu
   <p class="pill">${data && sites.some((s) => s.a_jour) ? `<span class="dot"></span>` : ""}État des bennes · déchèteries du TCO et de la CASUD</p>
   <h1>${esc(H1)} <span class="n974">974</span></h1>
   <p class="lead">${esc(LEAD)}</p>
+  ${closures(data, now)}
   ${data ? "" : loading("L'état des bennes")}
 </div></div>`;
   const blocks = dech.LIVE_COMMUNES.map((c) => {

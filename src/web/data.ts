@@ -22,6 +22,7 @@ import * as carburants from "../providers/carburants.js";
 import * as edf from "../providers/edf.js";
 import * as casudDech from "../providers/casud.js";
 import * as tco from "../providers/tco.js";
+import * as tcoCommuniques from "../providers/tco-communiques.js";
 import * as dech from "../vie/decheteries.js";
 import * as rt from "../providers/gtfsrt.js";
 import * as transit from "../providers/transit.js";
@@ -2000,6 +2001,10 @@ export interface DechetsAnswer {
   etats: tco.Etat[];
   /** The intercommunalities that did not answer: their sites' state is unknown, not old. */
   absents?: ("tco" | "casud")[];
+  /** The TCO's notices that close or disrupt a déchèterie, read with its sites; none when it did not answer. */
+  avis?: tcoCommuniques.Communique[];
+  /** The TCO's notices could not be read: a closure would not be said. */
+  avis_non_lus?: true;
   sources: Credit[];
 }
 
@@ -2009,7 +2014,14 @@ export async function buildDechets(cache: Cache): Promise<DechetsAnswer> {
   const live = await dech.meteo(cache);
   if (!live.tco && !live.casud) throw new Error("ni le TCO ni la CASUD n'ont répondu");
   const absents = [...(live.tco ? [] : ["tco" as const]), ...(live.casud ? [] : ["casud" as const])];
-  return { etats: live.etats, ...(absents.length ? { absents } : {}), sources: credits([...(live.tco ? [tco.SOURCE] : []), ...(live.casud ? [casudDech.SOURCE] : []), dech.ADEME]) };
+  // The TCO's notices about its déchèteries (« fermée le … »), shown against the time by the page (tco-communiques.ts).
+  const avis = live.tco ? await tcoCommuniques.communiques(cache).then((r) => r.value.filter((c) => c.sujet === "decheterie"), () => null) : undefined;
+  return {
+    etats: live.etats,
+    ...(absents.length ? { absents } : {}),
+    ...(avis ? { avis } : avis === null ? { avis_non_lus: true as const } : {}),
+    sources: credits([...(live.tco ? [tco.SOURCE] : []), ...(avis ? [tcoCommuniques.SOURCE] : []), ...(live.casud ? [casudDech.SOURCE] : []), dech.ADEME]),
+  };
 }
 
 /** What a commune's page adds to its weather: its town hall, and the next buses at its bus station or near its centre. */

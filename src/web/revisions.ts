@@ -130,7 +130,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   dae: 12,
   // With the CASUD's sites and states, and the intercommunalities that did not answer (`absents`, 26/11/2026). No floor: a
   // copy without them is read (`absents?.`), its CASUD sites then said « à vérifier » until it is built again.
-  dechets: 3,
+  // The TCO's notices that close a déchèterie (`avis`, `avis_non_lus`, 26/11/2026). No floor: a copy without them says none.
+  dechets: 4,
   // The communes whose notices are read, in the tap water's note, with those shared between distributors (L'Étang-Salé).
   // The distributors' « ne pas boire » notices in force, on their commune's line (`ne_pas_boire`, 23/11/2026).
   // Each bathing site's classification by the ARS, read in its own tag (« Excellent »), none when empty (24/11/2026).

@@ -9,6 +9,7 @@ import type { Cache } from "../cache.js";
 import { resolvePlace } from "../places/resolve.js";
 import * as casud from "../providers/casud.js";
 import * as tco from "../providers/tco.js";
+import * as tcoCommuniques from "../providers/tco-communiques.js";
 import { slugify } from "../web/places.js";
 import * as dech from "../vie/decheteries.js";
 import { a, credits, de, fr, jourDuFichier, notFound, placeBlock, text } from "./format.js";
@@ -17,6 +18,8 @@ import { a, credits, de, fr, jourDuFichier, notFound, placeBlock, text } from ".
 export const WASTE = /d[ée]ch[eèé]t|encombrant|gravat|\bbenne|centre de propret|centres? de tri\b/i;
 
 const ONLY_LIVE = "Seuls le TCO (Ouest) et la CASUD (Le Tampon, Saint-Joseph) publient l'état des bennes en direct. Ailleurs, la liste des déchèteries vient de l'annuaire de l'ADEME, sans les horaires.";
+/** The TCO's notices not read: said, so that no closure is taken as none. */
+export const DECHETERIE_UNREAD = "Les communiqués du TCO n'ont pas pu être lus pour le moment\u00a0: une fermeture de déchèterie ne serait pas dite ici.";
 const km = (n: number) => `${fr(Math.round(n * 10) / 10)} km`;
 
 /** Outside the TCO: the commune's sites and the nearest others, where they are, their hours on their intercommunalité's site. */
@@ -80,6 +83,11 @@ export async function decheteriesAnswer(cache: Cache, quoi: string, lieu: string
   }
   if (known.length && lost.length) resume += ` État des bennes ${lost.join(" et ")} non disponible pour le moment.`;
   const par = new Set(near.map((s) => s.par));
+  // The TCO's notices that close one of its déchèteries (« fermée le … »), said first, for the commune asked (all its
+  // communes without one); read only when its sites are in the answer, from the same copy as the collections'.
+  const avis = par.has("tco") && live.tco ? await tcoCommuniques.communiques(cache).then((r) => r.value, () => null) : undefined;
+  const closed = avis ? tcoCommuniques.running(avis, now, "decheterie", own === "tco" ? commune : undefined) : [];
+  if (closed.length) resume = `${closed.map(tcoCommuniques.line).join("\u00a0; ")}. ${resume}`;
   return text({
     ...(res ? { lieu: placeBlock(lieu!, res) } : {}),
     resume,
@@ -97,12 +105,14 @@ export async function decheteriesAnswer(cache: Cache, quoi: string, lieu: string
       page: s.lien,
     })),
     avertissements: [
+      ...closed.map((c) => `${tcoCommuniques.line(c)}\u00a0: ${c.lien}`),
       `État des bennes rempli par les agents sur place${par.has("tco") ? ", au TCO environ toutes les 2 heures" : ""}${par.has("casud") ? ", à la CASUD en général le matin" : ""} : une mise à jour de plus de 6 h est à vérifier sur place.`,
       ...(par.has("tco") ? ["Horaires des déchèteries du TCO sur leur page, qui les dit ouvertes 7 jours sur 7."] : []),
       ...(live.tco?.stale ? ["Copie de secours : le TCO n'a pas répondu."] : []),
       ...(live.casud?.stale ? ["Copie de secours : la CASUD n'a pas répondu."] : []),
       ONLY_LIVE,
+      ...(avis === null ? [DECHETERIE_UNREAD] : []),
     ],
-    sources: credits([...(par.has("tco") ? [tco.SOURCE] : []), ...(par.has("casud") ? [casud.SOURCE] : [])]),
+    sources: credits([...(par.has("tco") ? [tco.SOURCE] : []), ...(closed.length ? [tcoCommuniques.SOURCE] : []), ...(par.has("casud") ? [casud.SOURCE] : [])]),
   });
 }

@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Jeudi 26 novembre 2026
 
+- Collecte : noms de rue écrits en entier au Nord et dans le Sud (« Chemin » et non « Ch »), précisions de tronçon après une virgule.
 - Collecte des déchets : le jour de passage rue par rue aussi dans le Sud, au Tampon, à Saint-Joseph, Saint-Philippe et L'Entre-Deux (CASUD).
 - Collecte des déchets : le jour de passage rue par rue aussi dans le Nord, à Saint-Denis, Sainte-Marie et Sainte-Suzanne (CINOR).
 - Antennes : la carte des zones sans couverture mobile déclarée, par opérateur, en 4G et pour les appels (cartes de l'Arcep).

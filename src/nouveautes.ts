@@ -59,6 +59,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded for the site): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-26T09:37:00+04:00", texte: "Collecte\u00a0: noms de rue écrits en entier au Nord et dans le Sud («\u00a0Chemin\u00a0» et non «\u00a0Ch\u00a0»), précisions de tronçon après une virgule." },
   { date: "2026-11-26T09:02:00+04:00", texte: "Collecte des déchets\u00a0: le jour de passage rue par rue aussi dans le Sud, au Tampon, à Saint-Joseph, Saint-Philippe et L'Entre-Deux (CASUD)." },
   { date: "2026-11-26T06:50:00+04:00", texte: "Collecte des déchets\u00a0: le jour de passage rue par rue aussi dans le Nord, à Saint-Denis, Sainte-Marie et Sainte-Suzanne (CINOR)." },
   { date: "2026-11-26T06:37:00+04:00", texte: "Antennes\u00a0: la carte des zones sans couverture mobile déclarée, par opérateur, en 4G et pour les appels (cartes de l'Arcep)." },

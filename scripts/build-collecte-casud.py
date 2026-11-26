@@ -132,7 +132,7 @@ PARTIES = {
 # The CASUD's abbreviations and slips, written out before a name is compared or written (26/11/2026).
 ABBR = {"RLE": "RUELLE", "CHE": "CHEMIN", "RTE": "ROUTE", "IMP": "IMPASSE", "AV": "AVENUE", "BD": "BOULEVARD", "MAL": "MARECHAL",
         "LOTISEMENT": "LOTISSEMENT", "LOT": "LOTISSEMENT", "DEGAULLE": "DE GAULLE", "ALEE": "ALLEE", "ALLE": "ALLEE",
-        "BRTL": "BRETELLE"}
+        "BRTL": "BRETELLE", "CH": "CHEMIN"}
 # « Leconte Delisle » is the poet Leconte de Lisle; « Hubert Delisle », the governor, keeps his name.
 PHRASES = {"LECONTE DELISLE": "LECONTE DE LISLE"}
 # Surnames written both ways at La Réunion, never given an accent the BAN does not write for that street: the list, and
@@ -209,6 +209,38 @@ def street_name(s, accents):
         out.append("-".join(p[:1].upper() + p[1:] for p in w.split("-")))
     return " ".join(out)
 
+
+# A bracket's words that say which stretch, written small in a part (« Allée Hématites(partie Basse) » → « Allée
+# Hématites, partie basse »); a bracket that starts with another word is a name, kept in its bracket with a capital
+# (« Chemin Safer (grand Coude) » → « Chemin Safer (Grand Coude) »).
+STRETCH = {"à", "au", "aux", "du", "de", "des", "la", "le", "les", "l'", "d'", "et", "en", "entre", "sur", "vers", "dans",
+           "un", "une", "côté", "coté", "cote", "droit", "gauche", "partie", "bas", "haut", "basse", "haute", "petit",
+           "impasse", "imp", "chemin", "ch", "rue", "rte", "route", "allée", "résidence", "ex", "ancien", "face",
+           "jusqu'au", "jusqu'à", "partir", "finition", "sœurs", "soeurs", "terre", "près", "lotissement", "cité",
+           "quartier"}
+WRITTEN = {"imp": "impasse", "ch": "chemin", "rte": "route"}
+
+
+def parts(name):
+    """A source's brackets: one at the end that says a stretch becomes a part after « , », its common words small,
+    « N°37 » as « n° 37 », « 244,chemin » as « 244, chemin »; any other is kept, spaced, with its first capital
+    (« ( Jean ) » → « (Jean) »). Only the source's name: the parts this script writes are never changed."""
+    def stretch_of(t):
+        first = t.split(" ")[0].lower()
+        return first in STRETCH or bool(re.match(r"^(n°|\d)", first))
+
+    def bracket(m):
+        inner = re.sub(r"\s+", " ", m.group(1)).strip()
+        if not inner:
+            return ""
+        if not stretch_of(inner):
+            return f" ({inner[:1].upper()}{inner[1:]})"
+        words = [WRITTEN.get(w.lower(), w.lower()) if w.lower() in STRETCH else w for w in inner.split(" ")]
+        t = re.sub(r"\b[Nn]°\s*(?=\d)", "n° ", " ".join(words))
+        return f" ({re.sub(r',(?=[^\s\d])', ', ', t)})"
+    name = re.sub(r"\s*\(([^()]*)\)", bracket, name).strip()
+    m = re.match(r"^(.+?) \(([^()]*)\)$", name)
+    return f"{m.group(1)}, {m.group(2)}" if m and stretch_of(m.group(2)) else name
 
 def accentuate(name, accents):
     """A name's words spelled as in the island's street names (`accents`), written with no accent or a rarer one
@@ -445,7 +477,7 @@ def main():
         # The BAN's spelling; of two, the one with accents, then the one of more addresses.
         found = ban_names.get((commune, name_key(r["nom"])))
         source = max(found, key=lambda n: (sum(not ch.isascii() for ch in n), found[n])) if found else r["nom"]
-        name = accentuate(street_name(source, accents), accents)
+        name = parts(accentuate(street_name(source, accents), accents))
         streets.setdefault((name, commune), {})[r["pdf"]] = r["secteur"]
     named, used, missing = {}, set(), set()
     for (name, commune), by_pdf in streets.items():

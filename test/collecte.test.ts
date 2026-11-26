@@ -43,6 +43,13 @@ describe("the bins' calendars of the West", () => {
     expect(names).toContain("Résidences Camélias 033");
     expect(names).toContain("Allée des Cocos");
     for (const n of names) expect(n).not.toMatch(/(?<!\p{L})(Allee|Cite|Riviere|Pere|Camelias|Ecole|Eglise|General|Marechal)(?!\p{L})/u);
+    // Written out and spaced: never « Ch Roussel », a glued bracket (« Chemin des Fougères(en Impasse au 84b…) ») nor a
+    // curly apostrophe (« Rue Renoyal de L’escouble »); the bracket that says a stretch is a part after « , ».
+    expect(names).toContain("Chemin Roussel");
+    expect(names).toContain("Chemin des Fougères, en impasse au 84b-84ter-86-86bis-90");
+    expect(names).toContain("Rue Renoyal de l'Escouble");
+    expect(names).toContain("Chemin Safer (Grand Coude)");
+    for (const n of names) expect(n).not.toMatch(/^Ch\b|\p{L}\(|\( | \)|’/u);
     expect(col.STREETS.every((s) => s.calendrier === -1 || col.CALENDARS[s.calendrier])).toBe(true);
   });
 

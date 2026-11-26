@@ -317,6 +317,9 @@ export const SOURCE_REVISION: Readonly<Record<string, number>> = {
   "avis-eau:flux": 8,
   // The date and the cause of a notice parted by « · » (avis(), Sentier Bayonne).
   "onf:sentiers": 1,
+  // The index of that map for the trails' pages (tools/sentiers.ts `repere`): it keeps `horsCarte`'s sentence, so a
+  // change of that sentence raises it.
+  "onf:sentiers:repere": 1,
   // The trace of one trail (onf:trace:<slug>), its notice parted by « · » too (parseTrace, Sentier Bayonne).
   onf: 1,
   // CAMS's UV index: a day without its hours of 10 h to 14 h kept without an index, never « UV 0 » (10/11/2026).

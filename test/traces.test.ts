@@ -4,7 +4,8 @@ import { handle } from "../src/app.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { KV_KEEP_SECONDS, type KvBinding, KvStore } from "../src/kv.js";
 import { ALTI_SECONDS, decode, gpx, measure, portionsOf, RANDONNEES, routePieces, SENTIERS, sentier, traceOnf } from "../src/providers/traces.js";
-import { routesNamed, secteur, sentiersRandonnee } from "../src/tools/sentiers.js";
+import { REPERE_KEY, type RepereCarte, repereOf, routesNamed, secteur, sentiersRandonnee } from "../src/tools/sentiers.js";
+import { type Carte, KEY as onfKey } from "../src/providers/sentiers.js";
 import { buildTrail, trailGpx } from "../src/web/data.js";
 import { SECTEURS as SECTEURS_RANDO } from "../src/traces/secteurs.js";
 
@@ -206,6 +207,31 @@ describe("traces GPS", () => {
     // A trail on the map is as before.
     gone = undefined;
     expect((await buildTrail(cache(), t, NOW)).hors_carte).toBeUndefined();
+  });
+
+  it("builds a trail's page from a small index of the ONF's map, its date and the trails gone from it, never from the whole map", async () => {
+    gone = /déviation par RF Fleurs Jaunes/;
+    const c = cache();
+    const asked: string[] = [];
+    const get = c.get.bind(c);
+    c.get = ((key: string, ...rest: Parameters<Cache["get"]>[1][]) => (asked.push(key), (get as (...a: unknown[]) => unknown)(key, ...rest))) as Cache["get"];
+    const t = sentier("sentier-du-trou-de-fer-deviation-par-rf-fleurs-jaunes")!;
+    const other = sentier("le-bloc-piton-des-neiges")!;
+    const [d] = [await buildTrail(c, t, NOW), await buildTrail(c, other, NOW)];
+    // The map read once, by the index's build; each page then reads only the index.
+    expect(asked.filter((k) => k === onfKey)).toEqual([onfKey]);
+    expect(asked.filter((k) => k === REPERE_KEY)).toHaveLength(2);
+    const map = (await c.peek<Carte>(onfKey))!;
+    const index = (await c.peek<RepereCarte>(REPERE_KEY))!.value;
+    // The deviation, and the fixture's other trails missing from it, never one on it.
+    expect(Object.keys(index.hors)).toContain(t.nom);
+    expect(Object.keys(index.hors)).not.toContain(other.nom);
+    expect(Object.keys(index.hors).every((n) => !map.value.sentiers.some((s) => SENTIERS[n].onf.includes(s.nom)))).toBe(true);
+    expect(index).toEqual(repereOf(map.value, map.fetchedAt));
+    expect(JSON.stringify(index).length).toBeLessThan(JSON.stringify(map.value).length / 20);
+    // Said as the map's, its date and when it was read.
+    expect(d.carte_lue).toBe(map.fetchedAt.toISOString());
+    expect(d.carte_mise_a_jour).toBe(map.value.mise_a_jour);
   });
 
   it("says a trail closed on weekdays as the map classes it, its notice beside it, in its copy and its GPX the same on Sunday 23:59 and Monday 00:01", async () => {

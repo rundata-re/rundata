@@ -142,6 +142,41 @@ export function horsCarte(nom: string, t: { onf: string[] }, carte: onf.Carte): 
 }
 
 /**
+ * What a trail's page takes from the ONF's whole map (onf.KEY, 97 Ko on 25/11/2026, read 1 234 times in 24 h by the
+ * pages /sentiers/<un sentier>): the map's date, when it was read, and the bundle's trails it no longer lists. Each page
+ * reads its own trail on its own (providers/traces.ts `traceOnf`).
+ */
+export interface RepereCarte {
+  mise_a_jour?: string;
+  /** When the map it was taken from was read (ISO): the page says this one, never when this index was built. */
+  lue: string;
+  /** By the trail's name in the bundle, those off the map (`horsCarte`). */
+  hors: Record<string, HorsCarte>;
+}
+
+export const REPERE_KEY = "onf:sentiers:repere";
+// Built from the map in this data center's cache, which the scheduled event refreshes every hour: a trail gone from
+// the map is said off it within 30 minutes of the map that says so, and the date given is the map's own.
+const REPERE_FRESH_SECONDS = 30 * 60;
+
+export function repereOf(carte: onf.Carte, lue: Date): RepereCarte {
+  const hors: Record<string, HorsCarte> = {};
+  for (const [nom, t] of Object.entries(traces.SENTIERS)) {
+    const h = horsCarte(nom, t, carte);
+    if (h) hors[nom] = h;
+  }
+  return { ...(carte.mise_a_jour && { mise_a_jour: carte.mise_a_jour }), lue: lue.toISOString(), hors };
+}
+
+/** The index of the ONF's map for the trails' pages, from this data center's copy of the map. */
+export async function repere(cache: Cache) {
+  return cache.get(REPERE_KEY, REPERE_FRESH_SECONDS, async () => {
+    const read = await onf.carte(cache);
+    return repereOf(read.value, read.fetchedAt);
+  });
+}
+
+/**
  * The communes of a trail, given all its sections: those where the middle of one of them lies, in the sections' order. One
  * rule for the tool, the communes' pages and their feeds, and the closed trails by commune: a trail of the commune is said
  * whole, a section closed past its limit included (04/11/2026: the Piste DFCI de la Glacière, open in Les Trois-Bassins,

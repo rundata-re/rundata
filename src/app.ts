@@ -3,7 +3,7 @@
  * endpoint (streamable HTTP, stateless, JSON responses); everything else is the web site (web/site.ts), except that
  * a command-line client asking for / gets one line saying what this is.
  */
-import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
+import { createMcpHandler, isLegacyRequest, WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/server";
 import { appliDe, cleCopie, copieAGarder, copieLue, copyStore, garder, type CopyStore } from "./appli.js";
 import type { Cache } from "./cache.js";
 import { feedReader, stopwatch, type Recorder } from "./metrics.js";
@@ -24,7 +24,7 @@ import { cheminMasque } from "./chemin-secret.js";
 const CORS = {
   "access-control-allow-origin": "*",
   "access-control-allow-methods": "POST, OPTIONS",
-  "access-control-allow-headers": "content-type, accept, authorization, mcp-protocol-version, mcp-session-id, last-event-id",
+  "access-control-allow-headers": "content-type, accept, authorization, mcp-protocol-version, mcp-method, mcp-name, mcp-session-id, last-event-id",
   "access-control-expose-headers": "mcp-session-id, mcp-protocol-version",
   "access-control-max-age": "86400",
 };
@@ -91,6 +91,16 @@ export function batchRefused(version: string | null, body: unknown): string | un
   if (version && version >= NO_BATCH_FROM) return `Batches are not part of protocol ${version.slice(0, 20)}: send one message per request.`;
   if (body.length > MAX_BATCH) return `At most ${MAX_BATCH} messages per batch.`;
   return undefined;
+}
+
+// The first revision of the per-request envelope, and its key: a request without either is 2025 traffic, sent as it was
+// without asking the SDK (isLegacyRequest), which cost about 1 ms of CPU a request (26/11/2026).
+const FIRST_MODERN = "2026-07-28";
+const ENVELOPE = "io.modelcontextprotocol/protocolVersion";
+export function mayBeModern(version: string | null, body: unknown): boolean {
+  if (version && version >= FIRST_MODERN) return true;
+  const meta = (m: unknown) => (m && typeof m === "object" ? (m as { params?: { _meta?: unknown } }).params?._meta : undefined);
+  return (Array.isArray(body) ? body : [body]).some((m) => { const x = meta(m); return !!x && typeof x === "object" && ENVELOPE in x; });
 }
 
 /** A refusal before the transport, in its own shape. */
@@ -189,10 +199,27 @@ async function answer(request: Request, cache: Cache, background: Background, re
       return withCors(rpcError(400, refused));
     }
     if ("body" in read) watching.read(read.body);
+    // The 2026-07-28 revision (a `_meta` envelope on each request, no initialize) goes to the SDK's own handler, which
+    // answers it with a server built for the request; the 2025 traffic stays on the path below, as it was.
+    if ("body" in read && mayBeModern(request.headers.get("mcp-protocol-version"), read.body) && !(await isLegacyRequest(read.request, read.body))) {
+      const modern = createMcpHandler(() => {
+        const server = createServer(cache, (hit) => {
+          if (hit.kind !== "mcp") record(hit);
+          else if (hit.outcome === "vide" && hit.id !== undefined) watching.vide(hit.id);
+        }, background);
+        server.server.registerCapabilities({ tools: { listChanged: false } });
+        return server;
+      }, { legacy: "reject", onerror: (err) => watching.failed(err) });
+      const response = await modern.fetch(read.request, { parsedBody: read.body });
+      await watching.answered(response);
+      watching.done(response.status);
+      return withCors(response);
+    }
     if ("body" in read && !hasRequest(read.body)) {
       // The transport alone checks the headers and the messages as with a server, and answers 202 (or its error).
       const bare = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
       const response = await bare.handleRequest(read.request, { parsedBody: read.body });
+      if (response.status >= 400) await watching.answered(response);
       watching.done(response.status);
       return withCors(response);
     }
@@ -217,6 +244,7 @@ async function answer(request: Request, cache: Cache, background: Background, re
     await server.connect(transport);
     watching.attach(transport);
     const response = await transport.handleRequest(read.request, "body" in read ? { parsedBody: read.body } : undefined);
+    if (response.status >= 400) await watching.answered(response);
     watching.done(response.status);
     if (key && store) {
       const text = await copieAGarder(response);

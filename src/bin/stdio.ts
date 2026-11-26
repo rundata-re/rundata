@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /** Local use: `npx reunion-temps-reel` in an MCP client config (Claude Desktop, Cursor…). */
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { StdioServerTransport } from "@modelcontextprotocol/server/stdio";
 import "./net.js";
 import { Cache } from "../cache.js";
 import * as meteofrance from "../providers/meteofrance.js";

@@ -10,6 +10,7 @@ Usage: python3 -I scripts/build-ecoles.py [--json FILE] [--verifier ECART]   (FI
 (the Monday check, .github/workflows/listes.yml).
 """
 import argparse
+import importlib.util
 import json
 import sys
 import urllib.request
@@ -121,9 +122,17 @@ def main():
     print(f"{len(out)} establishments written to {OUT.relative_to(ROOT)}")
 
 
+def _commun():
+    """scripts/verifier.py, the checks shared by the build scripts (`python3 -I` does not put scripts/ on the path)."""
+    spec = importlib.util.spec_from_file_location("verifier", Path(__file__).with_name("verifier.py"))
+    v = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(v)
+    return v
+
+
 def verifier(out, ecart):
     """The bundled list against today's directory, without writing: each establishment by its UAI, added, gone, or with
-    a field changed (a phone, an address, a canteen). 1 (the job's failure, its alert) past `ecart` of them."""
+    a field changed (a phone, an address, a canteen). 1 (an aged list: a warning, the job stays green) past `ecart` of them."""
     bundled = json.loads(OUT.read_text(encoding="utf-8"))
     before, now = {e["uai"]: e for e in bundled["etablissements"]}, {e["uai"]: e for e in out}
     added = [now[u] for u in now.keys() - before.keys()]
@@ -140,8 +149,8 @@ def verifier(out, ecart):
         print(f"  changé : {n['nom']} ({n['commune']}, {n['uai']}) : {', '.join(fields)}")
     total = len(added) + len(gone) + len(changed)
     if total > ecart:
-        print(f"::error::La liste des écoles a {total} écarts avec l'annuaire de l'Éducation (seuil {ecart}) : lancer scripts/build-ecoles.py et proposer la PR.")
-        return 1
+        return _commun().vieillie("Écoles, collèges et lycées", "build-ecoles.py", "l'annuaire de l'Éducation nationale", ecart=total,
+                                   consigne=f"{total} écarts, seuil {ecart}. Lancer scripts/build-ecoles.py et proposer la PR.")
     return 0
 
 

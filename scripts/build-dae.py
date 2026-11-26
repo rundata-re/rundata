@@ -12,6 +12,7 @@ Licence Ouverte 2.0. Usage: python3 -I scripts/build-dae.py [--csv geodae.csv | 
 import argparse
 import csv
 import hashlib
+import importlib.util
 import io
 import math
 import json
@@ -139,9 +140,17 @@ def main():
     compact(out)
 
 
+def _commun():
+    """scripts/verifier.py, the checks shared by the build scripts (`python3 -I` does not put scripts/ on the path)."""
+    spec = importlib.util.spec_from_file_location("verifier", Path(__file__).with_name("verifier.py"))
+    v = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(v)
+    return v
+
+
 def verifier(out, ecart):
-    """The bundled list against the national base of today, without writing: each device by its name and place. 1 (the
-    job's failure, its alert) when more than `ecart` were added or are gone."""
+    """The bundled list against the national base of today, without writing: each device by its name and place. 1 (an aged list:
+    a warning, the job stays green) when more than `ecart` were added or are gone."""
     key = lambda d: (d["nom"], round(d["lon"], 4), round(d["lat"], 4))
     bundled = json.loads((ROOT / "src/dae/dae.json").read_text())
     before, now = Counter(map(key, bundled["defibrillateurs"])), Counter(map(key, out))
@@ -153,8 +162,8 @@ def verifier(out, ecart):
     for k in list(gone)[:20]:
         print(f"  disparu : {k[0]} ({k[1]}, {k[2]})")
     if sum(added.values()) + sum(gone.values()) > ecart:
-        print(f"::error::La liste des défibrillateurs a {sum(added.values()) + sum(gone.values())} écarts avec Géo'DAE (seuil {ecart}) : lancer scripts/build-dae.py et proposer la PR.")
-        return 1
+        return _commun().vieillie("Défibrillateurs", "build-dae.py", "Géo'DAE", ecart=sum(added.values()) + sum(gone.values()),
+                                   consigne=f"{sum(added.values()) + sum(gone.values())} écarts, seuil {ecart}. Lancer scripts/build-dae.py et proposer la PR.")
     return 0
 
 

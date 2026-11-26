@@ -40,7 +40,7 @@ describe("the check of the historic monuments' list (build-monuments.py --verifi
     expect(r.out).not.toContain("::error::");
   });
 
-  it("says each monument added, gone or changed, with what changed, and fails only past the threshold", () => {
+  it("says each monument added, gone or changed, with what changed, and says the list aged only past the threshold", () => {
     // A is now classé; B is gone; C is newly protected.
     const now = "[dict(" + A + ", protection='classé'), {'ref': 'PA97400099', 'nom': 'Chapelle C', 'insee': ['97401'], 'protection': 'inscrit'}]";
     const within = verifier(`sys.exit(m.verifier(${now}, 3, ${LISTE}))`);
@@ -51,7 +51,8 @@ describe("the check of the historic monuments' list (build-monuments.py --verifi
     expect(within.out).toContain("  changé : Église A (PA00000001 : protection)");
     const past = verifier(`sys.exit(m.verifier(${now}, 2, ${LISTE}))`);
     expect(past.status).toBe(1);
-    expect(past.out).toContain("::error::La liste des monuments historiques a 3 écarts avec la base Mérimée (seuil 2) : lancer scripts/build-monuments.py et proposer la PR.");
+    expect(past.out).toContain("::warning::Monuments historiques : la liste embarquée a vieilli (la base Mérimée, 3 écarts). 3 écarts, seuil 2. Lancer scripts/build-monuments.py et proposer la PR.");
+    expect(past.out).not.toContain("::error::");
   });
 
   it("sees a point that moved or went missing, under the same reference", () => {

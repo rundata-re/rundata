@@ -13,6 +13,7 @@ Licence Ouverte 2.0. Usage: python3 -I scripts/build-irve.py [--csv consolidatio
 import argparse
 import csv
 from datetime import date
+import importlib.util
 import io
 import json
 import re
@@ -163,9 +164,17 @@ def main():
     print(f"{target.relative_to(ROOT)} : {len(out)} stations, {sum(len(s['points']) for s in out)} points de charge")
 
 
+def _commun():
+    """scripts/verifier.py, the checks shared by the build scripts (`python3 -I` does not put scripts/ on the path)."""
+    spec = importlib.util.spec_from_file_location("verifier", Path(__file__).with_name("verifier.py"))
+    v = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(v)
+    return v
+
+
 def verifier(out, ecart):
     """The bundled list against the national base of today, without writing (nor asking geo.api.gouv.fr anything): its
-    points by their id. 1 (the job's failure, its alert) when more than `ecart` were added or are gone: a point gone is
+    points by their id. 1 (an aged list: a warning, the job stays green) when more than `ecart` were added or are gone: a point gone is
     said « sans information » by the tool and /bornes, a point added is not shown at all."""
     bundled = json.loads((ROOT / "src/irve/stations.json").read_text())
     before = {p["id"]: s["nom"] for s in bundled["stations"] for p in s["points"]}
@@ -177,8 +186,8 @@ def verifier(out, ecart):
     for i in gone[:20]:
         print(f"  disparu : {i} ({before[i]})")
     if len(added) + len(gone) > ecart:
-        print(f"::error::La liste des bornes de recharge a {len(added) + len(gone)} écarts avec la base nationale (seuil {ecart}) : lancer scripts/build-irve.py et proposer la PR.")
-        return 1
+        return _commun().vieillie("Bornes de recharge", "build-irve.py", "la base nationale des IRVE", ecart=len(added) + len(gone),
+                                   consigne=f"{len(added) + len(gone)} écarts, seuil {ecart}. Lancer scripts/build-irve.py et proposer la PR.")
     return 0
 
 

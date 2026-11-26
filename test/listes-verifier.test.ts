@@ -105,15 +105,20 @@ describe("the bundled lists' checks", () => {
     expect(j.json).toHaveLength(1);
   });
 
-  it("are offered by each list's build script, and run every Monday by the job that says which list is to be redone", () => {
+  it("are offered by each list's build script, and all run every Monday through the launcher, none failing the job on an aged list", () => {
     const yml = readFileSync(".github/workflows/listes.yml", "utf8");
-    for (const name of ["sante", "radars", "accidents", "loyers", "internet", "creches", "vitesses", "velo", "carte-scolaire", "ips", "parcoursup", "traces", "aires", "couverture"]) {
+    for (const name of ["irve", "dae", "ecoles", "antennes", "canyons", "marmailles", "monuments", "sante", "radars", "accidents", "loyers",
+      "internet", "creches", "creches-saint-denis", "vitesses", "velo", "carte-scolaire", "ips", "parcoursup", "traces", "aires", "couverture"]) {
       expect(readFileSync(`scripts/build-${name}.py`, "utf8"), name).toMatch(/--verifier/);
-      const id = name.replace("-", "_");
+      const id = name.replace(/-/g, "_");
       expect(yml, name).toContain(`id: ${id}\n        continue-on-error: true\n        run: python3 -I scripts/verifier.py build-${name}.py --verifier`);
-      // Not in the step that fails on any gap: an aged list of these is not a failure.
-      expect(yml, name).not.toContain(`steps.${id}.outcome`);
     }
+    expect(yml).toContain("id: positions\n        continue-on-error: true\n        run: python3 -I scripts/verifier.py verifier-positions.py --verifier");
+    // Every check goes through the launcher, and no step fails the job on an aged list: only the bilan can be red.
+    const runs = [...yml.matchAll(/^ +run: (.*)$/gm)].map((m) => m[1]);
+    expect(runs.filter((r) => r.startsWith("python3")).every((r) => r.startsWith("python3 -I scripts/verifier.py ")), runs.join("\n")).toBe(true);
+    expect(runs).toHaveLength(24);
+    expect(yml).not.toMatch(/steps\.\w+\.outcome|exit 1/);
     expect(yml).toContain("LISTES_VIEILLIES: listes-vieillies.jsonl");
     expect(yml).toContain("LISTES_CODES: listes-codes.jsonl");
     expect(yml).toContain("        if: always()\n        run: python3 -I scripts/verifier.py --bilan");

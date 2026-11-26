@@ -320,11 +320,13 @@ function wasteLive(p: PlacePage, data: Cached<DechetsAnswer> | null | undefined,
   const here = dech.sitesNow(data.value.etats, now).filter((s) => s.commune === p.nom);
   const fresh = here.filter((s) => s.a_jour);
   const taking = (kind: string) => fresh.filter((s) => s.accepte.includes(kind)).length;
+  // Its intercommunality not answering is not an old update (/decheteries says the same).
+  const unknown = here.every((s) => dech.unread(s, data.value.absents));
   return {
     valeur: `${here.length} déchèterie${here.length > 1 ? "s" : ""}`,
     detail: fresh.length
       ? `d'après les agents : déchets verts acceptés dans ${taking("déchets verts")} sur ${fresh.length}, encombrants dans ${taking("encombrants")} sur ${fresh.length}`
-      : "état des bennes à vérifier sur place",
+      : unknown ? "état des bennes non disponible pour le moment" : "état des bennes à vérifier sur place",
   };
 }
 
@@ -797,7 +799,7 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
         foot: `<a href="/collecte/${collecte.communeSlug(p.nom)}">Chercher ma rue →</a>`,
       }]
       : []),
-    ...(dech.TCO_COMMUNES.includes(p.nom) ? [{ icon: "pin", nom: "Déchèteries", href: `/decheteries#${anchorOf(p.nom)}`, sr: aCommune(p.nom), live: wasteLive(p, l.dechets, now) }] : []),
+    ...(dech.LIVE_COMMUNES.includes(p.nom) ? [{ icon: "pin", nom: "Déchèteries", href: `/decheteries#${anchorOf(p.nom)}`, sr: aCommune(p.nom), live: wasteLive(p, l.dechets, now) }] : []),
     ...(dech.ELSEWHERE_COMMUNES.includes(p.nom) ? [{ icon: "pin", nom: "Déchèteries", href: `/decheteries#${anchorOf(p.nom)}`, sr: aCommune(p.nom), live: elsewhereLive(p) }] : []),
     { icon: "heart", nom: "Pharmacies", live: pharmacies(p), foot: `${lienNom(sante.GARDE.site, "Pharmacie de garde : 3237.fr", ' rel="noopener"')}` },
     ...(droit

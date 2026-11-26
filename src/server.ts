@@ -7,6 +7,7 @@ import type { jsonSchemaValidator } from "@modelcontextprotocol/sdk/validation";
 import * as courantMairies from "./providers/coupures-courant.js";
 import * as carburantsPrix from "./providers/carburants.js";
 import * as radarMf from "./providers/radar.js";
+import * as casudDecheteries from "./providers/casud.js";
 import * as tcoDecheteries from "./providers/tco.js";
 import * as meteofranceStations from "./providers/meteofrance.js";
 import * as santeSources from "./sante/etablissements.js";
@@ -143,7 +144,7 @@ import * as peche from "./tools/peche.js";
 import * as cetaces from "./tools/cetaces.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.1025";
+export const VERSION = "1.0.1026";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -289,7 +290,7 @@ const lieuAvecExemples = z
 export const toutesLesSources = (inactives = false) =>
   oncePerId([...weatherProviders().map((p) => p.source), ...(inactives ? [meteofranceStations.SOURCE] : []), ...(inactives || vigilance.enabled() ? [vigilance.SOURCE] : []), viirs.SOURCE, acspo.SOURCE, modis.SOURCE, coraux.SOURCE, houle.SOURCE, houle.SOURCE_MF, seismes.SOURCE, volcanSources.OVPF, volcanSources.PITONLIVE, edf.SOURCE, calendar.SCHOOL, calendar.HOLIDAYS, atmo.SOURCE, airMesures.SOURCE, capteurs.SOURCE, ...(inactives || autorisee(capteurs.SOCIAL_AUTORISATION) ? [capteurs.SOURCE_SOCIAL] : []), annuaire.SOURCE, ...Object.values(terrain.SOURCES), ...(inactives || transit.enabled() ? [transit.SOURCE, gtfsrt.SOURCE] : []), velos.SOURCE, maregraphes.SOURCE, vigicrues.SOURCE, irve.SOURCE, eauPotable.SOURCE, baignades.SOURCE, requin.SOURCE, onf.SOURCE, airesOnf.SOURCE, vigieau.SOURCE, avisEau.SOURCE, arretesVille.SOURCE, dae.SOURCE, ffck.SOURCE, ...Object.values(sportSources.SOURCES).filter((x) => inactives || (autorisee(`sport:${x.id}`) && autorisee(`agenda:${x.id}`))), gdacs.SOURCE, ...(inactives || cmrsTrace.enLigne() ? [cmrsTrace.SOURCE] : []), ...agendaSources.SOURCES_LUES.filter((s) => inactives || connecteursEnLigne() || s !== CONNECTEURS_SOURCE), ...Object.values(actuSources.SOURCES), raaPrefecture.SOURCE, ...Object.values(traceSources.SOURCES), ...(inactives || climat.enabled() ? [climat.SOURCE] : []), ...(inactives || merHistorique.enabled() ? [merHistorique.SOURCE_CANDHIS, merHistorique.SOURCE_CRW] : []), ...(inactives || climat.hourlyEnabled() ? [climat.SOURCE_HORAIRE] : []), ...(inactives || arome.enabled() ? [arome.SOURCE] : []), openmeteo.SOURCE, uv.SOURCE, ...(inactives || uvMesure.configured() ? [uvMesure.SOURCE, uvMesure.SOURCE_OZONE] : []), ensemble.SOURCE, ...(inactives || feux.enabled() ? [feux.SOURCE] : []),
     // The vie pratique's and the power cuts' (annuaire_services_publics, electricite).
-    carburantsPrix.SOURCE, radarMf.SOURCE, radarsFixes.SOURCE, accidentsRoute.SOURCE, BDTOPO, PHOTOS, courantMairies.SOURCE, elusRne.SOURCE, bureauxVote.SOURCE, tcoDecheteries.SOURCE, decheteriesAdeme.ADEME, santeSources.FINESS, santeSources.ARS_GARDE, santeSources.SANTE_FR, gardeArs.PDSA, collecteTco.SOURCE, collecteTco.SOURCE_CIREST, collecteTco.SOURCE_CINOR, collecteTco.SOURCE_CASUD, ...Object.values(lieuxEnfants.SOURCES), marchesOsm.OSM, ...Object.values(marchesOsm.MAIRIES), loyersAnil.SOURCE, ecolesAnnuaire.SOURCE, associationsRna.SOURCE, carteScolaire.SOURCE, parcoursupFormations.SOURCE, ipsDepp.SOURCE_IPS, ipsDepp.SOURCE_VA, medecinsAmeli.SOURCE, electionsCommunes.SOURCE, internetArcep.SOURCE, antennesAnfr.SOURCE_MOBILE, antennesAnfr.SOURCE_RADIO, sitesHs.SOURCE, monumentsMerimee.SOURCE, lieuxRemarquables.SOURCE, sentiersMarmailles.SOURCE, canyonsParc.SOURCE, mairiesAnnexesSd.SOURCE, accueilJeuneEnfant.SOURCE, crechesSaintDenis.SOURCE,
+    carburantsPrix.SOURCE, radarMf.SOURCE, radarsFixes.SOURCE, accidentsRoute.SOURCE, BDTOPO, PHOTOS, courantMairies.SOURCE, elusRne.SOURCE, bureauxVote.SOURCE, tcoDecheteries.SOURCE, casudDecheteries.SOURCE, decheteriesAdeme.ADEME, santeSources.FINESS, santeSources.ARS_GARDE, santeSources.SANTE_FR, gardeArs.PDSA, collecteTco.SOURCE, collecteTco.SOURCE_CIREST, collecteTco.SOURCE_CINOR, collecteTco.SOURCE_CASUD, ...Object.values(lieuxEnfants.SOURCES), marchesOsm.OSM, ...Object.values(marchesOsm.MAIRIES), loyersAnil.SOURCE, ecolesAnnuaire.SOURCE, associationsRna.SOURCE, carteScolaire.SOURCE, parcoursupFormations.SOURCE, ipsDepp.SOURCE_IPS, ipsDepp.SOURCE_VA, medecinsAmeli.SOURCE, electionsCommunes.SOURCE, internetArcep.SOURCE, antennesAnfr.SOURCE_MOBILE, antennesAnfr.SOURCE_RADIO, sitesHs.SOURCE, monumentsMerimee.SOURCE, lieuxRemarquables.SOURCE, sentiersMarmailles.SOURCE, canyonsParc.SOURCE, mairiesAnnexesSd.SOURCE, accueilJeuneEnfant.SOURCE, crechesSaintDenis.SOURCE,
     // The bike lanes, the bike racks and the speeds of the routes nationales, of /carte only.
     ...Object.values(velo.SOURCES), geovelo.SOURCE, vitessesRn.SOURCE,
     // The public sector's job offers and the formations eligible to the CPF (emploi), the public procurement notices (the
@@ -588,8 +589,8 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "(quoi = « pharmacie », « médecin de garde », « urgences », « hôpital ») : la pharmacie de garde n'est connue que de 3237.fr et du 32 37, l'urgence et la garde passent par le 15\u00a0; " +
         "les marchés forains et couverts (quoi = « marché »\u00a0; un marché de Noël ou nocturne annoncé : evenements), " +
         "les avis de marchés publics ouverts d'une commune (quoi = « marchés publics », « appels d'offres »), " +
-        "et les déchèteries de l'île, avec les bennes pleines " +
-        "en direct dans l'Ouest (quoi = « déchèterie », « encombrants », « déchets verts »), et le jour de collecte rue par rue (hors CIVIS et Sainte-Rose) " +
+        "et les déchèteries, avec les bennes pleines " +
+        "en direct au TCO et à la CASUD (quoi = « déchèterie », « encombrants », « déchets verts »), et le jour de collecte rue par rue (hors CIVIS et Sainte-Rose) " +
         "(quoi = « collecte », « poubelles », lieu = la rue et la commune : « rue Labourdonnais, Saint-Paul »)\u00a0; " +
         "où aller avec les enfants (quoi = « enfants », « aire de jeux », « piscine », « médiathèque », « skatepark »…) : aussi parcs, zoos, " +
         "parcs de loisirs, salles de jeux, escalade, musées\u00a0; " +
@@ -911,7 +912,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
       description:
         "Tout ce qui compte aujourd'hui dans une commune de La Réunion (974), en un appel : météo MESURÉE maintenant et PRÉVISION du jour, " +
         "vigilance de sa zone, mer, qualité de l'air, électricité, routes et blocages signalés par les médias, actualités de la commune, " +
-        "coupures d'eau, événements du jour, jour férié ou vacances, soleil, mairie ouverte ou non, marché du jour, bennes des déchèteries (Ouest), " +
+        "coupures d'eau, événements du jour, jour férié ou vacances, soleil, mairie ouverte ou non, marché du jour, bennes des déchèteries (TCO, CASUD), " +
         "prix maximum des carburants du mois, où trouver la pharmacie de garde (3237.fr). Un lieu (plage, quartier, sommet) est rapporté à sa commune. " +
         "Ce qui manque est listé dans non_inclus avec l'outil à appeler. Pour : « quoi de neuf à Saint-Paul aujourd'hui ? », « ma journée au Tampon ». " +
         "Réponse courte par défaut\u00a0; detail pour ce qu'accepte chaque déchèterie et le prix de chaque carburant.",

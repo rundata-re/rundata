@@ -1,7 +1,7 @@
 /**
  * « Résumé du jour » for a place (resume_du_jour): the weather measured now and forecast for today, the vigilance, the
  * sea, the electricity, the roads and the news of the commune, its water cuts and its events of the day, its town hall
- * and its sun, its market of the day, the state of its déchèteries (TCO), the month's fuel prices and where to find the
+ * and its sun, its market of the day, the state of its déchèteries (TCO, CASUD), the month's fuel prices and where to find the
  * duty pharmacy, in one call. Cut from the copies the site's pages keep (web/site.ts): only read, never built while the
  * call waits, so a call costs a dozen reads at most. A part without a recent copy is left out and named in
  * `non_inclus`, with the tool that answers it; the oldest of them is brought up to date after the answer when what
@@ -164,7 +164,7 @@ function copiesOf(commune: PlacePage, place: PlacePage): Record<Part, Copy | und
     agenda: { key: "web:agenda", build: buildAgenda, max: 24 * H, nom: "événements du jour", outil: "evenements", page: "/evenements" },
     calendrier: { key: "web:calendrier", build: buildCalendrier, max: 24 * H, sameDay: true, nom: "jour férié et vacances", outil: "calendrier", page: "/calendrier" },
     // Only the TCO publishes the state of its skips: the other communes have no such part.
-    dechets: dech.TCO_COMMUNES.includes(commune.nom)
+    dechets: dech.LIVE_COMMUNES.includes(commune.nom)
       ? { key: "web:dechets", build: buildDechets, max: 3 * H, nom: "état des déchèteries", outil: "annuaire_services_publics", page: `/decheteries#${anchorOf(commune.nom)}` }
       : undefined,
     // Only the mairies that relay EDF's notices: elsewhere nothing is said, rather than the same « we do not know » each day.
@@ -559,7 +559,7 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
   const inForce = fuel && phases(fuel, now).vigueur;
   const prices = inForce && inForce.depuis.slice(0, 7) === today.slice(0, 7) ? inForce : undefined;
   // A site's state older than its staff's last round says nothing of now (vie/decheteries.ts).
-  const sites = l.dechets && dech.TCO_COMMUNES.includes(nom) ? dech.sitesNow(l.dechets.value.etats, now).filter((s) => s.commune === nom) : undefined;
+  const sites = l.dechets && dech.LIVE_COMMUNES.includes(nom) ? dech.sitesNow(l.dechets.value.etats, now).filter((s) => s.commune === nom) : undefined;
   const fresh = sites?.filter((s) => s.a_jour) ?? [];
   const green = fresh.filter((s) => s.accepte.includes("déchets verts")).length;
   const power = l.courant && followed(nom) ? aheadRows(l.courant.value, nom, now) : [];
@@ -732,7 +732,8 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
             nom: s.nom,
             // An old state says its time in `etat`: not twice.
             mis_a_jour: s.a_jour ? s.mis_a_jour : undefined,
-            etat: s.a_jour ? "à jour" : s.mis_a_jour ? `dernière mise à jour à ${s.mis_a_jour}, à vérifier sur place` : "pas de mise à jour",
+            // Its intercommunality not answering: « non disponible », as annuaire_services_publics says.
+            etat: dech.unread(s, l.dechets?.value.absents) ? "non disponible" : s.a_jour ? "à jour" : s.mis_a_jour ? `dernière mise à jour à ${s.mis_a_jour}, à vérifier sur place` : "pas de mise à jour",
             accepte: s.a_jour ? s.accepte : undefined,
             benne_pleine: s.a_jour ? s.refuse : undefined,
           })),

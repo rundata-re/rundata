@@ -38,7 +38,7 @@ describe("each section's name", () => {
   // « Titre 974 » everywhere (wording validated on 06/11/2026): the pages that had no « 974 » take it, none loses it. The others
   // of the ten are checked in their own tests (peche, emploi, antennes, carburants, feux, requin, traces, coupures).
   it("ends the H1 with « 974 » on the pages that had none", () => {
-    expect(between(decheteriesPage(O, null, NOW), "<h1>", "</h1>")).toBe(`<h1>Les déchèteries de l&#39;île, et les bennes en direct dans l&#39;Ouest <span class="n974">974</span></h1>`);
+    expect(between(decheteriesPage(O, null, NOW), "<h1>", "</h1>")).toBe(`<h1>Les déchèteries de l&#39;île, et les bennes en direct dans l&#39;Ouest, au Tampon et à Saint-Joseph <span class="n974">974</span></h1>`);
     expect(between(marchesPage(O, null, NOW), "<h1>", "</h1>")).toBe(`<h1>Marchés publics à La Réunion <span class="n974">974</span></h1>`);
   });
 });

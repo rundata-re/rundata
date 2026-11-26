@@ -1,15 +1,19 @@
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
+import * as casud from "../src/providers/casud.js";
 import * as tco from "../src/providers/tco.js";
 import { annuaireTool } from "../src/tools/annuaire.js";
 import { WASTE } from "../src/tools/decheteries.js";
+import { resume } from "../src/tools/resume.js";
 import { communePage } from "../src/web/commune.js";
 import { anchorOf, decheteriesPage, descriptionOf, TITLE } from "../src/web/decheteries.js";
 import { pageOf } from "../src/web/places.js";
-import { ELSEWHERE, ELSEWHERE_COMMUNES, epciOf, SITES, sitesNow, SURVEY, TCO_COMMUNES, wasteAsked } from "../src/vie/decheteries.js";
+import { CASUD_SITES, ELSEWHERE, ELSEWHERE_COMMUNES, epciOf, labelsOf, LIVE_COMMUNES, SITES, sitesNow, SURVEY, TCO_COMMUNES, wasteAsked } from "../src/vie/decheteries.js";
 
 const FIXTURE = JSON.parse(readFileSync(new URL("./fixtures/tco_meteo.json", import.meta.url), "utf8"));
+// The CASUD's page read on 26/11/2026 at 08:54, its icons (SVG) cut: 960 kB down to 73.
+const CASUD_PAGE = readFileSync(new URL("./fixtures/casud_meteo.html", import.meta.url), "utf8");
 // Saturday 24 October 2026, 17:30 at La Réunion: the fixture's updates were made between 15:02 and 17:00.
 const NOW = new Date("2026-10-24T13:30:00Z");
 const NEXT_MORNING = new Date("2026-10-25T06:00:00Z");
@@ -22,13 +26,13 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe("the déchèteries of the West", () => {
   it("are the TCO's thirteen, in its five communes, each matched with its live state", () => {
-    expect(SITES).toHaveLength(13);
+    expect(SITES.filter((s) => s.par === "tco")).toHaveLength(13);
     expect(TCO_COMMUNES.sort()).toEqual(["La Possession", "Le Port", "Les Trois-Bassins", "Saint-Leu", "Saint-Paul"]);
     expect(etats).toHaveLength(13);
     const dosDane = etats.find((e) => e.lien.endsWith("decheterie-de-dos-dane"))!;
     expect(dosDane.maj).toBe("2026-10-24T11:02:00.000Z");
     expect(dosDane.accepte).toMatchObject({ dechets_verts: true, encombrants: false });
-    expect(sitesNow(etats, NOW).every((s) => s.mis_a_jour)).toBe(true);
+    expect(sitesNow(etats, NOW).filter((s) => s.par === "tco").every((s) => s.mis_a_jour)).toBe(true);
   });
 
   it("say the state only while it is recent: older than 6 hours, or of another day, it is to be checked", () => {
@@ -45,7 +49,8 @@ describe("the déchèteries of the West", () => {
     expect(r.resume).toMatch(/^Déchets verts acceptés en ce moment : /);
     expect(r.decheteries[0].etat).toBe("à jour");
     expect(r.avertissements.join(" ")).toMatch(/plus de 6 h est à vérifier sur place/);
-    expect(r.avertissements).toContain("Horaires par déchèterie sur sa page du TCO, qui les dit ouvertes 7 jours sur 7.");
+    expect(r.avertissements).toContain("Horaires des déchèteries du TCO sur leur page, qui les dit ouvertes 7 jours sur 7.");
+    expect(r.avertissements[0]).toBe("État des bennes rempli par les agents sur place, au TCO environ toutes les 2 heures : une mise à jour de plus de 6 h est à vérifier sur place.");
     // The next morning, before the staff's first update: nothing said to be the state now.
     const next = body(await annuaireTool(new Cache(), "encombrants", "Le Port", NEXT_MORNING));
     expect(next.resume).toMatch(/À vérifier sur place \(mise à jour il y a plus de 6 h\)/);
@@ -60,23 +65,23 @@ describe("the déchèteries of the West", () => {
     const page = decheteriesPage("https://rundata.re", copy, NOW);
     expect(TITLE.length).toBeLessThanOrEqual(60);
     expect(page).toContain(`<title>${TITLE.replace(/'/g, "&#39;")}</title>`);
-    expect(page).toContain('<h1>Les déchèteries de l&#39;île, et les bennes en direct dans l&#39;Ouest <span class="n974">974</span></h1>');
+    expect(page).toContain('<h1>Les déchèteries de l&#39;île, et les bennes en direct dans l&#39;Ouest, au Tampon et à Saint-Joseph <span class="n974">974</span></h1>');
     for (const id of ["saint-paul", "le-port", "la-possession", "les-trois-bassins", "saint-leu"]) expect(page).toContain(`<section id="${id}"`);
-    expect(TITLE).toBe("Déchèteries : adresses, bennes en direct dans l'Ouest · 974");
-    expect(descriptionOf(sitesNow(etats, NOW))).toBe("Déchèteries de La Réunion (974) le 24/10 à 17:00 : où déposer déchets verts, encombrants, gravats ; bennes pleines en direct dans l'Ouest (TCO).");
-    expect(descriptionOf(sitesNow(etats, NEXT_MORNING))).toBe("Déchèteries de La Réunion (974) : où déposer déchets verts, encombrants, gravats, dans toute l'île ; bennes pleines en direct dans l'Ouest (TCO).");
+    expect(TITLE).toBe("Déchèteries : adresses, bennes en direct (TCO, CASUD) · 974");
+    expect(descriptionOf(sitesNow(etats, NOW))).toBe("Déchèteries de La Réunion (974) le 24/10 à 17:00 : où déposer déchets verts, encombrants, gravats ; bennes pleines en direct (TCO, CASUD).");
+    expect(descriptionOf(sitesNow(etats, NEXT_MORNING))).toBe("Déchèteries de La Réunion (974) : où déposer déchets verts, encombrants, gravats, dans toute l'île ; bennes pleines en direct (TCO, CASUD).");
     expect(decheteriesPage("https://rundata.re", copy, NEXT_MORNING)).toContain("Mise à jour il y a plus de 6 h : à vérifier sur place.");
     // The green dot only with a state the staff filled in today, read in direct; the next morning, none.
-    expect(page).toContain('<p class="pill"><span class="dot"></span>État des bennes · déchèteries du <abbr title="Territoire de la Côte Ouest">TCO</abbr></p>');
-    expect(decheteriesPage("https://rundata.re", copy, NEXT_MORNING)).toContain('<p class="pill">État des bennes · déchèteries du <abbr title="Territoire de la Côte Ouest">TCO</abbr></p>');
-    expect(decheteriesPage("https://rundata.re", null, NOW)).toContain('<p class="pill">État des bennes · déchèteries du <abbr title="Territoire de la Côte Ouest">TCO</abbr></p>');
+    expect(page).toContain('<p class="pill"><span class="dot"></span>État des bennes · déchèteries du <abbr title="Territoire de la Côte Ouest">TCO</abbr> et de la CASUD</p>');
+    expect(decheteriesPage("https://rundata.re", copy, NEXT_MORNING)).toContain('<p class="pill">État des bennes · déchèteries du <abbr title="Territoire de la Côte Ouest">TCO</abbr> et de la CASUD</p>');
+    expect(decheteriesPage("https://rundata.re", null, NOW)).toContain('<p class="pill">État des bennes · déchèteries du <abbr title="Territoire de la Côte Ouest">TCO</abbr> et de la CASUD</p>');
   });
 
   it("fold each commune under its name, its number of sites and its full skips, never « aucune » deduced", () => {
     const heads = (html: string) => new Map([...html.matchAll(/<summary><h2 id="h-([a-z-]+)">[^<]+ <small>· ([^<]+)<\/small><\/h2><\/summary>/g)].map((m) => [m[1], m[2]]));
     const now = sitesNow(etats, NOW);
     const page = heads(decheteriesPage("https://rundata.re", copy, NOW));
-    expect(page.size).toBe(TCO_COMMUNES.length + ELSEWHERE_COMMUNES.length);
+    expect(page.size).toBe(LIVE_COMMUNES.length + ELSEWHERE_COMMUNES.length);
     for (const c of TCO_COMMUNES) {
       const here = now.filter((x) => x.commune === c);
       const full = here.reduce((n, x) => n + (x.a_jour ? x.refuse.length : 0), 0);
@@ -89,7 +94,7 @@ describe("the déchèteries of the West", () => {
     const late = decheteriesPage("https://rundata.re", copy, NEXT_MORNING);
     expect([...heads(late).values()].some((v) => v.includes("benne"))).toBe(false);
     expect(late).not.toMatch(/aucune benne/i);
-    expect(heads(decheteriesPage("https://rundata.re", null, NOW)).size).toBe(TCO_COMMUNES.length + ELSEWHERE_COMMUNES.length);
+    expect(heads(decheteriesPage("https://rundata.re", null, NOW)).size).toBe(LIVE_COMMUNES.length + ELSEWHERE_COMMUNES.length);
     // Folded, the commune's anchor on its section: the page's script opens the details inside (UNFOLD_SCRIPT).
     const html = decheteriesPage("https://rundata.re", copy, NOW);
     expect(html).toContain('<section id="saint-paul" aria-labelledby="h-saint-paul">\n  <details class="pli"><summary>');
@@ -127,10 +132,11 @@ describe("the déchèteries outside the TCO, from the ADEME's directory", () => 
     vi.stubGlobal("fetch", async (url: string) => (calls.push(String(url)), new Response("", { status: 404 })));
   });
 
-  it("are the sites of its latest survey in the four other intercommunalités, none of the TCO's", () => {
+  it("are the sites of its latest survey in the three other intercommunalités, none of the TCO's nor the CASUD's", () => {
     expect(SURVEY).toBe(2026);
     const count = (nom: string) => ELSEWHERE.filter((s) => s.epci.nom === nom).length;
-    expect([count("la CIVIS"), count("la CASUD"), count("la CINOR"), count("la CIREST")]).toEqual([8, 4, 11, 7]);
+    // The CASUD's four, since 26/11/2026, with their state (CASUD_SITES).
+    expect([count("la CIVIS"), count("la CASUD"), count("la CINOR"), count("la CIREST")]).toEqual([8, 0, 11, 7]);
     expect(ELSEWHERE.filter((s) => TCO_COMMUNES.includes(s.commune) || epciOf(s.commune) === undefined)).toEqual([]);
     // Placed in Saint-Pierre by the directory's code, in Saint-Denis by its town and its point.
     expect(ELSEWHERE.find((s) => s.nom === "Déchèterie de Bois de Nèfles")!.commune).toBe("Saint-Denis");
@@ -155,11 +161,12 @@ describe("the déchèteries outside the TCO, from the ADEME's directory", () => 
     expect(calls).toEqual([]);
   });
 
-  it("answer a commune without a site with the nearest others, each with its own intercommunalité", async () => {
+  it("answer a commune of the CASUD without a site with the CASUD's nearest, saying when its state is not read", async () => {
     const r = body(await annuaireTool(new Cache(), "encombrants", "Saint-Philippe", NOW));
-    expect(r.decheteries).toHaveLength(3);
     expect(r.decheteries.some((d: { commune: string }) => d.commune === "Saint-Philippe")).toBe(false);
-    expect(r.decheteries[0]).toMatchObject({ commune: "Saint-Joseph", horaires: "voir le site de la CASUD", page: "https://www.casud.re/au-quotidien/preserver-lenvironnement/je-depose-en-decheterie" });
+    expect(r.decheteries[0]).toMatchObject({ nom: "Déchèterie des Grègues", commune: "Saint-Joseph", etat: "non disponible", page: "https://tri-casud.re/meteo-des-dechets#decheterie-des-gregues" });
+    expect(r.decheteries[0].horaires).toBe("du lundi au samedi de 8\u00a0h à 12\u00a0h et de 14\u00a0h à 17\u00a0h, sauf les jours fériés");
+    expect(r.resume).toMatch(/^L'état des bennes de la CASUD n'est pas disponible pour le moment\. Déchèteries les plus proches à Saint-Philippe : Déchèterie des Grègues \(à /);
   });
 
   it("are on the page, a block per commune, and on the commune's page", () => {
@@ -171,5 +178,62 @@ describe("the déchèteries outside the TCO, from the ADEME's directory", () => 
     const pierre = communePage("https://rundata.re", pageOf("saint-pierre")!, { place: null }, NOW);
     expect(pierre).toContain('<h3><a href="/decheteries#saint-pierre">Déchèteries<span class="sr"> à Saint-Pierre</span></a></h3><p class="tv">4 <span class="mc">dé\u00adchè\u00adte\u00adries</span></p><p class="td">horaires\u00a0: voir le site de la <abbr title="Communauté intercommunale des villes solidaires">CIVIS</abbr></p>');
     expect(communePage("https://rundata.re", pageOf("saint-philippe")!, { place: null }, NOW)).not.toMatch(/Déchèteries(<span class="sr">[^<]*<\/span>)?<\/a><\/h3>/);
+  });
+});
+
+describe("the CASUD's state of the déchèteries", () => {
+  // Thursday 26 November 2026, 09:00 at La Réunion: the page read at 08:54, its sites updated from 07:49 to 08:46,
+  // Bois Court the day before at 16:20.
+  const AT = new Date("2026-11-26T05:00:00Z");
+  const read = casud.parse(CASUD_PAGE);
+  const page = (url: string) => (String(url).startsWith("https://tri-casud.re/") ? new Response(CASUD_PAGE) : String(url).includes("data.tco.re") ? Response.json(FIXTURE) : new Response("", { status: 404 }));
+
+  it("is read from its page: each site's time and each kind of waste, a full skip refused, a half-full one taken", () => {
+    expect(read.map((e) => e.lien)).toEqual(CASUD_SITES.map((s) => s.lien).sort((x, y) => read.findIndex((e) => e.lien === x) - read.findIndex((e) => e.lien === y)));
+    expect(new Set(read.map((e) => e.lien))).toEqual(new Set(CASUD_SITES.map((s) => s.lien)));
+    const gregues = read.find((e) => e.lien.endsWith("#decheterie-des-gregues"))!;
+    expect(gregues.maj).toBe("2026-11-26T03:49:00.000Z");
+    // « Magazine / Journaux » Plein; « Déchet vert » Moitié plein.
+    expect(gregues.accepte).toMatchObject({ "journaux et revues": false, "déchets verts": true, cartons: true, "huiles de friture": true });
+    // Every kind in words: none the page would name anew.
+    for (const e of read) for (const k of Object.keys(e.accepte)) expect(Object.values(casud.KINDS), k).toContain(k);
+    const now = sitesNow(read, AT).filter((s) => s.par === "casud");
+    expect(now.find((s) => s.nom === "Déchèterie des Grègues")).toMatchObject({ a_jour: true, mis_a_jour: "26/11 07:49", refuse: ["journaux et revues"] });
+    expect(now.find((s) => s.nom === "Point d'apport de Bois Court")!.a_jour).toBe(false);
+    expect(casud.FRESH_SECONDS).toBe(1800);
+  });
+
+  it("answers at Le Tampon and L'Entre-Deux, with the hours, and the kinds the CASUD sorts otherwise", async () => {
+    vi.stubGlobal("fetch", page);
+    const r = body(await annuaireTool(new Cache(), "déchèterie pour les cartons", "Le Tampon", AT));
+    expect(r.decheteries[0].page).toMatch(/^https:\/\/tri-casud\.re\/meteo-des-dechets#/);
+    expect(r.decheteries[0].horaires).toMatch(/^du lundi au samedi de 8\u00a0h/);
+    expect(r.resume).toMatch(/^Papiers et cartons acceptés en ce moment : /);
+    expect(r.sources.map((x: { source: string }) => x.source)).toContain("Météo des déchèteries de la CASUD");
+    expect(labelsOf("papiers_cartons")).toEqual(["papiers et cartons", "cartons", "journaux et revues"]);
+    const e2 = body(await annuaireTool(new Cache(), "déchets verts", "Entre-Deux", AT));
+    expect(e2.decheteries.every((d: { page: string }) => d.page.startsWith("https://tri-casud.re/"))).toBe(true);
+    expect(e2.avertissements).toContain("Seuls le TCO (Ouest) et la CASUD (Le Tampon, Saint-Joseph) publient l'état des bennes en direct. Ailleurs, la liste des déchèteries vient de l'annuaire de l'ADEME, sans les horaires.");
+  });
+
+  it("is on the page, under Le Tampon and Saint-Joseph, with the hours; unread, said so", () => {
+    const both = { value: { etats: [...etats, ...read], sources: [] }, fetchedAt: AT, stale: false };
+    const html = decheteriesPage("https://rundata.re", both, AT);
+    for (const id of ["le-tampon", "saint-joseph"]) expect(html).toContain(`<section id="${id}"`);
+    expect(html).toContain('<h3><a href="https://tri-casud.re/meteo-des-dechets#decheterie-des-gregues" rel="noopener">Déchèterie des Grègues</a></h3><p>rue de la Station de Transit</p><p>Horaires\u00a0: du lundi au samedi de 8\u00a0h à 12\u00a0h et de 14\u00a0h à 17\u00a0h, sauf les jours fériés.</p>');
+    expect(html).toContain("<p><b>Benne pleine :</b> journaux et revues.</p>");
+    const unread = decheteriesPage("https://rundata.re", { ...copy, value: { etats, absents: ["casud" as const], sources: [] } }, NOW);
+    expect(unread.match(/État des bennes non disponible pour le moment\./g)).toHaveLength(CASUD_SITES.length);
+  });
+
+  it("unread, is said « non disponible » on the commune's tile and in the day's summary, never « à vérifier »", () => {
+    const mute = { ...copy, value: { etats, absents: ["casud" as const], sources: [] } };
+    const tampon = communePage("https://rundata.re", pageOf("le-tampon")!, { place: null, dechets: mute }, NOW);
+    expect(tampon).toMatch(/<h3><a href="\/decheteries#le-tampon">Déchèteries<span class="sr"> au Tampon<\/span><\/a><\/h3><p class="tv">4 <span class="mc">dé\u00adchè\u00adte\u00adries<\/span><\/p><p class="td">état des bennes non disponible pour le moment<\/p>/);
+    const r = resume(pageOf("saint-joseph")!, { dechets: mute } as never, NOW);
+    expect(r.decheteries!.sites.map((x) => x.etat)).toEqual(["non disponible"]);
+    // The TCO answering, its sites keep their state.
+    const paul = resume(pageOf("saint-paul")!, { dechets: mute } as never, NOW);
+    expect(paul.decheteries!.sites.every((x) => x.etat !== "non disponible")).toBe(true);
   });
 });

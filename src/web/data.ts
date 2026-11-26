@@ -20,6 +20,7 @@ import * as cal from "../providers/calendrier.js";
 import * as annuaire from "../providers/annuaire.js";
 import * as carburants from "../providers/carburants.js";
 import * as edf from "../providers/edf.js";
+import * as casudDech from "../providers/casud.js";
 import * as tco from "../providers/tco.js";
 import * as dech from "../vie/decheteries.js";
 import * as rt from "../providers/gtfsrt.js";
@@ -1994,15 +1995,21 @@ export async function buildTrafic(cache: Cache, now = new Date()): Promise<Trafi
   };
 }
 
-/** The West's déchèteries: what each skip took when the staff last said so; the page reads it against the time. */
+/** The déchèteries of the TCO and the CASUD: what each skip took when the staff last said so; the page reads it against the time. */
 export interface DechetsAnswer {
   etats: tco.Etat[];
+  /** The intercommunalities that did not answer: their sites' state is unknown, not old. */
+  absents?: ("tco" | "casud")[];
   sources: Credit[];
 }
 
 export async function buildDechets(cache: Cache): Promise<DechetsAnswer> {
-  // The other communes' sites, on the same page, are the ADEME's directory's (vie/decheteries.ts).
-  return { etats: (await tco.meteo(cache)).value, sources: credits([tco.SOURCE, dech.ADEME]) };
+  // Each intercommunality read on its own (dech.meteo); none answering is a failure, so the copy before is kept. The
+  // other communes' sites, on the same page, are the ADEME's directory's (vie/decheteries.ts).
+  const live = await dech.meteo(cache);
+  if (!live.tco && !live.casud) throw new Error("ni le TCO ni la CASUD n'ont répondu");
+  const absents = [...(live.tco ? [] : ["tco" as const]), ...(live.casud ? [] : ["casud" as const])];
+  return { etats: live.etats, ...(absents.length ? { absents } : {}), sources: credits([...(live.tco ? [tco.SOURCE] : []), ...(live.casud ? [casudDech.SOURCE] : []), dech.ADEME]) };
 }
 
 /** What a commune's page adds to its weather: its town hall, and the next buses at its bus station or near its centre. */

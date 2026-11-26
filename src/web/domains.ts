@@ -54,7 +54,7 @@ import { aller, MOTS as ALLER_MOTS, permis, porte, type Porte, retire, SHEET as 
 import { noteLa1ere } from "../tools/non-repris.js";
 import { journeyForm, nowAsked } from "./itineraire.js";
 import { script } from "./scripts-declares.js";
-import { href as lienSur } from "./html.js";
+import { brut, href as lienSur, html, type Html } from "./html.js";
 
 const FOURNAISE = { lon: 55.7083, lat: -21.2444, name: "Piton de la Fournaise" };
 // What a search engine shows of a title.
@@ -2031,16 +2031,18 @@ type NewsRow = ActualitesAnswer["infos"][number];
 // relative « hier à 22:05 » misleads on a page copied or read the next day.
 const newsTime = (r: Pick<NewsRow, "publie" | "il_y_a">) => (r.il_y_a ? leAt(r.publie) : `le ${localTime(new Date(r.publie)).split(" ")[0]}`);
 
-function newsRow(r: NewsRow): string {
-  const small = [r.media + (r.aussi?.length ? ` (aussi ${r.aussi.map((x) => x.media).join(", ")})` : ""), r.communes?.join(", ")].filter(Boolean).map((x) => esc(x!)).join(" · ");
-  return `<li data-k="${esc(r.lien)}" data-c="${esc((r.communes ?? []).join("|"))}" data-s="${esc((r.sujets ?? []).join("|"))}"><span><a href="${lienSur(r.lien)}" rel="noopener"${fenetre(r.lien)}>${esc(r.titre)}</a>` +
-    `${r.resume ? `<small>${esc(r.resume)}</small>` : ""} <small>${small}<span class="nt">${small ? " · " : ""}${esc(newsTime(r))}</span></small></span> <span class="q-none">${esc(newsTime(r))}</span></li>`;
+// The news pages are written with html`…` (web/html.ts): every text read from a medium is escaped by default; brut()
+// marks only the HTML the site writes itself (fenetre(), loading(), ask(), the notes and the scripts).
+function newsRow(r: NewsRow): Html {
+  const small = [r.media + (r.aussi?.length ? ` (aussi ${r.aussi.map((x) => x.media).join(", ")})` : ""), r.communes?.join(", ")].filter(Boolean).join(" · ");
+  return html`<li data-k="${r.lien}" data-c="${(r.communes ?? []).join("|")}" data-s="${(r.sujets ?? []).join("|")}"><span><a href="${lienSur(r.lien)}" rel="noopener"${brut(fenetre(r.lien))}>${r.titre}</a>${r.resume ? html`<small>${r.resume}</small>` : ""} <small>${small}<span class="nt">${small ? " · " : ""}${newsTime(r)}</span></small></span> <span class="q-none">${newsTime(r)}</span></li>`;
 }
 
-const NEWS_FILTER = `<form id="nf" class="card filter" hidden role="search" aria-label="Filtrer les informations">
+/** The filter of the news, its communes those the news name. */
+const newsFilter = (communes: string[]) => html`<form id="nf" class="card filter" hidden role="search" aria-label="Filtrer les informations">
 <label class="q">Chercher <input name="q" type="search" placeholder="barrage, Saint-Pierre, route du littoral…" autocomplete="off"></label>
-<label>Commune <select name="c"><option value="">toutes</option>COMMUNES</select></label>
-<label>Sujet <select name="s"><option value="">tous</option>${SUJETS.map((x) => `<option value="${x.id}">${esc(x.nom)}</option>`).join("")}</select></label>
+<label>Commune <select name="c"><option value="">toutes</option>${communes.map((c) => html`<option>${c}</option>`)}</select></label>
+<label>Sujet <select name="s"><option value="">tous</option>${SUJETS.map((x) => html`<option value="${x.id}">${x.nom}</option>`)}</select></label>
 <p class="note" id="nf-n" aria-live="polite"></p></form>`;
 
 const NEWS_SCRIPT = `(()=>{const f=document.getElementById("nf");if(!f)return;f.hidden=false;
@@ -2058,39 +2060,35 @@ export function actualitesPage(origin: string, data: Cached<ActualitesAnswer> | 
   const communes = [...new Set((d?.infos ?? []).flatMap((r) => r.communes ?? []))].sort((x, y) => x.localeCompare(y, "fr"));
 
   const status = !d
-    ? loading("L'actualité")
+    ? brut(loading("L'actualité"))
     // All of them, as actualites counts them; the list keeps the newest (26/10/2026: 40 here, 103 in the tool).
-    : `<div class="now"><span class="big">${d.total ?? d.infos.length}</span><p>informations des médias de l'île depuis 24 h` +
-      `${(d.total ?? 0) > d.infos.length ? `\u00a0; les ${d.infos.length} plus récentes ci-dessous` : ""}` +
-      `${d.en_direct.length ? ` ; <b>${esc(d.en_direct[0].media)} suit la journée en direct</b> (dernière entrée ${esc(newsTime(d.en_direct[0]))})` : ""}.</p></div>`;
+    : html`<div class="now"><span class="big">${d.total ?? d.infos.length}</span><p>informations des médias de l'île depuis 24 h${(d.total ?? 0) > d.infos.length ? `\u00a0; les ${d.infos.length} plus récentes ci-dessous` : ""}${d.en_direct.length ? html` ; <b>${d.en_direct[0].media} suit la journée en direct</b> (dernière entrée ${newsTime(d.en_direct[0])})` : ""}.</p></div>`;
 
   const top = d ? (d.en_direct.length ? d.en_direct : d.infos).slice(0, 6) : [];
   const side = d
-    ? `<figure class="card mapcard"><h2 style="color:var(--on-night)">${d.en_direct.length ? "En direct" : "À la une"}</h2><ul class="plain">${top.map((r) =>
-        `<li><b style="color:var(--on-night)">${esc(newsTime(r))}</b> <a href="${lienSur(r.lien)}" rel="noopener"${fenetre(r.lien)} style="color:var(--on-night)">${esc(r.titre)}</a>` +
-        `<span class="note" style="color:var(--on-night-muted)"> · ${esc(r.media)}${r.communes?.length ? ` · ${esc(r.communes.join(", "))}` : ""}</span></li>`).join("")}</ul></figure>`
+    ? html`<figure class="card mapcard"><h2 style="color:var(--on-night)">${d.en_direct.length ? "En direct" : "À la une"}</h2><ul class="plain">${top.map((r) =>
+        html`<li><b style="color:var(--on-night)">${newsTime(r)}</b> <a href="${lienSur(r.lien)}" rel="noopener"${brut(fenetre(r.lien))} style="color:var(--on-night)">${r.titre}</a><span class="note" style="color:var(--on-night-muted)"> · ${r.media}${r.communes?.length ? html` · ${r.communes.join(", ")}` : ""}</span></li>`)}</ul></figure>`
     : "";
 
   const list = d
     ? d.infos.length
-      ? `${NEWS_FILTER.replace("COMMUNES", communes.map((c) => `<option>${esc(c)}</option>`).join(""))}<ul class="rows eau news" id="news">${d.infos.map(newsRow).join("")}</ul>`
-      : d.indisponible.length ? "" : `<p class="card">Aucune information des médias lus depuis 24 h.</p>`
-    : `<p class="card">L'actualité se charge : rechargez la page dans quelques secondes.</p>`;
+      ? html`${newsFilter(communes)}<ul class="rows eau news" id="news">${d.infos.map(newsRow)}</ul>`
+      : d.indisponible.length ? "" : html`<p class="card">Aucune information des médias lus depuis 24 h.</p>`
+    : html`<p class="card">L'actualité se charge : rechargez la page dans quelques secondes.</p>`;
 
   const live = d?.en_direct.length
-    ? `<section aria-labelledby="h-direct">
-  <div class="sec-h"><p class="eyebrow">Heure par heure</p><h2 id="h-direct">Le direct ${/^[aeiouyéèêiî]/i.test(d.en_direct[0].media) ? "d'" : "de "}${esc(d.en_direct[0].media)}</h2>
+    ? html`<section aria-labelledby="h-direct">
+  <div class="sec-h"><p class="eyebrow">Heure par heure</p><h2 id="h-direct">Le direct ${/^[aeiouyéèêiî]/i.test(d.en_direct[0].media) ? html`d'` : "de "}${d.en_direct[0].media}</h2>
   <p>Les entrées du direct, la plus récente en haut, avec leur première phrase et ce qu'elles disent des communes. Le texte complet est sur le site du média.</p></div>
-  <ul class="rows eau news">${d.en_direct.map((r) => `<li><span><a href="${lienSur(r.lien)}" rel="noopener"${fenetre(r.lien)}>${esc(r.titre)}</a>${r.resume ? `<small>${esc(r.resume)}</small>` : ""}` +
-    `${r.communes?.length ? `<small>${esc(r.communes.join(", "))}</small>` : ""} <small class="nt">${esc(newsTime(r))}</small></span> <span class="q-none">${esc(newsTime(r))}</span></li>`).join("")}</ul>
+  <ul class="rows eau news">${d.en_direct.map((r) => html`<li><span><a href="${lienSur(r.lien)}" rel="noopener"${brut(fenetre(r.lien))}>${r.titre}</a>${r.resume ? html`<small>${r.resume}</small>` : ""}${r.communes?.length ? html`<small>${r.communes.join(", ")}</small>` : ""} <small class="nt">${newsTime(r)}</small></span> <span class="q-none">${newsTime(r)}</span></li>`)}</ul>
 </section>`
     : "";
 
   const pref = d?.prefecture.length
-    ? `<section aria-labelledby="h-pref">
+    ? html`<section aria-labelledby="h-pref">
   <div class="sec-h"><p class="eyebrow">Officiel</p><h2 id="h-pref">Communiqués de la préfecture</h2><p>Mesures de sécurité, interdictions, routes, eau : les consignes officielles priment.</p></div>
-  ${d.prefecture_injoignable ? `<p class="note">${silentText(d.prefecture_injoignable)}</p>` : ""}
-  <ul class="rows eau news">${d.prefecture.map((r) => `<li><span><a href="${lienSur(r.lien)}" rel="noopener">${esc(r.titre)}</a> <small class="nt">${esc(newsTime(r))}</small></span> <span class="q-none">${esc(newsTime(r))}</span></li>`).join("")}</ul>
+  ${d.prefecture_injoignable ? html`<p class="note">${brut(silentText(d.prefecture_injoignable))}</p>` : ""}
+  <ul class="rows eau news">${d.prefecture.map((r) => html`<li><span><a href="${lienSur(r.lien)}" rel="noopener">${r.titre}</a> <small class="nt">${newsTime(r)}</small></span> <span class="q-none">${newsTime(r)}</span></li>`)}</ul>
 </section>`
     : "";
 
@@ -2098,35 +2096,35 @@ export function actualitesPage(origin: string, data: Cached<ActualitesAnswer> | 
   const short = "Ce qui se passe à La Réunion (974) en ce moment : titres et directs des médias, communiqués de la préfecture, commune par commune, toutes les 5 minutes.";
   const description = d && d.infos[0] ? describe(`À La Réunion, ${newsTime(d.infos[0])} : ${d.infos[0].titre}. Les titres des médias de l'île et leurs directs, commune par commune.`, short) : short;
 
-  const band = `${crumbBar("Actualités")}
+  const band = html`${brut(crumbBar("Actualités"))}
 <div class="wrap intro">
   <div class="pitch">
     <p class="pill"><span class="dot"></span>Les médias de l'île, relus toutes les 5 minutes</p>
     <h1>Actualités <span class="n974">974</span></h1>
     ${status}
-    ${ask(`Kosa i spas Sin-Pyèr astèr ? Néna baraz ? Gèt si ${url} é di amwin.`,
-      `Que se passe-t-il à Saint-Pierre en ce moment, y a-t-il des blocages ? Lis ${url} et dis-le-moi.`)}
+    ${brut(ask(`Kosa i spas Sin-Pyèr astèr ? Néna baraz ? Gèt si ${url} é di amwin.`,
+      `Que se passe-t-il à Saint-Pierre en ce moment, y a-t-il des blocages ? Lis ${url} et dis-le-moi.`))}
   </div>
   ${side}
 </div>`;
 
-  const body = `${live}
+  const body = html`${live}
 <section aria-labelledby="h-news">
   <div class="sec-h"><p class="eyebrow">Les dernières 24 heures</p><h2 id="h-news">Toutes les informations</h2>
   <p>Le titre de chaque article, sa première phrase quand le média la donne, son média, les communes qu'il nomme et son heure (heure de La Réunion), ou son jour seulement quand le média ne donne pas l'heure. Une même information publiée par plusieurs médias n'est listée qu'une fois.</p></div>
   ${list}
-  ${d?.indisponible.length ? warnings([mediasNonLus(d.indisponible, localTime(data!.fetchedAt), now)]) : ""}
+  ${d?.indisponible.length ? brut(warnings([mediasNonLus(d.indisponible, localTime(data!.fetchedAt), now)])) : ""}
 </section>
 ${pref}
 <section aria-labelledby="h-couv">
-  <div class="sec-h"><h2 id="h-couv">Ce qui est couvert</h2><p>${d ? esc(d.couverture) : ""}</p><p>${d ? esc(d.a_savoir) : ""}</p></div>
-  ${d && data ? sourcesNote(d.sources, data) : ""}
-  <p class="note">${noteLa1ere("actualites")}</p>
+  <div class="sec-h"><h2 id="h-couv">Ce qui est couvert</h2><p>${d ? d.couverture : ""}</p><p>${d ? d.a_savoir : ""}</p></div>
+  ${d && data ? brut(sourcesNote(d.sources, data)) : ""}
+  <p class="note">${brut(noteLa1ere("actualites"))}</p>
 </section>
-${connectorCta("actualites", "l'actualité de l'île")}
-${script(NEWS_SCRIPT)}`;
+${brut(connectorCta("actualites", "l'actualité de l'île"))}
+${brut(script(NEWS_SCRIPT))}`;
 
-  return layout(origin, { title, description, path: "/actualites", jsonld: [crumbs(origin, "Actualités", "/actualites"), webPage(origin, "/actualites", title, description, data)], alerte, iaAside: true }, band, body);
+  return layout(origin, { title, description, path: "/actualites", jsonld: [crumbs(origin, "Actualités", "/actualites"), webPage(origin, "/actualites", title, description, data)], alerte, iaAside: true }, band.texte, body.texte);
 }
 
 export function actualitesLive(data: Cached<ActualitesAnswer> | null): Live | undefined {

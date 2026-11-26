@@ -6,7 +6,7 @@ import { searchPage, stopPage } from "../src/web/arret.js";
 import type { Cached } from "../src/cache.js";
 import type { ActualitesAnswer, AgendaAnswer, ElectriciteAnswer } from "../src/web/data.js";
 import { agendaPage } from "../src/web/agenda.js";
-import { actualitesPage, courantItem, electriciteCommune, noticeCard } from "../src/web/domains.js";
+import { actualitesPage, coupuresPage, courantItem, electriciteCommune, noticeCard } from "../src/web/domains.js";
 import { concertsPage, weekendPage } from "../src/web/evenements.js";
 import { pointsSvg } from "../src/web/evenements-carte.js";
 import { type Fiche, fichePage, fichePassee } from "../src/web/fiche-evenement.js";
@@ -94,6 +94,18 @@ describe("a text read elsewhere, trapped, never comes out as a tag", () => {
     sansInjection(fichePage(O, r, { value, fetchedAt: now, stale: false }, undefined));
     const passe = { titre: PIEGE, date: "2026-10-01T10:00", lieu: PIEGE, commune: "Saint-Paul", publie_par: PIEGE, lien: "https://exemple.re/b", fiche: "abcdabcd" } as unknown as Fiche;
     sansInjection(fichePassee(O, passe));
+  });
+
+  it("in the water cuts' notices (/coupures-eau) and the power cuts' (a commune's tile)", () => {
+    const now = new Date("2026-10-24T04:00:00Z");
+    const avis = { titre: PIEGE, communes: ["Saint-Paul"], distributeur: PIEGE, publie_le: PIEGE, lien: "https://exemple.re/a", texte: PIEGE, precision: PIEGE, coupure: { de: "24/10 08:00", a: "24/10 12:00", etat: PIEGE }, secteurs: [PIEGE], secteurs_complets: true };
+    const value = { resume: "", avis: [avis, { ...avis, forme: "image" }, { ...avis, secteurs_complets: false, lieu: PIEGE }], couverture: "", a_savoir: "", sources: [], communes_suivies: ["Saint-Paul"], avis_lus_le: "2026-10-24T03:50:00Z" };
+    sansInjection(coupuresPage(O, { value: value as never, fetchedAt: now, stale: false }, now));
+    for (const pdf of [undefined, true]) {
+      const li = courantItem({ texte: `${PIEGE} dans l'avis`, lien: "https://exemple.re/b", nature: "programmée", pdf } as never);
+      expect(li).not.toContain("<script>alert(1)");
+      expect(li).toContain(ECHAPPE);
+    }
   });
 
   it("on a commune's water page: its last notices, the networks of its tap water, its drought and the works' orders", () => {

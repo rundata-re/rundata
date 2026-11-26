@@ -12,6 +12,10 @@
 # the crèches of Saint-Denis, the ARCEP's connections, the DEPP's indices, the rents, Parcoursup, the speed cameras,
 # FINESS, the bike lanes and racks, the speeds of the routes nationales, the road accidents, the operators' declared
 # mobile coverage (the Arcep's quarter). A request or a few each, paced by the scripts.
+# Then five lists of the communes' pages, each rebuilt in memory and compared (Geovelo's by the date of its newest file):
+# the polling stations (Insee), the mayors and deputy mayors (RNE), Geovelo's bike lanes, the SIT's remarkable places,
+# the counts of doctors (annuaire santé Ameli). About twenty-five requests to data.gouv.fr and two to the Région's
+# portal, paced by the scripts; nothing on Cloudflare.
 # Then the places we give against a second source (scripts/verifier-positions.py): the annuaire's offices against their
 # address in the Base adresse nationale, the communes' points against their town hall in OpenStreetMap. It says only a
 # gap that is new or grew since scripts/positions-reference.json, and a gap that closed: three requests, one each.
@@ -161,6 +165,37 @@ jobs:
         id: couverture
         continue-on-error: true
         run: python3 -I scripts/verifier.py build-couverture.py --verifier
+      # A bureau renamed, moved, added or gone is given wrong by elections and the commune's page: any one fails it. The
+      # Insee's file is renewed every five years; five pages of data.gouv.fr's tabular API, a minute apart.
+      - name: Bureaux de vote (Insee)
+        id: bureaux_vote
+        continue-on-error: true
+        run: python3 -I scripts/verifier.py build-bureaux-vote.py --verifier 0
+      # A mayor or a deputy mayor said wrong by the commune's page and annuaire_services_publics: any office held by someone
+      # else fails it. The names are never printed (the log is public), only the count. Three pages, a minute apart.
+      - name: Maires et adjoints (Répertoire national des élus)
+        id: elus
+        continue-on-error: true
+        run: python3 -I scripts/verifier.py build-elus.py --verifier 0
+      # Geovelo publishes a file a month: past 1 newer one, the lanes of /carte have aged. A licence that changes is read
+      # again: still open to reuse, the list aged; any other, the check is broken (red). One request, the fiche.
+      - name: Aménagements cyclables (Geovelo)
+        id: geovelo
+        continue-on-error: true
+        run: python3 -I scripts/verifier.py build-geovelo.py --verifier 1
+      # The SIT rebuilds its list every Sunday: past 5 places added, gone or changed, the commune's « À
+      # découvrir » has aged. The names not read yet are only counted. Two requests, a minute apart.
+      - name: Lieux remarquables (SIT, data.regionreunion.com)
+        id: decouvrir
+        continue-on-error: true
+        run: python3 -I scripts/verifier.py build-decouvrir.py --verifier 5
+      # The directory gets a new file every few weeks, a few doctors moving in or out: past 30 doctors counted
+      # differently (about 1 % of the island's 3,660, a move counting twice), the counts of the commune's page have aged. Counts only, never a name. About fifteen pages of the
+      # tabular API.
+      - name: Médecins par commune (annuaire santé Ameli)
+        id: medecins
+        continue-on-error: true
+        run: python3 -I scripts/verifier.py build-medecins.py --verifier 30
       # An office the annuaire places far from its address, a commune's point far from its town hall: « y aller », the
       # distances and the nearest office are given wrong. Said to its producer, or the list rebuilt. A bus stop misplaced
       # by its network: the walk to it, the connections on foot and « y aller » are given wrong; said to the network.

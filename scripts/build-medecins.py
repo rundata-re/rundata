@@ -17,6 +17,7 @@ Usage: python3 -I scripts/build-medecins.py [--json FILE] [--out FILE] [--verifi
   .github/workflows/listes.yml)
 """
 import argparse
+import importlib.util
 import json
 import sys
 import time
@@ -86,9 +87,17 @@ def totals(c):
     return {GP: c["generalistes"]["total"], **{k: v["total"] for k, v in c["specialistes"].items()}}
 
 
+def controles():
+    """scripts/verifier.py, the checks shared by the build scripts (`python3 -I` does not put scripts/ on the path)."""
+    spec = importlib.util.spec_from_file_location("verifier", Path(__file__).with_name("verifier.py"))
+    v = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(v)
+    return v
+
+
 def verifier(data, bundled, ecart):
     """The bundled counts against today's directory, without writing: by commune, the general practitioners and each
-    speciality. 1 (the job's failure, its alert) when more than `ecart` doctors are counted differently."""
+    speciality. 1, the list has aged (scripts/verifier.py), when more than `ecart` doctors are counted differently."""
     lines, n = [], 0
     for c in sorted(set(data["communes"]) | set(bundled["communes"])):
         now = totals(data["communes"][c]) if c in data["communes"] else {}
@@ -101,8 +110,8 @@ def verifier(data, bundled, ecart):
     print(f"liste construite le {bundled['construit']} (fichier du {bundled['mis_a_jour']}) ; annuaire du {data['mis_a_jour']} : {n} écarts")
     print("\n".join(lines[:40]))
     if n > ecart:
-        print(f"::error::Les comptes de médecins ont {n} écarts avec l'annuaire santé Ameli (seuil {ecart}) : lancer scripts/build-medecins.py et proposer la PR.")
-        return 1
+        return controles().vieillie("Médecins par commune", "build-medecins.py", "l'annuaire santé Ameli", date=data["mis_a_jour"], ecart=n,
+                                    consigne=f"Seuil {ecart}. Lancer scripts/build-medecins.py et proposer la PR.")
     return 0
 
 

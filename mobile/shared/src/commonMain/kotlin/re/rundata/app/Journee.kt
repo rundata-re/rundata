@@ -8,6 +8,8 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.doubleOrNull
 
@@ -165,7 +167,9 @@ class JourneeSource(
         copie.lire("$outil|${lieu.orEmpty()}") { mcp.appeler(outil, lieu?.let { mapOf("lieu" to it) } ?: emptyMap()) }
 
     suspend fun journee(commune: Commune): Journee = coroutineScope {
-        val resume = appeler("resume_du_jour", commune.nom)
+        val lu = appeler("resume_du_jour", commune.nom)
+        // La version d'essai : la vigilance simulée remplace aussi celle du résumé (sa carte et la phrase de la journée).
+        val resume = simulees()?.first?.let { resumeAvecVigilance(lu, it) } ?: lu
         val meteo = if (mesureDuResume(resume) == null) runCatching { appeler("meteo_actuelle", commune.nom) }.getOrNull() else null
         journeeDe(commune, resume, meteo)
     }
@@ -368,3 +372,37 @@ private fun vigilanceDe(v: JsonObject): Vigilance {
 private fun JsonObject.texte(cle: String): String? = (this[cle] as? JsonPrimitive)?.takeIf { it.isString }?.contentOrNull
 
 private fun JsonArray?.orEmpty(): List<JsonElement> = this ?: emptyList()
+
+private val GRAVITE = listOf("rouge", "orange", "jaune")
+
+/**
+ * La version d'essai seulement : `resume` (réponse de `resume_du_jour`) avec la vigilance de `simulee` (réponse de
+ * `vigilance_meteo`) à la place de la sienne, dans son champ `vigilance` et dans la phrase du résumé, pour que l'écran ne
+ * dise pas à la fois orange (le bandeau) et vert (la carte). Les niveaux verts sont tus, les autres du plus grave au moins
+ * grave, comme le site : « orange fortes pluies / orages, jaune vents forts ».
+ */
+internal fun resumeAvecVigilance(resume: JsonObject, simulee: JsonObject): JsonObject {
+    val niveaux = (simulee["niveaux"] as? JsonArray).orEmpty().mapNotNull { n ->
+        val o = n as? JsonObject ?: return@mapNotNull null
+        val couleur = o.texte("maintenant")?.takeIf { it in GRAVITE } ?: return@mapNotNull null
+        couleur to "$couleur ${o.texte("phenomene").orEmpty().lowercase()}".trim()
+    }.sortedBy { GRAVITE.indexOf(it.first) }.map { it.second }
+    val zone = simulee.texte("zone_vigilance")?.substringBefore(" :")?.trim()
+    val etat = niveaux.joinToString(", ").ifEmpty { "verte" }
+    val phrase = "Vigilance météo\u00a0: $etat pour le ${zone ?: "département"} (Météo-France)"
+    val ancienne = (resume["vigilance"] as? JsonObject)?.texte("maintenant")?.trimEnd('.')
+    val cyclone = simulee.texte("alerte_cyclonique")?.takeUnless { it.startsWith("Pas d'alerte") }
+    val vigilance = buildJsonObject {
+        zone?.let { put("zone", it) }
+        put("maintenant", "$phrase.")
+        put("au_dessus_du_vert", niveaux.isNotEmpty())
+        simulee.texte("emise")?.let { put("emise", it.removeSuffix(" heure de La Réunion")) }
+        cyclone?.let { put("alerte_cyclonique", it) }
+        simulee.texte("officiel")?.let { put("officiel", it) }
+    }
+    return JsonObject(resume + buildMap {
+        put("vigilance", vigilance)
+        val texte = resume.texte("resume")
+        if (texte != null && ancienne != null) put("resume", JsonPrimitive(texte.replace(ancienne, phrase)))
+    })
+}

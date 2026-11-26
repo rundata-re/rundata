@@ -13,12 +13,12 @@
         android:layout_height="wrap_content"
         android:text="@string/apercu_pas_d_alerte"
         android:textColor="@color/encre"
-        android:textSize="14sp"
+        android:textSize="14dp"
         android:textStyle="bold" />
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/apercu_alerte_detail"
         android:textColor="@color/attenue"
-        android:textSize="11sp" />
+        android:textSize="11dp" />
 </LinearLayout>

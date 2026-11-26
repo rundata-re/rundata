@@ -14,7 +14,7 @@
         android:layout_weight="1"
         android:text="@string/apercu_bandeau_air"
         android:textColor="@color/encre"
-        android:textSize="20sp"
+        android:textSize="20dp"
         android:textStyle="bold" />
     <TextView
         android:layout_width="0dp"
@@ -22,7 +22,7 @@
         android:layout_weight="1"
         android:text="@string/apercu_bandeau_mer"
         android:textColor="@color/encre"
-        android:textSize="20sp"
+        android:textSize="20dp"
         android:textStyle="bold" />
     <TextView
         android:layout_width="0dp"
@@ -30,5 +30,5 @@
         android:layout_weight="1"
         android:text="@string/apercu_vigilance"
         android:textColor="@color/encre"
-        android:textSize="12sp" />
+        android:textSize="12dp" />
 </LinearLayout>

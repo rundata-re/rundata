@@ -20,14 +20,14 @@
             android:layout_weight="1"
             android:text="@string/apercu_commune"
             android:textColor="@color/encre"
-            android:textSize="15sp" />
+            android:textSize="15dp" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/apercu_lue"
             android:textColor="@color/attenue"
-            android:textSize="11sp" />
+            android:textSize="11dp" />
     </LinearLayout>
 
     <TextView
@@ -35,7 +35,7 @@
         android:layout_height="wrap_content"
         android:text="@string/apercu_temperature"
         android:textColor="@color/encre"
-        android:textSize="36sp"
+        android:textSize="36dp"
         android:textStyle="bold" />
 
     <TextView
@@ -43,7 +43,7 @@
         android:layout_height="wrap_content"
         android:text="@string/apercu_mesure"
         android:textColor="@color/attenue"
-        android:textSize="12sp" />
+        android:textSize="12dp" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -54,19 +54,19 @@
         android:paddingVertical="2dp"
         android:text="@string/apercu_vigilance"
         android:textColor="@color/sur_vert"
-        android:textSize="12sp" />
+        android:textSize="12dp" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/apercu_zone"
         android:textColor="@color/attenue"
-        android:textSize="11sp" />
+        android:textSize="11dp" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/apercu_officiel"
         android:textColor="@color/lien"
-        android:textSize="11sp" />
+        android:textSize="11dp" />
 </LinearLayout>

@@ -13,45 +13,45 @@
         android:layout_height="wrap_content"
         android:text="@string/apercu_commune"
         android:textColor="@color/encre"
-        android:textSize="15sp"
+        android:textSize="15dp"
         android:textStyle="bold" />
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/apercu_sortir"
         android:textColor="@color/lien"
-        android:textSize="11sp"
+        android:textSize="11dp"
         android:textStyle="bold" />
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/apercu_sortie"
         android:textColor="@color/encre"
-        android:textSize="12sp" />
+        android:textSize="12dp" />
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/apercu_routes"
         android:textColor="@color/lien"
-        android:textSize="11sp"
+        android:textSize="11dp"
         android:textStyle="bold" />
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/apercu_route"
         android:textColor="@color/attenue"
-        android:textSize="12sp" />
+        android:textSize="12dp" />
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/apercu_eau"
         android:textColor="@color/lien"
-        android:textSize="11sp"
+        android:textSize="11dp"
         android:textStyle="bold" />
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/apercu_eau_avis"
         android:textColor="@color/attenue"
-        android:textSize="12sp" />
+        android:textSize="12dp" />
 </LinearLayout>

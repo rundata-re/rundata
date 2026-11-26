@@ -29,4 +29,16 @@ class ApercusTest {
         assertEquals("27,1\u00a0°C mer", texte("apercu_bandeau_mer"))
         assertEquals("Zone de la commune · d\\'après Météo-France · heure du bulletin", texte("apercu_alerte_detail"))
     }
+
+    /**
+     * Les aperçus de la liste des widgets sont des images fixes, de taille fixe : leurs textes sont en dp, pas en sp, et ne grossissent pas avec le texte d'Android.
+     * À 200 %, « °C » passait sous « 25,5 » et « Saint-Denis » se coupait en « Sai / nt-D » dans la liste des widgets. Le widget posé, lui, suit la taille du texte.
+     */
+    @Test
+    fun lesTextesDesApercusNeSuiventPasLaTailleDuTexte() {
+        val sp = File("src/main/res/layout").listFiles()!!.filter { it.name.startsWith("widget_apercu") }.sortedBy { it.name }.flatMap { f ->
+            Regex("""android:textSize="(\d+)sp"""").findAll(f.readText()).map { "${f.name} ${it.groupValues[1]}sp" }
+        }
+        assertEquals(emptyList(), sp)
+    }
 }

@@ -47,6 +47,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 - transports : un trajet d'un lieu à un autre (« Trou d'Eau vers Saint-Pierre ») donne ses bus du jour, directs ou avec une correspondance
 - Bus : une page par ligne Car Jaune, Alternéo et Estival, avec les départs du jour et ses arrêts dans l'ordre, depuis /bus.
 - Assistants IA : une route demandée (RN2, route des Tamarins, route de Cilaos…) donne les nouvelles des médias qui la nomment.
+- Accueil : le texte posé sur la photo du bandeau se lit bien à toute heure, à l'aube, le jour et le soir, sur téléphone comme sur ordinateur.
 - Outils IA, qualité de l'eau : une source lente n'est plus attendue au-delà de 8 s, la dernière lecture datée ou la partie manquante dite
 - Météo : en accéléré, le rejeu de la pluie sur 7 jours passe désormais heure par heure sur les téléphones récents.
 - Avec les enfants : la liste des lieux mise à jour, avec de nouvelles aires de jeux au Tampon, à Saint-André et à Sainte-Marie.

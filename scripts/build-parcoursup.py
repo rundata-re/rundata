@@ -8,10 +8,14 @@ the session. Kept: the formation, its establishment and commune, its places, its
 parcoursup.fr. Never the admitted's profile (mentions, boursiers, girls, same lycée), the candidates per place nor the
 rank of the last called: they do not compare from one formation to another. The communes' counts go to their own small
 file, which the communes' pages read; the list, to the other, which /ecoles reads.
-Usage: python3 -I scripts/build-parcoursup.py
+Usage: python3 -I scripts/build-parcoursup.py [--verifier]
 """
+import argparse
+import gzip
+import importlib.util
 import json
 import re
+import sys
 import time
 import urllib.parse
 import urllib.request
@@ -32,17 +36,33 @@ MONTHS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "ao�
 last = [0.0]
 
 
+def verifier():
+    """scripts/verifier.py, the checks shared by the build scripts (`python3 -I` does not put scripts/ on the path)."""
+    spec = importlib.util.spec_from_file_location("verifier", Path(__file__).with_name("verifier.py"))
+    v = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(v)
+    return v
+
+
 def read(url):
-    """One request a minute at most."""
+    """One request a minute at most. The portal sometimes answers in gzip unasked (26/11/2026): undone by its magic."""
     wait = last[0] + 62 - time.time()
     if wait > 0:
         time.sleep(wait)
     last[0] = time.time()
-    return json.load(urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=300))
+    body = urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=300).read()
+    return json.loads(gzip.decompress(body) if body[:2] == b"\x1f\x8b" else body)
 
 
 def main():
+    ap = argparse.ArgumentParser()
+    # By the dataset's date: one session a year, whose figures all change; one request instead of three a minute apart.
+    ap.add_argument("--verifier", action="store_true", help="write nothing: fail when the ministry put its data online after the list's")
+    args = ap.parse_args()
     meta = read(BASE)
+    if args.verifier:
+        sys.exit(verifier().plus_recent("Parcoursup", json.loads((ROOT / "src/vie/parcoursup.json").read_text())["mis_a_jour"],
+                                        meta["metas"]["default"]["modified"], "build-parcoursup.py", "la publication du ministère"))
     total = read(f"{BASE}/records?" + urllib.parse.urlencode({"where": WHERE, "limit": 0}))["total_count"]
     rows = read(f"{BASE}/exports/json?" + urllib.parse.urlencode({"where": WHERE, "select": FIELDS}))
     assert len(rows) == total and total > 200, (len(rows), total)

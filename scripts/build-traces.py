@@ -10,10 +10,13 @@
 - The sector of each (Mafate, Cilaos, Volcan, Sud sauvage…): where the most of its length lies, from the cirque of Mafate
   in OpenStreetMap, the communes of geo.api.gouv.fr (Cilaos, Salazie, then the others by part of the island) and the
   altitudes (the volcano's heights, the coast). A route across several sectors has none of its own, but lists them.
-Usage: python3 -I scripts/build-traces.py [--cache DIR]
+Usage: python3 -I scripts/build-traces.py [--cache DIR | --verifier SEUIL]
   --cache DIR keeps every response in DIR and reads it back on the next run: to rebuild without asking the sources again.
+  --verifier SEUIL writes nothing: the ONF's trails by name and OpenStreetMap's hikes by id against src/traces/traces.json,
+  without their lines nor altitudes (two small requests); fails past SEUIL trails or hikes added or gone.
 """
 import hashlib
+import importlib.util
 import json
 import math
 import sys
@@ -371,8 +374,32 @@ def sectors(segments, segments_z, shapes):
     return sorted(((k, v / total) for k, v in by.items()), key=lambda kv: -kv[1]) if total else []
 
 
+def verifier(seuil):
+    """The trails and hikes the sources list today against the bundled ones, by their keys only (see --verifier). 2: the
+    ONF renames or adds a trail a few times a year, OpenStreetMap's hikes are edited by its contributors; a trail gone is
+    one sentiers_randonnee and /randonnees can no longer say open or closed, a hike gone keeps a GPX that is no more."""
+    spec = importlib.util.spec_from_file_location("verifier", Path(__file__).with_name("verifier.py"))
+    v = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(v)
+    bundled = json.loads(OUT.read_text())
+    q = urllib.parse.urlencode({"where": "1=1", "outFields": "WS_NomIti", "returnGeometry": "false", "f": "json"})
+    got = fetch(f"{ONF}?{q}")
+    if got.get("exceededTransferLimit"):
+        raise SystemExit("couche ONF tronquée : lire par pages")
+    feats = got["features"]
+    onf = sorted({clean_name(f["attributes"]["WS_NomIti"]) for f in feats if (f["attributes"].get("WS_NomIti") or "").strip()})
+    rc = v.ecarts("Sentiers ONF", list(bundled["sentiers"]), onf, lambda n: n, seuil, "build-traces.py")
+    query = '[out:json][timeout:180];area["ISO3166-2"="FR-974"]->.a;rel(area.a)["route"="hiking"];out tags;'
+    rels = [r for r in fetch(OVERPASS, urllib.parse.urlencode({"data": query}).encode())["elements"] if (r["tags"].get("name") or "").strip()]
+    now = [{"osm": r["id"], "nom": r["tags"]["name"].strip()} for r in rels]
+    return max(rc, v.ecarts("Randonnées (OpenStreetMap)", bundled["randonnees"], now, lambda r: r["osm"], seuil, "build-traces.py",
+                            lambda r: f'{r["nom"]} (relation {r["osm"]})'))
+
+
 def main():
     global CACHE
+    if "--verifier" in sys.argv:
+        sys.exit(verifier(int(sys.argv[sys.argv.index("--verifier") + 1])))
     if "--cache" in sys.argv:
         CACHE = Path(sys.argv[sys.argv.index("--cache") + 1])
         CACHE.mkdir(parents=True, exist_ok=True)

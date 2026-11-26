@@ -10,9 +10,12 @@ valeur ajoutée. The expected rate is the rate less its valeur ajoutée (the gui
 Taux attendu »), which the page computes. Never the mentions, the written marks, nor anything to rank them by. The
 establishments are known by their UAI, which must all be in src/vie/ecoles.json: their names and communes are that
 file's (the IVAC writes « SAINTE CLOTILDE » for collèges of Saint-Denis).
-Usage: python3 -I scripts/build-ips.py
+Usage: python3 -I scripts/build-ips.py [--verifier]
 """
+import argparse
+import importlib.util
 import json
+import sys
 import time
 import urllib.parse
 import urllib.request
@@ -31,6 +34,14 @@ IVAL_GT = ("fr-en-indicateurs-de-resultat-des-lycees-gt_v2", "code_departement",
 IVAL_PRO = ("fr-en-indicateurs-de-resultat-des-lycees-pro_v2", "code_departement", "annee")
 JEUX = [IPS_COLLEGES, IPS_LYCEES, IVAC, IVAL_GT, IVAL_PRO]
 last = [0.0]
+
+
+def verifier():
+    """scripts/verifier.py, the checks shared by the build scripts (`python3 -I` does not put scripts/ on the path)."""
+    spec = importlib.util.spec_from_file_location("verifier", Path(__file__).with_name("verifier.py"))
+    v = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(v)
+    return v
 
 
 def read(url):
@@ -86,9 +97,20 @@ def voie(r):
 
 
 def main():
+    ap = argparse.ArgumentParser()
+    # By the datasets' dates, not the figures: one school year's indices and one exam session's added values, all new at
+    # each release, which a key cannot see change. One request (the catalogue) instead of eleven a minute apart.
+    ap.add_argument("--verifier", action="store_true", help="write nothing: fail when the ministry put one of the five datasets online after the list's")
+    args = ap.parse_args()
     ids = " or ".join(f'dataset_id="{j[0]}"' for j in JEUX)
     meta = {r["dataset_id"]: r["metas"]["default"] for r in read(f"{API}?" + urllib.parse.urlencode({"where": ids, "limit": 10}))["results"]}
     assert set(meta) == {j[0] for j in JEUX}, set(meta)
+    if args.verifier:
+        # Each of the five datasets against the day the list keeps for it: one is enough to be redone.
+        bundled = json.loads((ROOT / "src/vie/ips.json").read_text())["jeux"]
+        v = verifier()
+        sys.exit(max(v.plus_recent(f"IPS et valeur ajoutée ({j[0]})", bundled.get(j[0], {}).get("mis_a_jour"), meta[j[0]]["modified"], "build-ips.py",
+                                   "la publication du ministère") for j in JEUX))
     for j in JEUX:
         assert "Licence Ouverte" in meta[j[0]]["license"], (j[0], meta[j[0]]["license"])
 

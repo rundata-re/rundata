@@ -27,6 +27,7 @@ import { annonceManque } from "../tools/agenda.js";
 import { dayLabel } from "../tools/prevision.js";
 
 import type { Row } from "./fiches.js";
+import { href as lienSur } from "./html.js";
 
 export { type Entree, type Fiche, FICHES, ficheIssue, fichePath, ficheOf, ficheUrls, registre, type Row } from "./fiches.js";
 
@@ -79,7 +80,7 @@ export function ficheDescription(r: Pick<Row, "titre" | "quand" | "lieu" | "comm
  */
 function manque(r: Row): string {
   // The source's name without an article: « Mairie de Saint-Pierre », « Weezevent » take none.
-  const qui = r.lien ? `<a href="${esc(r.lien)}" rel="noopener">${esc(r.publie_par)}</a>` : esc(r.publie_par);
+  const qui = r.lien ? `<a href="${lienSur(r.lien)}" rel="noopener">${esc(r.publie_par)}</a>` : esc(r.publie_par);
   const dit = annonceManque(r.date, r.lieu, qui);
   return dit ? `<p class="note" data-sortie>${dit}</p>` : "";
 }
@@ -98,7 +99,7 @@ export function fichePage(origin: string, r: Row, data: Cached<AgendaAnswer>, me
   // Cancelled or postponed: the new day and who said it, as the list and the tool say them (20/11/2026: the page
   // had the badge alone).
   const off = r.statut && r.statut !== "complet" && (r.reporte_au || r.statut_d_apres)
-    ? `\n  <p class="note" data-sortie>${esc(`${r.statut[0]}${r.statut.slice(1).toLowerCase()}`)}${r.reporte_au ? ` au ${esc(r.reporte_au)}` : ""}${r.statut_d_apres ? ` d'après <a href="${esc(r.statut_d_apres.lien)}" rel="noopener">${esc(r.statut_d_apres.media)}</a>` : ""}.</p>`
+    ? `\n  <p class="note" data-sortie>${esc(`${r.statut[0]}${r.statut.slice(1).toLowerCase()}`)}${r.reporte_au ? ` au ${esc(r.reporte_au)}` : ""}${r.statut_d_apres ? ` d'après <a href="${lienSur(r.statut_d_apres.lien)}" rel="noopener">${esc(r.statut_d_apres.media)}</a>` : ""}.</p>`
     : "";
   const autour = [
     c ? `<li><b>${esc(c.nom)}</b> : <a href="/aujourdhui/${c.slug}">la journée ${esc(a(c.nom))}</a></li>` : "",
@@ -106,11 +107,11 @@ export function fichePage(origin: string, r: Row, data: Cached<AgendaAnswer>, me
     autres.length ? `<li><b>Le même jour ${esc(a(r.commune!))}</b> :<ul>${autres.map((x) => `<li>${x.fiche ? `<a href="${fichePath(x)}">${esc(x.titre)}</a>` : esc(x.titre)}${x.quand ? ` <small>${esc(x.quand)}</small>` : ""}</li>`).join("")}</ul></li>` : "",
   ].filter(Boolean);
   const source = r.source ? `<p class="note">Source : ${esc(r.source)}</p>` : "";
-  const book = r.billetterie && r.billetterie !== r.lien ? ` · <a href="${esc(r.billetterie)}" rel="noopener">billets</a>` : "";
+  const book = r.billetterie && r.billetterie !== r.lien ? ` · <a href="${lienSur(r.billetterie)}" rel="noopener">billets</a>` : "";
   const band = `${bar}
 <div class="wrap intro solo"><div class="pitch">
-  <h1>${badge}${esc(r.titre)}</h1>${off}${r.annonce ? `\n  <p class="note" data-sortie>${r.lien ? `<a href="${esc(r.lien)}" rel="noopener">${esc(upper(r.annonce))}</a>` : esc(upper(r.annonce))}.</p>` : ""}
-  <p class="lead" data-sortie>${esc(r.quand)}${r.autres_dates?.length ? `, aussi ${esc(r.autres_dates.join(", "))}` : ""}${r.lieu ? `<br>${esc(r.lieu)}` : ""}${r.commune && !r.lieu?.includes(r.commune) ? `, ${esc(r.commune)}` : ""}${r.lien ? ` · <a href="${esc(r.lien)}" rel="noopener">${esc(r.publie_par)}</a>` : ""}</p>
+  <h1>${badge}${esc(r.titre)}</h1>${off}${r.annonce ? `\n  <p class="note" data-sortie>${r.lien ? `<a href="${lienSur(r.lien)}" rel="noopener">${esc(upper(r.annonce))}</a>` : esc(upper(r.annonce))}.</p>` : ""}
+  <p class="lead" data-sortie>${esc(r.quand)}${r.autres_dates?.length ? `, aussi ${esc(r.autres_dates.join(", "))}` : ""}${r.lieu ? `<br>${esc(r.lieu)}` : ""}${r.commune && !r.lieu?.includes(r.commune) ? `, ${esc(r.commune)}` : ""}${r.lien ? ` · <a href="${lienSur(r.lien)}" rel="noopener">${esc(r.publie_par)}</a>` : ""}</p>
   ${manque(r)}
   ${r.prix ? `<p>${esc(r.prix)}</p>` : ""}
 </div></div>`;
@@ -118,8 +119,8 @@ export function fichePage(origin: string, r: Row, data: Cached<AgendaAnswer>, me
   const body = `<section style="max-width:44rem;display:grid;gap:1rem" data-sortie>
   ${autour.length ? `<h2 id="autour">Autour de l'événement</h2>\n  <ul>${autour.join("")}</ul>` : ""}
   <h2 id="annonce">L'annonce</h2>
-  ${texte ? `<blockquote><p>${esc(texte).replace(/\n{2,}/g, "</p><p>").replace(/\n/g, "<br>")}</p></blockquote>\n  <p>D'après ${r.lien ? `<a href="${esc(r.lien)}" rel="noopener">${esc(r.publie_par)}</a>` : esc(r.publie_par)}${book}.</p>`
-    : `<p>${r.lien ? `Le détail est sur <a href="${esc(r.lien)}" rel="noopener">la page de ${esc(r.publie_par)}</a>` : `Annoncé par ${esc(r.publie_par)}`}${book}.</p>`}
+  ${texte ? `<blockquote><p>${esc(texte).replace(/\n{2,}/g, "</p><p>").replace(/\n/g, "<br>")}</p></blockquote>\n  <p>D'après ${r.lien ? `<a href="${lienSur(r.lien)}" rel="noopener">${esc(r.publie_par)}</a>` : esc(r.publie_par)}${book}.</p>`
+    : `<p>${r.lien ? `Le détail est sur <a href="${lienSur(r.lien)}" rel="noopener">la page de ${esc(r.publie_par)}</a>` : `Annoncé par ${esc(r.publie_par)}`}${book}.</p>`}
   ${source}
   <p><a href="/evenements">Tous les événements des deux semaines à venir →</a></p>
 </section>`;
@@ -143,7 +144,7 @@ export function fichePassee(origin: string, x: Fiche, alerte?: Alerte): string {
   const body = `<section style="max-width:44rem;display:grid;gap:1rem">
   ${c ? `<p><a href="/aujourdhui/${c.slug}">Les prochaines sorties ${esc(a(c.nom))} →</a></p>` : ""}
   <p><a href="/evenements">Tous les événements des deux semaines à venir →</a></p>
-  ${x.lien ? `<p class="note" data-sortie>Annoncé par <a href="${esc(x.lien)}" rel="noopener">${esc(x.publie_par)}</a>.</p>` : `<p class="note">Annoncé par ${esc(x.publie_par)}.</p>`}
+  ${x.lien ? `<p class="note" data-sortie>Annoncé par <a href="${lienSur(x.lien)}" rel="noopener">${esc(x.publie_par)}</a>.</p>` : `<p class="note">Annoncé par ${esc(x.publie_par)}.</p>`}
 </section>`;
   return layout(origin, { title, description, path, noindex: true, jsonld: [jsonld], alerte }, band, body);
 }

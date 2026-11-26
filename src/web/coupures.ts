@@ -20,6 +20,7 @@ import { ask, cityLd, icon, layout, type Live, SITE, leAt } from "./pages.js";
 import { PAGES, type PlacePage } from "./places.js";
 import * as ARRETES from "../providers/arretes-travaux.js";
 import type { BlocArretes } from "../providers/arretes-travaux.js";
+import { href as lienSur } from "./html.js";
 
 const TITLE_MAX = 60;
 const COMMUNES = PAGES.filter((p) => p.commune);
@@ -68,7 +69,7 @@ export function derniersAvis(commune: string, w: WaterCopies, shown: { titre: st
   const day = Number.isFinite(oldest) ? new Date(oldest + 4 * 3600_000).toISOString().slice(0, 10).split("-").reverse().join("/") : "";
   const scope = `<p class="note">Ce sont les avis que les flux des distributeurs listent encore, pas un historique complet${day ? ` : le plus ancien date du ${day}` : ""}.</p>`;
   return `<h3>Derniers avis publiés ${esc(a(commune))}</h3>
-  <ul class="plain">${list.map((n) => `<li>${n.lien ? `<a href="${esc(n.lien)}" rel="noopener">${esc(n.titre)}</a>` : esc(n.titre)} <span class="note">publié le ${esc(publieLe(n))} par ${esc(n.distributeur)}</span></li>`).join("")}</ul>
+  <ul class="plain">${list.map((n) => `<li>${n.lien ? `<a href="${lienSur(n.lien)}" rel="noopener">${esc(n.titre)}</a>` : esc(n.titre)} <span class="note">publié le ${esc(publieLe(n))} par ${esc(n.distributeur)}</span></li>`).join("")}</ul>
   ${scope}`;
 }
 
@@ -153,13 +154,13 @@ export const indexable = (commune: string) => avisLus(commune) || !!GUIDES_AVIS[
 export function arretesSection(commune: string, b: BlocArretes | undefined): string {
   if (commune !== ARRETES.COMMUNE || !b) return "";
   const items = b.arretes?.length
-    ? `<ul class="zones">${b.arretes.map((x) => `<li class="card"><p>Arrêté ${esc(x.arrete)} : ${esc(x.lieu)}, du ${esc(x.du)} au ${esc(x.au)}. <a href="${esc(x.lien)}" rel="noopener">L'arrêté →</a></p></li>`).join("")}</ul>`
+    ? `<ul class="zones">${b.arretes.map((x) => `<li class="card"><p>Arrêté ${esc(x.arrete)} : ${esc(x.lieu)}, du ${esc(x.du)} au ${esc(x.au)}. <a href="${lienSur(x.lien)}" rel="noopener">L'arrêté →</a></p></li>`).join("")}</ul>`
     : `<p class="card">${esc(b.aucun ?? "")}</p>`;
   return `<section aria-labelledby="h-arretes">
   <div class="sec-h"><h2 id="h-arretes">${esc(ARRETES.TITRE)}</h2></div>
   <p>${esc(ARRETES.PHRASE)}</p>
   ${items}
-  ${b.arretes?.length ? `<p class="note">D'après <a href="${esc(b.lien)}" rel="noopener">le site de la ville de Sainte-Suzanne</a>, lu le ${esc(b.lu_le)}.</p>` : ""}
+  ${b.arretes?.length ? `<p class="note">D'après <a href="${lienSur(b.lien)}" rel="noopener">le site de la ville de Sainte-Suzanne</a>, lu le ${esc(b.lu_le)}.</p>` : ""}
 </section>`;
 }
 

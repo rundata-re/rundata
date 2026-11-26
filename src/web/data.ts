@@ -57,7 +57,7 @@ import { COMMON as EAU_COMMON } from "../tools/eau.js";
 import { credits } from "../tools/format.js";
 import * as onf from "../providers/sentiers.js";
 import * as feux from "../providers/feux.js";
-import { communesOf, horsCarte, type HorsCarte, horsGestion, routeRow, secteur, SECTEURS, sentiersRandonnee, trailKm, trailPlace } from "../tools/sentiers.js";
+import { communesOf, type HorsCarte, horsGestion, repere, routeRow, secteur, SECTEURS, sentiersRandonnee, trailKm, trailPlace } from "../tools/sentiers.js";
 import { pathOf } from "./map.js";
 import { MESURES, mesure } from "./mesure.js";
 import { type PlusRecent, restrictionsEau } from "../tools/secheresse.js";
@@ -1055,11 +1055,12 @@ export function noticeOf(troncons: { cause?: string; info?: string }[]): string 
 
 /** An ONF trail: its line and state read from the ONF, its altitudes from the IGN. */
 export async function buildTrail(cache: Cache, t: { nom: string } & traces.SentierStats, now = new Date()): Promise<TraceAnswer> {
-  // The whole map only for its date: the island's pages share it (onf.KEY), its trail is read on its own.
-  const [got, read] = await Promise.all([traces.traceOnf(cache, t).then((x) => x.value, (err: unknown) => err), onf.carte(cache).catch(() => null)]);
+  // Of the whole map only its index (tools/sentiers.ts `repere`): its date, and whether this trail is still on it. Its
+  // trail is read on its own.
+  const [got, read] = await Promise.all([traces.traceOnf(cache, t).then((x) => x.value, (err: unknown) => err), repere(cache).catch(() => null)]);
   const carte = read?.value;
   // Off the map of the day: neither open nor closed, its kept trace drawn without a state (tools/sentiers.ts horsCarte).
-  const hors = carte ? horsCarte(t.nom, t, carte) : undefined;
+  const hors = carte?.hors[t.nom];
   // Not found on the map nor by its name: the error, as before, for a trail the map still lists.
   if (got instanceof Error && !hors) throw got;
   const tr = got instanceof Error ? null : (got as traces.TraceOnf);
@@ -1085,7 +1086,7 @@ export async function buildTrail(cache: Cache, t: { nom: string } & traces.Senti
       inconnus: [],
       hors_carte: hors,
       carte_mise_a_jour: carte?.mise_a_jour,
-      carte_lue: read?.fetchedAt.toISOString(),
+      carte_lue: carte?.lue,
       sources: credits([onf.SOURCE, traces.SOURCES.ign]),
     };
   }
@@ -1115,7 +1116,7 @@ export async function buildTrail(cache: Cache, t: { nom: string } & traces.Senti
     fermes: [],
     inconnus: [],
     carte_mise_a_jour: carte?.mise_a_jour,
-    carte_lue: read?.fetchedAt.toISOString(),
+    carte_lue: carte?.lue,
     sources: credits([onf.SOURCE, traces.SOURCES.ign]),
   };
 }

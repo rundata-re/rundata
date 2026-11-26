@@ -281,7 +281,13 @@ const waitFor = (request: Request) => (isReader(request) ? READER_WAIT_MS : unde
 // copy.
 const SCHEDULED_SLACK_MS = 10 * 60_000;
 const CHECK = /rundata-check\//i;
+// Copies no scheduled event keeps, that a reader gets as they are within this age, their refresh going on behind. The
+// hikers' page's (web:randonnees, also read by /randonnees/<secteur>): built from the ONF's map, which the scheduled event
+// reads every hour, and AROME's grids; on 25/11/2026 at 23:02, OAI-SearchBot waited 10.8 s on
+// /randonnees/hauts-de-l-ouest for it to be built again, AROME's grids slow.
+const READER_KEEPS_MS: Record<string, number> = { "web:randonnees": 30 * 60_000 };
 const readerWaits: ReaderWaits = (key, value, ageMs) => {
+  if (READER_KEEPS_MS[key] != null) return ageMs > READER_KEEPS_MS[key];
   const every = scheduledEvery(key, value);
   return every == null || ageMs > every * 60_000 + margin(every) + SCHEDULED_SLACK_MS;
 };

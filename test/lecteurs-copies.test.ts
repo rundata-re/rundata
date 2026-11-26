@@ -48,6 +48,19 @@ describe("a reader and a copy the scheduled event keeps (web/data.ts `snapshot`,
     }
   });
 
+  // 25/11/2026: OAI-SearchBot waited 10.8 s on /randonnees/hauts-de-l-ouest for the hikers' page's copy, which no
+  // scheduled event keeps, to be built again.
+  it("serves the hikers' page's copy at once within 30 minutes, refreshed behind, and makes them wait after", async () => {
+    expect(scheduledEvery("web:randonnees", undefined)).toBeUndefined();
+    for (const ua of [GOOGLEBOT, CHATGPT]) {
+      expect(await served("web:randonnees", ua, 6)).toEqual({ value: 1, built: 2 });
+      expect(await served("web:randonnees", ua, 29)).toEqual({ value: 1, built: 2 });
+      expect(await served("web:randonnees", ua, 31)).toEqual({ value: 2, built: 2 });
+    }
+    // Another page's own copy, as before: waited for past its freshness.
+    expect(await served("web:lieu:saint-paul", GOOGLEBOT, 6)).toEqual({ value: 2, built: 2 });
+  });
+
   // 20/11/2026: /sport made the robots wait for its build (some 40 sources) whenever its copy was more than 5 minutes
   // old, 2.7 s in the middle over 7 days and up to 12 s; its copy is shared since, kept every 30 minutes.
   it("serves /sport's shared copy at once within its rate and its slack, and makes them wait after", async () => {

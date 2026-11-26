@@ -10,6 +10,9 @@ import { actualitesPage, coupuresPage, courantItem, electriciteCommune, noticeCa
 import { concertsPage, weekendPage } from "../src/web/evenements.js";
 import { pointsSvg } from "../src/web/evenements-carte.js";
 import { type Fiche, fichePage, fichePassee } from "../src/web/fiche-evenement.js";
+import { layout } from "../src/web/pages.js";
+import { vigilancePage } from "../src/web/vigilance-page.js";
+import * as mf from "../src/providers/vigilance.js";
 import { coupuresCommunePage } from "../src/web/coupures.js";
 import { PAGES } from "../src/web/places.js";
 
@@ -142,6 +145,37 @@ describe("a text read elsewhere, trapped, never comes out as a tag", () => {
     // The live blog's medium in its heading, and the one that says it follows the day.
     expect(page).toContain(`Le direct de ${ECHAPPE}</h2>`);
     expect(page).toContain(`<b>${ECHAPPE} suit la journée en direct</b>`);
+  });
+
+  describe("in Météo-France's texts (/vigilance) and the vigilance's banner on every page", () => {
+    const now = new Date("2026-02-10T06:00:00Z");
+    const periode = (couleur: number) => ({ couleur, debut: "2026-02-10T04:00:00Z", fin: "2026-02-10T16:00:00Z" });
+    // An orange heavy rain in the north and a yellow on its coast, as a bulletin of Météo-France gives them.
+    const zones = Object.fromEntries(Object.keys(mf.ZONES).filter((z) => z !== mf.ISLAND).map((z) => [z, { 12: [periode(1)], 1: [periode(1)] }]));
+    zones["VIGI974-11"] = { 12: [periode(3)], 1: [periode(2)] };
+    const bulletin = (suivi: { titre: string; texte: string; zone?: string }[]) =>
+      ({ value: { emise: "2026-02-10T05:00:00Z", zones, suivi }, fetchedAt: new Date("2026-02-10T05:55:00Z"), stale: false }) as unknown as Parameters<typeof vigilancePage>[1];
+
+    it("in the follow-up's texts and zones", () => {
+      sansInjection(vigilancePage(O, bulletin([{ titre: "Fortes pluies/Orages", texte: PIEGE, zone: PIEGE }]), now));
+    });
+
+    it("in the follow-up's titles, which may break after their « / »", () => {
+      const page = vigilancePage(O, bulletin([{ titre: PIEGE, texte: "Pluies soutenues." }]), now);
+      expect(page).not.toContain("<script>alert(1)");
+      expect(page).not.toContain("<img src=x");
+      expect(page).toContain("Fête &lt;script&gt;alert(1)&lt;/<wbr>script&gt;&lt;img src=x onerror=alert(2)&gt; &quot;du&quot;");
+    });
+
+    it("in the banner's sentence, its short line for a phone and when it was read, on the home page and on /vigilance", () => {
+      // A phenomenon the banner has no short name for goes in the short line as Météo-France names it.
+      const alerte = { couleur: 3, texte: PIEGE, lue: PIEGE, court: { couleur: "orange", phenomenes: ["Fortes pluies / orages", PIEGE], zones: ["VIGI974-11"] } };
+      for (const path of ["/", "/vigilance"]) {
+        const page = layout(O, { title: "t", description: "d", path, jsonld: [], alerte } as unknown as Parameters<typeof layout>[1], "", "");
+        sansInjection(page);
+        expect(page).toContain(`⚠ ${ECHAPPE} · ${ECHAPPE}</span>`);
+      }
+    });
   });
 
   describe("in the names of the stops and the directions of the buses (/bus/arret)", () => {

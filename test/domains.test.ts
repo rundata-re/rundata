@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Cached } from "../src/cache.js";
-import { Cache, MemoryStore } from "../src/cache.js";
+import { Cache, MemoryStore, viewOf } from "../src/cache.js";
 import * as transit from "../src/providers/transit.js";
 import * as annuaire from "../src/providers/annuaire.js";
 import { enGrand } from "../src/tools/format.js";
@@ -234,6 +234,9 @@ describe("routes", () => {
     const at = (minutes: number) => ({ value: answer("volcan_seismes"), fetchedAt: NOW.getTime() - minutes * 60_000 });
     const store = (cache as unknown as { store: MemoryStore }).store;
     await store.put("web:volcan", at(30));
+    // And its view, which the tile reads, written with it (cache.ts `keepView`).
+    const view = viewOf("web:volcan", at(30))!;
+    await store.put(view.key, view.entry);
     await store.put("web:meteo", { value: { stations: [], mer: [{ nom: "Plage de Saint-Leu", valeur: 25.2, jour: "2026-10-21", distance_km: 3 }], sources: [], indisponibles: [] }, fetchedAt: NOW.getTime() });
     const pending: Promise<unknown>[] = [];
     const r = (await site(new Request(`${ORIGIN}/`), cache, (p) => pending.push(p), NOW))!;

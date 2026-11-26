@@ -24,8 +24,8 @@ describe("what a page's build took, kept with its copy", () => {
     const feed = async (cost?: number) => {
       const store = new MemoryStore();
       const old = NOW.getTime() - 3600_000;
-      // The hikers' page's copy with the view its tile reads, written with it (web/data.ts `randonneesTuiles`).
-      for (const key of ["web:coupures", "web:randonnees", "web:randonnees:tuiles", "web:volcan"]) await store.put(key, { value: {}, fetchedAt: old, ...(cost != null && { cost }) });
+      // The hikers' and the volcano's copies with the views their tiles read, written with them (web/data.ts `keepView`).
+      for (const key of ["web:coupures", "web:randonnees", "web:randonnees:tuiles", "web:volcan", "web:volcan:etat"]) await store.put(key, { value: {}, fetchedAt: old, ...(cost != null && { cost }) });
       const cache = new Cache(store, () => NOW.getTime());
       const pending: Promise<unknown>[] = [];
       // An invocation with 12 subrequests left besides the writes: under 25, over what these builds took.

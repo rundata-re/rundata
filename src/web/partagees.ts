@@ -6,7 +6,7 @@
  * cache has no copy, and copies what it read there.
  */
 import { costOf, count, later, left, measured, reserve, spent, unmeasured } from "../budget.js";
-import { type Cache, CACHE_FORMAT, type CacheEntry, type CacheStore, outdated, stampOf } from "../cache.js";
+import { type Cache, CACHE_FORMAT, type CacheEntry, type CacheStore, outdated, stampOf, viewOf, viewSource } from "../cache.js";
 import * as actu from "../providers/actualites.js";
 import * as ensemble from "../providers/ensemble.js";
 import * as ovpfPdf from "../providers/ovpf-pdf.js";
@@ -335,6 +335,8 @@ async function kvPutFailure(kv: Kv, key: string, echec: NonNullable<CacheEntry["
 export class SharedFallback implements CacheStore {
   constructor(private edge: CacheStore, private kv: Kv, private now: () => number = Date.now, private version?: string) {}
   async get(key: string, freshAfter?: number) {
+    const from = viewSource(key);
+    if (from && KEYS.has(from)) return this.view(key, from, freshAfter);
     const e = await this.edge.get(key, freshAfter);
     const old = (x: CacheEntry) => outdated(key, x, this.version);
     if (!KEYS.has(key) || (e && this.now() - e.fetchedAt <= FRESH_SECONDS * 1000 && !old(e))) return e;
@@ -350,6 +352,21 @@ export class SharedFallback implements CacheStore {
   async put(key: string, entry: CacheEntry) {
     await this.edge.put(key, entry);
     if (KEYS.has(key) && entry.echec && entry.echec.at > entry.fetchedAt) await kvPutFailure(this.kv, key, entry.echec);
+  }
+  /**
+   * The view of a shared copy (cache.ts `keepView`): made from KV's copy where the data center's is no newer, as the copy
+   * itself would be, at the cost of the same one read. The scheduled event writes the view only where it runs: the other
+   * data centers take the copy from KV here, never through the cache's write, so their view would stay as it was.
+   */
+  private async view(key: string, from: string, freshAfter?: number) {
+    const e = await this.edge.get(key, freshAfter);
+    if (e && this.now() - e.fetchedAt <= FRESH_SECONDS * 1000 && !outdated(key, e, this.version)) return e;
+    const shared = await kvGet(this.kv, from);
+    const newer = shared && (!e || (outdated(key, e, this.version) === outdated(from, shared, this.version) ? shared.fetchedAt > e.fetchedAt : outdated(key, e, this.version)));
+    const v = newer ? viewOf(from, shared) : undefined;
+    if (!v) return e;
+    await this.edge.put(key, v.entry);
+    return v.entry;
   }
   /** Past its rate, its margin and one event: the scheduled event did not refresh it. */
   private late(key: string, e: CacheEntry): boolean {

@@ -36,6 +36,7 @@ import {
   withRoadNews,
   buildRandonnees,
   RANDONNEES_TUILES,
+  VOLCAN_ETAT,
   buildSecheresse,
   buildCoupures,
   buildSport,
@@ -527,7 +528,7 @@ export const tileFreshMs = (now: Date) => Math.min(FRESH_SECONDS, sinceMidnight(
  * undefined: a page without data of its own (a feed), which never holds up a refresh.
  */
 /** The small view a tile reads of a large copy (data.ts `randonneesTuiles`), by the copy's key: its build and refresh stay the copy's. */
-const TILE_VIEWS: Record<string, string> = { "web:randonnees": RANDONNEES_TUILES };
+const TILE_VIEWS: Record<string, string> = { "web:randonnees": RANDONNEES_TUILES, "web:volcan": VOLCAN_ETAT };
 const peekTile = (cache: Cache, key: string, freshAfter: number) => cache.peek<any>(TILE_VIEWS[key] ?? key, freshAfter);
 
 async function tileCopies(cache: Cache, keys: string[], background: Background, own: Cached<unknown> | null | undefined, now: Date): Promise<(Cached<any> | null)[]> {

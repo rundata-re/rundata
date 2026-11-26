@@ -17,6 +17,7 @@ Usage: python3 -I scripts/build-decouvrir.py [--json lieux.json --du 2026-11-01]
   the Monday check of .github/workflows/listes.yml; the names not read are counted there, never printed)
 """
 import argparse
+import importlib.util
 import json
 import math
 import re
@@ -94,9 +95,17 @@ def monument(r, monuments):
     return best and best[0]
 
 
+def controles():
+    """scripts/verifier.py, the checks shared by the build scripts (`python3 -I` does not put scripts/ on the path)."""
+    spec = importlib.util.spec_from_file_location("verifier", Path(__file__).with_name("verifier.py"))
+    v = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(v)
+    return v
+
+
 def verifier(out, bundled, du, unread, ecart):
     """The bundled places against the SIT's list of today, without writing: each by its name and commune, and what is
-    kept of it. 1 (the job's failure, its alert) when more than `ecart` were added, are gone or changed. The names not
+    kept of it. 1, the list has aged (scripts/verifier.py), when more than `ecart` were added, are gone or changed. The names not
     read are only counted: one may be a person's, and the job's log is public."""
     before = {(x["nom"], x["insee"]): x for x in bundled["lieux"]}
     now = {(x["nom"], x["insee"]): x for x in out}
@@ -109,8 +118,8 @@ def verifier(out, bundled, du, unread, ecart):
         for nom, insee in keys[:20]:
             print(f"  {label} : {nom} ({insee})")
     if n > ecart:
-        print(f"::error::Les lieux remarquables ont {n} écarts avec le SIT (seuil {ecart}) : lancer scripts/build-decouvrir.py et proposer la PR.")
-        return 1
+        return controles().vieillie("Lieux remarquables", "build-decouvrir.py", "la liste du SIT", date=du, ecart=n,
+                                    consigne=f"Seuil {ecart}. Lancer scripts/build-decouvrir.py et proposer la PR.")
     return 0
 
 

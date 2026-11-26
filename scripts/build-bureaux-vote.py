@@ -12,6 +12,7 @@ Usage: python3 -I scripts/build-bureaux-vote.py [--verifier ECART]
   gone, the Monday check of .github/workflows/listes.yml)
 """
 import argparse
+import importlib.util
 import json
 import re
 import sys
@@ -98,14 +99,23 @@ def bureaux(data):
     return {(insee, b): (l.get("lieu"), l["adresse"]) for insee, lieux in data["communes"].items() for l in lieux for b in l["bureaux"]}
 
 
+def controles():
+    """scripts/verifier.py, the checks shared by the build scripts (`python3 -I` does not put scripts/ on the path)."""
+    spec = importlib.util.spec_from_file_location("verifier", Path(__file__).with_name("verifier.py"))
+    v = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(v)
+    return v
+
+
 def verifier(data, bundled, ecart):
-    """The bundled list against today's, without writing: 1 (the job's failure, its alert) past `ecart` bureaux changed."""
+    """The bundled list against today's, without writing: 1, the list has aged (scripts/verifier.py), past `ecart`
+    bureaux changed, added or gone."""
     now, before = bureaux(data), bureaux(bundled)
     n = sum(1 for k in set(now) | set(before) if now.get(k) != before.get(k))
     print(f"liste du {bundled['mis_a_jour']} : {len(before)} bureaux ; Insee du {data['mis_a_jour']} : {len(now)}, {n} écarts")
     if n > ecart:
-        print(f"::error::Les bureaux de vote ont {n} écarts avec l'Insee (seuil {ecart}) : lancer scripts/build-bureaux-vote.py et proposer la PR.")
-        return 1
+        return controles().vieillie("Bureaux de vote", "build-bureaux-vote.py", "le fichier de l'Insee", date=data["mis_a_jour"], ecart=n,
+                                    consigne=f"Seuil {ecart}. Lancer scripts/build-bureaux-vote.py et proposer la PR.")
     return 0
 
 

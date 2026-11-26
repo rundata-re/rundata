@@ -13,6 +13,7 @@ Usage: python3 -I scripts/build-elus.py [--verifier ECART]
   Monday check of .github/workflows/listes.yml)
 """
 import argparse
+import importlib.util
 import json
 import sys
 import time
@@ -100,16 +101,24 @@ def offices(data):
     return out
 
 
+def controles():
+    """scripts/verifier.py, the checks shared by the build scripts (`python3 -I` does not put scripts/ on the path)."""
+    spec = importlib.util.spec_from_file_location("verifier", Path(__file__).with_name("verifier.py"))
+    v = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(v)
+    return v
+
+
 def verifier(data, bundled, ecart):
-    """The bundled offices against today's RNE, without writing. 1 (the job's failure, its alert) when more than `ecart`
+    """The bundled offices against today's RNE, without writing. 1, the list has aged (scripts/verifier.py), when more than `ecart`
     offices are held by someone else, added or gone. The names are not printed: the job's log is public, the count is
     enough to say a rebuild is due."""
     now, before = offices(data), offices(bundled)
     n = sum(1 for k in set(now) | set(before) if now.get(k) != before.get(k))
     print(f"liste du {bundled['mis_a_jour']} : {len(before)} fonctions ; RNE du {data['mis_a_jour']} : {len(now)}, {n} écarts")
     if n > ecart:
-        print(f"::error::Les élus ont {n} écarts avec le RNE (seuil {ecart}) : lancer scripts/build-elus.py et proposer la PR.")
-        return 1
+        return controles().vieillie("Maires et adjoints", "build-elus.py", "le RNE", date=data["mis_a_jour"], ecart=n,
+                                    consigne=f"Seuil {ecart}. Lancer scripts/build-elus.py et proposer la PR.")
     return 0
 
 

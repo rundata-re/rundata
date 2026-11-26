@@ -140,17 +140,33 @@ def main():
     print(f"Geovelo ({du}) : {len(rows)} tronçons, {len(voies)} voies, {km:.0f} km -> {DEST.relative_to(ROOT)}, {DEST.stat().st_size // 1024} Ko")
 
 
+def controles():
+    """scripts/verifier.py, the checks shared by the build scripts (`python3 -I` does not put scripts/ on the path)."""
+    spec = importlib.util.spec_from_file_location("verifier", Path(__file__).with_name("verifier.py"))
+    v = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(v)
+    return v
+
+
+# A licence that still lets the list be reused, crediting its producer: a change to one of them asks to read the fiche
+# again and rebuild the list (aged); to any other, the list may no longer be reused as it is (broken, red).
+REUTILISABLES = {"odc-odbl", "odc-by", "lov2", "fr-lo", "cc-by", "cc-zero", "odc-pddl"}
+
+
 def verifier(f, ecart):
     """The bundled list's file against the fiche's of today, without writing: Geovelo publishes one a month."""
     bundled = json.loads(DEST.read_text(encoding="utf-8"))["source"]
     newer = sorted({r["last_modified"][:10] for r in f["resources"] if r["format"] == "parquet" and r["last_modified"][:10] > bundled["liste_du"]})
     print(f"liste du {bundled['liste_du']} ; la fiche aujourd'hui : {len(newer)} fichier(s) plus récent(s){' : ' + ', '.join(newer) if newer else ''}")
+    v = controles()
+    if f["license"] not in REUTILISABLES:
+        return v.cassee("Aménagements cyclables (Geovelo)", f"la licence de la fiche est devenue {f['license']}, qui ne dit plus que la liste se réutilise : à relire avant de la garder")
     if f["license"] != "odc-odbl":
-        print(f"::error::La licence de la fiche des aménagements cyclables de Geovelo a changé ({f['license']}) : à relire avant de la reprendre.")
-        return 1
+        return v.vieillie("Aménagements cyclables (Geovelo)", "build-geovelo.py", f"la licence de la fiche ({f['license']})",
+                          consigne="La licence a changé, toujours réutilisable : relire la fiche et l'attribution (web/couches.ts), puis lancer scripts/build-geovelo.py et proposer la PR.")
     if len(newer) > ecart:
-        print(f"::error::Geovelo a publié {len(newer)} liste(s) des aménagements cyclables plus récente(s) que celle du {bundled['liste_du']} (seuil {ecart}) : lancer scripts/build-geovelo.py et proposer la PR.")
-        return 1
+        return v.vieillie("Aménagements cyclables (Geovelo)", "build-geovelo.py", "la fiche de Geovelo", date=newer[-1], ecart=len(newer),
+                          consigne=f"{len(newer)} fichier(s) plus récent(s), seuil {ecart}. Lancer scripts/build-geovelo.py et proposer la PR.")
     return 0
 
 

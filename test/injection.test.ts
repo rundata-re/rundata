@@ -7,7 +7,8 @@ import type { Cached } from "../src/cache.js";
 import type { ActualitesAnswer, AgendaAnswer, ElectriciteAnswer } from "../src/web/data.js";
 import { agendaPage } from "../src/web/agenda.js";
 import { actualitesPage, courantItem, electriciteCommune, noticeCard } from "../src/web/domains.js";
-import { weekendPage } from "../src/web/evenements.js";
+import { concertsPage, weekendPage } from "../src/web/evenements.js";
+import { pointsSvg } from "../src/web/evenements-carte.js";
 import { type Fiche, fichePage, fichePassee } from "../src/web/fiche-evenement.js";
 
 /**
@@ -59,6 +60,17 @@ describe("a text read elsewhere, trapped, never comes out as a tag", () => {
     const value = piege(copie<AgendaAnswer>("agenda"), new Set(["titre", "lieu", "prix", "publie_par", "description"]));
     sansInjection(agendaPage(O, { value, fetchedAt: now, stale: false }, now));
     sansInjection(weekendPage(O, { value, fetchedAt: now, stale: false }, now));
+  });
+
+  it("on the concerts' page, tonight's and day by day, and on the map's points of the venues", () => {
+    const now = new Date("2026-10-24T04:00:00Z");
+    const value = piege(copie<AgendaAnswer>("agenda"), new Set(["titre", "lieu", "prix", "publie_par", "description", "couverture"]));
+    sansInjection(concertsPage(O, { value, fetchedAt: now, stale: false }, now));
+    const point = { lon: 55.45, lat: -20.9, lieu: PIEGE, titre: PIEGE, nombre: 1, lien: "https://exemple.re/a", source: PIEGE };
+    const svg = pointsSvg([point as never], "#jours");
+    expect(svg).not.toContain("<script>alert(1)");
+    expect(svg).not.toContain("<img src=x");
+    expect(svg).toContain(ECHAPPE);
   });
 
   it("in the events' links, never one that runs a script (/evenements)", () => {

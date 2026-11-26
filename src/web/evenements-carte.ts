@@ -14,8 +14,8 @@
 import { resolvePlace } from "../places/resolve.js";
 import { occurrences, type EventRow } from "../tools/agenda.js";
 import { COUNT_COLOR, legende } from "./carte-legende.js";
-import { href as lienSur } from "./html.js";
-import { esc, fenetre, H, islandMap, laterMap, type Marker, project, W } from "./map.js";
+import { brut, href as lienSur, html } from "./html.js";
+import { fenetre, H, islandMap, laterMap, type Marker, project, W } from "./map.js";
 
 type Row = Pick<EventRow, "titre" | "date" | "quand" | "autres_dates" | "commune" | "lieu" | "lien" | "genres" | "position" | "source">;
 
@@ -110,9 +110,9 @@ export function pointsSvg(points: Point[], href: string, rounds: [number, number
     // An event's own link leads to its announcement, on the publisher's site; several events, to the list.
     const out = to.startsWith("http");
     // Out of the Tab order, as the rounds (islandMap's `listed`): the list under the map gives each event and its link.
-    // An agenda's link: lienSur() (html.ts href) writes « # » for one that would run a script (« javascript: »).
-    return `<a class="mk evp" href="${lienSur(to).texte}"${out ? ` rel="noopener"${fenetre(to)}` : ""} aria-label="${esc(`${p.lieu} : ${what}, ${out ? "voir l'annonce" : "voir le détail"}`)}"${out ? ` data-pv="annonce"` : ""} data-pn="${esc(p.lieu)}" data-p2="${esc(what)}"${p.source ? ` data-p3="${esc(`Source\u00a0: ${p.source}`)}"` : ""} tabindex="-1">` +
-      `<circle class="hit" cx="${x}" cy="${y}" r="${hit}" style="fill:transparent;stroke:none"/><title>${esc(`${p.lieu} : ${what}`)}</title><circle class="sh" cx="${x}" cy="${y}" r="${POINT_R}"/></a>`;
+    // An agenda's link: lienSur() (html.ts href) writes « # » for one that would run a script (« javascript: »); fenetre() is
+    // the site's own attribute.
+    return html`<a class="mk evp" href="${lienSur(to)}"${out ? html` rel="noopener"${brut(fenetre(to))}` : ""} aria-label="${`${p.lieu} : ${what}, ${out ? "voir l'annonce" : "voir le détail"}`}"${out ? html` data-pv="annonce"` : ""} data-pn="${p.lieu}" data-p2="${what}"${p.source ? html` data-p3="${`Source\u00a0: ${p.source}`}"` : ""} tabindex="-1"><circle class="hit" cx="${x}" cy="${y}" r="${hit}" style="fill:transparent;stroke:none"/><title>${`${p.lieu} : ${what}`}</title><circle class="sh" cx="${x}" cy="${y}" r="${POINT_R}"/></a>`.texte;
   }).join("");
 }
 
@@ -152,7 +152,7 @@ export function eventsMap(rows: Row[], weekend: Row[], genres: [string, string][
       shown.push(id);
       const list = g ? of[t].filter((r) => r.genres.includes(g)) : of[t];
       if (!list.length) {
-        empty += `<p class="note ev0 ly ly-${id}">${esc(`Rien de trouvé ${said}${g ? ` en « ${nom.toLowerCase()} »` : ""} dans les agendas lus.`)}</p>`;
+        empty += html`<p class="note ev0 ly ly-${id}">${`Rien de trouvé ${said}${g ? ` en « ${nom.toLowerCase()} »` : ""} dans les agendas lus.`}</p>`.texte;
         return;
       }
       const { ronds, points } = couche(list);
@@ -162,19 +162,18 @@ export function eventsMap(rows: Row[], weekend: Row[], genres: [string, string][
   }
 
   const radios = (name: string, items: [string, string][], checked: string) =>
-    items.map(([v, label]) => `<input type="radio" name="${name}" id="${name}-${v}"${v === checked ? " checked" : ""}><label for="${name}-${v}">${esc(label)}</label>`).join("");
-  const times = `<div class="tabs evt" role="radiogroup" aria-label="Quand">${radios("evt", TIMES.map(([t, l]) => [t, l]), on)}</div>`;
+    items.map(([v, label]) => html`<input type="radio" name="${name}" id="${name}-${v}"${v === checked ? " checked" : ""}><label for="${name}-${v}">${label}</label>`);
+  const times = html`<div class="tabs evt" role="radiogroup" aria-label="Quand">${radios("evt", TIMES.map(([t, l]) => [t, l]), on)}</div>`;
   // Always there, its « Tous » checked, which the rules below read; out of sight with a single genre or none.
-  const genre = `<div class="tabs evg" role="radiogroup" aria-label="Genre"${kinds.length > 2 ? "" : ' style="display:none"'}>${radios("evg", kinds.map(([, l], i) => [String(i), l]), "0")}</div>`;
+  const genre = html`<div class="tabs evg" role="radiogroup" aria-label="Genre"${kinds.length > 2 ? "" : brut(' style="display:none"')}>${radios("evg", kinds.map(([, l], i) => [String(i), l]), "0")}</div>`;
   // One rule per pair: the layer, or its line, of the time and the genre checked. Without :has, the first pair.
   const css = `${STYLE}.evmap .ly{display:none}.evmap .ly-${on}-0{display:inline}.evmap p.ly-${on}-0{display:block}` +
     `.evmap:has(.tabs input:checked:not([id$="-${on}"],#evg-0)) .ly-${on}-0{display:none}` +
     shown.map((id) => { const [t, i] = id.split("-"); return `.evmap:has(#evt-${t}:checked):has(#evg-${i}:checked) .ly-${id}{display:${empty.includes(`ly-${id}"`) ? "block" : "inline"}}`; }).join("");
   const label = "Carte de La Réunion (974) : les événements de ce soir, de demain ou du week-end, par commune";
-  return `<figure class="card mapcard evmap"><style>${css}</style>${times}${genre}` +
-    `<div class="evm">${laterMap(islandMap({ layers, above: over, listed: true, label }))}</div>` + empty +
-    `<figcaption class="note">${legende([
+  // The CSS, the map, the empty lines and the legend: HTML the site writes itself (the texts in them escaped there).
+  return html`<figure class="card mapcard evmap"><style>${brut(css)}</style>${times}${genre}<div class="evm">${brut(laterMap(islandMap({ layers, above: over, listed: true, label })))}</div>${brut(empty)}<figcaption class="note">${brut(legende([
       { forme: "rond", couleur: COUNT_COLOR, texte: "3", dit: "événements de la commune" },
       { forme: "point", couleur: POINT, dit: "lieu de l'événement, d'après l'annonce" },
-    ], ligne)}</figcaption></figure>`;
+    ], ligne))}</figcaption></figure>`.texte;
 }

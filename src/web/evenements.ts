@@ -9,7 +9,7 @@ import { agendaNotes, connectorCta, jourMois, loading, sourcesNote, warnings, we
 import { agendaEvents, agendaRow, agendaTabs, GENRE_SCRIPT, GENRES, jourCompte, longDay, longsCard } from "./agenda.js";
 import { AHEAD_DAYS, type Jour, longRun, occurrences, parJour, weekend, type Weekend } from "../tools/agenda.js";
 import { forecastLinks } from "./liens.js";
-import { esc } from "./map.js";
+import { brut, html, type Html } from "./html.js";
 import { holidays } from "../feries.js";
 import { marchesCount, marchesSection, SPORT_LIEN } from "./marches-agenda.js";
 import { adressesCoupables, ask, DESCRIPTION_MAX, layout, SITE } from "./pages.js";
@@ -74,8 +74,8 @@ const HALLS: [string, string][] = [
 /** The trail of the page: rundata.re › Événements › this one, as links and for search engines. */
 function trail(origin: string, name: string, path: string) {
   const items: [string, string][] = [[SITE, "/"], ["Événements", "/evenements"], [name, path]];
-  const bar = `<div class="wrap"><nav class="crumbs" aria-label="Fil d'Ariane"><ol>${items.map(([n, p], i) =>
-    i < items.length - 1 ? `<li><a href="${p}">${esc(n)}</a></li>` : `<li aria-current="page">${esc(n)}</li>`).join("")}</ol></nav></div>`;
+  const bar = html`<div class="wrap"><nav class="crumbs" aria-label="Fil d'Ariane"><ol>${items.map(([n, p], i) =>
+    i < items.length - 1 ? html`<li><a href="${p}">${n}</a></li>` : html`<li aria-current="page">${n}</li>`)}</ol></nav></div>`;
   const jsonld = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -85,13 +85,14 @@ function trail(origin: string, name: string, path: string) {
 }
 
 /** The genre filter and the days, as on /evenements; `longs`: the card of those of more than a week, after them. */
-function dayList(jours: Jour<Row>[], rows: Row[], heading: (day: string) => string, g: ReturnType<typeof porte>, longs = "", after: (day: string) => string = () => ""): string {
+function dayList(jours: Jour<Row>[], rows: Row[], heading: (day: string) => string, g: ReturnType<typeof porte>, longs = "", after: (day: string) => string = () => ""): Html {
   const present = new Set(rows.flatMap((r) => r.genres));
   const filter = present.size > 1
-    ? `<form id="ef" class="card filter" hidden role="search" aria-label="Filtrer les événements par genre"><label>Genre <select name="g"><option value="">tous</option>${GENRES.filter(([g]) => present.has(g)).map(([g, nom]) => `<option value="${esc(g)}">${esc(nom)}</option>`).join("")}</select></label><p class="note" id="ef-n" aria-live="polite"></p></form>`
+    ? html`<form id="ef" class="card filter" hidden role="search" aria-label="Filtrer les événements par genre"><label>Genre <select name="g"><option value="">tous</option>${GENRES.filter(([g]) => present.has(g)).map(([g, nom]) => html`<option value="${g}">${nom}</option>`)}</select></label><p class="note" id="ef-n" aria-live="polite"></p></form>`
     : "";
-  return `${filter}<div id="jours"><ul class="zones">${jours.filter((j) => j.evenements.length).map((j) =>
-    `<li class="card"><h3>${esc(heading(j.jour))} <span class="note">${jourCompte(j)}</span></h3><ul class="rows eau" data-sortie>${j.evenements.map((x) => agendaRow({ ...x.r, quand: x.o.quand }, g)).join("")}</ul>${after(j.jour)}</li>`).join("")}${longs}</ul></div>${script(GENRE_SCRIPT)}`;
+  // jourCompte, agendaRow, `after`, `longs` and script() are HTML the site writes itself.
+  return html`${filter}<div id="jours"><ul class="zones">${jours.filter((j) => j.evenements.length).map((j) =>
+    html`<li class="card"><h3>${heading(j.jour)} <span class="note">${brut(jourCompte(j))}</span></h3><ul class="rows eau" data-sortie>${brut(j.evenements.map((x) => agendaRow({ ...x.r, quand: x.o.quand }, g)).join(""))}</ul>${brut(after(j.jour))}</li>`)}${brut(longs)}</ul></div>${brut(script(GENRE_SCRIPT))}`;
 }
 
 /** The events of a page as schema.org `Event`s (agenda.ts `agendaEvents`), when there are any. */
@@ -135,8 +136,8 @@ export function weekendPage(origin: string, data: Cached<AgendaAnswer> | null, n
   const of = (g: string) => listed.filter((r) => r.genres.includes(g)).length;
 
   const status = !d
-    ? loading("L'agenda du week-end")
-    : `<div class="now"><span class="big">${n}</span><p>événement${n > 1 ? "s" : ""} : ${esc(when)}${w.vendredi && localDay(now) <= w.du ? ", et dès le vendredi soir" : ""}.</p></div>`;
+    ? brut(loading("L'agenda du week-end"))
+    : html`<div class="now"><span class="big">${n}</span><p>événement${n > 1 ? "s" : ""} : ${when}${w.vendredi && localDay(now) <= w.du ? ", et dès le vendredi soir" : ""}.</p></div>`;
 
   const kinds = ([["concert", "concert"], ["festival", "fête ou festival", "fêtes ou festivals"], ["marché", "marché"], ["théâtre", "pièce de théâtre", "pièces de théâtre"], ["danse", "spectacle de danse", "spectacles de danse"], ["enfants", "sortie pour les enfants", "sorties pour les enfants"], ["sport", "rendez-vous sportif", "rendez-vous sportifs"]] as [string, string, string?][])
     .map(([g, one, many]) => [of(g), count(of(g), one, many)] as const).filter(([k]) => k > 0);
@@ -144,19 +145,18 @@ export function weekendPage(origin: string, data: Cached<AgendaAnswer> | null, n
   const marketDays = weekendMarketDays(w, now);
   const markets = marchesCount(marketDays);
   const extra = [
-    ...(markets ? [`<li><a href="#h-marches" style="color:var(--on-night)">${esc(count(markets, "marché forain", "marchés forains"))}</a></li>`] : []),
-    `<li><a href="/sport" style="color:var(--on-night)">Sport ce week-end</a></li>`,
+    ...(markets ? [html`<li><a href="#h-marches" style="color:var(--on-night)">${count(markets, "marché forain", "marchés forains")}</a></li>`] : []),
+    html`<li><a href="/sport" style="color:var(--on-night)">Sport ce week-end</a></li>`,
   ];
   const brief = d && kinds.length
-    ? `<figure class="card mapcard"><h2 style="color:var(--on-night)">Au programme</h2><ul class="plain">${kinds.map(([, t]) => `<li>${esc(t)}</li>`).join("")}${extra.join("")}</ul>` +
-      `<p class="note" style="color:var(--on-night-muted)">D'après les agendas des salles, des mairies et de l'office de tourisme.</p></figure>`
+    ? html`<figure class="card mapcard"><h2 style="color:var(--on-night)">Au programme</h2><ul class="plain">${kinds.map(([, t]) => html`<li>${t}</li>`)}${extra}</ul><p class="note" style="color:var(--on-night-muted)">D'après les agendas des salles, des mairies et de l'office de tourisme.</p></figure>`
     : "";
 
   const list = !d
-    ? `<p class="card">L'agenda se charge : rechargez la page dans quelques secondes.</p>`
+    ? html`<p class="card">L'agenda se charge : rechargez la page dans quelques secondes.</p>`
     : n
       ? dayList(jours, listed, (day) => `${upper(dayName(day))}${day === w.du && w.vendredi ? " soir" : ""}${w.feries.has(day) ? ` (${w.feries.get(day)}, férié)` : ""}`, g, longsCard(longs, g, LONGS_WEEK_END), (day) => forecastLinks(where.get(day) ?? []))
-      : `<p class="card">Aucun événement trouvé dans les agendas lus pour ce week-end. Voir <a href="/evenements">les deux semaines qui viennent</a>.</p>`;
+      : html`<p class="card">Aucun événement trouvé dans les agendas lus pour ce week-end. Voir <a href="/evenements">les deux semaines qui viennent</a>.</p>`;
 
   const title = "Que faire ce week-end à La Réunion (974) ?";
   const short = "Que faire ce week-end à La Réunion (974) : concerts, fêtes, marchés et spectacles, commune par commune, avec le lien vers chaque organisateur.";
@@ -164,34 +164,34 @@ export function weekendPage(origin: string, data: Cached<AgendaAnswer> | null, n
   const description = (d && [", commune par commune, avec le lien vers chaque organisateur.", ", commune par commune.", "."].map((t) => base + t).find((x) => x.length <= DESCRIPTION_MAX)) || short;
   const { bar, jsonld } = trail(origin, "Ce week-end", path);
 
-  const band = `${bar}
+  const band = html`${bar}
 <div class="wrap intro">
   <div class="pitch">
     <p class="pill"><span class="dot"></span>Du vendredi soir au dimanche</p>
     <h1>Ce week-end à La Réunion</h1>
     ${status}
-    ${ask(`Kosa néna pou fé sé wikenn la ? Gèt si ${url} é di amwin.`, `Que faire ce week-end à La Réunion ? Lis ${url} et dis-le-moi.`)}
+    ${brut(ask(`Kosa néna pou fé sé wikenn la ? Gèt si ${url} é di amwin.`, `Que faire ce week-end à La Réunion ? Lis ${url} et dis-le-moi.`))}
   </div>
   ${brief}
 </div>`;
 
-  const body = `<section aria-labelledby="h-jours">
-  <div class="sec-h"><p class="eyebrow">${esc(when)}</p><h2 id="h-jours">Jour par jour</h2>
+  const body = html`<section aria-labelledby="h-jours">
+  <div class="sec-h"><p class="eyebrow">${when}</p><h2 id="h-jours">Jour par jour</h2>
   <p>Le week-end commence le vendredi à 17 h et finit le dimanche soir ; un jour férié collé au week-end en fait partie. À partir du lundi, c'est le week-end qui vient. Chaque événement renvoie à la page de celui qui le publie ; un événement annulé ou reporté reste affiché, avec son statut.</p></div>
-  ${agendaTabs(path)}
+  ${brut(agendaTabs(path))}
   ${list}
-  ${warnings(agendaNotes(data, now))}
+  ${brut(warnings(agendaNotes(data, now)))}
 </section>
-${marchesSection(marketDays, (day) => jourMois(upper(dayName(day))))}
-${SPORT_LIEN}
+${brut(marchesSection(marketDays, (day) => jourMois(upper(dayName(day)))))}
+${brut(SPORT_LIEN)}
 <section aria-labelledby="h-couv">
-  <div class="sec-h"><h2 id="h-couv">Ce qui est couvert</h2><p>${d ? adressesCoupables(d.couverture, true) : ""}</p><p>${d ? esc(d.a_savoir) : ""}</p></div>
-  ${d && data ? sourcesNote(d.sources, data) : ""}
+  <div class="sec-h"><h2 id="h-couv">Ce qui est couvert</h2><p>${d ? brut(adressesCoupables(d.couverture, true)) : ""}</p><p>${d ? d.a_savoir : ""}</p></div>
+  ${d && data ? brut(sourcesNote(d.sources, data)) : ""}
   <p><a href="/publier">Votre agenda n'est pas lu ? Le guide pour le publier →</a></p>
 </section>
-${connectorCta("evenements", "les événements de l'île")}`;
+${brut(connectorCta("evenements", "les événements de l'île"))}`;
 
-  return layout(origin, { title, description, path, jsonld: [jsonld, webPage(origin, path, title, description, data), ...graph(dated, origin)], alerte, iaAside: true }, band, g.ligne + body);
+  return layout(origin, { title, description, path, jsonld: [jsonld, webPage(origin, path, title, description, data), ...graph(dated, origin)], alerte, iaAside: true }, band.texte, g.ligne + body.texte);
 }
 
 /**
@@ -217,51 +217,50 @@ export function concertsPage(origin: string, data: Cached<AgendaAnswer> | null, 
   const tonight = rows.filter((r) => r.date.slice(0, 10) === today && (r.date.length === 10 || r.date.slice(11) >= "17:00"));
 
   const status = !d
-    ? loading("L'agenda des concerts")
-    : `<div class="now"><span class="big">${n}</span><p>concert${n > 1 ? "s" : ""} dans les deux semaines qui viennent${tonight.length ? `, dont ${tonight.length} ce soir` : ""}.</p></div>`;
+    ? brut(loading("L'agenda des concerts"))
+    : html`<div class="now"><span class="big">${n}</span><p>concert${n > 1 ? "s" : ""} dans les deux semaines qui viennent${tonight.length ? html`, dont ${tonight.length} ce soir` : ""}.</p></div>`;
 
   const side = tonight.length
-    ? `<figure class="card mapcard"><h2 style="color:var(--on-night)">Ce soir</h2><ul class="plain">${tonight.slice(0, 7).map((r) =>
-        `<li><b>${esc(r.date.length > 10 ? r.date.slice(11, 16) : "")}</b> ${r.statut && r.statut !== "complet" ? `<b>${esc(r.statut)}</b> ` : ""}${esc(r.titre)}${r.commune ? ` <span class="note" style="color:var(--on-night-muted)">(${esc(r.commune)})</span>` : ""}</li>`).join("")}</ul>` +
-      (tonight.length > 7 ? `<p class="note" style="color:var(--on-night-muted)">et ${tonight.length - 7} autres.</p>` : "") + `</figure>`
+    ? html`<figure class="card mapcard"><h2 style="color:var(--on-night)">Ce soir</h2><ul class="plain">${tonight.slice(0, 7).map((r) =>
+        html`<li><b>${r.date.length > 10 ? r.date.slice(11, 16) : ""}</b> ${r.statut && r.statut !== "complet" ? html`<b>${r.statut}</b> ` : ""}${r.titre}${r.commune ? html` <span class="note" style="color:var(--on-night-muted)">(${r.commune})</span>` : ""}</li>`)}</ul>${tonight.length > 7 ? html`<p class="note" style="color:var(--on-night-muted)">et ${tonight.length - 7} autres.</p>` : ""}</figure>`
     : "";
 
-  const halls = `<p data-sortie>Les programmes des salles : ${HALLS.map(([nom, lien]) => `<a href="${esc(lien)}" rel="noopener">${esc(nom)}</a>`).join(", ")}.</p>`;
+  const halls = html`<p data-sortie>Les programmes des salles : ${HALLS.map(([nom, lien], i) => html`${i ? ", " : ""}<a href="${lien}" rel="noopener">${nom}</a>`)}.</p>`;
   const list = !d
-    ? `<p class="card">L'agenda se charge : rechargez la page dans quelques secondes.</p>`
+    ? html`<p class="card">L'agenda se charge : rechargez la page dans quelques secondes.</p>`
     : n
       ? dayList(jours, rows, (day) => `${day === today ? "Aujourd'hui, " : ""}${dayName(day)}`.replace(/^\p{L}/u, (c) => c.toUpperCase()), g, longsCard(longs, g, LONGS_CONCERTS))
-      : `<div class="card"><p>Aucun concert trouvé dans les agendas lus pour les deux semaines qui viennent. Les salles annoncent leurs dates plus loin sur leur site :</p>${halls}</div>`;
+      : html`<div class="card"><p>Aucun concert trouvé dans les agendas lus pour les deux semaines qui viennent. Les salles annoncent leurs dates plus loin sur leur site :</p>${halls}</div>`;
 
   const title = "Concerts à La Réunion (974) : ce soir et dans les 15 jours";
   // The same window and sources as the line under the title (CONCERTS_HOOK), in words reviewed before they went in.
   const description = "Concerts à La Réunion ce soir et dans les deux semaines à venir : salles, mairies et offices de tourisme.";
   const { bar, jsonld } = trail(origin, "Concerts", path);
 
-  const band = `${bar}
+  const band = html`${bar}
 <div class="wrap intro">
   <div class="pitch">
     <p class="pill"><span class="dot"></span>Salles de concert, mairies et festivals</p>
     <h1>Concerts à La Réunion</h1>
     ${status}
-    ${ask(`Kel konsèr néna sé swar é sé wikenn la ? Gèt si ${url} é di amwin.`, `Quels concerts ce soir et ce week-end à La Réunion ? Lis ${url} et dis-le-moi.`)}
+    ${brut(ask(`Kel konsèr néna sé swar é sé wikenn la ? Gèt si ${url} é di amwin.`, `Quels concerts ce soir et ce week-end à La Réunion ? Lis ${url} et dis-le-moi.`))}
   </div>
   ${side}
 </div>`;
 
-  const body = `<section aria-labelledby="h-jours">
+  const body = html`<section aria-labelledby="h-jours">
   <div class="sec-h"><p class="eyebrow">Deux semaines</p><h2 id="h-jours">Les concerts jour par jour</h2>
   <p>Maloya, séga, jazz, rock, reggae, électro, classique : tout ce que les salles, les mairies et l'office de tourisme annoncent comme concert. Heures de La Réunion ; chaque concert renvoie à la page de celui qui le publie, et à la billetterie quand elle est donnée.</p></div>
-  ${agendaTabs(path)}
+  ${brut(agendaTabs(path))}
   ${list}
-  ${warnings(agendaNotes(data, now))}
+  ${brut(warnings(agendaNotes(data, now)))}
 </section>
 <section aria-labelledby="h-couv">
-  <div class="sec-h"><h2 id="h-couv">Ce qui est couvert</h2><p>${d ? esc(d.couverture) : ""}</p>${n ? halls : ""}</div>
-  ${d && data ? sourcesNote(d.sources, data) : ""}
+  <div class="sec-h"><h2 id="h-couv">Ce qui est couvert</h2><p>${d ? d.couverture : ""}</p>${n ? halls : ""}</div>
+  ${d && data ? brut(sourcesNote(d.sources, data)) : ""}
   <p><a href="/publier">Votre agenda n'est pas lu ? Le guide pour le publier →</a></p>
 </section>
-${connectorCta("evenements", "les concerts et les sorties de l'île")}`;
+${brut(connectorCta("evenements", "les concerts et les sorties de l'île"))}`;
 
-  return layout(origin, { title, description, path, hook: CONCERTS_HOOK, jsonld: [jsonld, webPage(origin, path, title, description, data), ...graph(rows, origin)], alerte, iaAside: true }, band, g.ligne + body);
+  return layout(origin, { title, description, path, hook: CONCERTS_HOOK, jsonld: [jsonld, webPage(origin, path, title, description, data), ...graph(rows, origin)], alerte, iaAside: true }, band.texte, g.ligne + body.texte);
 }

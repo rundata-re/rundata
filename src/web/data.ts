@@ -2227,7 +2227,10 @@ export function vigilanceLue(at: Date, now: Date): string | undefined {
 export async function vigilanceNow(cache: Cache, background: Background, waitMs: number, now = new Date()): Promise<Cached<mf.Vigilance> | null> {
   if (!mf.enabled()) return null;
   const started = Date.now();
-  const work = attendu("vigilance", mf.vigilance(cache));
+  // A copy that needs no time said (`LUE_AFTER_MS`) is served without waiting for Météo-France, read again after the
+  // answer: from 19 to 26/11/2026, 47 views waited the whole BANNER_WAIT_MS (1.9 to 2 s for /bus/arret/*, robots at
+  // night) to be given in the end the copy they had, 39 of them a copy 7.5 to 10.5 minutes old.
+  const work = attendu("vigilance", mf.vigilance(cache, LUE_AFTER_MS / 1000));
   try {
     const got = await within(work, waitMs);
     if (got) return got;

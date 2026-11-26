@@ -9,7 +9,8 @@ Two datasets of the ANFR on data.gouv.fr, Licence Ouverte 2.0:
   broadcast ones are kept (FM radio, TNT, DAB+), by support. Without civil aviation, Defence and the Interior. A private
   site's operator is never kept, nor any address: a place and a height only.
 Run again once a week (mobile) or once a month (broadcast). Downloads at a low pace, one request a minute per host.
-Usage: python3 -I scripts/build-antennes.py [--mobile observatoire.zip --mobile-du 2026-10-22 --radio data.zip --ref ref.zip --radio-du 2026-09-30] [--verifier ECART]
+Usage: python3 -I scripts/build-antennes.py [--mobile observatoire.zip --mobile-du 2026-10-22 --radio data.zip --ref ref.zip --radio-du 2026-09-30] [--verifier ECART] [--fiches-seules]
+Also writes src/vie/antennes-fiches.json: each mobile support's systems, states, days in service and azimuths (its sheet on /antennes).
 --verifier: write nothing, compare with the bundled list, fail past ECART supports added, gone or changed (the Monday
 check, .github/workflows/listes.yml).
 """
@@ -109,6 +110,28 @@ def mobile(path, nature):
     return out, newest_service
 
 
+def fiches(path):
+    """Each mobile support's sheet (src/vie/antennes-fiches.json, loaded on a click on /antennes): each system of each
+    operator, as the ANFR file says it, its state, its day in service (none for a project) and its antennas' azimuths
+    in degrees. The power is not in the file. One row per system: [operator's letter, system, state, day, azimuths]."""
+    z = zipfile.ZipFile(path)
+    out = defaultdict(list)
+    letter = {v: v[0].lower() for v in OPERATORS.values()}
+    for r in table(z, ".csv"):
+        if r["sta_nm_dpt"] != "974":
+            continue
+        az = "|".join(x for x in (r["list_azimut"] or "").split("|") if x.strip())
+        out[int(r["sup_id"])].append([letter[OPERATORS[r["adm_lb_nom"]]], r["emr_lb_systeme"], STATES[r["statut"]][0], r["emr_dt"] or "", az])
+    order = list(letter.values())
+    return {str(k): sorted(v, key=lambda x: (order.index(x[0]), x[1])) for k, v in sorted(out.items())}
+
+
+def write_fiches(mob, mob_day):
+    dest = ROOT / "src/vie/antennes-fiches.json"
+    dest.write_text(json.dumps({"fichier_du": mob_day, "supports": fiches(mob)}, ensure_ascii=False, separators=(",", ":")) + "\n")
+    print(dest)
+
+
 def broadcast(path, ref, nature):
     """One entry per support carrying FM, TNT or DAB+ stations: where, how high, on what, how many of each."""
     z, exploitants = zipfile.ZipFile(path), {r["ADM_ID"]: r["ADM_LB_NOM"].strip() for r in table(ref, "SUP_EXPLOITANT.txt")}
@@ -142,6 +165,7 @@ def main():
     p.add_argument("--radio", help="a local copy of the monthly zip of the stations over 5 W (…-export-etalab-data.zip)")
     p.add_argument("--ref", help="and of its reference tables (…-export-etalab-ref.zip)")
     p.add_argument("--radio-du", help="the day of that export, 2026-09-30")
+    p.add_argument("--fiches-seules", action="store_true", help="write only src/vie/antennes-fiches.json, from --mobile")
     p.add_argument("--verifier", type=int, metavar="ECART", help="write nothing: compare with src/vie/antennes.json, fail past ECART supports added, gone or changed")
     a = p.parse_args()
     work = Path(tempfile.mkdtemp())
@@ -152,6 +176,9 @@ def main():
         # « observatoireod-20261022-observatoire-2g-3g-4g-5g.zip »
         mob_day = next(f"{x[:4]}-{x[4:6]}-{x[6:8]}" for x in url.split("/")[-1].split("-") if x.isdigit() and len(x) == 8)
         mob = fetch(url, work / "mobile.zip")
+    if a.fiches_seules:
+        write_fiches(mob, mob_day)
+        return
     if a.radio:
         data, ref, radio_day = Path(a.radio), Path(a.ref), a.radio_du
     else:
@@ -176,6 +203,7 @@ def main():
         "supports": supports,
         "emetteurs": radio,
     }, ensure_ascii=False, separators=(",", ":")) + "\n")
+    write_fiches(mob, mob_day)
     print(dest, len(supports), "supports mobiles au", mob_day, ";", len(radio), "supports radio et TV au", radio_day)
 
 

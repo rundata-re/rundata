@@ -138,6 +138,13 @@ export function releveSaid(b: ReturnType<typeof releveBlock>): string {
   return `Houle MESURÉE à la bouée ${b.bouee} du Cerema${b.distance_km != null ? `, à ${fr(b.distance_km)} km` : ""}, le ${jour} à ${h}\u00a0: ${what || "pas de hauteur mesurée"}.`;
 }
 
+/**
+ * The beaches' webcams of Île de la Réunion Tourisme (Boucan Canot, l'Hermitage, Roches Noires, la Saline, Trou d'Eau,
+ * les Colimaçons, Sainte-Rose): linked only, never shown here, the legal notices of the IRT and of Viewsurf forbidding
+ * any picture, frame or thumbnail without a written agreement (26/11/2026). In the answer and on /mer.
+ */
+export const WEBCAMS_PLAGES = { texte: "Les webcams des plages en direct", lien: "https://www.reunion.fr/organisez/webcams/", site: "Île de la Réunion Tourisme (IRT)" };
+
 const CAVEATS = [
   "Mesure satellite de la toute première couche d'eau, sur des carrés de 2 à 4 km : " +
     "c'est la température au large du lieu, pas au bord de la plage ni dans le lagon, qui peuvent différer.",
@@ -639,6 +646,8 @@ export async function temperatureMer(cache: Cache, lieu: string | undefined, now
       ...(passe ? { historique: passe } : {}),
       // The rules of approach of whales and dolphins, from the decrees in the code: nothing read.
       cetaces: cetaces.cetacesBlock(now),
+      // Linked only, as on /mer.
+      webcams_plages: WEBCAMS_PLAGES,
       couverture: coverage(),
       sources: credits([...(t?.used.map((g) => g.source) ?? []), ...(measuredWaves.length || histo?.bouees ? [candhis.SOURCE] : []), ...models.map((m) => m.source), requin.SOURCE, ...(reef || histo?.satellite ? [coraux.SOURCE] : []), cetaces.SOURCE, ...histoireSources(passe)]),
       // The oldest day measured among the points, not when rundata.re read the grids: what the answer's freshness says.
@@ -695,6 +704,8 @@ export async function temperatureMer(cache: Cache, lieu: string | undefined, now
     ...(passe ? { historique: passe } : {}),
     // On the coast only too: the rules of approach of whales and dolphins.
     ...(m || v ? { cetaces: cetaces.cetacesBlock(now) } : {}),
+    // On the coast only too: the beaches' webcams, linked only.
+    ...(m || v ? { webcams_plages: WEBCAMS_PLAGES } : {}),
     couverture: coverage(),
     sources: credits([...(m ? [m.grid.source] : gs.map((g) => g.source)), ...(buoy ? [candhis.SOURCE] : []), ...(v ? [v.model.source] : []), ...(m || v ? [requin.SOURCE] : []), ...((m || v) && reef || histo?.satellite ? [coraux.SOURCE] : []), ...(m || v ? [cetaces.SOURCE] : []), ...(histo?.bouees && !buoy ? [candhis.SOURCE] : []), ...histoireSources(passe)]),
   });

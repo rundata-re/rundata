@@ -16,6 +16,7 @@ import * as coraux from "../providers/coraux.js";
 import * as cetaces from "../tools/cetaces.js";
 import { CITATION as TIDE_CITATION, LABEL as TIDE_LABEL } from "../maree/calcul.js";
 import { NEAR_KM, shomPort, tidesAt } from "../tools/maree.js";
+import { WEBCAMS_PLAGES } from "../tools/mer.js";
 import { esc, islandMap, type Marker } from "./map.js";
 import { legende } from "./carte-legende.js";
 import { slugify } from "./places.js";
@@ -222,6 +223,7 @@ export function seaPage(origin: string, data: Cached<SeaData> | null, now = new 
   <div class="sec-h"><p class="eyebrow">Plage par plage</p><h2 id="h-plages">La mer au large de chaque plage</h2>
   <p>Du nord à l'ouest en passant par l'est et le sud : la dernière mesure satellite à moins de 12 km de chaque plage.</p></div>
   <div class="card">${list}</div>
+  <p><a href="${esc(WEBCAMS_PLAGES.lien)}">${esc(WEBCAMS_PLAGES.texte)}</a> (sur le site de l'IRT).</p>
 </section>
 ${reef !== undefined ? reefSection(reef) : ""}
 ${whaleSection(now)}

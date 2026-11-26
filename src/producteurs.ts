@@ -162,6 +162,7 @@ export const FICHES: Record<string, Fiche> = {
   radars_fixes: { famille: "licence_ouverte", producteurs: ["Ministère de l'Intérieur"] },
   onisr_accidents: { famille: "licence_ouverte", producteurs: ["Ministère de l'Intérieur"] },
   tco_decheteries: { famille: "licence_ouverte", producteurs: ["TCO"] },
+  casud_decheteries: { famille: "information_publique", producteurs: ["CASUD"] },
   ademe_decheteries: { famille: "licence_ouverte", producteurs: ["ADEME"] },
   tco_collecte: { famille: "licence_ouverte", producteurs: ["TCO"] },
   cirest_collecte: { famille: "information_publique", producteurs: ["CIREST"] },

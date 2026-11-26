@@ -1,0 +1,1839 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CASUD - Météo des déchets</title>
+    <meta name="csrf-token" content="">
+    <meta name="title" content="CASUD - Météo des déchets">
+    <meta name="description" content="AmiTri">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://tri-casud.re/meteo-des-dechets">
+    <meta property="og:title" content="CASUD - Météo des déchets">
+    <meta property="og:description" content="AmiTri">
+    <meta property="og:image" content="https://tri-casud.re/glide/frontend/images/placeholder.png?w=1200&amp;h=630&amp;fit=crop&amp;fm=png&amp;q=95&amp;s=172448cbeefb3aae84dcbd8a4ff4d654">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://tri-casud.re/meteo-des-dechets">
+    <meta property="twitter:title" content="CASUD - Météo des déchets">
+    <meta property="twitter:description" content="AmiTri">
+    <meta property="twitter:image" content="https://tri-casud.re/glide/frontend/images/placeholder.png?w=1200&amp;h=630&amp;fit=crop&amp;fm=png&amp;q=95&amp;s=172448cbeefb3aae84dcbd8a4ff4d654">
+    <link rel="sitemap" type="application/xml" title="Sitemap" href="https://tri-casud.re/sitemap.xml" />
+    <link href="https://tri-casud.re/assets/frontend/css/vendor.css?id=03a12a12ea518b72b50f1c092652ccc6" rel="stylesheet">
+    <link href="https://tri-casud.re/assets/frontend/css/app.css?id=c7c1536731918e144f255f568c7895d8" rel="stylesheet">
+        <link rel="stylesheet" href="https://use.typekit.net/lny6qnw.css">
+</head>
+<body id="waste-disposal-level-page" class="casud-page">
+<div id="fb-root"></div>
+<div class="app-content">
+        <header class="header d-flex align-items-center justify-content-between">
+        <a href="https://www.casud.re/" class="logo">
+            <img src="https://tri-casud.re/glide/frontend/images/casud/logo.png?h=86&amp;fm=webp&amp;q=95&amp;s=3a270ed8470ed3395385213249c3a424"
+                 alt="CASUD - Communauté d'Agglomération du Sud de l'Île de La Réunion">
+        </a>
+
+        <a href="https://www.casud.re/" class="back">
+            <span>Retour</span>
+        </a>
+    </header>
+
+    <main>
+            <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <h1>
+                    <span class="d-block">La météo des déchèteries</span>
+                    <div class="icon">
+                        <svg></svg>
+
+                    </div>
+                </h1>
+
+                <div class="cities-menu">
+                                            <div class="city">
+                            <a href="#entre-deux" class="text-dark text-uppercase">Entre-Deux</a>
+                        </div>
+                                                    <div class="separator"></div>
+                                                                    <div class="city">
+                            <a href="#le-tampon" class="text-dark text-uppercase">Le Tampon</a>
+                        </div>
+                                                    <div class="separator"></div>
+                                                                    <div class="city">
+                            <a href="#saint-joseph" class="text-dark text-uppercase">Saint-Joseph</a>
+                        </div>
+                                                    <div class="separator"></div>
+                                                                    <div class="city">
+                            <a href="#saint-philippe" class="text-dark text-uppercase">Saint-Philippe</a>
+                        </div>
+                                                            </div>
+            </div>
+        </div>
+
+        <div class="alert alert-info mb-5">
+            <p>
+                Nous actualisons en moyenne 2 à 3 fois par jour.
+                Avant de vous déplacer, consultez les informations concernant votre déchèterie pour vérifier l'état
+                de remplissage de ses caissons.
+                Vous avez la possibilité de consulter ces mêmes informations en téléchargeant l'appli AMITRI de la
+                CASUD. Une astuce simple et pratique...
+                <br>
+                Restez connectés !
+            </p>
+
+            <p class="mb-0 legend">
+                <strong class="d-block d-md-inline-block mb-2 mb-sm-0 mr-sm-4">Légende&nbsp;:</strong>
+                                    <span class="d-block d-md-inline-block mr-sm-4 color-success">
+                        <svg></svg>
+ Disponible
+                    </span>
+                                    <span class="d-block d-md-inline-block mr-sm-4 color-warning">
+                        <svg></svg>
+ Moitié plein
+                    </span>
+                                    <span class="d-block d-md-inline-block mr-sm-4 color-danger">
+                        <svg></svg>
+ Plein
+                    </span>
+                            </p>
+        </div>
+
+        <div class="cities-content" id="cities-accordion">
+                            <section id="entre-deux" class="city-section">
+                    <h2 class="section-title">Entre-Deux</h2>
+
+                                            <div class="alert bg-light mb-5">
+                            Actuellement, aucune déchèterie n'est rattachée à la météo des déchèteries sur cette commune.
+                        </div>
+                                    </section>
+                            <section id="le-tampon" class="city-section">
+                    <h2 class="section-title">Le Tampon</h2>
+
+                                            <div class="accordion mb-5">
+                                                            <div class="card">
+                                    <div class="card-header p-0" id="decheterie-de-terrain-fleury-heading">
+                                        <h2 class="mb-0">
+                                            <button
+                                                class="btn btn-link w-100 p-3 d-flex align-items-center justify-content-between text-dark text-uppercase shadow-none collapsed"
+                                                type="button"
+                                                data-toggle="collapse"
+                                                data-target="#decheterie-de-terrain-fleury"
+                                                aria-expanded="false" aria-controls="decheterie-de-terrain-fleury">
+                                                <span class="text-left flex-grow-1 flex-shrink-1">Déchèterie de Terrain Fleury</span>
+
+                                                <div class="icon flex-grow-0 flex-shrink-0 ml-3">
+                                                    <svg></svg>
+
+                                                </div>
+                                            </button>
+
+                                        </h2>
+                                    </div>
+
+                                    <div id="decheterie-de-terrain-fleury" class="collapse"
+                                         aria-labelledby="decheterie-de-terrain-fleury-heading"
+                                         data-parent="#cities-accordion">
+                                        <div class="card-body">
+                                            <div class="row align-items-stretch mb-3">
+            <div class="col-md-6 pb-4 pb-md-0">
+            <div class="map-wrapper h-100">
+                <div data-map
+                     data-lat="-21.281028136616"
+                     data-lng="55.527433007401"></div>
+            </div>
+        </div>
+    
+    <div class="col-md-6">
+        <div>
+            <h3>Déchèterie de Terrain Fleury</h3>
+
+                            <p>18 rue de la République<br />
+ 97430 Tampon</p>
+            
+                            <p>
+                    <strong>Horaires d'ouverture&nbsp;:</strong><br>
+                    Du lundi au samedi : de 8h00 à 12h00 et de 14h00 à 17h00<br />
+Dimanche : fermé et jour férié
+                </p>
+            
+                            <p>
+                    <strong>Règlement de la déchèterie&nbsp;:</strong>
+                    <a href="https://tri-casud.re/attachments/9micigusuwfer74kykjv3b6jq/casud-reglement-decheteries.pdf?disposition=inline" target="_blank">consulter</a>
+                </p>
+            
+                            <div class="row">
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div
+                                class="card-body text-center color-success">
+                                <div class="mb-2 waste-disposal-icon">
+                                    <svg></svg>
+
+                                </div>
+                                <div class="text-uppercase mb-2">
+                                    <strong>Compost</strong>
+                                </div>
+                                                                    <div>
+                                        Disponible
+                                    </div>
+                                                            </div>
+                        </div>
+                    </div>
+                </div>
+                    </div>
+    </div>
+</div>
+
+<p>
+    <strong>Déchets acceptés&nbsp;:</strong>
+</p>
+
+    <div class="alert alert-info">
+        Informations actualisées le 26/11/2026 à 08:46.
+    </div>
+
+<div class="row">
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Ampoule / Néon</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Batterie</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-warning">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Carton</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Moitié plein
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-warning">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Déchet vert</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Moitié plein
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-warning">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Ecomaison</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Moitié plein
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-warning">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Electroménager</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Moitié plein
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Encombrant</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Gravat</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Huile de friture</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Huile vidange</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Magazine / Journaux</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Métaux</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-warning">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Pile</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Moitié plein
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-danger">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Textile</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Plein
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Verre</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+    </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                                            <div class="card">
+                                    <div class="card-header p-0" id="decheterie-de-trois-mares-heading">
+                                        <h2 class="mb-0">
+                                            <button
+                                                class="btn btn-link w-100 p-3 d-flex align-items-center justify-content-between text-dark text-uppercase shadow-none collapsed"
+                                                type="button"
+                                                data-toggle="collapse"
+                                                data-target="#decheterie-de-trois-mares"
+                                                aria-expanded="false" aria-controls="decheterie-de-trois-mares">
+                                                <span class="text-left flex-grow-1 flex-shrink-1">Déchèterie de Trois-Mares</span>
+
+                                                <div class="icon flex-grow-0 flex-shrink-0 ml-3">
+                                                    <svg></svg>
+
+                                                </div>
+                                            </button>
+
+                                        </h2>
+                                    </div>
+
+                                    <div id="decheterie-de-trois-mares" class="collapse"
+                                         aria-labelledby="decheterie-de-trois-mares-heading"
+                                         data-parent="#cities-accordion">
+                                        <div class="card-body">
+                                            <div class="row align-items-stretch mb-3">
+            <div class="col-md-6 pb-4 pb-md-0">
+            <div class="map-wrapper h-100">
+                <div data-map
+                     data-lat="-21.263096141686"
+                     data-lng="55.496753567546"></div>
+            </div>
+        </div>
+    
+    <div class="col-md-6">
+        <div>
+            <h3>Déchèterie de Trois-Mares</h3>
+
+                            <p>53 rue Montaigne<br />
+97430 Tampon</p>
+            
+                            <p>
+                    <strong>Horaires d'ouverture&nbsp;:</strong><br>
+                    Du lundi au samedi de 8h00 à 12h00 et de 14h00 à 17h00. <br />
+Fermées les dimanches et jours fériés.
+                </p>
+            
+                            <p>
+                    <strong>Règlement de la déchèterie&nbsp;:</strong>
+                    <a href="https://tri-casud.re/attachments/42okqv63rgr4zmjd15966svxx/casud-reglement-decheteries.pdf?disposition=inline" target="_blank">consulter</a>
+                </p>
+            
+                            <div class="row">
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div
+                                class="card-body text-center color-success">
+                                <div class="mb-2 waste-disposal-icon">
+                                    <svg></svg>
+
+                                </div>
+                                <div class="text-uppercase mb-2">
+                                    <strong>Compost</strong>
+                                </div>
+                                                                    <div>
+                                        Disponible
+                                    </div>
+                                                            </div>
+                        </div>
+                    </div>
+                </div>
+                    </div>
+    </div>
+</div>
+
+<p>
+    <strong>Déchets acceptés&nbsp;:</strong>
+</p>
+
+    <div class="alert alert-info">
+        Informations actualisées le 26/11/2026 à 07:57.
+    </div>
+
+<div class="row">
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Ampoule / Néon</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Batterie</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Carton</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-warning">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Déchet vert</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Moitié plein
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-warning">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Ecomaison</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Moitié plein
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Electroménager</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-danger">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Encombrant</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Plein
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Gravat</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Huile de friture</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-danger">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Huile vidange</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Plein
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-warning">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Magazine / Journaux</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Moitié plein
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Métaux</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Pile</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Textile</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Verre</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+    </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                                            <div class="card">
+                                    <div class="card-header p-0" id="decheterie-du-23eme-km-heading">
+                                        <h2 class="mb-0">
+                                            <button
+                                                class="btn btn-link w-100 p-3 d-flex align-items-center justify-content-between text-dark text-uppercase shadow-none collapsed"
+                                                type="button"
+                                                data-toggle="collapse"
+                                                data-target="#decheterie-du-23eme-km"
+                                                aria-expanded="false" aria-controls="decheterie-du-23eme-km">
+                                                <span class="text-left flex-grow-1 flex-shrink-1">Déchèterie du 23ème km</span>
+
+                                                <div class="icon flex-grow-0 flex-shrink-0 ml-3">
+                                                    <svg></svg>
+
+                                                </div>
+                                            </button>
+
+                                        </h2>
+                                    </div>
+
+                                    <div id="decheterie-du-23eme-km" class="collapse"
+                                         aria-labelledby="decheterie-du-23eme-km-heading"
+                                         data-parent="#cities-accordion">
+                                        <div class="card-body">
+                                            <div class="row align-items-stretch mb-3">
+            <div class="col-md-6 pb-4 pb-md-0">
+            <div class="map-wrapper h-100">
+                <div data-map
+                     data-lat="-21.216187781665"
+                     data-lng="55.549565292519"></div>
+            </div>
+        </div>
+    
+    <div class="col-md-6">
+        <div>
+            <h3>Déchèterie du 23ème km</h3>
+
+                            <p>120, rue Roland Hoarau<br />
+PK23<br />
+97418 Plaine des Cafres</p>
+            
+                            <p>
+                    <strong>Horaires d'ouverture&nbsp;:</strong><br>
+                    Du lundi au samedi de 8h00 à 12h00 et de 14h00 à 17h00. <br />
+Fermées les dimanches et jours fériés.
+                </p>
+            
+                            <p>
+                    <strong>Règlement de la déchèterie&nbsp;:</strong>
+                    <a href="https://tri-casud.re/attachments/3l2ph6kyan9fxby5u45e8u34/casud-reglement-decheteries.pdf?disposition=inline" target="_blank">consulter</a>
+                </p>
+            
+                            <div class="row">
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div
+                                class="card-body text-center color-danger">
+                                <div class="mb-2 waste-disposal-icon">
+                                    <svg></svg>
+
+                                </div>
+                                <div class="text-uppercase mb-2">
+                                    <strong>Compost</strong>
+                                </div>
+                                                                    <div>
+                                        Non disponible
+                                    </div>
+                                                            </div>
+                        </div>
+                    </div>
+                </div>
+                    </div>
+    </div>
+</div>
+
+<p>
+    <strong>Déchets acceptés&nbsp;:</strong>
+</p>
+
+    <div class="alert alert-info">
+        Informations actualisées le 26/11/2026 à 07:52.
+    </div>
+
+<div class="row">
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Ampoule / Néon</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Batterie</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Carton</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-warning">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Déchet vert</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Moitié plein
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-warning">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Ecomaison</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Moitié plein
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Electroménager</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-warning">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Encombrant</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Moitié plein
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Gravat</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Huile de friture</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-warning">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Huile vidange</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Moitié plein
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-danger">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Magazine / Journaux</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Plein
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Métaux</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Pile</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-danger">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Textile</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Plein
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Verre</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+    </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                                            <div class="card">
+                                    <div class="card-header p-0" id="pava-bois-court-heading">
+                                        <h2 class="mb-0">
+                                            <button
+                                                class="btn btn-link w-100 p-3 d-flex align-items-center justify-content-between text-dark text-uppercase shadow-none collapsed"
+                                                type="button"
+                                                data-toggle="collapse"
+                                                data-target="#pava-bois-court"
+                                                aria-expanded="false" aria-controls="pava-bois-court">
+                                                <span class="text-left flex-grow-1 flex-shrink-1">PAVA Bois Court</span>
+
+                                                <div class="icon flex-grow-0 flex-shrink-0 ml-3">
+                                                    <svg></svg>
+
+                                                </div>
+                                            </button>
+
+                                        </h2>
+                                    </div>
+
+                                    <div id="pava-bois-court" class="collapse"
+                                         aria-labelledby="pava-bois-court-heading"
+                                         data-parent="#cities-accordion">
+                                        <div class="card-body">
+                                            <div class="row align-items-stretch mb-3">
+            <div class="col-md-6 pb-4 pb-md-0">
+            <div class="map-wrapper h-100">
+                <div data-map
+                     data-lat="-21.19687249508"
+                     data-lng="55.536055906499"></div>
+            </div>
+        </div>
+    
+    <div class="col-md-6">
+        <div>
+            <h3>PAVA Bois Court</h3>
+
+                            <p>Rue du Bois de Source<br />
+97418 La Plaine des Cafres</p>
+            
+                            <p>
+                    <strong>Horaires d'ouverture&nbsp;:</strong><br>
+                    Du lundi au samedi : de 8h00 à 17h00<br />
+Dimanche et jour férié : fermé
+                </p>
+            
+                            <p>
+                    <strong>Règlement de la déchèterie&nbsp;:</strong>
+                    <a href="https://tri-casud.re/attachments/bep49tpef2zgcaz8w7oh4cp67/ri-quai-apport-volontaire-bois-court.pdf?disposition=inline" target="_blank">consulter</a>
+                </p>
+            
+                    </div>
+    </div>
+</div>
+
+<p>
+    <strong>Déchets acceptés&nbsp;:</strong>
+</p>
+
+    <div class="alert alert-info">
+        Informations actualisées le 25/11/2026 à 16:20.
+    </div>
+
+<div class="row">
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Carton</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-warning">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Déchet vert</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Moitié plein
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Encombrant</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Gravat</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Métaux</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Verre</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+    </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                                    </div>
+                                    </section>
+                            <section id="saint-joseph" class="city-section">
+                    <h2 class="section-title">Saint-Joseph</h2>
+
+                                            <div class="accordion mb-5">
+                                                            <div class="card">
+                                    <div class="card-header p-0" id="decheterie-des-gregues-heading">
+                                        <h2 class="mb-0">
+                                            <button
+                                                class="btn btn-link w-100 p-3 d-flex align-items-center justify-content-between text-dark text-uppercase shadow-none collapsed"
+                                                type="button"
+                                                data-toggle="collapse"
+                                                data-target="#decheterie-des-gregues"
+                                                aria-expanded="false" aria-controls="decheterie-des-gregues">
+                                                <span class="text-left flex-grow-1 flex-shrink-1">Déchèterie des Grègues</span>
+
+                                                <div class="icon flex-grow-0 flex-shrink-0 ml-3">
+                                                    <svg></svg>
+
+                                                </div>
+                                            </button>
+
+                                        </h2>
+                                    </div>
+
+                                    <div id="decheterie-des-gregues" class="collapse"
+                                         aria-labelledby="decheterie-des-gregues-heading"
+                                         data-parent="#cities-accordion">
+                                        <div class="card-body">
+                                            <div class="row align-items-stretch mb-3">
+            <div class="col-md-6 pb-4 pb-md-0">
+            <div class="map-wrapper h-100">
+                <div data-map
+                     data-lat="-21.3806956797"
+                     data-lng="55.602884189697"></div>
+            </div>
+        </div>
+    
+    <div class="col-md-6">
+        <div>
+            <h3>Déchèterie des Grègues</h3>
+
+                            <p>Rue de la Station de Transit                <br />
+97480 Saint-Joseph</p>
+            
+                            <p>
+                    <strong>Horaires d'ouverture&nbsp;:</strong><br>
+                    Du lundi au samedi de 8h00 à 12h00 et de 14h00 à 17h00. Fermées les dimanches et jours fériés.
+                </p>
+            
+                            <p>
+                    <strong>Règlement de la déchèterie&nbsp;:</strong>
+                    <a href="https://tri-casud.re/attachments/5z84c4omgdcqhyxfkgjptzqxk/casud-reglement-decheteries.pdf?disposition=inline" target="_blank">consulter</a>
+                </p>
+            
+                            <div class="row">
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div
+                                class="card-body text-center color-success">
+                                <div class="mb-2 waste-disposal-icon">
+                                    <svg></svg>
+
+                                </div>
+                                <div class="text-uppercase mb-2">
+                                    <strong>Compost</strong>
+                                </div>
+                                                                    <div>
+                                        Disponible
+                                    </div>
+                                                            </div>
+                        </div>
+                    </div>
+                </div>
+                    </div>
+    </div>
+</div>
+
+<p>
+    <strong>Déchets acceptés&nbsp;:</strong>
+</p>
+
+    <div class="alert alert-info">
+        Informations actualisées le 26/11/2026 à 07:49.
+    </div>
+
+<div class="row">
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Ampoule / Néon</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Batterie</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Carton</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-warning">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Déchet vert</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Moitié plein
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Ecomaison</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Electroménager</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Encombrant</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Gravat</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Huile de friture</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Huile vidange</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-danger">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Magazine / Journaux</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Plein
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Métaux</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Pile</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Textile</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+            <div class="col-6 col-md-4 col-lg-3">
+            <div class="card mt-3">
+                <div
+                    class="card-body text-center color-success">
+                    <div class="mb-2 waste-disposal-icon">
+                        <svg></svg>
+
+                    </div>
+                    <div class="text-uppercase mb-2">
+                        <strong>Verre</strong>
+                    </div>
+                                            <div>
+                            <svg></svg>
+
+                            Disponible
+                        </div>
+                                    </div>
+            </div>
+        </div>
+    </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                                    </div>
+                                    </section>
+                            <section id="saint-philippe" class="city-section">
+                    <h2 class="section-title">Saint-Philippe</h2>
+
+                                            <div class="alert bg-light mb-5">
+                            Actuellement, aucune déchèterie n'est rattachée à la météo des déchèteries sur cette commune.
+                        </div>
+                                    </section>
+                    </div>
+    </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4 order-lg-3">
+                    <div class="logo">
+                        <a href="https://www.casud.re/">
+                            <img src="https://tri-casud.re/glide/frontend/images/casud/logo.png?h=119&amp;fm=webp&amp;q=95&amp;s=d12dabd168b79dc4c81410b62a970afc"
+                                 class="img-fluid"
+                                 alt="CASUD - Communauté d'Agglomération du Sud de l'Île de La Réunion">
+                        </a>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 order-lg-1">
+                    <div class="block headquarters">
+                        <div class="title">Coordonnées du siège</div>
+                        <p>
+                            379, rue Hubert Delisle<br>
+                            BP 437 - 97430 Le Tampon<br>
+                            Tél : 0262 57 97 77 - Fax : 0262 57 97 78
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 order-lg-2">
+                    <div class="block partners">
+                        <div class="title">Nos partenaires</div>
+                        <p>Refonte, adaptation et mise en accessibilité du site internet financés par l'Union Européenne.</p>
+                        <div class="logos">
+                            <img src="https://tri-casud.re/glide/frontend/images/casud/logo_eu.png?h=117&amp;fm=webp&amp;q=95&amp;s=02873e8d8bcc2602aa5a8154cf97e9c7"
+                                 alt="Union Européenne">
+
+                            <img src="https://tri-casud.re/glide/frontend/images/casud/logo_engage.png?h=117&amp;fm=webp&amp;q=95&amp;s=369e4ffdc1835147a7e5b556094583f2"
+                                 alt="L'Europe s'engage à la Réunion">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 order-lg-4">
+                    <div class="menu">
+                        <div class="menu-item">
+                            <a href="https://www.casud.re/mentions-legales" class="text-white">Mentions légales</a>
+                        </div>
+                        <div class="separator">-</div>
+                        <div class="menu-item">
+                            <a href="https://www.casud.re/politique-de-confidentialite" class="text-white">Politique de confidentialité</a>
+                        </div>
+                        <div class="separator">-</div>
+                        <div class="menu-item">
+                            <a href="https://www.casud.re/accessibilite" class="text-white">Accessibilité</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+</div>
+<script src="https://tri-casud.re/assets/frontend/js/manifest.js?id=be01f50cf8e45340dabccb7d726fbb73" defer></script>
+<script src="https://tri-casud.re/assets/frontend/js/vendor.js?id=5d2d41c493fc9cc9bd7fd5be9a499840" defer></script>
+<script src="https://tri-casud.re/assets/frontend/js/app.js?id=699ccc97b0ef852764ad27471ddf8058" defer></script>
+<div data-use-tarteaucitron></div>
+<script defer async>(function(){var WebP=new Image();WebP.onload=WebP.onerror=function(){
+        if(WebP.height!=2){var sc=document.createElement('script');sc.type='text/javascript';sc.async=true;
+            var s=document.getElementsByTagName('script')[0];sc.src='https://tri-casud.re/assets/frontend/js/webpjs-0.0.2.min.js';s.parentNode.insertBefore(sc,s);}};
+        WebP.src='data:image/webp;base64,UklGRjoAAABXRUJQVlA4IC4AAACyAgCdASoCAAIALmk0mk0iIiIiIgBoSygABc6WWgAA/veff/0PP8bA//LwYAAA';})();</script>
+</body>
+</html>

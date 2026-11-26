@@ -854,7 +854,8 @@ const DOMAIN_PAGES: Record<string, Page> = {
   // « Autour de moi » loads its list on the click: a file of public/, served by Cloudflare before the Worker runs.
   "/defibrillateurs": { subrequests: 6, cpuMs: 40, from: ["src/tools/dae.ts"], what: "la page /defibrillateurs\u00a0; « Autour de moi » charge au clic la liste compacte (public/dae/), servie par Cloudflare avant le Worker : 0 Worker, 0 KV, 0 D1" },
   "/sport": { subrequests: 42, cpuMs: 120, from: ["src/tools/sport.ts"] },
-  "/decheteries": { subrequests: 12, cpuMs: 30, from: ["src/tools/decheteries.ts"] },
+  // One more from 26/11/2026: the CASUD's page (providers/casud.ts), read at most twice an hour, its 1 MB parsed in 1 ms.
+  "/decheteries": { subrequests: 13, cpuMs: 30, from: ["src/tools/decheteries.ts"] },
   // Measured 27 out of an active system; 1 more while one is active: the RSMC's map's state (KV).
   "/cyclones": { subrequests: 28, cpuMs: 50, from: ["src/tools/cyclones.ts"] },
   // The tool without a place (the vigilance, the levels and the flows of every gauge, three posts), and the news read

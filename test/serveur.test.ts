@@ -160,7 +160,8 @@ describe("the server's instructions", () => {
     // and its example (« association de surf »), the tool kept under its 2 000 signs by three words said once fewer.
     // 26/11/2026, the CINOR's calendars: « dans l'Ouest, l'Est (sauf Sainte-Rose) et le Nord », the intercommunalities'
     // names left to the answers, the tool kept under its 2 000 signs and the cap as it was. The same day with the CASUD's:
-    // « rue par rue (hors CIVIS et Sainte-Rose) », shorter than naming the four parts of the island read.
+    // « rue par rue (hors CIVIS et Sainte-Rose) », shorter than naming the four parts of the island read. The same day with
+    // the CASUD's skips: « en direct au TCO et à la CASUD », « les déchèteries » without « de l'île », the cap as it was.
     expect(JSON.stringify(tools).length).toBeLessThanOrEqual(41_981);
     for (const t of tools) expect(t.description.length, t.name).toBeLessThanOrEqual(2_000);
   });

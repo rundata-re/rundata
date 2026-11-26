@@ -314,8 +314,8 @@ describe("the summary of a day", () => {
     // A day later, every site's state is of another day.
     expect(r.decheteries!.sites.every((x) => x.accepte === undefined && x.benne_pleine === undefined)).toBe(true);
     expect(r.resume).not.toMatch(/déchets verts acceptés/);
-    const tampon = pageOf("le-tampon")!;
-    expect(resume(tampon, COPIES as never, NOW).decheteries).toBeUndefined();
+    // Saint-Pierre: the CIVIS publishes no state (the CASUD's Le Tampon does, since 26/11/2026).
+    expect(resume(pageOf("saint-pierre")!, COPIES as never, NOW).decheteries).toBeUndefined();
   });
 
   it("in the evening, gives tomorrow's forecast too", () => {

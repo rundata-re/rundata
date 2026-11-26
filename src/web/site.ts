@@ -112,7 +112,7 @@ import { passePage } from "./cyclones-passes.js";
 import { PASSES, slugDuNom } from "../historique/cyclones-passes.js";
 import { ecolesPage } from "./ecoles.js";
 import { COMMUNES as COLLECTE_COMMUNES, communeSlug } from "../vie/collecte.js";
-import { TCO_COMMUNES } from "../vie/decheteries.js";
+import { LIVE_COMMUNES } from "../vie/decheteries.js";
 import * as carburants from "../providers/carburants.js";
 import { aujourdhuiPage } from "./aujourdhui.js";
 import { communeRss } from "./rss.js";
@@ -1239,7 +1239,7 @@ async function pages(request: Request, cache: Cache, background: Background, now
       vigilanceNow(cache, background, waitFor(request) ?? BANNER_WAIT_MS, now),
     ]);
     // The West's communes have their déchèteries' tile too (the TCO publishes them).
-    const tiles = TCO_COMMUNES.includes(p.nom) ? [...COMMUNE_TILES, "web:dechets"] : COMMUNE_TILES;
+    const tiles = LIVE_COMMUNES.includes(p.nom) ? [...COMMUNE_TILES, "web:dechets"] : COMMUNE_TILES;
     const [[air, mer, volcan, electricite, calendrier, coupures, secheresse, eau, randonnees, agenda, marches, dechets], hs] = await Promise.all([tileCopies(cache, tiles, background, place, now), sitesHs.sites(cache)]);
     return page(path, (live) => (live
       ? communePage(origin, p, { place, commune, vigilance, air, mer, volcan, electricite, calendrier, coupures, secheresse, eau, randonnees, agenda, dechets, hs, marches }, now, alerteLue(vigilance, now))

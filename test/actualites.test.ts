@@ -67,6 +67,11 @@ describe("actualités", () => {
     // Freedom, 26/11/2026 at 14:03: the home's tile said « mobilisation en cours » above it.
     const orphe = "Chaudron : Monique Orphé salue la mobilisation contre les violences intrafamiliales";
     expect(sujetsOf(orphe, orphe)).not.toContain("mobilisation");
+    // With its real lead, as the feed reads it (headline and lead, sujetsOf): a gathering of all ages is no protest.
+    const chapeau = " Monique Orphé a pris part, ce mercredi 25 novembre, à un rassemblement intergénérationnel organisé dans le quartier du Chaudron, à Saint-Denis, à l’occasion d’une journée de sensibilisation et de lutte contre les…";
+    expect(sujetsOf(orphe + chapeau, orphe)).not.toContain("mobilisation");
+    for (const t of ["Saint-Paul : un rassemblement festif pour Noël sur le front de mer", "Un rassemblement familial et convivial au parc du Colosse"])
+      expect(sujetsOf(t, t), t).not.toContain("mobilisation");
     for (const t of ["Une mobilisation pour la recherche contre le cancer à Saint-Pierre", "Octobre rose : forte mobilisation en faveur du dépistage", "Mobilisation autour des personnes âgées isolées"])
       expect(sujetsOf(t, t), t).not.toContain("mobilisation");
     // A protest's cause, a date, or a word of the streets keeps it.
@@ -530,7 +535,7 @@ describe("actualités", () => {
   // A change that keeps something else (a link, a field, a medium, a filter) changes it: add its fingerprint here and
   // raise SOURCE_REVISION["actualites:fil"] (and RENDU_REVISION.actualites), so that the entry read by the old code is
   // read again after the deploy. A fixture changed alone: add its fingerprint and raise the number all the same.
-  const FIL = ["b7e88ffb49a93884", "44c0eb346a5da96e", "95031bc5918208dd", "d177bf8851fdca3e", "e8416969f0a2d8cc", "3091f8c4c8a956ed", "257b273333650345", "69195050c2791723", "dcf1a479d2810ca3", "a79102468fde6006", "ea2fd4bd49be75b4", "e67521815e8d3c38"];
+  const FIL = ["b7e88ffb49a93884", "44c0eb346a5da96e", "95031bc5918208dd", "d177bf8851fdca3e", "e8416969f0a2d8cc", "3091f8c4c8a956ed", "257b273333650345", "69195050c2791723", "dcf1a479d2810ca3", "a79102468fde6006", "ea2fd4bd49be75b4", "e67521815e8d3c38", "f0c3ca5108027054"];
 
   it("keeps, from the same pages, what its revision says: one fingerprint per revision of actualites:fil", async () => {
     const { value } = await fil(cache(), NOW);

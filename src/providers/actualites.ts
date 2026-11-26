@@ -346,7 +346,9 @@ export const TRAFIC = String.raw`trafic(?! (?:de |d )?(?:drogues?|stupefiants?|c
 // dimanche », Le Quotidien, 21/11/2026, under « manifestations et blocages »). On normalised text.
 const BARRAGE = String.raw`(?<!(?:menace\w* par les|menaces? de|matchs? de|match d|places? de|tour de|finale de|qualifi\w* pour les|disputer les|jouer les|en) )barrages?(?! (?:de takamaka|hydro\w*|d irrigation|d accession|de (?:montee|maintien|relegation|promotion)|aller|retour)\b)`;
 // A gathering, not a party: « le Rassemblement national », « le Rassemblement réunionnais » (Clicanoo, 22/11/2026).
-const RASSEMBLEMENT = String.raw`rassemblement\w*(?! (?:national|reunionnais|pour la republique)\b)`;
+// Nor a gathering of all ages, a party or a game: « un rassemblement intergénérationnel organisé dans le quartier du
+// Chaudron » (Freedom, 26/11/2026, a day against violence in families, under « manifestations et blocages »).
+const RASSEMBLEMENT = String.raw`rassemblement\w*(?! (?:national|reunionnais|pour la republique|intergeneration\w*|festi\w*|familia\w*|convivia\w*|sporti\w*|culturel\w*)\b)`;
 // The words that say people in the streets or roads blocked wherever they are in the lead; « mobilisation » alone says
 // it in the headline only: « Cette mobilisation s'inscrivait dans le cadre du 37e anniversaire de la Convention
 // internationale des droits de l'enfant » (Freedom, 22/11/2026, 700 children at a day on their rights in Bras-Panon).

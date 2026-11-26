@@ -157,7 +157,7 @@ class LignesTest {
      */
     @Test
     fun laMerDitLaBoueeQuandElleMesure() {
-        // « à » et l'heure ne se séparent pas : à 200 %, le libellé passe sur trois lignes et l'heure n'y est jamais seule ni perdue (item 2132).
+        // « à » et l'heure ne se séparent pas : à 200 %, le libellé passe sur trois lignes et l'heure n'y est jamais seule ni perdue.
         kotlin.test.assertEquals("mer, bouée à\u00a022:50", libelleMer(null, bouee = "Saint-Pierre (large)", heure = "22:50"))
         kotlin.test.assertTrue(libelleMer(null, bouee = "Saint-Pierre (large)", heure = "22:50").length <= "mer, vue par satellite".length)
     }

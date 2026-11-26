@@ -32,7 +32,7 @@ class ApercusTest {
 
     /**
      * Les aperçus de la liste des widgets sont des images fixes, de taille fixe : leurs textes sont en dp, pas en sp, et ne grossissent pas avec le texte d'Android.
-     * À 200 %, « °C » passait sous « 25,5 » et « Saint-Denis » se coupait en « Sai / nt-D » dans la liste des widgets (item 2132). Le widget posé, lui, suit la taille du texte.
+     * À 200 %, « °C » passait sous « 25,5 » et « Saint-Denis » se coupait en « Sai / nt-D » dans la liste des widgets. Le widget posé, lui, suit la taille du texte.
      */
     @Test
     fun lesTextesDesApercusNeSuiventPasLaTailleDuTexte() {

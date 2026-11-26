@@ -230,7 +230,7 @@ class JourneeTest {
     }
 
     /**
-     * La version d'essai (item 2286) : l'alerte simulée change aussi la vigilance du résumé, sa carte et la phrase de « La
+     * La version d'essai : l'alerte simulée change aussi la vigilance du résumé, sa carte et la phrase de « La
      * journée », pour que l'écran ne dise pas à la fois orange et vert.
      */
     @Test

@@ -13,11 +13,11 @@ import { GITHUB, layout } from "./pages.js";
 export const PATH = "/appli";
 /** The short address of the file, the button's link: a redirect to the asset of the current pre-release. */
 export const APK_PATH = "/appli/rundata-re.apk";
-export const VERSION = "0.3.5";
+export const VERSION = "0.3.6";
 /** The pre-release that carries the file. Releases are immutable: a tag published without its file can never take one (0.1.2 lives at android-v0.1.2-1). */
-export const TAG = "android-v0.3.5";
+export const TAG = "android-v0.3.6";
 /** SHA-256 of the file published with the pre-release TAG. */
-export const EMPREINTE = "471b4d667caf68a66726e23bb5a223afd6471165740cb2d77c0dcfcfcb8e1d54";
+export const EMPREINTE = "f922cd0e0b0a742c04e2051d3a4b5221687d5c886fef74c0f44e9d5c804b1455";
 export const APK_URL = `${GITHUB}/releases/download/${TAG}/rundata-re-${VERSION}.apk`;
 
 const TITLE = "L'appli rundata.re pour Android · version d'essai";

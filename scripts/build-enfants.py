@@ -16,6 +16,7 @@ Usage: python3 -I scripts/build-enfants.py [--osm overpass.json] [--dataes data-
 """
 import argparse
 import csv
+import importlib.util
 import io
 import unicodedata
 import json
@@ -53,6 +54,15 @@ SITES = {
     # Musée Dan Tan Lontan, Saint-André: the town's page is gone, with no other; its map entry stays.
     "https://www.openstreetmap.org/node/4721820628": None,
 }
+# Sites that OpenStreetMap gives at an address that now redirects (read on 24/11/2026): their new address, so that a
+# rebuild does not put the old one back (test/liens-anciens.test.ts). Keyed without the scheme, the test refusing the
+# old address written whole.
+MOVED = {
+    "saintjoseph.re/Bibliotheque-municipale": "https://saintjoseph.re/Mediatheque-du-Sud-Sauvage",
+    "goplayarena.re": "https://www.goplayarena.re/",
+    "lejardindestortues.re/": "https://www.lejardindestortues.re/",
+    "randoaquareunion.fr/": "https://www.randoaquareunion.fr/",
+}
 CLOSED = re.compile(r"site ferm[ée]|ferm[ée]e? d[ée]finitivement|ferm[ée]e? depuis|hors service|d[ée]moli|d[ée]truit|d[ée]saffect", re.I)
 FAMILIES = "Individuel(s),famille(s)"
 NOT_PUBLIC_LIBRARY = re.compile(r"universitaire|documentation|librairie|archives|tabac|presse|\bCDI\b|^B\.?C\.?D\b|direction|centre multi", re.I)
@@ -63,6 +73,13 @@ GENERIC = {"bibliotheque", "mediatheque", "municipale", "intercommunale", "depar
 PLACES = json.loads((ROOT / "src/places/gazetteer.json").read_text())["places"]
 LOCALITIES = [p for p in PLACES if p["type"] in ("quartier", "localite", "lieu_dit")]
 COMMUNES = {nom for nom, _ in re.findall(r'"([^"]+)": "(974\d\d)"', (ROOT / "src/places/insee.ts").read_text())}
+NOM_DE_CODE = {code: nom for nom, code in re.findall(r'"([^"]+)": "(974\d\d)"', (ROOT / "src/places/insee.ts").read_text())}
+# The communes' official contours, as the other lists take a point's commune (build-traces.py): its code, its polygons.
+CONTOURS = "https://geo.api.gouv.fr/departements/974/communes?format=geojson&geometry=contour&fields=code"
+spec = importlib.util.spec_from_file_location("traces", ROOT / "scripts" / "build-traces.py")
+bt = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(bt)
+SHAPES = []
 COS = math.cos(math.radians(21.1))
 
 
@@ -71,9 +88,12 @@ def km(lon0, lat0, lon1, lat1):
 
 
 def commune_at(lon, lat):
-    """The commune of the nearest place of the gazetteer, as src/places/resolve.ts does, and how far it is (km)."""
+    """The commune whose official contour holds the point, and how far the nearest place of the gazetteer is (km). Near
+    a boundary that place may be across it (a summit, a basin on a ridge): its commune only where no contour holds the
+    point (a point at sea, a rounding on the shore)."""
     best = min(PLACES, key=lambda p: ((p["lon"] - lon) * COS) ** 2 + (p["lat"] - lat) ** 2)
-    return best["commune"], km(lon, lat, best["lon"], best["lat"])
+    held = next((nom for nom, polys in SHAPES if bt.inside((lon, lat), polys)), None)
+    return held or best["commune"], km(lon, lat, best["lon"], best["lat"])
 
 
 def locality(lon, lat, commune):
@@ -158,7 +178,7 @@ def osm_places(elements):
             p["horaires_osm"] = t["opening_hours"]
         site = SITES.get(p["lien"], t.get("website") or t.get("contact:website"))
         if site:
-            p["site"] = site
+            p["site"] = MOVED.get(site.removeprefix("https://"), site)
         street = tidy(" ".join(x for x in [t.get("addr:housenumber"), t.get("addr:street")] if x))
         if street:
             p["adresse"] = street
@@ -288,7 +308,12 @@ def main():
     ap.add_argument("--osm", help="Overpass's answer to QUERY, saved; else asked")
     ap.add_argument("--dataes", help="Data ES's export for the 974, saved; else downloaded")
     ap.add_argument("--basilic", help="Basilic's national CSV, saved; else downloaded")
+    ap.add_argument("--contours", help="geo.api.gouv.fr's contours of the communes (CONTOURS), saved; else asked")
     args = ap.parse_args()
+    contours = json.loads(Path(args.contours).read_text()) if args.contours else json.load(opened(CONTOURS))
+    SHAPES[:] = [(NOM_DE_CODE[f["properties"]["code"]], bt.rings_of(f["geometry"])) for f in contours["features"]]
+    if len(SHAPES) != 24:
+        raise SystemExit(f"{len(SHAPES)} contours of communes: the answer looks cut, nothing written")
     elements = json.loads(Path(args.osm).read_text())["elements"] if args.osm else json.load(opened(OVERPASS, urllib.parse.urlencode({"data": QUERY}).encode()))["elements"]
     records = json.loads(Path(args.dataes).read_text()) if args.dataes else json.load(opened(DATAES))
     text = Path(args.basilic).read_text(encoding="utf-8-sig") if args.basilic else opened(BASILIC, timeout=900).read().decode("utf-8-sig")

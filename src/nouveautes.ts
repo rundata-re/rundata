@@ -59,6 +59,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded for the site): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-26T05:22:00+04:00", texte: "Avec les enfants\u00a0: chaque lieu est placé dans sa commune d'après le contour officiel, comme l'aire de jeux de Domenjod." },
   { date: "2026-11-25T18:12:00+04:00", texte: "Antennes\u00a0: touchez une antenne de la carte pour voir sa fiche ANFR (opérateurs, bandes, mise en service, hauteur, azimuts)." },
   { date: "2026-11-25T17:17:00+04:00", texte: "Menu\u00a0: «\u00a0Donner un avis\u00a0» en tête, sur toutes les pages, mène directement au formulaire d'avis en bas de page." },
   { date: "2026-11-25T11:07:00+04:00", texte: "Associations\u00a0: les associations déclarées à La Réunion (RNA), à chercher par commune et par mot, avec leur objet et leur année de création." },

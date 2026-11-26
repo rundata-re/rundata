@@ -17,12 +17,12 @@ import { script } from "./scripts-declares.js";
 // The titles and a commune's description say the year of the calendars read (vie/collecte.ts YEAR), never the year of
 // the day: people search « collecte des déchets saint-paul 2026 » and « calendrier tco » (wording validated on 24/11/2026).
 const TITLE_MAX = 60;
-export const TITLE = `Collecte TCO, CIREST, CINOR ${col.YEAR} : jours par rue · 974`;
+export const TITLE = `Collecte TCO, CIREST, CINOR, CASUD ${col.YEAR} : jours par rue`;
 const H1 = "Quel jour passent les poubelles ?";
-const META = `Ordures ménagères, tri, déchets verts : le jour de collecte rue par rue dans l'Ouest, l'Est et le Nord (974), d'après le TCO, la CIREST et la CINOR.`;
-/** Who collects in a commune whose calendars are read, as the sentences say it; all three on /collecte. */
-const qui = (c?: string) => (c ? col.epciOf(col.STREETS.find((s) => s.commune === c)!).nom : "le TCO, la CIREST et la CINOR");
-const des = (c?: string) => (c ? col.epciOf(col.STREETS.find((s) => s.commune === c)!).du : "du TCO, de la CIREST et de la CINOR");
+const META = `Ordures ménagères, tri, déchets verts : le jour de collecte rue par rue dans l'Ouest, l'Est, le Nord et quatre communes du Sud (TCO, CIREST, CINOR, CASUD).`;
+/** Who collects in a commune whose calendars are read, as the sentences say it; all four on /collecte. */
+const qui = (c?: string) => (c ? col.epciOf(col.STREETS.find((s) => s.commune === c)!).nom : "le TCO, la CIREST, la CINOR et la CASUD");
+const des = (c?: string) => (c ? col.epciOf(col.STREETS.find((s) => s.commune === c)!).du : "du TCO, de la CIREST, de la CINOR et de la CASUD");
 // A long name (Les Trois-Bassins) without « jours par rue ».
 const titleOf = (c: string) => [`Collecte des déchets ${c} ${col.YEAR} : jours par rue · 974`].find((t) => t.length <= TITLE_MAX) ?? `Collecte des déchets ${c} ${col.YEAR} · 974`;
 const h1Of = (c: string) => `Quel jour passent les poubelles ${a(c)} ?`;
@@ -32,10 +32,10 @@ const metaFull = (c: string) => `Calendrier ${col.YEAR} de collecte des déchets
 const metaOf = (c: string) => (metaFull(c).length <= 160 ? metaFull(c) : metaFull(c).replace(" (974)", ""));
 const leadOf = (c?: string) => `Tapez le nom de votre rue : le jour de passage pour les ordures ménagères, le tri et les déchets verts, d'après les calendriers ${col.YEAR} publiés par ${qui(c)}.`;
 const { honesty, communeSlug } = col;
-// With the list just below, and the tool's first words of `a_savoir` (honesty): only the West, the East and the North are read.
-/** « Seulement les communes de l'Ouest (TCO), de l'Est (CIREST, sauf Sainte-Rose) et du Nord (CINOR) pour l'instant. », the tool's words: under the field, and after a street not found. */
+// With the list just below, and the tool's first words of `a_savoir` (honesty): only the West, the East, the North and the CASUD are read.
+/** « Seulement les communes de l'Ouest (TCO), de l'Est (CIREST, sauf Sainte-Rose), du Nord (CINOR) et de la CASUD dans le Sud pour l'instant. », the tool's words: under the field, and after a street not found. */
 const OUEST = honesty().split(" Calendriers")[0];
-const NOT_FOUND_HERE = `Rue non trouvée dans les calendriers du TCO, de la CIREST et de la CINOR. Vérifiez l'orthographe, essayez le nom du quartier, ou cherchez dans la liste ci-dessous. ${OUEST}`;
+const NOT_FOUND_HERE = `Rue non trouvée dans les calendriers du TCO, de la CIREST, de la CINOR et de la CASUD. Vérifiez l'orthographe, essayez le nom du quartier, ou cherchez dans la liste ci-dessous. ${OUEST}`;
 /**
  * The communes of the other intercommunalities, for the search box: typed alone or ending what is typed (« rue de
  * Paris, Saint-Denis »), the same sentence as the tool's (vie/collecte.ts `ailleurs`, the validated words of 04/11/2026),
@@ -190,7 +190,7 @@ export function collectePage(origin: string, now: Date, commune?: string, alerte
 </div></div>`;
   const body = `<section aria-label="Votre rue"><div id="trouve" aria-live="polite"></div><p id="rien" hidden>${esc(NOT_FOUND_HERE)}</p></section>
 <section aria-labelledby="h-voies">
-  <div class="sec-h"><h2 id="h-voies">${commune ? `Les rues ${esc(de(commune))}` : "Toutes les rues de l'Ouest, de l'Est et du Nord"}</h2>
+  <div class="sec-h"><h2 id="h-voies">${commune ? `Les rues ${esc(de(commune))}` : "Toutes les rues de l'Ouest, de l'Est, du Nord et de quatre communes du Sud"}</h2>
   <p class="note">${esc(honesty())}</p></div>
   ${col.pastYear(today) ? `<p class="card">${esc(col.notYet(ici))}</p>` : `${col.nearYearEnd(today) ? `<p class="card">${esc(col.untilYearEnd(ici))}</p>` : ""}${groups(today, commune)}`}
 </section>

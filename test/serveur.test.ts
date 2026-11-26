@@ -159,7 +159,8 @@ describe("the server's instructions", () => {
     // 41 981 the same day with the declared associations in annuaire_services_publics (the RNA, /associations): one line
     // and its example (« association de surf »), the tool kept under its 2 000 signs by three words said once fewer.
     // 26/11/2026, the CINOR's calendars: « dans l'Ouest, l'Est (sauf Sainte-Rose) et le Nord », the intercommunalities'
-    // names left to the answers, the tool kept under its 2 000 signs and the cap as it was.
+    // names left to the answers, the tool kept under its 2 000 signs and the cap as it was. The same day with the CASUD's:
+    // « rue par rue (hors CIVIS et Sainte-Rose) », shorter than naming the four parts of the island read.
     expect(JSON.stringify(tools).length).toBeLessThanOrEqual(41_981);
     for (const t of tools) expect(t.description.length, t.name).toBeLessThanOrEqual(2_000);
   });

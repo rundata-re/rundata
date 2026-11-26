@@ -27,7 +27,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // A medium not read said « rundata.re ne sait pas ce qu'ils annoncent », never « nous » (23/11/2026).
   // Freedom's link at its own address, https://freedom.fr/, with the feed's revision 11 (24/11/2026).
   // An article that opens on a quote told local from the sentence after it (chapeau, 25/11/2026).
-  actualites: 27,
+  // « Mobilisation » no cause people rally to, unless a protest's cause, a date or a word of the streets (26/11/2026).
+  actualites: 28,
   // La veille demandée aux agendas WordPress : un spectacle de ce soir revient (#795).
   // L'agenda de L'Étang-Salé repris avec l'accord écrit de la mairie du 06/11/2026.
   // Le week-end du connecteur compté comme sa page (vendredi dès 17:00, lundi férié), ce qui y commence d'abord.

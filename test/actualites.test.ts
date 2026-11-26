@@ -63,6 +63,22 @@ describe("actualités", () => {
     for (const t of ["La FSU appelle à une nouvelle journée de mobilisation le 5 novembre", "Mobilisation du 24 octobre : ce qui est prévu"]) expect(sujetsOf(t), t).toContain("mobilisation");
   });
 
+  it("says « mobilisation » for a protest, not for a cause people rally to (26/11/2026)", () => {
+    // Freedom, 26/11/2026 at 14:03: the home's tile said « mobilisation en cours » above it.
+    const orphe = "Chaudron : Monique Orphé salue la mobilisation contre les violences intrafamiliales";
+    expect(sujetsOf(orphe, orphe)).not.toContain("mobilisation");
+    for (const t of ["Une mobilisation pour la recherche contre le cancer à Saint-Pierre", "Octobre rose : forte mobilisation en faveur du dépistage", "Mobilisation autour des personnes âgées isolées"])
+      expect(sujetsOf(t, t), t).not.toContain("mobilisation");
+    // A protest's cause, a date, or a word of the streets keeps it.
+    for (const [titre, suite] of [
+      ["Mobilisation contre la vie chère samedi", ""],
+      ["Les syndicats appellent à la mobilisation contre la réforme des retraites", ""],
+      ["Mobilisation pour les salaires à la Sucrerie de Bois-Rouge", ""],
+      ["Mobilisation pour le 5 décembre", ""],
+      ["Mobilisation contre les violences faites aux femmes", " Un rassemblement est prévu devant la préfecture à 10 heures."],
+    ]) expect(sujetsOf(titre + suite, titre), titre).toContain("mobilisation");
+  });
+
   let down: RegExp | undefined;
   let asked: string[];
   beforeEach(() => {

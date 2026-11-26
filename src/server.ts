@@ -1,9 +1,9 @@
 import { chiffres, type Copie, KEY as CHIFFRES, resume as resumeChiffres } from "./chiffres.js";
 import { comptee, FAMILLES, FICHES, type Famille, producteursDe } from "./producteurs.js";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { ListToolsRequestSchema, type ListToolsResult } from "@modelcontextprotocol/sdk/types.js";
-import { AjvJsonSchemaValidator } from "@modelcontextprotocol/sdk/validation/ajv";
-import type { jsonSchemaValidator } from "@modelcontextprotocol/sdk/validation";
+import { McpServer } from "@modelcontextprotocol/server";
+import type { ListToolsResult, ServerContext } from "@modelcontextprotocol/server";
+import { AjvJsonSchemaValidator } from "@modelcontextprotocol/server/validators/ajv";
+import type { jsonSchemaValidator } from "@modelcontextprotocol/server";
 import * as courantMairies from "./providers/coupures-courant.js";
 import * as carburantsPrix from "./providers/carburants.js";
 import * as radarMf from "./providers/radar.js";
@@ -354,6 +354,31 @@ const VALIDATEUR: jsonSchemaValidator = { getValidator: (schema) => (ajv ??= new
  */
 const listesGardees = new Map<string, ListToolsResult>();
 
+/**
+ * A tool's arguments, as the SDK registers them (z.object of the shape), its JSON Schema made once per isolate: the
+ * SDK 2 makes it at each registration, so for each of the ~32 tools of the server built for each request, about 2.4 ms
+ * of CPU a request (26/11/2026, round 436). The shapes are fixed (no value of the request or the day in them); their
+ * field names and descriptions are checked, and a shape that changed is made again.
+ */
+const schemasGardes = new Map<string, { signature: string; schema: z.ZodObject }>();
+function schemaGarde(name: string, shape: z.ZodRawShape): z.ZodObject {
+  const signature = Object.entries(shape).map(([k, v]) => `${k}\u0000${(v as z.ZodType).description ?? ""}`).join("\u0001");
+  const kept = schemasGardes.get(name);
+  if (kept?.signature === signature) return kept.schema;
+  const object = z.object(shape);
+  const standard = object["~standard"] as z.ZodObject["~standard"] & { jsonSchema: Record<"input" | "output", (o: unknown) => unknown> };
+  const made = new Map<string, unknown>();
+  const once = (io: "input" | "output") => (o: unknown) => {
+    const k = `${io}${JSON.stringify(o)}`;
+    if (!made.has(k)) made.set(k, standard.jsonSchema[io](o));
+    return made.get(k);
+  };
+  // The zod object itself, its `~standard` alone made to keep what it converts.
+  const schema = Object.create(object, { "~standard": { value: { ...standard, jsonSchema: { input: once("input"), output: once("output") } } } }) as z.ZodObject;
+  schemasGardes.set(name, { signature, schema });
+  return schema;
+}
+
 export function createServer(cache: Cache, record: Recorder = () => {}, background?: Background): McpServer {
   const server = new McpServer(
     { name: "reunion-temps-reel", title: "rundata.re · La Réunion 974 en direct", version: VERSION, icons: SERVER_ICONS },
@@ -362,10 +387,10 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
   // The descriptions and the answers as said, with their no-break spaces (typographie.ts), like the pages.
   const register = server.registerTool.bind(server);
   const cle: string[] = [];
-  server.registerTool = ((name: string, config: { title?: string; description?: string }, cb: never) => {
+  server.registerTool = ((name: string, config: { title?: string; description?: string; inputSchema?: z.ZodRawShape }, cb: never) => {
     const description = config.description && dit(config.description);
     cle.push(name, config.title ?? "", description ?? "");
-    return register(name, { ...config, description }, cb);
+    return register(name, { ...config, description, inputSchema: config.inputSchema && schemaGarde(name, config.inputSchema) }, cb);
   }) as typeof server.registerTool;
   // The list of the tools without what the SDK adds to each tool for no client: about 2 500 characters of each conversation.
   type Handler = (request: unknown, extra: unknown) => unknown;
@@ -377,14 +402,16 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
     return l;
   };
   server.server.setRequestHandler = ((schema: unknown, handler: Handler) =>
-    setHandler(schema, schema === ListToolsRequestSchema ? (request, extra) => liste(handler, request, extra) : handler)) as typeof server.server.setRequestHandler;
+    setHandler(schema, schema === "tools/list" ? (request, extra) => liste(handler, request, extra) : handler)) as typeof server.server.setRequestHandler;
   // Records the place asked (a commune, a beach…), never a street address: fiche_terrain's stays out of the metrics.
   // Ends each answer with its citation and the link to rundata.re.
   // Each answer also says how fresh it is, from the cache entries the call read, and which tools are new.
   let tools = 0;
   const track = <A extends object, R extends object>(name: string, run: (args: A, extra: Extra) => Promise<R>) => {
     tools++; // one per tool registered
-    return async (args: A, extra: Extra = {}): Promise<R> => {
+    return async (args: A, ctx?: ServerContext): Promise<R> => {
+      // What the tools read of the request: its id, and the client's user-agent (donner_avis).
+      const extra: Extra = { requestId: ctx?.mcpReq.id, requestInfo: { headers: { "user-agent": ctx?.http?.req?.headers.get("user-agent") ?? undefined } } };
       const lieu = "lieu" in args && typeof args.lieu === "string" ? args.lieu : undefined;
       // « La Réunion » alone is the whole island, as no place given (a tour of it where the tool has one); the day's
       // summary needs a commune, and the feedback keeps what was written.

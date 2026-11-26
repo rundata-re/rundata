@@ -5,8 +5,8 @@
  * from the answers the transport sends. The values of the arguments are not kept, except the place: as the gazetteer
  * understood it, or the text asked when it did not understand it, since those are what the resolver is improved from.
  */
-import type { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
-import type { JSONRPCMessage } from "@modelcontextprotocol/sdk/types.js";
+import type { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/server";
+import type { JSONRPCMessage } from "@modelcontextprotocol/server";
 import { stopwatch, type Hit, type Recorder } from "./metrics.js";
 import { communeAt, resolvePlace, wholeIsland } from "./places/resolve.js";
 
@@ -25,6 +25,9 @@ export interface Asked {
   protocol?: string;
 }
 
+// The keys of the 2026-07-28 envelope (CLIENT_INFO_META_KEY, PROTOCOL_VERSION_META_KEY of the SDK).
+const CLIENT_INFO = "io.modelcontextprotocol/clientInfo";
+const PROTOCOL = "io.modelcontextprotocol/protocolVersion";
 const short = (v: unknown, n: number) => (typeof v === "string" && v.trim() ? v.trim().slice(0, n) : undefined);
 const record = (v: unknown) => (v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {});
 
@@ -48,6 +51,14 @@ export function asked(body: unknown): Asked[] {
       a.client = short(info.name, 60);
       a.clientVersion = short(info.version, 30);
       a.protocol = short(p.protocolVersion, 20);
+    }
+    // 2026-07-28: no initialize, each request says its client and version in its `_meta` envelope.
+    const meta = record(p._meta);
+    if (meta[CLIENT_INFO] || meta[PROTOCOL]) {
+      const info = record(meta[CLIENT_INFO]);
+      a.client = short(info.name, 60);
+      a.clientVersion = short(info.version, 30);
+      a.protocol = short(meta[PROTOCOL], 20);
     }
     out.push(a);
   }
@@ -129,6 +140,23 @@ export function watch(request: Request, record: Recorder) {
         failure = err.message.slice(0, 160);
         onerror?.(err);
       };
+    },
+    /** The SDK's handler (2026-07-28) says why it refused a request, as the transport does. */
+    failed(err: Error) {
+      failure ??= err.message.slice(0, 160);
+    },
+    /** The answer of the SDK's handler (2026-07-28), or a refusal of the transport, a JSON body: read from a copy, the response left whole. */
+    async answered(response: Response) {
+      if (!response.headers.get("content-type")?.includes("application/json")) return;
+      const body: unknown = await response.clone().json().catch(() => undefined);
+      for (const message of Array.isArray(body) ? body : [body]) {
+        if (!message || typeof message !== "object" || !("id" in message)) continue;
+        const a = answer(message as JSONRPCMessage);
+        if (a) answers.set((message as { id: string | number }).id, { ...a, ...measure() });
+        // A refusal's message as the client reads it, rather than the error thrown before it (the SDK 2's transport
+        // tells JSON.parse's own words, « Expected property name… », where the answer says « Parse error: Invalid JSON »).
+        if (a?.message && response.status >= 400) failure = a.message;
+      }
     },
     /** The server's word that the call `id` found nothing: recorded « vide » rather than « ok ». */
     vide(id: string | number) {

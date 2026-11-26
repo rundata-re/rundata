@@ -123,10 +123,16 @@ describe("MCP endpoint, as recorded", () => {
   });
 
   it("records why a request was refused, with its protocol header", async () => {
-    const { hits, response } = await hitsOf(post({ jsonrpc: "2.0", id: 2, method: "tools/list" }, { "mcp-protocol-version": "2099-01-01" }));
+    // A version before 2026-07-28 that the server does not know (the probes send 1999-01-01): the 2025 path's refusal.
+    const { hits, response } = await hitsOf(post({ jsonrpc: "2.0", id: 2, method: "tools/list" }, { "mcp-protocol-version": "1999-01-01" }));
     expect(response.status).toBe(400);
-    expect(hits).toMatchObject([{ kind: "rpc", name: "tools/list", protocol: "2099-01-01", outcome: "http 400", ok: false }]);
-    expect(hits[0].message).toContain("Unsupported protocol version: 2099-01-01");
+    expect(hits).toMatchObject([{ kind: "rpc", name: "tools/list", protocol: "1999-01-01", outcome: "http 400", ok: false }]);
+    expect(hits[0].message).toContain("Unsupported protocol version: 1999-01-01");
+    // A later one is the per-request envelope's era: the SDK asks for the envelope, -32602 (round 436, 26/11/2026).
+    const later = await hitsOf(post({ jsonrpc: "2.0", id: 2, method: "tools/list" }, { "mcp-protocol-version": "2099-01-01" }));
+    expect(later.response.status).toBe(400);
+    expect(later.hits).toMatchObject([{ kind: "rpc", name: "tools/list", protocol: "2099-01-01", outcome: "rpc -32602", ok: false }]);
+    expect(later.hits[0].message).toContain("missing the required per-request envelope");
     const garbage = await hitsOf(post("{not json"));
     expect(garbage.response.status).toBe(400);
     expect(garbage.hits).toMatchObject([{ kind: "rpc", name: "POST", outcome: "http 400", message: "Parse error: Invalid JSON" }]);

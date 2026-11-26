@@ -364,9 +364,13 @@ export class SharedFallback implements CacheStore {
     const shared = await kvGet(this.kv, from);
     const newer = shared && (!e || (outdated(key, e, this.version) === outdated(from, shared, this.version) ? shared.fetchedAt > e.fetchedAt : outdated(key, e, this.version)));
     const v = newer ? viewOf(from, shared) : undefined;
-    if (!v) return e;
-    await this.edge.put(key, v.entry);
-    return v.entry;
+    if (v) await this.edge.put(key, v.entry);
+    const got = v?.entry ?? e;
+    // As the copy's (`get`): a view late for its copy's refresh, and too old for the caller, says the copy's failed
+    // refresh noted in KV, so that no page there sets out to build the copy while its source is silent.
+    if (!got || freshAfter == null || got.fetchedAt >= freshAfter || !this.late(from, got)) return got;
+    const failed = await kvFailure(this.kv, from);
+    return failed && failed.at > got.fetchedAt && failed.at > (got.echec?.at ?? 0) ? { ...got, echec: failed } : got;
   }
   /** Past its rate, its margin and one event: the scheduled event did not refresh it. */
   private late(key: string, e: CacheEntry): boolean {

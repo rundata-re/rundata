@@ -13,7 +13,7 @@ import * as arome from "../providers/arome.js";
 import { isScheduled, left, measured, reserve, unmeasured } from "../budget.js";
 import { daysApart, distanceKm, localTime, sinceMidnight } from "../geo.js";
 import * as coraux from "../providers/coraux.js";
-import { type Cache, type Cached, stampOf } from "../cache.js";
+import { type Cache, type Cached, keepView, stampOf } from "../cache.js";
 import { INSEE } from "../places/insee.js";
 import { normalize, resolvePlace } from "../places/resolve.js";
 import * as cal from "../providers/calendrier.js";
@@ -844,6 +844,21 @@ export interface RandonneesAnswer {
   /** The cloud sea of the coming morning over the Hauts, summits and villages; missing without AROME's grids. */
   hauts?: (MerDeNuages & { nom: string; slug?: string; enclos?: boolean })[];
 }
+
+/**
+ * What the weather pages (« Randonner autour de… »), the communes' hiking tiles and their feeds read of /randonnees's
+ * copy (cache.ts `keepView`): the hikes' cards, the trails by sector, the fires, the map's dates and the sources.
+ * Not the map's lines nor the cloud sea, nor each trail's hikes, nor the trails without a state, which a tile never
+ * names nor counts (web/liens.ts `communeHikes`, web/rss.ts `trailItems`): 85 Ko of the copy's 173 in the test
+ * (25/11/2026: the whole copy read 42 Mo a day by /meteo/* and 30 by /communes/*).
+ */
+export const RANDONNEES_TUILES = "web:randonnees:tuiles";
+export const randonneesTuiles = (v: RandonneesAnswer): RandonneesAnswer => {
+  const { hauts: _hauts, ...rest } = v;
+  return { ...rest, lignes: [], secteurs: v.secteurs.map((z) => ({ ...z, sentiers: z.sentiers.filter((t) => t.etat !== "inconnu").map((t) => ({ ...t, randonnees: [] })) })) };
+};
+// Written with the copy (cache.ts `keepView`): the pages that read it find it as current as /randonnees's.
+keepView("web:randonnees", RANDONNEES_TUILES, randonneesTuiles);
 
 // The Hauts whose morning the hikers' page tells, in the validated order; `slug`, their weather page; `enclos`, the way
 // down into the Enclos, forbidden during a volcano alert.

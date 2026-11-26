@@ -127,6 +127,38 @@ def accent_words(ban_rows):
     return accents
 
 
+# A bracket's words that say which stretch, written small in a part (« Allée Hématites(partie Basse) » → « Allée
+# Hématites, partie basse »); a bracket that starts with another word is a name, kept in its bracket with a capital
+# (« Chemin Safer (grand Coude) » → « Chemin Safer (Grand Coude) »).
+STRETCH = {"à", "au", "aux", "du", "de", "des", "la", "le", "les", "l'", "d'", "et", "en", "entre", "sur", "vers", "dans",
+           "un", "une", "côté", "coté", "cote", "droit", "gauche", "partie", "bas", "haut", "basse", "haute", "petit",
+           "impasse", "imp", "chemin", "ch", "rue", "rte", "route", "allée", "résidence", "ex", "ancien", "face",
+           "jusqu'au", "jusqu'à", "partir", "finition", "sœurs", "soeurs", "terre", "près", "lotissement", "cité",
+           "quartier"}
+WRITTEN = {"imp": "impasse", "ch": "chemin", "rte": "route"}
+
+
+def parts(name):
+    """A source's brackets: one at the end that says a stretch becomes a part after « , », its common words small,
+    « N°37 » as « n° 37 », « 244,chemin » as « 244, chemin »; any other is kept, spaced, with its first capital
+    (« ( Jean ) » → « (Jean) »). Only the source's name: the parts this script writes are never changed."""
+    def stretch_of(t):
+        first = t.split(" ")[0].lower()
+        return first in STRETCH or bool(re.match(r"^(n°|\d)", first))
+
+    def bracket(m):
+        inner = re.sub(r"\s+", " ", m.group(1)).strip()
+        if not inner:
+            return ""
+        if not stretch_of(inner):
+            return f" ({inner[:1].upper()}{inner[1:]})"
+        words = [WRITTEN.get(w.lower(), w.lower()) if w.lower() in STRETCH else w for w in inner.split(" ")]
+        t = re.sub(r"\b[Nn]°\s*(?=\d)", "n° ", " ".join(words))
+        return f" ({re.sub(r',(?=[^\s\d])', ', ', t)})"
+    name = re.sub(r"\s*\(([^()]*)\)", bracket, name).strip()
+    m = re.match(r"^(.+?) \(([^()]*)\)$", name)
+    return f"{m.group(1)}, {m.group(2)}" if m and stretch_of(m.group(2)) else name
+
 def accentuate(name, accents):
     """A name's words spelled as in the island's street names (`accents`), written there with no accent or a rarer one
     (« Espèrance »), their case kept."""
@@ -226,7 +258,9 @@ def holidays(year):
 
 def street_name(s):
     """« IMPASSE CORBEILLE D'OR », « lOT DE LA CASCADE » → « Impasse Corbeille d'Or », « Lot de la Cascade »: the site
-    writes some names in capitals, some not; all alike, the small words in lower case but the first."""
+    writes some names in capitals, some not; all alike, the small words in lower case but the first. The curly apostrophe
+    is straightened and joined to its word (« Rue Renoyal de L’escouble » → « Rue Renoyal de l'Escouble »)."""
+    s = re.sub(r"\b([DdLl])' *", r"\1'", s.replace("’", "'"))
     given = re.sub(r"\s+", " ", s).strip().split(" ")
     words = [w.lower() for w in given]
     out = []
@@ -294,9 +328,9 @@ def main():
         # The BAN's spelling; of two, the one with more accents, then the one of more addresses.
         found = ban_names.get((commune, name_key(r["intitule_voie"])))
         source = max(found, key=lambda n: (sum(not ch.isascii() for ch in n), found[n])) if found else r["intitule_voie"]
-        zone = streets.setdefault((accentuate(street_name(source), accents), commune), {}).setdefault(r["ref_calendrier"], [set(), set()])
+        zone = streets.setdefault((parts(accentuate(street_name(source), accents)), commune), {}).setdefault(r["ref_calendrier"], [set(), set()])
         zone[0].add(ascii_upper(r["quartier"]).strip())
-        zone[1].add(accentuate(street_name(r["intitule_voie"]), accents))
+        zone[1].add(parts(accentuate(street_name(r["intitule_voie"]), accents)))
     # A street of several zones (one end and the other: 17 on 26/11/2026, « Boulevard Doret » at the Camélias and at
     # Vauban) is given once per zone, its quarters after its name, so that the answer and the page tell them apart; two
     # zones of the same quarters, by the CINOR's own names (« Allée des Topazes », zone BELL1, « Allée Topazes », BELL3).

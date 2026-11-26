@@ -4,8 +4,7 @@
  * counted among the events; the matches are on /sport, linked to, not copied. Nothing is fetched: no subrequest.
  */
 import { marchesDuJour } from "../vie/marches.js";
-import { esc } from "./map.js";
-import { href as lienSur } from "./html.js";
+import { brut, href, html } from "./html.js";
 
 
 /** The words under the markets' title: where their days come from, and what can still cancel them. */
@@ -19,13 +18,14 @@ export const MARCHES_NOTE = "Les marchés forains reviennent chaque semaine. Leu
 export function marchesSection(days: string[], heading: (day: string) => string, id = "h-marches"): string {
   const held = days.map((day) => ({ day, ms: marchesDuJour(day) })).filter((x) => x.ms.length);
   if (!held.length) return "";
+  // `heading` gives HTML the site writes itself.
   const cards = held.map(({ day, ms }) =>
-    `<li class="card"><h3>${heading(day)} <span class="note">${ms.length} marché${ms.length > 1 ? "s" : ""}</span></h3><ul class="rows eau">${ms.map((m) =>
-      `<li><span><a href="${lienSur(m.lien)}" rel="noopener">${esc(m.nom)}</a> <small>${[m.commune, m.adresse, `d'après ${m.d_apres}`].filter(Boolean).map((x) => esc(x!)).join(" · ")}</small></span> <span class="q-none">${esc(m.horaires)}</span></li>`).join("")}</ul></li>`).join("");
-  return `<section aria-labelledby="${id}">
-  <div class="sec-h"><h2 id="${id}">Marchés forains</h2><p>${esc(MARCHES_NOTE)}</p></div>
+    html`<li class="card"><h3>${brut(heading(day))} <span class="note">${ms.length} marché${ms.length > 1 ? "s" : ""}</span></h3><ul class="rows eau">${ms.map((m) =>
+      html`<li><span><a href="${href(m.lien)}" rel="noopener">${m.nom}</a> <small>${[m.commune, m.adresse, `d'après ${m.d_apres}`].filter(Boolean).join(" · ")}</small></span> <span class="q-none">${m.horaires}</span></li>`)}</ul></li>`);
+  return html`<section aria-labelledby="${id}">
+  <div class="sec-h"><h2 id="${id}">Marchés forains</h2><p>${MARCHES_NOTE}</p></div>
   <ul class="zones">${cards}</ul>
-</section>`;
+</section>`.texte;
 }
 
 /** How many markets are held on `days`, for the weekend's summary. */

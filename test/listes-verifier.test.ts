@@ -107,7 +107,7 @@ describe("the bundled lists' checks", () => {
 
   it("are offered by each list's build script, and run every Monday by the job that says which list is to be redone", () => {
     const yml = readFileSync(".github/workflows/listes.yml", "utf8");
-    for (const name of ["sante", "radars", "accidents", "loyers", "internet", "creches", "vitesses", "velo", "carte-scolaire", "ips", "parcoursup", "traces", "aires"]) {
+    for (const name of ["sante", "radars", "accidents", "loyers", "internet", "creches", "vitesses", "velo", "carte-scolaire", "ips", "parcoursup", "traces", "aires", "couverture"]) {
       expect(readFileSync(`scripts/build-${name}.py`, "utf8"), name).toMatch(/--verifier/);
       const id = name.replace("-", "_");
       expect(yml, name).toContain(`id: ${id}\n        continue-on-error: true\n        run: python3 -I scripts/verifier.py build-${name}.py --verifier`);

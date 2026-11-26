@@ -159,6 +159,7 @@ import { enPage, PATH as EN } from "./en.js";
 import { PATH as JEUX_TRANSPORT, transportDonneesPage } from "./transport-donnees.js";
 import { antennesPage, PATH as ANTENNES } from "./antennes.js";
 import { fichesFile } from "./antennes-fiche.js";
+import { couvertureFile } from "./couverture.js";
 import { annuaireEcolesPage, PATH as ECOLES } from "./ecoles-annuaire.js";
 import { cartePage, PATH as CARTE } from "./carte.js";
 import * as sitesHs from "../providers/sites-hs.js";
@@ -626,7 +627,7 @@ export function proche(path: string, now = new Date()): string | undefined {
 export async function site(request: Request, cache: Cache, background: Background, now = new Date()): Promise<Response | null> {
   // Nothing of the moment in them: answered before the volcano's state is read.
   const file = new URL(request.url).pathname;
-  const style = stylesheet(file) ?? allerScript(file) ?? rejeuFile(file) ?? curseurFile(file) ?? cumulsFile(file) ?? chiffresFile(file) ?? fichesFile(file) ?? ogFile(file) ?? imageFile(file);
+  const style = stylesheet(file) ?? allerScript(file) ?? rejeuFile(file) ?? curseurFile(file) ?? cumulsFile(file) ?? chiffresFile(file) ?? fichesFile(file) ?? couvertureFile(file) ?? ogFile(file) ?? imageFile(file);
   if (style) return style;
   // The private page of an internal trial, behind its secret link: nothing else read, and the site's 404 without it,
   // never kept nor indexed (web/uv-moufia.ts).

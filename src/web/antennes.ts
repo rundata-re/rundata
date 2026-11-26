@@ -20,6 +20,7 @@ import { esc, FOND_ZOOM, islandMap, project, zoomIsland } from "./map.js";
 import { credits, layout, type Live } from "./pages.js";
 import { script } from "./scripts-declares.js";
 import { ficheBloc, ficheScript, MOTS as FICHE } from "./antennes-fiche.js";
+import { couvertureScript, couvertureSection, SOURCE_COUVERTURE } from "./couverture.js";
 
 export const PATH = "/antennes";
 
@@ -293,7 +294,7 @@ export function ligneTuile(c: Cached<sitesHs.Copie> | null, insee: string): stri
 }
 
 /** The page's band and its parts that do not change until the next build, as the files are bundled. Built at the first view only. */
-let built: { band: string; carte: string; reste: string } | undefined;
+let built: { band: string; carte: string; couverture: string; reste: string } | undefined;
 
 function build() {
   const lead = `${nombre(antennes.SUPPORTS.length)} supports d'antennes mobiles déclarés à l'ANFR au ${dateLongue(antennes.MOBILE_DU)}, et ${nombre(antennes.EMETTEURS.length)} supports d'émetteurs de radio et de télévision au ${dateLongue(antennes.RADIO_DU)}.`;
@@ -307,7 +308,8 @@ function build() {
   <p><a href="/mcp">Les antennes près de votre adresse : demandez à votre IA →</a></p></section>
 <section aria-labelledby="h-src"><h2 id="h-src">À savoir</h2>
   <p class="note">${esc(T.note)}${lienNom("https://www.cartoradio.fr", "cartoradio.fr", ' rel="noopener"')}.</p>`;
-  return { band, carte, reste };
+  const couverture = couvertureSection() + script(couvertureScript());
+  return { band, carte, couverture, reste };
 }
 
 /** The home page's tile: the mobile supports of the bundled file, with its day; nothing read. */
@@ -315,12 +317,12 @@ export function antennesLive(): Live {
   return { valeur: `${nombre(antennes.SUPPORTS.length)} supports`, detail: `d'antennes mobiles déclarés à l'ANFR, fichier du ${antennes.date(antennes.MOBILE_DU)}` };
 }
 
-const SOURCES = [antennes.SOURCE_MOBILE, antennes.SOURCE_RADIO, sitesHs.SOURCE].map((x) => ({ source: x.attribution, licence: x.licence, attribution: x.attribution }));
+const SOURCES = [antennes.SOURCE_MOBILE, antennes.SOURCE_RADIO, SOURCE_COUVERTURE, sitesHs.SOURCE].map((x) => ({ source: x.attribution, licence: x.licence, attribution: x.attribution }));
 
 /** `hs`: the copy of the sites out of service (providers/sites-hs.ts), its one read; null before the first. */
 export function antennesPage(origin: string, hs: Cached<sitesHs.Copie> | null, now = new Date(), alerte?: Alerte): string {
   built ??= build();
-  const body = `${built.carte}\n${horsService(hs, now)}\n${built.reste}
+  const body = `${built.carte}\n${horsService(hs, now)}\n${built.couverture}\n${built.reste}
   <p class="sources">Sources : ${credits(SOURCES)}.</p>
 </section>`;
   return layout(origin, { title: T.title, description: T.description, path: PATH, jsonld: [crumbs(origin, "Antennes", PATH), webPage(origin, PATH, T.title, T.description, hs)], alerte }, built.band, body);

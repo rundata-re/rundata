@@ -65,6 +65,20 @@ RUN = 6
 # The colours of the legends, read in the PDFs (26/11/2026); two greys for the household waste, one per template.
 COLOURS = [("OM", (188, 187, 187)), ("OM", (158, 156, 157)), ("BIO", (194, 158, 116)), ("CS", (251, 200, 10)),
            ("EN", (35, 178, 235)), ("DV", (39, 167, 55)), (None, (250, 205, 205)), (None, (254, 254, 253))]
+# The quarters, as they are said after a street of several zones (« Boulevard Doret, quartier Camélias »): the CINOR's API
+# writes them in capitals without accents. Their French spelling, from src/places/gazetteer.json (OpenStreetMap, IGN)
+# where it has the place (Sainte-Clotilde, Bois de Nèfles, La Réserve, Les Cafés, Ravine des Chèvres, Saint-François,
+# Bel-Air, La Bretagne, La Montagne, Moufia), else the town's usual one. « CV - » (Sainte-Marie) is its centre's part:
+# only the part is said. A quarter needed and missing here stops the script: add it, spelled.
+QUARTIERS = {
+    "BAGATELLE": "Bagatelle", "BAS RIVIERE": "Bas de la Rivière", "BEL AIR": "Bel-Air", "BOIS NEFLES": "Bois de Nèfles",
+    "BRETAGNE": "La Bretagne", "CAMELIAS": "Camélias", "CENTRE VILLE": "Centre-ville", "CHAMP FLEURI": "Champ Fleuri",
+    "CV - LE BOURG": "Le Bourg", "FRANCHE TERRE": "Franche Terre", "LA CONVENANCE": "La Convenance",
+    "LES CAFES": "Les Cafés", "LES JACQUES / LA RESERVE": "Les Jacques / La Réserve", "MONTAGNE": "La Montagne",
+    "MONTGAILLARD": "Montgaillard", "MOUFIA": "Moufia", "PROVIDENCE": "La Providence", "RAVINE DES CHEVRES": "Ravine des Chèvres",
+    "SOURCE": "La Source", "ST FRANCOIS": "Saint-François", "STE CLOTILDE": "Sainte-Clotilde", "TOURETTE": "Tourette",
+    "VAUBAN": "Vauban",
+}
 SMALL = {"de", "des", "du", "la", "le", "les", "et", "au", "aux", "sur", "en", "d'", "l'"}
 _last = [0.0]
 
@@ -221,13 +235,15 @@ def main():
         if not r["ref_calendrier"]:
             continue
         commune = COMMUNES[ascii_upper(r["ville"]).strip()]
-        streets.setdefault((street_name(r["intitule_voie"]), commune), {}).setdefault(r["ref_calendrier"], set()).add(street_name(r["quartier"]))
+        streets.setdefault((street_name(r["intitule_voie"]), commune), {}).setdefault(r["ref_calendrier"], set()).add(ascii_upper(r["quartier"]).strip())
     # A street of several zones (one end and the other: 14 on 26/11/2026, « Boulevard Doret » at the Camélias and at
     # Vauban) is given once per zone, its quarters after its name, so that the answer and the page tell them apart.
     named = {}
     for (name, commune), by_zone in streets.items():
         for z, quarters in by_zone.items():
-            named[(f"{name}, quartier {' / '.join(sorted(quarters))}" if len(by_zone) > 1 else name, commune)] = z
+            if len(by_zone) > 1 and not quarters <= QUARTIERS.keys():
+                raise ValueError(f"{name} : quartier {sorted(quarters - QUARTIERS.keys())} à écrire dans QUARTIERS")
+            named[(f"{name}, quartier {' / '.join(sorted(QUARTIERS[q] for q in quarters))}" if len(by_zone) > 1 else name, commune)] = z
     zones = sorted(set(named.values()))
     calendars = []
     for zone in zones:

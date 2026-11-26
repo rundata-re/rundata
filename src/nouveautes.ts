@@ -59,6 +59,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded for the site): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-26T06:50:00+04:00", texte: "Collecte des déchets\u00a0: le jour de passage rue par rue aussi dans le Nord, à Saint-Denis, Sainte-Marie et Sainte-Suzanne (CINOR)." },
   { date: "2026-11-26T06:37:00+04:00", texte: "Antennes\u00a0: la carte des zones sans couverture mobile déclarée, par opérateur, en 4G et pour les appels (cartes de l'Arcep)." },
   { date: "2026-11-26T05:55:00+04:00", texte: "Baignade\u00a0: le bassin de Manapany est indiqué non surveillé, d'après la commune de Saint-Joseph, avec le lien vers sa page." },
   { date: "2026-11-26T05:37:00+04:00", texte: "Avec les enfants à Saint-Denis\u00a0: les 83 crèches de la liste du CCAS (juillet 2023), avec leurs places, aussi pour les assistants IA." },

@@ -28,6 +28,14 @@ describe("the bins' calendars of the West", () => {
     expect(nord.filter((c) => c.BIO).every((c) => c.BIO!.join() === c.OM!.join())).toBe(true);
     expect(nord.filter((c) => c.BIO).length).toBeGreaterThan(30);
     expect(new Set(col.STREETS.filter((s) => s.epci === "cinor").map((s) => s.commune))).toEqual(new Set(["Saint-Denis", "Sainte-Marie", "Sainte-Suzanne"]));
+    // A street of several zones is said with its quarter, in French as written (the API writes them in capitals, without
+    // accents): never « Camelias », « Ste Clotilde » nor « Bois Nefles ».
+    const parts = col.STREETS.filter((s) => s.epci === "cinor" && s.nom.includes(", quartier ")).map((s) => s.nom);
+    expect(parts).toContain("Boulevard Doret, quartier Camélias");
+    expect(parts).toContain("Rue Tessan, quartier Bois de Nèfles");
+    expect(parts).toContain("Rue Manes, quartier Les Cafés / Ravine des Chèvres");
+    const quartier = (n: string) => n.split(", quartier ")[1];
+    for (const n of parts) expect(quartier(n), n).not.toMatch(/\b(Camelias|Nefles|Riviere|Reserve|Cafes|Chevres|Francois|Ste|St|Cv)\b|^[A-Z ]+$/);
     expect(col.STREETS.every((s) => s.calendrier === -1 || col.CALENDARS[s.calendrier])).toBe(true);
   });
 

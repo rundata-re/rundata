@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Jeudi 26 novembre 2026
 
+- Collecte des déchets : le jour de passage rue par rue aussi dans le Nord, à Saint-Denis, Sainte-Marie et Sainte-Suzanne (CINOR).
 - Antennes : la carte des zones sans couverture mobile déclarée, par opérateur, en 4G et pour les appels (cartes de l'Arcep).
 - Baignade : le bassin de Manapany est indiqué non surveillé, d'après la commune de Saint-Joseph, avec le lien vers sa page.
 - Avec les enfants à Saint-Denis : les 83 crèches de la liste du CCAS (juillet 2023), avec leurs places, aussi pour les assistants IA.

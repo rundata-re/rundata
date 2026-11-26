@@ -20,7 +20,12 @@ request): one request a minute, under the reader's name (user-agent.txt).
    above the number. A colour counts on RUN pixels in a row at least (a number's red edge, an arrow, are thinner).
    A month without its seven headers, or a calendar with too few collections, stops the script rather than write one it
    could not read. Sundays are left out (never a collection: their red numbers read as pink), and the pink of a holiday.
-3. The holidays (F) are the year's public holidays at La Réunion, as the calendars mark them.
+3. The street names: the BAN's, when a street of the CINOR is one of its streets but for case, accents and small words
+   (the API writes the same street « Résidences Camelias » in a zone and « Camélias » in another); else the API's, all in
+   the same case. Either way a word written with no accent gets the one the island's street names give it (the BAN of all
+   La Réunion, a street counted once: its accented spelling of two streets at least and two thirds of the accented ones),
+   but a surname written both ways at La Réunion (KEEP).
+4. The holidays (F) are the year's public holidays at La Réunion, as the calendars mark them.
 
 Usage: python3 -I scripts/build-collecte-cinor.py [--cache DIR]
   DIR: what was already read (adresses-974.csv.gz, api.json, pdf/<ZONE>.pdf), kept there as it is read: the first run
@@ -55,6 +60,11 @@ COMMUNES = {"SAINT-DENIS": "Saint-Denis", "SAINTE-MARIE": "Sainte-Marie", "SAINT
 TYPES = {"RUE", "CHEMIN", "ALLEE", "IMPASSE", "AVENUE", "BOULEVARD", "ROUTE", "RUELLE", "SENTIER", "LOTISSEMENT", "RESIDENCE",
          "PLACE", "SQUARE", "CITE", "VOIE", "PASSAGE", "QUAI", "COURS", "RAMPE", "VENELLE", "LOT", "DOMAINE", "HAMEAU"}
 EMPTY = {"DES", "DE", "DU", "LA", "LE", "LES", "D", "L", "ET", "AU", "AUX", "SAINT", "SAINTE"}
+# Surnames written both ways at La Réunion, never given an accent the BAN does not write for that street: the list, and
+# how many streets write each way, in collecte-noms-deux-graphies.json beside this script.
+KEEP = set(json.loads((Path(__file__).parent / "collecte-noms-deux-graphies.json").read_text())["sans_accent"])
+# A word kept in capitals: a Roman number (« Jean XXIII », « Henri II ») or a road's number (« N3 », « D37 »).
+CAPS = re.compile(r"^(?=[IVXLC]{2})M{0,3}(CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$|^[A-Z]{1,3}[0-9]+[A-Z]?$")
 MOIS = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"]
 JOURS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
 DPI = 150
@@ -71,7 +81,8 @@ COLOURS = [("OM", (188, 187, 187)), ("OM", (158, 156, 157)), ("BIO", (194, 158, 
 # Bel-Air, La Bretagne, La Montagne, Moufia), else the town's usual one. « CV - » (Sainte-Marie) is its centre's part:
 # only the part is said. A quarter needed and missing here stops the script: add it, spelled.
 QUARTIERS = {
-    "BAGATELLE": "Bagatelle", "BAS RIVIERE": "Bas de la Rivière", "BEL AIR": "Bel-Air", "BOIS NEFLES": "Bois de Nèfles",
+    "BAGATELLE": "Bagatelle", "BELLEPIERRE": "Bellepierre", "BRAS DE FER": "Bras de Fer", "ESPERANCE": "Espérance",
+    "BAS RIVIERE": "Bas de la Rivière", "BEL AIR": "Bel-Air", "BOIS NEFLES": "Bois de Nèfles",
     "BRETAGNE": "La Bretagne", "CAMELIAS": "Camélias", "CENTRE VILLE": "Centre-ville", "CHAMP FLEURI": "Champ Fleuri",
     "CV - LE BOURG": "Le Bourg", "FRANCHE TERRE": "Franche Terre", "LA CONVENANCE": "La Convenance",
     "LES CAFES": "Les Cafés", "LES JACQUES / LA RESERVE": "Les Jacques / La Réserve", "MONTAGNE": "La Montagne",
@@ -79,7 +90,7 @@ QUARTIERS = {
     "SOURCE": "La Source", "ST FRANCOIS": "Saint-François", "STE CLOTILDE": "Sainte-Clotilde", "TOURETTE": "Tourette",
     "VAUBAN": "Vauban",
 }
-SMALL = {"de", "des", "du", "la", "le", "les", "et", "au", "aux", "sur", "en", "d'", "l'"}
+SMALL = {"à", "de", "des", "du", "la", "le", "les", "et", "au", "aux", "sur", "en", "d'", "l'"}
 _last = [0.0]
 
 
@@ -92,6 +103,40 @@ def get(url):
 
 def ascii_upper(s):
     return unicodedata.normalize("NFD", s).encode("ascii", "ignore").decode().upper()
+
+
+def name_key(s):
+    """What two spellings of a street share: its words without accents, capitals, small words or order."""
+    return tuple(sorted(w for w in re.findall(r"[A-Z0-9]+", ascii_upper(s)) if w not in EMPTY))
+
+
+def accent_words(ban_rows):
+    """{word in capitals, no accent: its accented spelling in the island's street names} (point 3 above)."""
+    forms = {}
+    for street in {r["nom_voie"] for r in ban_rows}:
+        for w in re.findall(r"[^\W\d_]+", street):
+            f = forms.setdefault(ascii_upper(w), {})
+            f[w.lower()] = f.get(w.lower(), 0) + 1
+    accents = {}
+    for w, f in forms.items():
+        acc = {x: n for x, n in f.items() if not x.isascii()}
+        if acc and w not in KEEP:
+            best = max(acc, key=acc.get)
+            if acc[best] >= 2 and acc[best] * 3 >= 2 * sum(acc.values()):
+                accents[w] = best
+    return accents
+
+
+def accentuate(name, accents):
+    """A name's words spelled as in the island's street names (`accents`), written there with no accent or a rarer one
+    (« Espèrance »), their case kept."""
+    def word(m):
+        w = m.group(0)
+        a = accents.get(ascii_upper(w)) if len(w) > 2 else None
+        if not a or w.lower() == a:
+            return w
+        return a.upper() if w.isupper() else a[:1].upper() + a[1:] if w[:1].isupper() else a
+    return re.sub(r"[^\W\d_]+", word, name)
 
 
 def words_to_ask(ban_rows):
@@ -182,9 +227,13 @@ def holidays(year):
 def street_name(s):
     """« IMPASSE CORBEILLE D'OR », « lOT DE LA CASCADE » → « Impasse Corbeille d'Or », « Lot de la Cascade »: the site
     writes some names in capitals, some not; all alike, the small words in lower case but the first."""
-    words = re.sub(r"\s+", " ", s).strip().lower().split(" ")
+    given = re.sub(r"\s+", " ", s).strip().split(" ")
+    words = [w.lower() for w in given]
     out = []
     for i, w in enumerate(words):
+        if CAPS.match(given[i]):
+            out.append(given[i])
+            continue
         if i and w in SMALL:
             out.append(w)
             continue
@@ -208,7 +257,14 @@ def main():
         body = get(BAN)
         ban = ban or Path("/tmp/cinor-adresses-974.csv.gz")
         ban.write_bytes(body)
-    asked = words_to_ask(csv.DictReader(gzip.open(ban, "rt", encoding="utf-8"), delimiter=";"))
+    ban_rows = list(csv.DictReader(gzip.open(ban, "rt", encoding="utf-8"), delimiter=";"))
+    asked = words_to_ask(ban_rows)
+    accents = accent_words(ban_rows)
+    ban_names = {}
+    for r in ban_rows:
+        if r["code_insee"] in INSEE:
+            by = ban_names.setdefault((INSEE[r["code_insee"]], name_key(r["nom_voie"])), Counter())
+            by[r["nom_voie"]] += 1
 
     api_file = cache / "api.json" if cache else None
     answers = json.loads(api_file.read_text()) if api_file and api_file.exists() else {}
@@ -235,15 +291,29 @@ def main():
         if not r["ref_calendrier"]:
             continue
         commune = COMMUNES[ascii_upper(r["ville"]).strip()]
-        streets.setdefault((street_name(r["intitule_voie"]), commune), {}).setdefault(r["ref_calendrier"], set()).add(ascii_upper(r["quartier"]).strip())
-    # A street of several zones (one end and the other: 14 on 26/11/2026, « Boulevard Doret » at the Camélias and at
-    # Vauban) is given once per zone, its quarters after its name, so that the answer and the page tell them apart.
+        # The BAN's spelling; of two, the one with more accents, then the one of more addresses.
+        found = ban_names.get((commune, name_key(r["intitule_voie"])))
+        source = max(found, key=lambda n: (sum(not ch.isascii() for ch in n), found[n])) if found else r["intitule_voie"]
+        zone = streets.setdefault((accentuate(street_name(source), accents), commune), {}).setdefault(r["ref_calendrier"], [set(), set()])
+        zone[0].add(ascii_upper(r["quartier"]).strip())
+        zone[1].add(accentuate(street_name(r["intitule_voie"]), accents))
+    # A street of several zones (one end and the other: 17 on 26/11/2026, « Boulevard Doret » at the Camélias and at
+    # Vauban) is given once per zone, its quarters after its name, so that the answer and the page tell them apart; two
+    # zones of the same quarters, by the CINOR's own names (« Allée des Topazes », zone BELL1, « Allée Topazes », BELL3).
+    missing = {f"{q} ({name})" for (name, _), by_zone in streets.items() if len(by_zone) > 1
+               for quarters, _ in by_zone.values() for q in quarters - QUARTIERS.keys()}
+    if missing:
+        raise ValueError(f"quartiers à écrire dans QUARTIERS : {', '.join(sorted(missing))}")
     named = {}
     for (name, commune), by_zone in streets.items():
-        for z, quarters in by_zone.items():
-            if len(by_zone) > 1 and not quarters <= QUARTIERS.keys():
-                raise ValueError(f"{name} : quartier {sorted(quarters - QUARTIERS.keys())} à écrire dans QUARTIERS")
-            named[(f"{name}, quartier {' / '.join(sorted(QUARTIERS[q] for q in quarters))}" if len(by_zone) > 1 else name, commune)] = z
+        labels = {z: f"{name}, quartier {' / '.join(sorted(QUARTIERS[q] for q in quarters))}" if len(by_zone) > 1 else name
+                  for z, (quarters, _) in by_zone.items()}
+        if len(set(labels.values())) < len(labels):
+            labels = {z: " / ".join(sorted(own)) for z, (_, own) in by_zone.items()}
+        for z, label in labels.items():
+            if (label, commune) in named or len(set(labels.values())) < len(labels):
+                raise ValueError(f"{label} ({commune}) : deux zones sous le même nom")
+            named[(label, commune)] = z
     zones = sorted(set(named.values()))
     calendars = []
     for zone in zones:

@@ -37,10 +37,11 @@ const COUPURES_EAU = [
   "saint-louis", "saint-paul", "saint-philippe", "saint-pierre", "sainte-marie", "sainte-rose", "sainte-suzanne", "salazie",
 ].map((x) => `/coupures-eau/${x}`);
 
-/** The waste collection of a commune: the TCO's five, the CIREST's five with calendars since 24/11/2026, the CINOR's three. */
+/** The waste collection of a commune: the TCO's five, the CIREST's five with calendars since 24/11/2026, the CINOR's three, the CASUD's four. */
 const COLLECTE = [
-  "bras-panon", "la-plaine-des-palmistes", "la-possession", "le-port", "saint-andre", "saint-benoit", "saint-denis",
-  "saint-leu", "saint-paul", "sainte-marie", "sainte-suzanne", "salazie", "trois-bassins",
+  "bras-panon", "entre-deux", "la-plaine-des-palmistes", "la-possession", "le-port", "le-tampon", "saint-andre",
+  "saint-benoit", "saint-denis", "saint-joseph", "saint-leu", "saint-paul", "saint-philippe", "sainte-marie",
+  "sainte-suzanne", "salazie", "trois-bassins",
 ].map((x) => `/collecte/${x}`);
 
 /** The children's places of a commune. */

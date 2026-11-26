@@ -20,8 +20,8 @@ describe("the bins' calendars of the West", () => {
   it("holds every calendar of the TCO with its days, and every street with its calendar", () => {
     expect(col.CALENDARS.length).toBeGreaterThan(100);
     expect(col.STREETS.length).toBeGreaterThan(3000);
-    expect(col.CALENDARS.every((c) => c.OM && c.OM.length > 40 && c.pdf.startsWith({ tco: "https://www.tco.re/", cirest: "https://www.cirest.fr/", cinor: "https://www.cinor.re/" }[c.epci]))).toBe(true);
-    expect(col.COMMUNES).toEqual(["Saint-Paul", "La Possession", "Saint-Leu", "Le Port", "Les Trois-Bassins", "Saint-André", "Bras-Panon", "Saint-Benoît", "Salazie", "La Plaine-des-Palmistes", "Saint-Denis", "Sainte-Marie", "Sainte-Suzanne"]);
+    expect(col.CALENDARS.every((c) => c.OM && c.OM.length > 40 && c.pdf.startsWith({ tco: "https://www.tco.re/", cirest: "https://www.cirest.fr/", cinor: "https://www.cinor.re/", casud: "https://www.casud.re/" }[c.epci]))).toBe(true);
+    expect(col.COMMUNES).toEqual(["Saint-Paul", "La Possession", "Saint-Leu", "Le Port", "Les Trois-Bassins", "Saint-André", "Bras-Panon", "Saint-Benoît", "Salazie", "La Plaine-des-Palmistes", "Saint-Denis", "Sainte-Marie", "Sainte-Suzanne", "Le Tampon", "Saint-Joseph", "Saint-Philippe", "Entre-Deux"]);
     // The CINOR's: 66 calendars; at Saint-Denis the brown bin of the biowaste, always on the grey one's days.
     const nord = col.CALENDARS.filter((c) => c.epci === "cinor");
     expect(nord.length).toBe(66);
@@ -33,9 +33,16 @@ describe("the bins' calendars of the West", () => {
     const parts = col.STREETS.filter((s) => s.epci === "cinor" && s.nom.includes(", quartier ")).map((s) => s.nom);
     expect(parts).toContain("Boulevard Doret, quartier Camélias");
     expect(parts).toContain("Rue Tessan, quartier Bois de Nèfles");
-    expect(parts).toContain("Rue Manes, quartier Les Cafés / Ravine des Chèvres");
+    expect(parts).toContain("Rue Manès, quartier Les Cafés / Ravine des Chèvres");
     const quartier = (n: string) => n.split(", quartier ")[1];
     for (const n of parts) expect(quartier(n), n).not.toMatch(/\b(Camelias|Nefles|Riviere|Reserve|Cafes|Chevres|Francois|Ste|St|Cv)\b|^[A-Z ]+$/);
+    // The street names too, as the BAN writes them with their accents (the CINOR's API wrote « Résidences Camelias 030 »
+    // in a zone and « Camélias 033 » in another); never a common word without its accent.
+    const names = col.STREETS.filter((s) => s.epci === "cinor" || s.epci === "casud").map((s) => s.nom);
+    expect(names).toContain("Résidences Camélias 030");
+    expect(names).toContain("Résidences Camélias 033");
+    expect(names).toContain("Allée des Cocos");
+    for (const n of names) expect(n).not.toMatch(/(?<!\p{L})(Allee|Cite|Riviere|Pere|Camelias|Ecole|Eglise|General|Marechal)(?!\p{L})/u);
     expect(col.STREETS.every((s) => s.calendrier === -1 || col.CALENDARS[s.calendrier])).toBe(true);
   });
 
@@ -116,16 +123,16 @@ describe("the tool and the pages", () => {
     const r = body(collecteAnswer("12 rue Victoria, La Possession", NOW));
     expect(r.resume).toMatch(/^Rue Victoria, La Possession : ordures ménagères le lundi et le jeudi\u00a0; tri le mercredi, une semaine sur deux \(prochain : 28\/10\)/);
     expect(r.rues[0].calendrier_pdf).toMatch(/2026_POSS_01\.pdf$/);
-    expect(r.a_savoir).toBe(`Seulement les communes de l'Ouest (TCO), de l'Est (CIREST, sauf Sainte-Rose) et du Nord (CINOR) pour l'instant. Calendriers 2026 publiés par le TCO (data.tco.re), mis à jour le 06/08/2026, par la CIREST (cirest.fr), lus le ${col.UPDATED_CIREST.split("-").reverse().join("/")}, et par la CINOR (cinor.re), lus le ${col.UPDATED_CINOR.split("-").reverse().join("/")}. En cas d'alerte cyclonique, la collecte peut être suspendue : suivez les annonces du TCO, de la CIREST et de la CINOR.`);
+    expect(r.a_savoir).toBe(`Seulement les communes de l'Ouest (TCO), de l'Est (CIREST, sauf Sainte-Rose), du Nord (CINOR) et de la CASUD dans le Sud pour l'instant. Calendriers 2026 publiés par le TCO (data.tco.re), mis à jour le 06/08/2026, par la CIREST (cirest.fr), lus le ${col.UPDATED_CIREST.split("-").reverse().join("/")}, par la CINOR (cinor.re), lus le ${col.UPDATED_CINOR.split("-").reverse().join("/")}, et par la CASUD (casud.re), lus le ${col.UPDATED_CASUD.split("-").reverse().join("/")}. En cas d'alerte cyclonique, la collecte peut être suspendue : suivez les annonces du TCO, de la CIREST, de la CINOR et de la CASUD.`);
     expect(r.mis_a_jour).toBe("06/08/2026");
-    expect(body(collecteAnswer("rue Inexistante du Test, Saint-Paul", NOW)).resume).toBe("Rue non trouvée dans les calendriers du TCO, de la CIREST et de la CINOR. Vérifiez l'orthographe, ou essayez le nom du quartier.");
+    expect(body(collecteAnswer("rue Inexistante du Test, Saint-Paul", NOW)).resume).toBe("Rue non trouvée dans les calendriers du TCO, de la CIREST, de la CINOR et de la CASUD. Vérifiez l'orthographe, ou essayez le nom du quartier.");
     expect(body(collecteAnswer("Saint-Paul", NOW)).resume).toBe("Collecte des déchets : le jour de votre rue sur rundata.re/collecte/saint-paul.");
   });
 
   it("says who collects in a commune whose calendars are not read, never a street to spell again", () => {
-    const lt = body(collecteAnswer("chemin Bœuf Mort, Le Tampon 97430", NOW));
-    expect(lt.resume).toBe("Le Tampon : la collecte des déchets y est assurée par la CASUD, dont les calendriers ne sont pas repris ici. rundata.re reprend ceux du TCO (Le Port, La Possession, Saint-Paul, Trois-Bassins, Saint-Leu), de la CIREST (Saint-André, Bras-Panon, Saint-Benoît, Salazie, La Plaine-des-Palmistes) et de la CINOR (Saint-Denis, Sainte-Marie, Sainte-Suzanne). Voir le site de la CASUD.");
-    expect(lt.intercommunalite).toEqual({ nom: "CASUD", site: "https://www.casud.re/" });
+    const sp = body(collecteAnswer("12 rue de la Paix, Saint-Pierre 97410", NOW));
+    expect(sp.resume).toBe("Saint-Pierre : la collecte des déchets y est assurée par la CIVIS, dont les calendriers ne sont pas repris ici. rundata.re reprend ceux du TCO (Le Port, La Possession, Saint-Paul, Trois-Bassins, Saint-Leu), de la CIREST (Saint-André, Bras-Panon, Saint-Benoît, Salazie, La Plaine-des-Palmistes), de la CINOR (Saint-Denis, Sainte-Marie, Sainte-Suzanne) et de la CASUD (Le Tampon, Saint-Joseph, Saint-Philippe, L'Entre-Deux). Voir le site de la CIVIS.");
+    expect(sp.intercommunalite).toEqual({ nom: "CIVIS", site: "https://www.civis.re/" });
     // The North's streets are read since the CINOR's calendars (26/11/2026): Saint-Denis is one of them.
     const sd = body(collecteAnswer("12 rue de Paris, Saint-Denis", NOW));
     expect(sd.intercommunalite).toBeUndefined();
@@ -135,9 +142,9 @@ describe("the tool and the pages", () => {
     expect(body(collecteAnswer("L'Étang-Salé", NOW)).intercommunalite.nom).toBe("CIVIS");
     // Sainte-Rose: the CIREST's, without a calendar online; said so, with the CIREST's site, never a street to spell again.
     const sr = body(collecteAnswer("rue des Bambous, Sainte-Rose", NOW));
-    expect(sr.resume).toBe("Sainte-Rose : le calendrier de collecte de ses rues n'est pas publié en ligne. rundata.re reprend ceux des autres communes de l'Est, ceux du TCO et ceux de la CINOR. Voir le site de la CIREST.");
+    expect(sr.resume).toBe("Sainte-Rose : le calendrier de collecte de ses rues n'est pas publié en ligne. rundata.re reprend ceux des autres communes de l'Est, ceux du TCO, ceux de la CINOR et ceux de la CASUD. Voir le site de la CIREST.");
     expect(sr.intercommunalite.nom).toBe("CIREST");
-    // Every commune of the island once: the TCO's, the CIREST's and the CINOR's read, the others in one intercommunality each.
+    // Every commune of the island once: the TCO's, the CIREST's, the CINOR's and the CASUD's read, the others in one intercommunality each.
     const others = col.AILLEURS.flatMap((e) => e.communes);
     expect(new Set([...others, ...col.COMMUNES]).size).toBe(24);
     expect(others.length + col.COMMUNES.length).toBe(24);
@@ -156,7 +163,8 @@ describe("the tool and the pages", () => {
     expect(horsTco("saint pierre", ELSEWHERE)?.c).toBe("Saint-Pierre");
     // Saint-Denis is read now: its streets, never the sentence of who collects elsewhere.
     expect(horsTco("12 rue de Paris, Saint-Denis", ELSEWHERE)).toBeUndefined();
-    expect(horsTco("chemin Bœuf Mort, LE TAMPON 97430", ELSEWHERE)?.c).toBe("Le Tampon");
+    expect(horsTco("chemin Bœuf Mort, LE TAMPON 97430", ELSEWHERE)).toBeUndefined();
+    expect(horsTco("rue de la Paix, SAINT-PIERRE 97410", ELSEWHERE)?.c).toBe("Saint-Pierre");
     expect(horsTco("L'Etang-Salé", ELSEWHERE)?.c).toBe("L'Étang-Salé");
     expect(horsTco("Saint-Paul", ELSEWHERE)).toBeUndefined();
     expect(horsTco("rue de Saint-Denis, Le Port", ELSEWHERE)).toBeUndefined();
@@ -165,10 +173,10 @@ describe("the tool and the pages", () => {
     // West is read, in the tool's words (its a_savoir).
     expect(page).toContain(`hors=${horsTco}`);
     expect(page).toContain(JSON.stringify(ELSEWHERE[0]).slice(0, 40));
-    expect(page).toContain("Rue non trouvée dans les calendriers du TCO, de la CIREST et de la CINOR. Vérifiez l'orthographe, essayez le nom du quartier, ou cherchez dans la liste ci-dessous. Seulement les communes de l'Ouest (TCO), de l'Est (CIREST, sauf Sainte-Rose) et du Nord (CINOR) pour l'instant.".replace(/'/g, "&#39;"));
+    expect(page).toContain("Rue non trouvée dans les calendriers du TCO, de la CIREST, de la CINOR et de la CASUD. Vérifiez l'orthographe, essayez le nom du quartier, ou cherchez dans la liste ci-dessous. Seulement les communes de l'Ouest (TCO), de l'Est (CIREST, sauf Sainte-Rose), du Nord (CINOR) et de la CASUD dans le Sud pour l'instant.".replace(/'/g, "&#39;"));
     // Said under the field too, before anything is typed.
-    expect(page).toContain(`aria-describedby="ouest"></label>\n  <p class="note" id="ouest">Seulement les communes de l&#39;Ouest (TCO), de l&#39;Est (CIREST, sauf Sainte-Rose) et du Nord (CINOR) pour l&#39;instant.</p>`);
-    expect(body(collecteAnswer("rue Inexistante du Test, Saint-Paul", NOW)).a_savoir).toMatch(/^Seulement les communes de l'Ouest \(TCO\), de l'Est \(CIREST, sauf Sainte-Rose\) et du Nord \(CINOR\) pour l'instant\. /);
+    expect(page).toContain(`aria-describedby="ouest"></label>\n  <p class="note" id="ouest">Seulement les communes de l&#39;Ouest (TCO), de l&#39;Est (CIREST, sauf Sainte-Rose), du Nord (CINOR) et de la CASUD dans le Sud pour l&#39;instant.</p>`);
+    expect(body(collecteAnswer("rue Inexistante du Test, Saint-Paul", NOW)).a_savoir).toMatch(/^Seulement les communes de l'Ouest \(TCO\), de l'Est \(CIREST, sauf Sainte-Rose\), du Nord \(CINOR\) et de la CASUD dans le Sud pour l'instant\. /);
   });
 
   it("is what annuaire_services_publics answers about the bins, not the déchèteries", async () => {
@@ -179,7 +187,7 @@ describe("the tool and the pages", () => {
 
   it("gives /collecte and a page per commune, every street of it, grouped by calendar", () => {
     const all = collectePage("https://rundata.re", NOW);
-    expect(all).toContain(`<title>Collecte TCO, CIREST, CINOR ${col.YEAR} : jours par rue · 974</title>`);
+    expect(all).toContain(`<title>Collecte TCO, CIREST, CINOR, CASUD ${col.YEAR} : jours par rue</title>`);
     expect(all).toContain("<h1>Quel jour passent les poubelles ?</h1>");
     expect(communeOf("trois-bassins")).toBe("Les Trois-Bassins");
     const sp = collectePage("https://rundata.re", NOW, "Saint-Paul");
@@ -281,14 +289,14 @@ describe("the tool and the pages", () => {
       expect(page).toContain('class="card groupe"');
     }
     expect(col.untilYearEnd()).toBe("Jours de collecte valables jusqu'au 31 décembre 2026 : les calendriers 2027 du TCO ne sont pas encore publiés.");
-    // On /collecte, which lists the East's and the North's streets too, all three named; on a commune's page, who collects there.
-    expect(collectePage("https://rundata.re", now)).toContain("les calendriers 2027 du TCO, de la CIREST et de la CINOR ne sont pas encore publiés.");
+    // On /collecte, which lists the East's, the North's and the South's streets too, all four named; on a commune's page, who collects there.
+    expect(collectePage("https://rundata.re", now)).toContain("les calendriers 2027 du TCO, de la CIREST, de la CINOR et de la CASUD ne sont pas encore publiés.");
     expect(collectePage("https://rundata.re", now, "Sainte-Marie")).toContain("les calendriers 2027 de la CINOR ne sont pas encore publiés.");
     expect(collectePage("https://rundata.re", now, "Salazie")).toContain("les calendriers 2027 de la CIREST ne sont pas encore publiés.");
     const jan = new Date("2027-01-01T08:00:00Z");
-    expect(collectePage("https://rundata.re", jan)).toContain("Les calendriers 2027 du TCO, de la CIREST et de la CINOR ne sont pas encore publiés");
+    expect(collectePage("https://rundata.re", jan)).toContain("Les calendriers 2027 du TCO, de la CIREST, de la CINOR et de la CASUD ne sont pas encore publiés");
     expect(collectePage("https://rundata.re", jan, "Saint-Benoît")).toContain("Les calendriers 2027 de la CIREST ne sont pas encore publiés");
-    expect(body(collecteAnswer("rue Victoria", jan)).resume).toMatch(/^Les calendriers 2027 du TCO, de la CIREST et de la CINOR /);
+    expect(body(collecteAnswer("rue Victoria", jan)).resume).toMatch(/^Les calendriers 2027 du TCO, de la CIREST, de la CINOR et de la CASUD /);
     expect(body(collecteAnswer("rue Victoria, La Possession", jan)).resume).toMatch(/^Les calendriers 2027 du TCO ne /);
     const r = body(collecteAnswer("rue Victoria, La Possession", now));
     expect(JSON.stringify(r)).toContain(col.untilYearEnd());
@@ -326,6 +334,7 @@ describe("the tool and the pages", () => {
     expect(sp.collecte_dechets?.texte).toBe("Collecte des déchets : le jour de votre rue sur rundata.re/collecte/saint-paul.");
     expect(sp.resume).toContain("collecte des déchets : le jour de votre rue sur rundata.re/collecte/saint-paul");
     expect(resume(pageOf("saint-denis")!, {} as never, NOW).collecte_dechets?.texte).toBe("Collecte des déchets : le jour de votre rue sur rundata.re/collecte/saint-denis.");
-    expect(resume(pageOf("le-tampon")!, {} as never, NOW).collecte_dechets).toBeUndefined();
+    expect(resume(pageOf("le-tampon")!, {} as never, NOW).collecte_dechets?.texte).toBe("Collecte des déchets : le jour de votre rue sur rundata.re/collecte/le-tampon.");
+    expect(resume(pageOf("saint-pierre")!, {} as never, NOW).collecte_dechets).toBeUndefined();
   });
 });

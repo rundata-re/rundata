@@ -29,7 +29,7 @@ describe("the links between the pages of the sitemap", () => {
   });
 
   it("give the commune's page a tile to its waste collection, before its recycling centres, where the calendars are read", () => {
-    expect(collecte.COMMUNES.length).toBe(13);
+    expect(collecte.COMMUNES.length).toBe(17);
     for (const nom of collecte.COMMUNES) {
       const p = COMMUNES.find((c) => c.nom === nom)!;
       const href = `/collecte/${collecte.communeSlug(nom)}`;
@@ -40,15 +40,15 @@ describe("the links between the pages of the sitemap", () => {
       expect(tile, nom).toContain(`<h3><a href="${href}">Collecte des déchets<span class="sr"> `);
       expect(tile, nom).toContain('<p class="tv">Jour par rue</p>');
       // « TCO » is spelled out at its first occurrence on the page (web/sigles.ts): the words alone. In the East, the CIREST's;
-      // in the North, the CINOR's.
+      // in the North, the CINOR's; in the South, the CASUD's.
       const detail = tile.match(/<p class="td all">(.*?)<\/p>/)![1].split(/<[^>]*>/).join("").replaceAll("&#39;", "'");
-      expect(detail, nom).toBe(`ordures ménagères, tri et déchets verts, d'après le calendrier ${collecte.YEAR} ${["Saint-André", "Bras-Panon", "Saint-Benoît", "Salazie", "La Plaine-des-Palmistes"].includes(nom) ? "de la CIREST" : ["Saint-Denis", "Sainte-Marie", "Sainte-Suzanne"].includes(nom) ? "de la CINOR" : "du TCO"}`);
+      expect(detail, nom).toBe(`ordures ménagères, tri et déchets verts, d'après le calendrier ${collecte.YEAR} ${["Saint-André", "Bras-Panon", "Saint-Benoît", "Salazie", "La Plaine-des-Palmistes"].includes(nom) ? "de la CIREST" : ["Saint-Denis", "Sainte-Marie", "Sainte-Suzanne"].includes(nom) ? "de la CINOR" : ["Le Tampon", "Saint-Joseph", "Saint-Philippe", "Entre-Deux"].includes(nom) ? "de la CASUD" : "du TCO"}`);
       // The detail whole, never cut after three lines: it names the calendar's year and whose it is.
       expect(tile, nom).toContain(`<a href="${href}">Chercher ma rue →</a>`);
-      // The collection every week, the recycling centre now and then: the collection first.
-      expect(all[at + 1], nom).toContain(">Déchèteries<");
+      // The collection every week, the recycling centre now and then: the collection first (Saint-Philippe has none).
+      if (all.some((t) => t.includes(">Déchèteries<"))) expect(all[at + 1], nom).toContain(">Déchèteries<");
     }
     // A commune whose calendars are not read has no such tile.
-    for (const slug of ["le-tampon", "cilaos", "saint-pierre"]) expect(commune(slug), slug).not.toContain("Collecte des déchets<");
+    for (const slug of ["sainte-rose", "cilaos", "saint-pierre"]) expect(commune(slug), slug).not.toContain("Collecte des déchets<");
   });
 });

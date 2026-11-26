@@ -2,7 +2,8 @@
  * The days the bins are collected street by street, in the Territoire de l'Ouest (src/vie/collecte.json, built by
  * scripts/build-collecte.py from the TCO's open data), in the East (src/vie/collecte-cirest.json, built by
  * scripts/build-collecte-cirest.py from the CIREST's site, read like a commune's: one request a minute, its source said)
- * and in the North (src/vie/collecte-cinor.json, scripts/build-collecte-cinor.py, the CINOR's site read the same way). Each street has a calendar; each calendar the days of each
+ * in the North (src/vie/collecte-cinor.json, scripts/build-collecte-cinor.py, the CINOR's site read the same way) and in the
+ * CASUD's four communes of the South (src/vie/collecte-casud.json, scripts/build-collecte-casud.py, the same way). Each street has a calendar; each calendar the days of each
  * collection. The rhythm said is read from the coming days themselves, so a holiday or a day made up for it, as the
  * calendar gives them, comes before the rule: nothing is assumed that the calendar does not show.
  */
@@ -11,6 +12,7 @@ import type { SourceInfo } from "../types.js";
 import data from "./collecte.json" with { type: "json" };
 import est from "./collecte-cirest.json" with { type: "json" };
 import nord from "./collecte-cinor.json" with { type: "json" };
+import sud from "./collecte-casud.json" with { type: "json" };
 
 const DAY_MS = 86400_000;
 
@@ -43,25 +45,36 @@ export const SOURCE_CINOR: SourceInfo = {
   url: "https://www.cinor.re/calendrier-de-collecte/",
 };
 
+/** The CASUD's calendars: its search « Calendrier de collectes », a sector for each street and a PDF for each sector. */
+export const SOURCE_CASUD: SourceInfo = {
+  id: "casud_collecte",
+  nom: "Calendriers de collecte des déchets de la CASUD",
+  organisme: "CASUD (Communauté d'agglomération du Sud)",
+  licence: "Information publique de l'intercommunalité, reprise avec sa source et son lien",
+  attribution: "CASUD",
+  url: "https://www.casud.re/au-quotidien/preserver-lenvironnement/collecte-et-traitement-des-dechets",
+};
+
 /** Who collects, as the sentences say it (« du TCO », « de la CIREST »), with where to ask. */
 export interface Epci {
-  id: "tco" | "cirest" | "cinor";
+  id: "tco" | "cirest" | "cinor" | "casud";
   /** « le TCO », « la CIREST ». */
   nom: string;
   /** « du TCO », « de la CIREST ». */
   du: string;
   contact: string;
   source: SourceInfo;
-  /** Its calendars' date: put online (TCO), or read (CIREST, CINOR, whose pages give none), YYYY-MM-DD. */
+  /** Its calendars' date: put online (TCO), or read (CIREST, CINOR, CASUD, whose pages give none), YYYY-MM-DD. */
   date: string;
 }
 export const TCO: Epci = { id: "tco", nom: "le TCO", du: "du TCO", contact: "https://www.tco.re/contact", source: SOURCE, date: data.mis_a_jour };
 export const CIREST: Epci = { id: "cirest", nom: "la CIREST", du: "de la CIREST", contact: "https://www.cirest.fr/collecte-des-dechets/", source: SOURCE_CIREST, date: est.mis_a_jour };
 export const CINOR: Epci = { id: "cinor", nom: "la CINOR", du: "de la CINOR", contact: "https://www.cinor.re/calendrier-de-collecte/", source: SOURCE_CINOR, date: nord.mis_a_jour };
-export const EPCIS = [TCO, CIREST, CINOR];
-/** All three, as the sentences of the whole West, East and North say them (/collecte, a street asked without its commune). */
-export const TOUS: Pick<Epci, "du"> = { du: "du TCO, de la CIREST et de la CINOR" };
-/** Who collects in a commune whose calendars are read, else all three. */
+export const CASUD: Epci = { id: "casud", nom: "la CASUD", du: "de la CASUD", contact: SOURCE_CASUD.url, source: SOURCE_CASUD, date: sud.mis_a_jour };
+export const EPCIS = [TCO, CIREST, CINOR, CASUD];
+/** All four, as the sentences of the whole island say them (/collecte, a street asked without its commune). */
+export const TOUS: Pick<Epci, "du"> = { du: "du TCO, de la CIREST, de la CINOR et de la CASUD" };
+/** Who collects in a commune whose calendars are read, else all four. */
 export const epciDe = (commune?: string): Pick<Epci, "du"> => {
   const s = commune ? STREETS.find((x) => x.commune === commune) : undefined;
   return s ? epciOf(s) : TOUS;
@@ -86,14 +99,17 @@ export const CALENDARS: Calendar[] = [
   ...(data.calendriers as Omit<Calendar, "epci">[]).map((c) => ({ ...c, epci: "tco" as const })),
   ...(est.calendriers as Omit<Calendar, "epci">[]).map((c) => ({ ...c, epci: "cirest" as const })),
   ...(nord.calendriers as Omit<Calendar, "epci">[]).map((c) => ({ ...c, epci: "cinor" as const })),
+  ...(sud.calendriers as Omit<Calendar, "epci">[]).map((c) => ({ ...c, epci: "casud" as const })),
 ];
-// All three publish the same year's calendars (test/collecte.test.ts checks it).
+// All four publish the same year's calendars (test/collecte.test.ts checks it).
 export const YEAR = data.annee;
 export const UPDATED = data.mis_a_jour;
 /** The day the CIREST's calendars were read. */
 export const UPDATED_CIREST = est.mis_a_jour;
 /** The day the CINOR's calendars were read. */
 export const UPDATED_CINOR = nord.mis_a_jour;
+/** The day the CASUD's calendars were read. */
+export const UPDATED_CASUD = sud.mis_a_jour;
 export interface Street {
   nom: string;
   commune: string;
@@ -105,9 +121,10 @@ export const STREETS: Street[] = [
   ...(data.voies as [string, string, number][]).map(([nom, commune, calendrier]) => ({ nom, commune, calendrier, epci: "tco" as const })),
   ...(est.voies as [string, string, number][]).map(([nom, commune, calendrier]) => ({ nom, commune, calendrier: calendrier + data.calendriers.length, epci: "cirest" as const })),
   ...(nord.voies as [string, string, number][]).map(([nom, commune, calendrier]) => ({ nom, commune, calendrier: calendrier + data.calendriers.length + est.calendriers.length, epci: "cinor" as const })),
+  ...(sud.voies as [string, string, number][]).map(([nom, commune, calendrier]) => ({ nom, commune, calendrier: calendrier + data.calendriers.length + est.calendriers.length + nord.calendriers.length, epci: "casud" as const })),
 ];
-export const epciOf = (x: { epci: Epci["id"] }) => (x.epci === "cinor" ? CINOR : x.epci === "cirest" ? CIREST : TCO);
-export const COMMUNES = ["Saint-Paul", "La Possession", "Saint-Leu", "Le Port", "Les Trois-Bassins", "Saint-André", "Bras-Panon", "Saint-Benoît", "Salazie", "La Plaine-des-Palmistes", "Saint-Denis", "Sainte-Marie", "Sainte-Suzanne"].filter((c) => STREETS.some((s) => s.commune === c));
+export const epciOf = (x: { epci: Epci["id"] }) => ({ tco: TCO, cirest: CIREST, cinor: CINOR, casud: CASUD })[x.epci];
+export const COMMUNES = ["Saint-Paul", "La Possession", "Saint-Leu", "Le Port", "Les Trois-Bassins", "Saint-André", "Bras-Panon", "Saint-Benoît", "Salazie", "La Plaine-des-Palmistes", "Saint-Denis", "Sainte-Marie", "Sainte-Suzanne", "Le Tampon", "Saint-Joseph", "Saint-Philippe", "Entre-Deux"].filter((c) => STREETS.some((s) => s.commune === c));
 /** « saint-paul », « trois-bassins »: the page of a commune. */
 export const communeSlug = (c: string) => normalize(c.replace(/^Les /, "")).replace(/ /g, "-");
 
@@ -119,16 +136,15 @@ export const communeSlug = (c: string) => normalize(c.replace(/^Les /, "")).repl
 export const AILLEURS: { nom: string; site: string; communes: string[] }[] = [
   { nom: "la CIREST", site: "https://www.cirest.fr/collecte-des-dechets/", communes: ["Sainte-Rose"] },
   { nom: "la CIVIS", site: "https://www.civis.re/", communes: ["Saint-Pierre", "Saint-Louis", "L'Étang-Salé", "Petite-Île", "Cilaos", "Les Avirons"] },
-  { nom: "la CASUD", site: "https://www.casud.re/", communes: ["Le Tampon", "Saint-Joseph", "Entre-Deux", "Saint-Philippe"] },
 ];
 // The validated words (04/11/2026), for a commune outside the TCO: never a street to spell again.
 export const ailleurs = (commune: string, epci: { nom: string }) =>
   commune === "Sainte-Rose"
-    ? `Sainte-Rose : le calendrier de collecte de ses rues n'est pas publié en ligne. rundata.re reprend ceux des autres communes de l'Est, ceux du TCO et ceux de la CINOR. Voir le site de la CIREST.`
-    : `${commune} : la collecte des déchets y est assurée par ${epci.nom}, dont les calendriers ne sont pas repris ici. rundata.re reprend ceux du TCO (Le Port, La Possession, Saint-Paul, Trois-Bassins, Saint-Leu), de la CIREST (Saint-André, Bras-Panon, Saint-Benoît, Salazie, La Plaine-des-Palmistes) et de la CINOR (Saint-Denis, Sainte-Marie, Sainte-Suzanne). Voir le site de ${epci.nom}.`;
+    ? `Sainte-Rose : le calendrier de collecte de ses rues n'est pas publié en ligne. rundata.re reprend ceux des autres communes de l'Est, ceux du TCO, ceux de la CINOR et ceux de la CASUD. Voir le site de la CIREST.`
+    : `${commune} : la collecte des déchets y est assurée par ${epci.nom}, dont les calendriers ne sont pas repris ici. rundata.re reprend ceux du TCO (Le Port, La Possession, Saint-Paul, Trois-Bassins, Saint-Leu), de la CIREST (Saint-André, Bras-Panon, Saint-Benoît, Salazie, La Plaine-des-Palmistes), de la CINOR (Saint-Denis, Sainte-Marie, Sainte-Suzanne) et de la CASUD (Le Tampon, Saint-Joseph, Saint-Philippe, L'Entre-Deux). Voir le site de ${epci.nom}.`;
 
 // The validated words, said by the tool and the pages.
-export const NOT_FOUND = "Rue non trouvée dans les calendriers du TCO, de la CIREST et de la CINOR. Vérifiez l'orthographe, ou essayez le nom du quartier.";
+export const NOT_FOUND = "Rue non trouvée dans les calendriers du TCO, de la CIREST, de la CINOR et de la CASUD. Vérifiez l'orthographe, ou essayez le nom du quartier.";
 // A street the TCO lists without a calendar: nothing is inferred, its contact page is the link of the arrow.
 export const NO_CALENDAR = `les calendriers ${YEAR} du TCO ne donnent pas de jour de collecte pour cette voie, et rundata.re ne sait pas si elle est collectée au porte-à-porte. Renseignez-vous auprès du TCO →`;
 // The same above the list of such streets on a page.
@@ -148,7 +164,7 @@ export const pastYear = (today: number) => today > YEAR_DAYS;
 export const nearYearEnd = (today: number) => today + 56 > YEAR_DAYS;
 const jj = (d: string) => d.split("-").reverse().join("/");
 export const honesty = () =>
-  `Seulement les communes de l'Ouest (TCO), de l'Est (CIREST, sauf Sainte-Rose) et du Nord (CINOR) pour l'instant. Calendriers ${YEAR} publiés par le TCO (data.tco.re), mis à jour le ${jj(UPDATED)}, par la CIREST (cirest.fr), lus le ${jj(UPDATED_CIREST)}, et par la CINOR (cinor.re), lus le ${jj(UPDATED_CINOR)}. En cas d'alerte cyclonique, la collecte peut être suspendue : suivez les annonces du TCO, de la CIREST et de la CINOR.`;
+  `Seulement les communes de l'Ouest (TCO), de l'Est (CIREST, sauf Sainte-Rose), du Nord (CINOR) et de la CASUD dans le Sud pour l'instant. Calendriers ${YEAR} publiés par le TCO (data.tco.re), mis à jour le ${jj(UPDATED)}, par la CIREST (cirest.fr), lus le ${jj(UPDATED_CIREST)}, par la CINOR (cinor.re), lus le ${jj(UPDATED_CINOR)}, et par la CASUD (casud.re), lus le ${jj(UPDATED_CASUD)}. En cas d'alerte cyclonique, la collecte peut être suspendue : suivez les annonces du TCO, de la CIREST, de la CINOR et de la CASUD.`;
 
 // In the validated order.
 const KINDS: [Kind, string][] = [["OM", "ordures ménagères"], ["BIO", "biodéchets (bac marron)"], ["CS", "tri"], ["DV", "déchets verts"], ["EN", "encombrants"]];
@@ -315,15 +331,19 @@ const SHORT: [RegExp, string][] = [[/\br\b\.?/g, "rue"], [/\bch\b\.?/g, "chemin"
 // « œ » as typed on a phone, « oe » (« Chemin Œillets », « Allée Sœurs »): NFD keeps the ligature whole.
 const key = (s: string) => SHORT.reduce((t, [re, w]) => t.replace(re, w), normalize(s.replace(/\([^)]*\)/g, " ").replace(/œ/gi, "oe")));
 
-/** The streets whose name holds every word asked, in a commune when one is given; the exact name first. */
+const holds = (k: string, words: string[]) => words.every((w) => k.split(" ").includes(w) || (w.length > 3 && k.includes(w)));
+
+/**
+ * The streets whose name holds every word asked, in a commune when one is given: the exact name first, then the
+ * streets whose own name (before « , ») holds them. « Rue Hubert Delisle » before « Rue Jules Bertaut, de la rue des
+ * Flamboyants à la rue Hubert Delisle », a stretch the CASUD names by the streets at its ends.
+ */
 export function findStreets(asked: string, commune?: string): Street[] {
   const q = key(asked);
   if (q.length < 3) return [];
   const words = q.split(" ").filter(Boolean);
   const pool = commune ? STREETS.filter((s) => s.commune === commune) : STREETS;
-  const hits = pool.filter((s) => {
-    const k = key(s.nom);
-    return words.every((w) => k.split(" ").includes(w) || (w.length > 3 && k.includes(w)));
-  });
-  return hits.sort((x, y) => Number(key(y.nom) === q) - Number(key(x.nom) === q) || x.nom.length - y.nom.length);
+  const head = (s: Street) => key(s.nom.split(", ")[0]);
+  const rank = (s: Street) => (key(s.nom) === q ? 2 : holds(head(s), words) ? 1 : 0);
+  return pool.filter((s) => holds(key(s.nom), words)).sort((x, y) => rank(y) - rank(x) || x.nom.length - y.nom.length);
 }

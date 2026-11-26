@@ -787,7 +787,7 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
       foot: fiche ? `${lienNom(fiche, "Fiche service-public.fr", ' rel="noopener"')}` : `<a href="/mcp">Demandez à votre IA →</a>`,
     },
     ...(marches ? [{ icon: "building", nom: "Marchés publics", href: marches.href, sr: aCommune(p.nom), live: marches.live, foot: `<a href="${marches.href}">Les voir →</a>` }] : []),
-    // The commune's waste collection, street by street, where the TCO's or the CIREST's calendars are read (vie/collecte.ts): before the
+    // The commune's waste collection, street by street, where an intercommunality's calendars are read (TCO, CIREST, CINOR, CASUD) (vie/collecte.ts): before the
     // recycling centres, as it serves every week (wording validated on 24/11/2026). The page was two clicks away, by /collecte.
     ...(collecte.COMMUNES.includes(p.nom)
       ? [{

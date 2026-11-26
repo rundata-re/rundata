@@ -54,7 +54,7 @@ import { aller, MOTS as ALLER_MOTS, permis, porte, type Porte, retire, SHEET as 
 import { noteLa1ere } from "../tools/non-repris.js";
 import { journeyForm, nowAsked } from "./itineraire.js";
 import { script } from "./scripts-declares.js";
-import { brut, href as lienSur, html, type Html } from "./html.js";
+import { brut, echappe, href as lienSur, html, type Html } from "./html.js";
 
 const FOURNAISE = { lon: 55.7083, lat: -21.2444, name: "Piton de la Fournaise" };
 // What a search engine shows of a title.
@@ -275,18 +275,18 @@ const MAP_NAME = new Map(island.paths.map((p: { nom: string }) => [normalize(p.n
 // ---------------------------------------------------------------- électricité
 
 /** A site that did not answer (tools/injoignable.ts), « son site » linked to it. */
-export const silentText = (s: { texte: string; site: string }) => esc(s.texte).replace(/voir son site\.$/, `voir <a href="${esc(s.site)}" rel="noopener">son site</a>.`);
-export const silentItem = (s: { texte: string; site: string }) => `<li><span class="note">${silentText(s)}</span></li>`;
+export const silentText = (s: { texte: string; site: string }) => echappe(s.texte).replace(/voir son site\.$/, html`voir <a href="${s.site}" rel="noopener">son site</a>.`.texte);
+export const silentItem = (s: { texte: string; site: string }) => html`<li><span class="note">${brut(silentText(s))}</span></li>`.texte;
 
 /**
  * One notice of power cut, its link after it. A PDF letter's sentence ends on its link (the validated words): « l'avis
  * publié par la mairie (PDF) → », « dans l'avis (PDF) → », a target tall enough for a finger.
  */
 export function courantItem(x: Pick<CourantRow, "texte" | "lien" | "nature" | "pdf">): string {
-  const li = x.nature === "en cours" ? '<li class="warn">' : "<li>";
+  const li = x.nature === "en cours" ? brut('<li class="warn">') : brut("<li>");
   const end = x.pdf ? /(l'avis publié par la mairie|dans l'avis)$/.exec(x.texte) : null;
-  if (!end) return `${li}${esc(x.texte)} <a href="${lienSur(x.lien)}" rel="noopener">l'avis →</a></li>`;
-  return `${li}${esc(x.texte.slice(0, end.index))}<a class="tap" href="${lienSur(x.lien)}" rel="noopener">${esc(end[1])} (PDF) →</a></li>`;
+  if (!end) return html`${li}${x.texte} <a href="${lienSur(x.lien)}" rel="noopener">l'avis →</a></li>`.texte;
+  return html`${li}${x.texte.slice(0, end.index)}<a class="tap" href="${lienSur(x.lien)}" rel="noopener">${end[1]} (PDF) →</a></li>`.texte;
 }
 
 /** EDF's words that a resident does not know, said once on /electricite (UX review of 04/11/2026). */
@@ -433,7 +433,7 @@ export function electriciteCommune(data: Cached<ElectriciteAnswer> | null, commu
   const at = p?.heure_mesure.replace(" heure de La Réunion", "");
   const today = localTime(now).split(" ")[0];
   const share = p && at
-    ? `<p class="td all note">${esc(`${fr(p.renouvelable_pct)}\u202f% renouvelable sur l'île, ${at.startsWith(`${today} `) ? `à ${at.slice(today.length + 1)}` : leJour(at)}`)}</p>`
+    ? html`<p class="td all note">${`${fr(p.renouvelable_pct)}\u202f% renouvelable sur l'île, ${at.startsWith(`${today} `) ? `à ${at.slice(today.length + 1)}` : leJour(at)}`}</p>`
     : "";
   // The notices not read again for a while: said under the cut in the short form of the tile, the mairie's site linked
   // above the tile's own link (.dessus), so that a touch opens it (wording validated on 23/11/2026).
@@ -441,13 +441,13 @@ export function electriciteCommune(data: Cached<ElectriciteAnswer> | null, commu
   const ancienne = lu ? copieAncienneCourte("courant", new Date(lu), now) : undefined;
   const site = MAIRIES.find((m) => m.commune === commune)?.site;
   const old = ancienne
-    ? `<p class="td all note">${esc(ancienne)} À vérifier sur ${site ? `<a class="dessus" href="${esc(site)}" rel="noopener">le site de la mairie</a>` : "le site de la mairie"}.</p>`
+    ? html`<p class="td all note">${ancienne} À vérifier sur ${site ? html`<a class="dessus" href="${site}" rel="noopener">le site de la mairie</a>` : "le site de la mairie"}.</p>`
     : "";
   return {
     // The notice's word, « programmée »; « en cours » only when the mairie's notice says so, never from the hour.
-    live: { valeur: cut.nature === "en cours" ? "Coupure en cours" : "Coupure programmée", detail: esc(when), entier: true },
-    ...(share || old ? { more: old + share } : {}),
-    foot: `<a href="${lienSur(cut.lien)}" rel="noopener">L'avis de la mairie${cut.pdf ? " (PDF)" : ""} →</a>`,
+    live: { valeur: cut.nature === "en cours" ? "Coupure en cours" : "Coupure programmée", detail: echappe(when), entier: true },
+    ...(share || old ? { more: html`${old}${share}`.texte } : {}),
+    foot: html`<a href="${lienSur(cut.lien)}" rel="noopener">L'avis de la mairie${cut.pdf ? " (PDF)" : ""} →</a>`.texte,
   };
 }
 
@@ -907,7 +907,7 @@ function siteLine(s: EauAnswer["baignades"][number], g: Porte): string {
  * link (23/11/2026: Dionéo's for one sector of Saint-Denis was on /coupures-eau only).
  */
 function dryLine(dry: { dit: string; lien?: string }, commune: string): string {
-  return `<p><b>${esc(dry.dit)}</b>${dry.lien ? ` <a href="${lienSur(dry.lien)}" rel="noopener">L'avis complet<span class="sr"> : ${esc(commune)}</span> →</a>` : ""}</p>`;
+  return html`<p><b>${dry.dit}</b>${dry.lien ? html` <a href="${lienSur(dry.lien)}" rel="noopener">L'avis complet<span class="sr"> : ${commune}</span> →</a>` : ""}</p>`.texte;
 }
 
 function tapCard(c: EauAnswer["communes"][number], dry?: { dit: string; lien?: string }): string {
@@ -1733,25 +1733,23 @@ export function wholeName(text: string): string {
  * the text at 200 % on a 390 px phone, made the page 413 px wide.
  */
 export function nobreak(text: string): string {
-  return esc(text).replace(/[\p{Lu}][\p{L}'’]*(?:-[\p{L}'’]+)+/gu, (w) => `<span class="nb">${w}</span>`);
+  return echappe(text).replace(/[\p{Lu}][\p{L}'’]*(?:-[\p{L}'’]+)+/gu, (w) => `<span class="nb">${w}</span>`);
 }
 
 /**
  * « publié le 04/11/2026 à 11:15 », or for a notice dated after its reading, La Créole's dated by the day of its cut,
  * « coupure du 05/11/2026 »: « avis daté du » read as the day it was published (24/11/2026).
  */
-const dateOfNotice = (n: CoupuresAnswer["avis"][number]) => (n.publie_le ? `publié le ${esc(n.publie_le)}` : `coupure du ${esc(n.date_de_l_avis ?? "")}`);
+const dateOfNotice = (n: CoupuresAnswer["avis"][number]) => (n.publie_le ? html`publié le ${n.publie_le}` : html`coupure du ${n.date_de_l_avis ?? ""}`);
 
 export function noticeCard(n: CoupuresAnswer["avis"][number]): string {
   // An image or a PDF: nothing is read from it, the link only.
-  if (n.forme) return `<li class="card"><h3>${nobreak(n.communes.join(", "))} <span class="note">${nobreak(n.distributeur)}, ${dateOfNotice(n)}</span></h3>` +
-    `<p>${n.lien ? `<a href="${lienSur(n.lien)}" rel="noopener">${esc(n.titre)} →</a>` : esc(n.titre)}</p></li>`;
+  // nobreak(): the text escaped, its hyphenated names kept whole by the site's own spans.
+  if (n.forme) return html`<li class="card"><h3>${brut(nobreak(n.communes.join(", ")))} <span class="note">${brut(nobreak(n.distributeur))}, ${dateOfNotice(n)}</span></h3><p>${n.lien ? html`<a href="${lienSur(n.lien)}" rel="noopener">${n.titre} →</a>` : n.titre}</p></li>`.texte;
   // Only the start written (La Créole): said as a start, not as the hour of the cut; only the end: « Jusqu'au … ».
   const span = n.coupure ? periodeCoupure(n.coupure) : "";
-  const cut = n.coupure && span ? `<p><b>${esc(n.coupure.de && n.coupure.a ? span : span.charAt(0).toUpperCase() + span.slice(1))}</b>${n.coupure.etat ? ` <span class="note">(${esc(n.coupure.etat)})</span>` : ""}</p>` : "";
-  return `<li class="card${n.ne_pas_boire ? " warn" : ""}"><h3>${n.ne_pas_boire ? "Ne pas boire l'eau · " : ""}${nobreak(n.communes.join(", "))} <span class="note">${nobreak(n.distributeur)}, ${dateOfNotice(n)}</span></h3>` +
-    `<p>${esc(n.titre)}</p>${n.precision ? `<p class="note">${esc(n.precision)}</p>` : ""}${cut}${n.secteurs_complets ? `<p class="note">Secteurs : ${esc(sectorsSaid(n.secteurs))}</p>` : n.lieu ? `<p class="note">Lieu : ${esc(n.lieu)}</p>` : ""}` +
-    `<p class="note">${nobreak(n.texte)}${n.lien ? ` <a href="${lienSur(n.lien)}" rel="noopener">${n.extrait_coupe && !n.secteurs_complets ? "Les secteurs concernés dans l'avis complet" : "L'avis complet"}<span class="sr"> : ${esc(n.communes.join(", "))}</span> →</a>` : ""}</p></li>`;
+  const cut = n.coupure && span ? html`<p><b>${n.coupure.de && n.coupure.a ? span : span.charAt(0).toUpperCase() + span.slice(1)}</b>${n.coupure.etat ? html` <span class="note">(${n.coupure.etat})</span>` : ""}</p>` : "";
+  return html`<li class="card${n.ne_pas_boire ? " warn" : ""}"><h3>${n.ne_pas_boire ? html`Ne pas boire l'eau · ` : ""}${brut(nobreak(n.communes.join(", ")))} <span class="note">${brut(nobreak(n.distributeur))}, ${dateOfNotice(n)}</span></h3><p>${n.titre}</p>${n.precision ? html`<p class="note">${n.precision}</p>` : ""}${cut}${n.secteurs_complets ? html`<p class="note">Secteurs : ${sectorsSaid(n.secteurs)}</p>` : n.lieu ? html`<p class="note">Lieu : ${n.lieu}</p>` : ""}<p class="note">${brut(nobreak(n.texte))}${n.lien ? html` <a href="${lienSur(n.lien)}" rel="noopener">${n.extrait_coupe && !n.secteurs_complets ? html`Les secteurs concernés dans l'avis complet` : html`L'avis complet`}<span class="sr"> : ${n.communes.join(", ")}</span> →</a>` : ""}</p></li>`.texte;
 }
 
 /**
@@ -1764,15 +1762,15 @@ export function noticeCard(n: CoupuresAnswer["avis"][number]): string {
 export function noticesHead(avis: { ne_pas_boire?: boolean }[], where = "", dry: string[] = [], lus = "", muet = false): string {
   const bad = avis.filter((n) => n.ne_pas_boire).length;
   const cuts = avis.length - bad;
-  const sectors = `dans les secteurs ${bad > 1 ? "des avis" : "de l'avis"}${dry.length ? ` (${esc(dry.join(", "))})` : ""}`;
-  const at = where ? ` ${esc(where)}` : "";
-  const read = lus ? `, ${(cuts || bad) === 1 ? "lu" : "lus"} ${esc(lus)}` : "";
+  const sectors = html`dans les secteurs ${bad > 1 ? "des avis" : html`de l'avis`}${dry.length ? html` (${dry.join(", ")})` : ""}`;
+  const at = where ? html` ${where}` : "";
+  const read = lus ? html`, ${(cuts || bad) === 1 ? "lu" : "lus"} ${lus}` : "";
   const text = !bad
-    ? `avis de coupure ou de travaux en cours, récents ou à venir${at}${!cuts && lus ? `, sur les sites des distributeurs ${muet ? "qui ont répondu" : "lus"} ${esc(lus)}` : read}.`
+    ? html`avis de coupure ou de travaux en cours, récents ou à venir${at}${!cuts && lus ? html`, sur les sites des distributeurs ${muet ? "qui ont répondu" : "lus"} ${lus}` : read}.`
     : !cuts
-      ? `avis en cours${at}${read} : <b>eau à ne pas boire</b> ${sectors}.`
-      : `avis de coupure ou de travaux, et ${bad} avis d'<b>eau à ne pas boire</b>${lus ? `, lus ${esc(lus)},` : ""} ${sectors}.`;
-  return `<div class="now"><span class="big">${cuts || bad}</span><p>${text}</p></div>`;
+      ? html`avis en cours${at}${read} : <b>eau à ne pas boire</b> ${sectors}.`
+      : html`avis de coupure ou de travaux, et ${bad} avis d'<b>eau à ne pas boire</b>${lus ? html`, lus ${lus},` : ""} ${sectors}.`;
+  return html`<div class="now"><span class="big">${cuts || bad}</span><p>${text}</p></div>`.texte;
 }
 
 /** The colours of the communes followed on the map of /coupures-eau, drawn the same in its legend. */
@@ -1816,17 +1814,15 @@ export function coupuresPage(origin: string, data: Cached<CoupuresAnswer> | null
   // head, each with its hours, as on a commune's page (never « aucun avis » for a site that did not answer).
   const silent = d?.injoignable ?? [];
   const status = !d
-    ? loading("Les avis des distributeurs")
-    : copieBandeau(copieAncienne("eau", new Date(lusLe(data!)), now, "page"), esc(VOIR_EAU)) +
-      noticesHead(d.avis, "", dry, silent.length && d.avis.length ? "" : leAt(lusLe(data!)), silent.length > 0) +
-      silent.map((f) => `<p class="note">${silentText(f)}</p>`).join("");
+    ? brut(loading("Les avis des distributeurs"))
+    : html`${brut(copieBandeau(copieAncienne("eau", new Date(lusLe(data!)), now, "page"), echappe(VOIR_EAU)))}${brut(noticesHead(d.avis, "", dry, silent.length && d.avis.length ? "" : leAt(lusLe(data!)), silent.length > 0))}${silent.map((f) => html`<p class="note">${brut(silentText(f))}</p>`)}`;
 
   const list = d
     ? d.avis.length
-      ? `<ul class="zones">${[...d.avis].sort((x, y) => Number(!!y.ne_pas_boire) - Number(!!x.ne_pas_boire)).map(noticeCard).join("")}</ul>`
+      ? html`<ul class="zones">${brut([...d.avis].sort((x, y) => Number(!!y.ne_pas_boire) - Number(!!x.ne_pas_boire)).map(noticeCard).join(""))}</ul>`
       // « Pas d'avis », never « aucun avis », which reads as « no cut » (wording validated on 22/11/2026), as the tool says it.
-      : `<p class="card">Pas d'avis de coupure récent ou à venir ${silent.length ? "sur les sites des distributeurs qui ont répondu" : "sur les sites lus"}. Une coupure peut être annoncée ailleurs, par la mairie par exemple.</p>`
-    : `<p class="card">Les avis se chargent : rechargez la page dans quelques secondes.</p>`;
+      : html`<p class="card">Pas d'avis de coupure récent ou à venir ${silent.length ? "sur les sites des distributeurs qui ont répondu" : "sur les sites lus"}. Une coupure peut être annoncée ailleurs, par la mairie par exemple.</p>`
+    : html`<p class="card">Les avis se chargent : rechargez la page dans quelques secondes.</p>`;
 
   // Up the page in the cyclone season, at its foot the rest of the year.
   const cyclone = cycloneWater(now);
@@ -1834,38 +1830,40 @@ export function coupuresPage(origin: string, data: Cached<CoupuresAnswer> | null
   const short = "Coupures d'eau à La Réunion (974) : les avis de Dionéo, runéo, La Créole, la CIREST, CISE Réunion et des Eaux de La Possession, heures et rues concernées.";
   const description = d ? describe(`${d.resume} Coupures d'eau à La Réunion (974) : heures, rues concernées et avis « ne pas boire l'eau ».`, short) : short;
 
-  const band = `${crumbBar("Coupures d'eau")}
+  // The trail, the map, its legend, the cyclone's section, the notes and the sources: HTML the site writes itself.
+  const band = html`${brut(crumbBar("Coupures d'eau"))}
 <div class="wrap intro">
   <div class="pitch">
     <p class="pill"><span class="dot"></span>Avis des distributeurs</p>
     <h1>Coupures d'eau <span class="n974">974</span></h1>
     ${status}
-    ${ask(`Dolo la koupé Sin-Dni ? Kansa i rovien ? Gèt si ${url} é di amwin.`,
-      `Y a-t-il une coupure d'eau à Saint-Denis ? Lis ${url} et dis-moi quand l'eau revient.`)}
+    ${brut(ask(`Dolo la koupé Sin-Dni ? Kansa i rovien ? Gèt si ${url} é di amwin.`,
+      `Y a-t-il une coupure d'eau à Saint-Denis ? Lis ${url} et dis-moi quand l'eau revient.`))}
   </div>
-  <figure class="card mapcard">${islandMap({ fills, links, label: "Carte de La Réunion (974) : les communes dont les avis de coupure d'eau sont suivis" })}
-  <figcaption class="note" style="color:var(--on-night-muted)">${legende([
+  <figure class="card mapcard">${brut(islandMap({ fills, links, label: "Carte de La Réunion (974) : les communes dont les avis de coupure d'eau sont suivis" }))}
+  <figcaption class="note" style="color:var(--on-night-muted)">${brut(legende([
     { forme: "aplat", couleur: WATER_CUT.dry, dit: "eau à ne pas boire" },
     { forme: "aplat", couleur: WATER_CUT.avis, dit: "avis en cours" },
     { forme: "aplat", couleur: WATER_CUT.calme, dit: CALME },
     ...(mute.size ? [{ forme: "aplat" as const, couleur: WATER_CUT.muet, dit: SANS_REPONSE_LUE }] : []),
     { forme: "aplat", couleur: WATER_CUT.nonLu, dit: SITE_NON_LU },
-  ], d && data ? esc(`Avis des distributeurs, lus ${readAt(new Date(lusLe(data)), now).a}.`) : undefined)}</figcaption></figure>
+  ], d && data ? echappe(`Avis des distributeurs, lus ${readAt(new Date(lusLe(data)), now).a}.`) : undefined))}</figcaption></figure>
 </div>`;
 
-  const body = `<section aria-labelledby="h-coupures-eau">
+  // couvertureCourte(): the coverage as the site writes it, its links included.
+  const body = html`<section aria-labelledby="h-coupures-eau">
   <div class="sec-h"><p class="eyebrow">Récents ou à venir</p><h2 id="h-coupures-eau">Les avis</h2>
-  <p>${d ? couvertureCourte(d.couverture) : ""}</p></div>
+  <p>${d ? brut(couvertureCourte(d.couverture)) : ""}</p></div>
   ${list}
-  ${d ? afterCutNote : ""}
-  ${d && data ? sourcesNote(d.sources, data) : ""}
+  ${d ? brut(afterCutNote) : ""}
+  ${d && data ? brut(sourcesNote(d.sources, data)) : ""}
 </section>
-${cyclone.lead ? cyclone.html : ""}
-${texteStable(COUPURES_LIRE(distributeursLus()), COUPURES_FAQ)}
-${connectorAsk("les coupures d'eau", "Saint-Denis")}
-${cyclone.lead ? "" : cyclone.html}`;
+${brut(cyclone.lead ? cyclone.html : "")}
+${brut(texteStable(COUPURES_LIRE(distributeursLus()), COUPURES_FAQ))}
+${brut(connectorAsk("les coupures d'eau", "Saint-Denis"))}
+${brut(cyclone.lead ? "" : cyclone.html)}`;
 
-  return layout(origin, { title, description, path: "/coupures-eau", jsonld: [crumbs(origin, "Coupures d'eau", "/coupures-eau"), webPage(origin, "/coupures-eau", title, description, data), faqPage(COUPURES_FAQ)], alerte, iaAside: true }, band, body);
+  return layout(origin, { title, description, path: "/coupures-eau", jsonld: [crumbs(origin, "Coupures d'eau", "/coupures-eau"), webPage(origin, "/coupures-eau", title, description, data), faqPage(COUPURES_FAQ)], alerte, iaAside: true }, band.texte, body.texte);
 }
 
 // What the communes' water pages (coupures.ts) share with the island's.

@@ -71,6 +71,7 @@ export const NOUVEAUTES: { date: string; texte: string }[] = [
   { date: "2026-11-26T05:22:00+04:00", texte: "Avec les enfants\u00a0: chaque lieu est placé dans sa commune d'après le contour officiel, comme l'aire de jeux de Domenjod." },
   { date: "2026-11-25T18:12:00+04:00", texte: "Antennes\u00a0: touchez une antenne de la carte pour voir sa fiche ANFR (opérateurs, bandes, mise en service, hauteur, azimuts)." },
   { date: "2026-11-25T17:17:00+04:00", texte: "Menu\u00a0: «\u00a0Donner un avis\u00a0» en tête, sur toutes les pages, mène directement au formulaire d'avis en bas de page." },
+  { date: "2026-11-25T15:29:00+04:00", texte: "Électricité\u00a0: le lien vers la page d'EDF des coupures prévues pour travaux, sur /electricite et dans les réponses." },
   { date: "2026-11-25T11:07:00+04:00", texte: "Associations\u00a0: les associations déclarées à La Réunion (RNA), à chercher par commune et par mot, avec leur objet et leur année de création." },
   { date: "2026-11-25T11:07:00+04:00", texte: "Élections\u00a0: les bureaux de vote de chaque commune, par lieu avec leur adresse, d'après l'Insee, et le lien officiel pour connaître le sien." },
   { date: "2026-11-25T11:07:00+04:00", texte: "Communes\u00a0: le maire et les adjoints de chaque commune, d'après le Répertoire national des élus." },

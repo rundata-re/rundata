@@ -112,9 +112,10 @@ describe("larger text on a narrow screen, on /coupures-eau and a commune's elect
 describe("a tool's name in a <code>, with the text at 200 %", () => {
   it("can go to the next line after each « _ » and nowhere else", () => {
     const dir = new URL("../src/web/", import.meta.url);
-    // Each through coupable() (soulignesCoupables, domains.ts), never written by hand, with or without its <wbr>.
+    // Each through coupable() (soulignesCoupables, domains.ts), never written by hand, with or without its <wbr>; in a
+    // html`…` template, through brut(), being HTML the site writes.
     const sources = readdirSync(dir).filter((f) => f.endsWith(".ts")).map((f) => [f, readFileSync(new URL(f, dir), "utf8")]);
-    const noms = sources.flatMap(([, t]) => [...t.matchAll(/<code>\$\{coupable\("[a-z]+(?:_[a-z]+)+"\)\}<\/code>/g)]);
+    const noms = sources.flatMap(([, t]) => [...t.matchAll(/<code>\$\{(?:brut\()?coupable\("[a-z]+(?:_[a-z]+)+"\)\)?\}<\/code>/g)]);
     expect(noms.length).toBeGreaterThanOrEqual(8);
     expect(sources.flatMap(([f, t]) => [...t.matchAll(/<code>([a-z]+_[^<$]*)<\/code>/g)].map((m) => `${f} ${m[1]}`))).toEqual([]);
   });

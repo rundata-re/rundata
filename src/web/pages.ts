@@ -33,6 +33,7 @@ import { FLAG_INNER } from "./flag.js";
 import { logo } from "./logo.js";
 import { esc, mapCredit, NOMS_SCRIPT, ownIds, RELIEF_SCRIPT } from "./map.js";
 import { typo } from "./typo.js";
+import { brut, html } from "./html.js";
 import { mentionLinks } from "../mentions.js";
 import { withSigles } from "./sigles.js";
 import { bannerHtml, volcanBanner } from "./volcan-alerte.js";
@@ -348,8 +349,9 @@ interface Head {
 export function ligne(href: string, picto: string, text: string, after?: string): string {
   // The last part (the zones, « Enclos interdit ») kept whole: on two lines, the line breaks before its « · ».
   const i = text.lastIndexOf(" · ");
-  const said = i < 0 ? esc(text) : `${esc(text.slice(0, i))} <span class="nw">· ${esc(text.slice(i + 3))}</span>`;
-  return `<a class="ligne" href="${href}">${picto ? `<span aria-hidden="true">${picto}</span>` : ""}<span class="txt">${said}${after ? ` · ${esc(after)}` : ""}</span><span aria-hidden="true">→</span></a>`;
+  const said = i < 0 ? html`${text}` : html`${text.slice(0, i)} <span class="nw">· ${text.slice(i + 3)}</span>`;
+  // `href` and `picto` are the site's own (a path, a sign).
+  return html`<a class="ligne" href="${brut(href)}">${picto ? html`<span aria-hidden="true">${brut(picto)}</span>` : ""}<span class="txt">${said}${after ? html` · ${after}` : ""}</span><span aria-hidden="true">→</span></a>`.texte;
 }
 
 // The words of the line, the validated ones: the phenomena by a short name, two at most; the zones named while one or two,
@@ -380,7 +382,8 @@ function banner(a: Alerte | undefined, path: string): string {
   // After « Voir la vigilance zone par zone → », where Météo-France says it: the cyclone's page for the cyclone alert.
   const official = ` ${officielHtml("cyclone" in a.court ? mf.OFFICIEL_CYCLONE : mf.OFFICIEL_VIGILANCE)}`;
   const short = path === "/vigilance" ? "" : ligne("/vigilance", "⚠", vigilanceLigne(a), a.lue) + (a.ecoles && path !== "/ecoles-cyclone" ? ligne("/ecoles-cyclone", "", "Écoles et crèches fermées") : "");
-  return `<div class="alerte vg ${a.neutre ? "vgpre" : `vg${a.couleur}`}"${short ? " data-court" : ""} role="status">${short}<div class="wrap"><span>⚠ ${esc(a.texte)}${a.lue ? ` · ${esc(a.lue)}` : ""}</span>${schools}${more}${official}</div></div>`;
+  // `short`, `schools`, `more` and `official`: HTML the site writes itself.
+  return html`<div class="alerte vg ${a.neutre ? "vgpre" : html`vg${a.couleur}`}"${short ? " data-court" : ""} role="status">${brut(short)}<div class="wrap"><span>⚠ ${a.texte}${a.lue ? html` · ${a.lue}` : ""}</span>${brut(schools)}${brut(more)}${brut(official)}</div></div>`.texte;
 }
 
 /**
@@ -1283,9 +1286,9 @@ ${script(OFFLINE_SCRIPT)}`);
  */
 export const cycloneVg = (c: number) => (c === 2 ? "vgpre" : `vg${c >= 1 && c <= 5 ? c : 0}`);
 /** The link to Météo-France's own site, in its words (providers/vigilance.ts). */
-export const officielHtml = (href: string) => `<a href="${href}" rel="noopener">${esc(mf.OFFICIEL)}</a>`;
+export const officielHtml = (href: string) => html`<a href="${brut(href)}" rel="noopener">${mf.OFFICIEL}</a>`.texte;
 /** A colour of Météo-France, in its colour; `word` to say it otherwise (« verte »). */
-export const vg = (c: number, word = mf.colour(c)) => `<span class="vg vg${c >= 1 && c <= 5 ? c : 0}">${esc(word)}</span>`;
+export const vg = (c: number, word = mf.colour(c)) => html`<span class="vg vg${c >= 1 && c <= 5 ? c : 0}">${word}</span>`.texte;
 /** The vigilance's land zones, by Météo-France's ids (the line of the banner, the cards of /vigilance). */
 export const LAND = ["VIGI974-11", "VIGI974-12", "VIGI974-13", "VIGI974-14", "VIGI974-15"];
 

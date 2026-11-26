@@ -52,6 +52,28 @@ describe("the shark rule and the zones where bathing is allowed", () => {
     expect(requinBlock(NOW, { nom: "Manapany", lon: 55.5882, lat: -21.3733 }).zones).not.toContain(T.bsan);
   });
 
+  it("says Manapany has no watch, after the commune of Saint-Joseph, in the answers and on the pages, with its page", async () => {
+    const LINE_M = "Bassin de Manapany : baignade non surveillée, d'après la commune de Saint-Joseph (aucune zone de baignade aménagée, page de 2013).";
+    const URL_M = "https://saintjoseph.re/Zones-de-baignade";
+    // temperature_mer and qualite_eau both carry requinBlock as risque_requin: near Manapany, and for the island.
+    for (const b of [requinBlock(NOW, { nom: "Manapany", lon: 55.5882, lat: -21.3733, commune: "Saint-Joseph" }), requinBlock(NOW), requinBlock(AFTER)]) {
+      expect(b.zones).toContain(LINE_M);
+      expect(b.zones).toContain(T.ouverture);
+      expect(b.drapeaux).toBe(T.drapeaux);
+      expect(b.surveillance_des_zones).toEqual([{ zone: "Bassin de Manapany", surveillance: "aucune", source: "la commune de Saint-Joseph", lien: URL_M, page_du: "2013-02-22", lu_le: "2026-11-26" }]);
+      expect(JSON.stringify(b)).not.toContain("Bassin de Manapany : bassin");
+    }
+    // Far from it, no word of its watch.
+    expect(requinBlock(NOW, { nom: "Saint-Leu", lon: 55.2882, lat: -21.1678, commune: "Saint-Leu" })).not.toHaveProperty("surveillance_des_zones");
+    const cache = new Cache(new MemoryStore(), () => NOW.getTime());
+    for (const path of ["/baignade", "/mer"]) {
+      const html = await (await handle(new Request(`${O}${path}`), cache)).text();
+      expect(html).toContain(`Bassin de Manapany : baignade non surveillée, d&#39;après <a href="${URL_M}">la commune de Saint-Joseph</a> (aucune zone de baignade aménagée, page de 2013).`);
+      expect(text(html)).not.toContain("Bassin de Manapany : bassin");
+      expect(text(html)).toContain("regardez le drapeau sur place");
+    }
+  });
+
   it("once the decree has ended, say nothing permitted or forbidden on its strength, but keep the commune's ban and the flags", () => {
     const b = requinBlock(AFTER);
     expect(b.regle).toBe(T.echu);

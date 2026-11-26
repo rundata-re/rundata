@@ -34,7 +34,10 @@ const bsan = (zones: typeof ZONES, now: Date) => (saysBsan(zones, now) ? `<p>${e
 /** A zone's line, with « Y aller » (aller.ts; the page adds the sheet). */
 const zoneLi = (z: (typeof ZONES)[number], now: Date, g: Porte) => {
   const go = g.aller({ nom: z.nom, lat: z.lat, lon: z.lon }, "baignade");
-  return `<li>${say(zoneLine(z, now))}${go ? ` ${go}` : ""}</li>`;
+  const w = z.surveillance;
+  const line = say(zoneLine(z, now));
+  const text = w ? line.replace(esc(w.source), `<a href="${esc(w.url)}">${esc(w.source)}</a>`) : line;
+  return `<li>${text}${go ? ` ${go}` : ""}</li>`;
 };
 
 function zonesHtml(zones: typeof ZONES, now: Date, g: Porte): string {

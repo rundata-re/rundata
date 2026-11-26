@@ -53,6 +53,22 @@ export interface Zone {
   lat: number;
   /** Who keeps the ZONEX, only where the GIP says so. */
   par?: "BSAN et RESSAC";
+  /** What a source says of the watch over the zone, said in place of its kind's line (rule and decree or not). */
+  surveillance?: Surveillance;
+}
+
+/** « aucune » : the commune says nobody watches it. With who says so, its page and the day it was read. */
+export interface Surveillance {
+  valeur: "aucune";
+  /** Its reason, as the source gives it, in brackets after the source. */
+  pourquoi: string;
+  /** « la commune de Saint-Joseph »: linked to `url` on the pages. */
+  source: string;
+  url: string;
+  /** ISO day the page says it was last updated: said by its year, an old page being told as such. */
+  page_du: string;
+  /** ISO day the page was read. */
+  lu_le: string;
 }
 
 /**
@@ -78,7 +94,14 @@ export const ZONES: Zone[] = [
   { nom: "ZONEX de L'Étang-Salé (spot « le bord »)", type: "zonex", commune: "L'Étang-Salé", lon: 55.3277, lat: -21.2605 },
   { nom: "Lagon de Saint-Pierre", type: "lagon", commune: "Saint-Pierre", lon: 55.4663, lat: -21.342 },
   { nom: "Bassin naturel de Grand-Anse", type: "bassin_naturel", commune: "Petite-Île", lon: 55.5482, lat: -21.37 },
-  { nom: "Bassin de Manapany", type: "bassin", commune: "Saint-Joseph", lon: 55.5882, lat: -21.3733 },
+  {
+    nom: "Bassin de Manapany", type: "bassin", commune: "Saint-Joseph", lon: 55.5882, lat: -21.3733,
+    // « A Saint-Joseph, aucune zone de baignade n'est aménagée […] n'étant pas surveillées, les baignades peuvent être dangereuses. »
+    surveillance: {
+      valeur: "aucune", pourquoi: "aucune zone de baignade aménagée", source: "la commune de Saint-Joseph",
+      url: "https://saintjoseph.re/Zones-de-baignade", page_du: "2013-02-22", lu_le: "2026-11-26",
+    },
+  },
   { nom: "Piscine du Baril les Bains", type: "bassin", commune: "Saint-Philippe", lon: 55.7147, lat: -21.3707 },
 ];
 
@@ -167,9 +190,18 @@ export function zoneLines(zones: Zone[], now: Date): string[] {
   return [...zones.map(line), ...(zonex ? [T.zonex] : []), ...(saysBsan(zones, now) ? [T.bsan] : [])];
 }
 
+/** « Bassin de Manapany : baignade non surveillée, d'après la commune de Saint-Joseph (aucune zone de baignade aménagée, page de 2013). » */
+export const surveillanceLine = (z: Zone & { surveillance: Surveillance }) =>
+  `${z.nom} : baignade non surveillée, d'après ${z.surveillance.source} (${z.surveillance.pourquoi}, page de ${z.surveillance.page_du.slice(0, 4)}).`;
+
 export function zoneLine(z: Zone, now: Date): string {
+  if (z.surveillance) return surveillanceLine(z as Zone & { surveillance: Surveillance });
   return (inForce(now) ? LINE : KIND)[z.type](z);
 }
+
+/** The sources of the zones' watch, for an answer: the page of each, and the day it was read. */
+export const surveillances = (zones: Zone[]) =>
+  zones.flatMap((z) => (z.surveillance ? [{ zone: z.nom, surveillance: z.surveillance.valeur, source: z.surveillance.source, lien: z.surveillance.url, page_du: z.surveillance.page_du, lu_le: z.surveillance.lu_le }] : []));
 
 /** No zone near the place: where the list comes from, then the rule if it still applies. */
 export function noneLine(nom: string, now: Date): string {
@@ -187,9 +219,11 @@ export function ruleText(now: Date): string {
 /** The block of the answers: the rule, the zones (near the place, or all), where the day's zones are told, the flags; never « open today ». */
 export function requinBlock(now: Date, near?: { nom: string; lon: number; lat: number; commune?: string }) {
   const zones = near ? zonesNear(near.lon, near.lat, near.commune) : ZONES;
+  const watch = surveillances(zones);
   return {
     regle: ruleText(now),
     zones: zones.length ? [T.intro, ...zoneLines(zones, now), T.ouverture] : noneLine(near!.nom, now),
+    ...(watch.length ? { surveillance_des_zones: watch } : {}),
     deploiements_du_jour: { texte: T.stories, ...STORIES },
     drapeaux: T.drapeaux,
     source_des_zones: { texte: T.source, lien: CSR_URL },

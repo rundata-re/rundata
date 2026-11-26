@@ -1584,7 +1584,7 @@ const DROUGHT_ORDER = ["crise", "alerte renforcée", "alerte", "vigilance"];
  */
 const DROUGHT_INK: Record<string, string> = { "alerte renforcée": "#000", crise: "#fff" };
 const droughtBadge = (n?: string) =>
-  n ? `<span class="lvl" style="--c:${DROUGHT_COLOR[n] ?? "#868e96"}${DROUGHT_INK[n] ? `;color:${DROUGHT_INK[n]}` : ""}">${esc(n)}</span>` : `<span class="note">aucune</span>`;
+  (n ? html`<span class="lvl" style="--c:${DROUGHT_COLOR[n] ?? "#868e96"}${DROUGHT_INK[n] ? html`;color:${DROUGHT_INK[n]}` : ""}">${n}</span>` : html`<span class="note">aucune</span>`).texte;
 
 /**
  * « Ce qui est interdit » on /secheresse: a row per use of the tap water limited for a private person, a column per level
@@ -1592,22 +1592,23 @@ const droughtBadge = (n?: string) =>
  * use at that level, its hours as the kit writes them; a use the order says nothing of at a level leaves its cell empty.
  * The levels are said once, in « Comment lire cette page »; the order's number and date once, at the top of the page.
  */
-function droughtUses(interdits: SecheresseAnswer["interdits"]): string {
+function droughtUses(interdits: SecheresseAnswer["interdits"]): Html | "" {
   const cols = [...interdits].filter((x) => DROUGHT_ORDER.includes(x.niveau)).sort((x, y) => DROUGHT_ORDER.indexOf(y.niveau) - DROUGHT_ORDER.indexOf(x.niveau));
   const uses = [...new Set(cols.flatMap((x) => x.restrictions.map((r) => r.usage)))];
   if (!cols.length || !uses.length) return "";
-  const head = cols.map((x) => `<th scope="col">${droughtBadge(x.niveau)} <small class="note" style="display:block;font-weight:400">${esc(x.communes.join(", "))}</small></th>`).join("");
-  const rows = uses.map((u) => `<tr><th scope="row">${esc(u)}</th>${cols.map((x) => {
+  // droughtBadge(): the level's badge, HTML the site writes itself.
+  const head = cols.map((x) => html`<th scope="col">${brut(droughtBadge(x.niveau))} <small class="note" style="display:block;font-weight:400">${x.communes.join(", ")}</small></th>`);
+  const rows = uses.map((u) => html`<tr><th scope="row">${u}</th>${cols.map((x) => {
     const said = x.restrictions.find((r) => r.usage === u)?.restriction;
-    return said ? `<td data-label="${esc(x.niveau)}">${esc(heuresDites(said))}</td>` : "<td></td>";
-  }).join("")}</tr>`).join("");
-  return `<div class="card table-wrap"><table class="drought niveaux usages"><caption class="sr">Ce qui est interdit, par niveau</caption><thead><tr><th scope="col">Usage</th>${head}</tr></thead><tbody>${rows}</tbody></table></div>`;
+    return said ? html`<td data-label="${x.niveau}">${heuresDites(said)}</td>` : html`<td></td>`;
+  })}</tr>`);
+  return html`<div class="card table-wrap"><table class="drought niveaux usages"><caption class="sr">Ce qui est interdit, par niveau</caption><thead><tr><th scope="col">Usage</th>${head}</tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
 /** Under a level of the order, VigiEau's where it gives another: « VigiEau : alerte ». */
 const vigieauSays = (c: SecheresseAnswer["communes"][number], ressource: string) => {
   const e = c.vigieau_differe?.find((x) => x.ressource === ressource);
-  return e ? `<small class="note" style="display:block">VigiEau\u00a0: ${esc(e.vigieau)}</small>` : "";
+  return e ? html`<small class="note" style="display:block">VigiEau\u00a0: ${e.vigieau}</small>` : "";
 };
 
 /** /secheresse's stable text (wording validated on 14/11/2026). */
@@ -1650,20 +1651,20 @@ export function secheressePage(origin: string, data: Cached<SecheresseAnswer> | 
 
   // A newer order than the levels shown, out in the recueil and not taken into account yet: said first.
   const recent = d?.arrete_plus_recent
-    ? `<p class="note" style="color:var(--on-night-muted)"><b>${esc(d.arrete_plus_recent.texte)}</b> <a href="${lienSur(d.arrete_plus_recent.lien)}">Lire l'arrêté (PDF)</a></p>`
+    ? html`<p class="note" style="color:var(--on-night-muted)"><b>${d.arrete_plus_recent.texte}</b> <a href="${lienSur(d.arrete_plus_recent.lien)}">Lire l'arrêté (PDF)</a></p>`
     : "";
-  const status = recent + (!d
-    ? loading("Les restrictions d'eau")
+  // loading(): HTML the site writes itself.
+  const status = html`${recent}${!d
+    ? brut(loading("Les restrictions d'eau"))
     : d.communes.length
-      ? `<div class="now"><span class="big">${hit.length}</span><p>commune${hit.length > 1 ? "s" : ""} sur 24 en alerte ou plus pour l'eau du robinet${d.arrete
-          ? `, d'après l'<a href="${lienSur(d.arrete.lien)}">arrêté préfectoral ${esc(d.arrete.numero)} du ${esc(d.arrete.signe_le ?? "")}</a>, en vigueur depuis le ${esc(d.arrete.en_vigueur_depuis ?? "")}`
-          : d.arrete_du ? `, d'après l'arrêté préfectoral en vigueur depuis le ${esc(d.arrete_du)}` : ""}.</p></div>` +
-        (d.vigieau ? `<p class="note" style="color:var(--on-night-muted)">${esc(d.vigieau)}</p>` : "")
-      : `<p class="lead">${esc(d.resume)}</p>`);
+      ? html`<div class="now"><span class="big">${hit.length}</span><p>commune${hit.length > 1 ? "s" : ""} sur 24 en alerte ou plus pour l'eau du robinet${d.arrete
+          ? html`, d'après l'<a href="${lienSur(d.arrete.lien)}">arrêté préfectoral ${d.arrete.numero} du ${d.arrete.signe_le ?? ""}</a>, en vigueur depuis le ${d.arrete.en_vigueur_depuis ?? ""}`
+          : d.arrete_du ? html`, d'après l'arrêté préfectoral en vigueur depuis le ${d.arrete_du}` : ""}.</p></div>${d.vigieau ? html`<p class="note" style="color:var(--on-night-muted)">${d.vigieau}</p>` : ""}`
+      : html`<p class="lead">${d.resume}</p>`}`;
 
   const table = d?.communes.length
-    ? `<div class="card table-wrap"><table class="drought"><caption class="sr">Les niveaux de restriction</caption><thead><tr><th>Commune</th><th>Eau du robinet</th><th>Rivières et sources</th><th>Nappes</th></tr></thead><tbody>${d.communes.map((c) =>
-        `<tr><th scope="row" class="tgt" id="${anchorId("c", MAP_NAME.get(normalize(c.commune)) ?? c.commune)}">${esc(c.commune)}</th><td>${droughtBadge(c.eau_du_robinet)}${vigieauSays(c, "eau du robinet")}</td><td>${droughtBadge(c.rivieres_et_sources)}${vigieauSays(c, "rivières et sources")}</td><td>${droughtBadge(c.nappes)}${vigieauSays(c, "nappes souterraines")}</td></tr>`).join("")}</tbody></table></div>`
+    ? html`<div class="card table-wrap"><table class="drought"><caption class="sr">Les niveaux de restriction</caption><thead><tr><th>Commune</th><th>Eau du robinet</th><th>Rivières et sources</th><th>Nappes</th></tr></thead><tbody>${d.communes.map((c) =>
+        html`<tr><th scope="row" class="tgt" id="${anchorId("c", MAP_NAME.get(normalize(c.commune)) ?? c.commune)}">${c.commune}</th><td>${brut(droughtBadge(c.eau_du_robinet))}${vigieauSays(c, "eau du robinet")}</td><td>${brut(droughtBadge(c.rivieres_et_sources))}${vigieauSays(c, "rivières et sources")}</td><td>${brut(droughtBadge(c.nappes))}${vigieauSays(c, "nappes souterraines")}</td></tr>`)}</tbody></table></div>`
     : "";
 
   const rules = droughtUses(d?.interdits ?? []);
@@ -1672,35 +1673,36 @@ export function secheressePage(origin: string, data: Cached<SecheresseAnswer> | 
   const short = "Restrictions d'eau à La Réunion (974) : le niveau de sécheresse par commune et ce qui est interdit (arrosage, lavage, piscine), d'après l'arrêté du préfet.";
   const description = d ? describe(`${d.resume}`, short) : short;
 
-  const band = `${crumbBar("Sécheresse")}
+  // crumbBar(), ask(), islandMap(), legende(), sourcesNote(), texteStable(), connectorCta(): HTML the site writes itself.
+  const band = html`${brut(crumbBar("Sécheresse"))}
 <div class="wrap intro">
   <div class="pitch">
     <p class="pill"><span class="dot"></span>Arrêté en vigueur</p>
     <h1>Sécheresse <span class="n974">974</span></h1>
     ${status}
-    ${ask(`Mi gingn arouz mon zardin Sin-Zozèf ? Gèt si ${url} é di amwin sak lé défandi.`,
-      `Ai-je le droit d'arroser mon jardin à Saint-Joseph ? Lis ${url} et dis-moi ce qui est interdit.`)}
+    ${brut(ask(`Mi gingn arouz mon zardin Sin-Zozèf ? Gèt si ${url} é di amwin sak lé défandi.`,
+      `Ai-je le droit d'arroser mon jardin à Saint-Joseph ? Lis ${url} et dis-moi ce qui est interdit.`))}
   </div>
-  <figure class="card mapcard">${islandMap({ fills, links, listed: true, label: "Carte de La Réunion (974) colorée par le niveau de restriction de l'eau du robinet de chaque commune" })}
-  <figcaption class="note" style="color:var(--on-night-muted)">${legende(["vigilance", "alerte", "alerte renforcée", "crise"].map((n): Cle => ({ forme: "aplat", couleur: DROUGHT_COLOR[n], dit: n })))}</figcaption></figure>
+  <figure class="card mapcard">${brut(islandMap({ fills, links, listed: true, label: "Carte de La Réunion (974) colorée par le niveau de restriction de l'eau du robinet de chaque commune" }))}
+  <figcaption class="note" style="color:var(--on-night-muted)">${brut(legende(["vigilance", "alerte", "alerte renforcée", "crise"].map((n): Cle => ({ forme: "aplat", couleur: DROUGHT_COLOR[n], dit: n }))))}</figcaption></figure>
 </div>`;
 
-  const body = `<section aria-labelledby="h-communes-eau">
+  const body = html`<section aria-labelledby="h-communes-eau">
   <div class="sec-h"><p class="eyebrow">Commune par commune</p><h2 id="h-communes-eau">Les niveaux de restriction</h2>
 </div>
-  ${table || (d ? "" : `<p class="card">Les restrictions se chargent : rechargez la page dans quelques secondes.</p>`)}
+  ${table || (d ? "" : html`<p class="card">Les restrictions se chargent : rechargez la page dans quelques secondes.</p>`)}
 </section>
-${rules ? `<section aria-labelledby="h-interdits">
+${rules ? html`<section aria-labelledby="h-interdits">
   <div class="sec-h"><p class="eyebrow">Pour un particulier</p><h2 id="h-interdits">Ce qui est interdit</h2>
   <p>Les usages de l'eau du robinet limités à chaque niveau. Les agriculteurs, entreprises et collectivités ont leurs propres règles : demandez à votre IA avec le connecteur.</p></div>
   ${rules}
-  ${d ? `<p class="note">${esc(d.a_savoir)}</p>` : ""}
-  ${d && data ? sourcesNote(d.sources, data) : ""}
+  ${d ? html`<p class="note">${d.a_savoir}</p>` : ""}
+  ${d && data ? brut(sourcesNote(d.sources, data)) : ""}
 </section>` : ""}
-${texteStable(SECHERESSE_LIRE, SECHERESSE_FAQ)}
-${connectorCta("restrictions_eau", "les restrictions d'eau")}`;
+${brut(texteStable(SECHERESSE_LIRE, SECHERESSE_FAQ))}
+${brut(connectorCta("restrictions_eau", "les restrictions d'eau"))}`;
 
-  return layout(origin, { title, description, path: "/secheresse", jsonld: [crumbs(origin, "Sécheresse", "/secheresse"), webPage(origin, "/secheresse", title, description, data), faqPage(SECHERESSE_FAQ)], alerte, iaAside: true }, band, body);
+  return layout(origin, { title, description, path: "/secheresse", jsonld: [crumbs(origin, "Sécheresse", "/secheresse"), webPage(origin, "/secheresse", title, description, data), faqPage(SECHERESSE_FAQ)], alerte, iaAside: true }, band.texte, body.texte);
 }
 
 export function secheresseLive(data: Cached<SecheresseAnswer> | null): Live | undefined {

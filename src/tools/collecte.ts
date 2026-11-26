@@ -26,7 +26,7 @@ export function parseLieu(lieu: string): { commune?: string; rue: string } {
   return { commune, rue };
 }
 
-/** The commune whose calendars are not read (outside the TCO and the CIREST, or Sainte-Rose) `lieu` names (« 12 rue de Paris, Saint-Denis », « Le Chaudron »), and who collects there. */
+/** The commune whose calendars are not read (outside the TCO, the CIREST and the CINOR, or Sainte-Rose) `lieu` names (« 12 rue de Paris, Saint-Denis », « Le Chaudron »), and who collects there. */
 export function elsewhere(lieu: string): { commune: string; epci: (typeof col.AILLEURS)[number] } | undefined {
   // The commune last, as an address ends (a postcode after it), not « rue de Saint-Denis » in a street of the West.
   const flat = ` ${normalize(lieu).replace(/\b974\d\d\b/g, " ").replace(/\s+/g, " ").trim()}`;
@@ -45,12 +45,12 @@ export function collecteAnswer(lieu: string | undefined, now = new Date()) {
   // A commune of another intercommunality: said before any street is looked for (04/11/2026, « rue non trouvée » at Saint-Denis).
   const other = !commune && lieu?.trim() ? elsewhere(lieu) : undefined;
   if (other) {
-    // Nothing of the TCO's nor the CIREST's in it: credited to nobody, the intercommunality named with its site (citer « rundata.re »).
+    // Nothing of the TCO's, the CIREST's nor the CINOR's in it: credited to nobody, the intercommunality named with its site (citer « rundata.re »).
     return text({ resume: col.ailleurs(other.commune, other.epci), intercommunalite: { nom: other.epci.nom.replace(/^la /, ""), site: other.epci.site }, page: page(), ...base, sources: [] });
   }
   if (rue.length < 3) {
     return text({
-      resume: commune ? communeLine(commune) : `Le jour de collecte se donne rue par rue : précisez la rue et la commune (Saint-Paul, La Possession, Saint-Leu, Le Port, Trois-Bassins, Saint-André, Bras-Panon, Saint-Benoît, Salazie ou La Plaine-des-Palmistes). ${honesty()}`,
+      resume: commune ? communeLine(commune) : `Le jour de collecte se donne rue par rue : précisez la rue et la commune (Saint-Paul, La Possession, Saint-Leu, Le Port, Trois-Bassins, Saint-André, Bras-Panon, Saint-Benoît, Salazie, La Plaine-des-Palmistes, Saint-Denis, Sainte-Marie ou Sainte-Suzanne). ${honesty()}`,
       page: page(commune),
       ...base,
     });
@@ -70,7 +70,7 @@ export function collecteAnswer(lieu: string | undefined, now = new Date()) {
       contact: cal ? undefined : e.contact,
     };
   });
-  // The sources of the streets answered, the TCO's or the CIREST's.
+  // The sources of the streets answered, the TCO's, the CIREST's or the CINOR's.
   const from = col.EPCIS.filter((e) => found.some((s) => s.epci === e.id));
   return text({
     resume: [rows[0].texte, ...rows[0].jours_feries].join(" ") + (rows.length > 1 ? ` Autres rues au nom proche : ${rows.slice(1).map((r) => `${r.rue} (${r.commune})`).join(", ")}.` : ""),

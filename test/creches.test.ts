@@ -35,7 +35,9 @@ describe("the tile « Crèches » of a commune", () => {
     const t = tile(page("saint-denis"))!;
     expect(t).toContain('<p class="tv">29,7 places</p>');
     expect(t).toContain(`en crèche pour 100 enfants de moins de 3${NBSP}ans · 40,6 pour 100 en comptant les assistantes maternelles, la garde à domicile et l'école · 1\u202f966 places en crèche · offre théorique fin 2023, d'après la CAF`);
-    expect(t).toContain('href="/enfants#creches"');
+    // Saint-Denis's tile leads to its own page, which lists its crèches one by one (its CCAS's list).
+    expect(t).toContain('href="/enfants/saint-denis#creches"');
+    expect(tile(page("saint-paul"))).toContain('href="/enfants#creches"');
     expect(t).toContain(`<a href="https://monenfant.fr" rel="noopener" aria-label="Trouver une crèche${NBSP}: monenfant.fr">Trouver une crèche${NBSP}: <span class="adrweb">monenfant.<wbr>fr</span></a>`);
     expect(page("saint-denis")).toContain(creches.SOURCE.nom.replaceAll("'", "&#39;"));
   });

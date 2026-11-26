@@ -23,7 +23,7 @@ const KINDS: [RegExp, enfants.Kind][] = [
 export const kindAsked = (quoi: string) => KINDS.find(([re]) => re.test(quoi))?.[1];
 
 const NOT_ALL =
-  "Liste d'après OpenStreetMap, Data ES et Basilic : tous les lieux n'y sont pas. Les accueils de loisirs (centres aérés), les crèches et les relais petite enfance sont publiés par la CAF sur monenfant.fr, dont les données ne peuvent pas être reprises : y renvoyer pour un mode de garde. Un lieu oublié : donner_avis, ou l'ajouter sur OpenStreetMap. Le nombre de places en crèche de chaque commune : quoi = « crèche ».";
+  "Liste d'après OpenStreetMap, Data ES et Basilic : tous les lieux n'y sont pas. Les accueils de loisirs (centres aérés), les crèches et les relais petite enfance sont publiés par la CAF sur monenfant.fr, dont les données ne peuvent pas être reprises : y renvoyer pour un mode de garde. Un lieu oublié : donner_avis, ou l'ajouter sur OpenStreetMap. Le nombre de places en crèche de chaque commune, et les crèches de Saint-Denis (liste de son CCAS) : quoi = « crèche ».";
 const AGES =
   "age : celui de la carte quand elle le donne (age_d_apres_la_source = true)\u00a0; sinon une indication de rundata.re selon le type de lieu, à dire comme telle, jamais comme une règle du lieu. Aucun lieu n'est dit ouvert sans horaires de la source.";
 const ACTIVITIES = "Activités et spectacles pour les enfants des deux semaines qui viennent : outil evenements, quoi = « enfants ».";

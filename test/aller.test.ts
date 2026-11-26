@@ -15,6 +15,7 @@ import { site } from "../src/web/site.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 import * as dech from "../src/vie/decheteries.js";
 import type * as transit from "../src/providers/transit.js";
+import * as crechesSaintDenis from "../src/vie/creches-saint-denis.js";
 import { couleur, enfantsCommunePage, enfantsPage } from "../src/web/enfants.js";
 import { daePage } from "../src/web/domains.js";
 import { pageOf } from "../src/web/places.js";
@@ -168,7 +169,8 @@ describe("« Y aller »: a place opened in the phone's navigation app", () => {
     const withAddress = enfants.LIEUX.filter((l) => l.adresse);
     expect(island.match(/<small class="adr">/g)).toHaveLength(withAddress.length);
     const page = enfantsCommunePage(O, pageOf("saint-denis")!, null, NOW);
-    expect(page.match(/class="aller"/g)).toHaveLength(enfants.inCommune("Saint-Denis").length);
+    // Its places, then its crèches (the list of its CCAS).
+    expect(page.match(/class="aller"/g)).toHaveLength(enfants.inCommune("Saint-Denis").length + crechesSaintDenis.LISTE.length);
     expect(page.match(/<dialog id="aller"/g)).toHaveLength(1);
     // A row: the name and its pin, then the address, the age and « Y aller ».
     const l = enfants.inCommune("Saint-Denis").find((x) => x.adresse)!;

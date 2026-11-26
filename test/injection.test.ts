@@ -101,6 +101,16 @@ describe("a text read elsewhere, trapped, never comes out as a tag", () => {
     sansInjection(actualitesPage(O, { value, fetchedAt: now, stale: false }, now));
   });
 
+  it("in the news' summaries, media, live blog and coverage (/actualites)", () => {
+    const now = new Date("2026-10-24T08:05:00Z");
+    const value = piege(copie<ActualitesAnswer>("actualites"), new Set(["resume", "media", "couverture", "a_savoir"]));
+    const page = actualitesPage(O, { value, fetchedAt: now, stale: false }, now);
+    sansInjection(page);
+    // The live blog's medium in its heading, and the one that says it follows the day.
+    expect(page).toContain(`Le direct de ${ECHAPPE}</h2>`);
+    expect(page).toContain(`<b>${ECHAPPE} suit la journée en direct</b>`);
+  });
+
   describe("in the names of the stops and the directions of the buses (/bus/arret)", () => {
     const rows = JSON.parse(readFileSync(new URL("./fixtures/transit/rows.json", import.meta.url), "utf8")) as Record<
       string,

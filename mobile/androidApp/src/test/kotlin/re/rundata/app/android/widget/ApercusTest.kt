@@ -31,14 +31,14 @@ class ApercusTest {
     }
 
     /**
-     * Les grands nombres des aperçus (« 25,5 °C ») sont en dp, pas en sp : ils ne grossissent pas avec le texte d'Android.
-     * À 200 %, « °C » passait sous « 25,5 » dans la liste des widgets (item 2132), comme dans le widget posé avant 0.3.5.
+     * Les aperçus de la liste des widgets sont des images fixes, de taille fixe : leurs textes sont en dp, pas en sp, et ne grossissent pas avec le texte d'Android.
+     * À 200 %, « °C » passait sous « 25,5 » et « Saint-Denis » se coupait en « Sai / nt-D » dans la liste des widgets (item 2132). Le widget posé, lui, suit la taille du texte.
      */
     @Test
-    fun lesGrandsNombresDesApercusNeSuiventPasLaTailleDuTexte() {
-        val grands = File("src/main/res/layout").listFiles()!!.filter { it.name.startsWith("widget_apercu") }.flatMap { f ->
-            Regex("""android:textSize="(\d+)sp"""").findAll(f.readText()).map { it.groupValues[1].toInt() }.filter { it >= 20 }.map { "${f.name} ${it}sp" }
+    fun lesTextesDesApercusNeSuiventPasLaTailleDuTexte() {
+        val sp = File("src/main/res/layout").listFiles()!!.filter { it.name.startsWith("widget_apercu") }.sortedBy { it.name }.flatMap { f ->
+            Regex("""android:textSize="(\d+)sp"""").findAll(f.readText()).map { "${f.name} ${it.groupValues[1]}sp" }
         }
-        assertEquals(emptyList(), grands)
+        assertEquals(emptyList(), sp)
     }
 }

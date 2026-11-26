@@ -18,14 +18,14 @@
             android:layout_height="wrap_content"
             android:text="@string/apercu_commune"
             android:textColor="@color/encre"
-            android:textSize="13sp"
+            android:textSize="13dp"
             android:textStyle="bold" />
     <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/apercu_heure"
             android:textColor="@color/attenue"
-            android:textSize="11sp" />
+            android:textSize="11dp" />
     </LinearLayout>
     <TextView
         android:layout_width="wrap_content"

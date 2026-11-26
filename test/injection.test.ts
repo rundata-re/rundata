@@ -8,7 +8,7 @@ import type { ActualitesAnswer, AgendaAnswer, ElectriciteAnswer } from "../src/w
 import { agendaPage } from "../src/web/agenda.js";
 import { actualitesPage, courantItem, electriciteCommune, noticeCard } from "../src/web/domains.js";
 import { weekendPage } from "../src/web/evenements.js";
-import { fichePage } from "../src/web/fiche-evenement.js";
+import { type Fiche, fichePage, fichePassee } from "../src/web/fiche-evenement.js";
 
 /**
  * The pages that show a text read elsewhere (an event's title, a headline, a stop's name), rendered with that text set
@@ -70,6 +70,16 @@ describe("a text read elsewhere, trapped, never comes out as a tag", () => {
     expect(page).not.toMatch(/javascript:/i);
     expect(horsJsonLd(page)).toContain('href="#"');
     expect(page).toContain('"@type":"Event"');
+  });
+
+  it("on an event's page, to come and over: its title, day, place, price, text, source and who publishes it", () => {
+    const now = new Date("2026-10-24T04:00:00Z");
+    const cles = new Set(["titre", "quand", "lieu", "prix", "publie_par", "description", "source", "annonce", "reporte_au", "media"]);
+    const value = piege(copie<AgendaAnswer>("agenda"), cles);
+    const r = { ...value.evenements[0], statut: "REPORTÉ", reporte_au: PIEGE, statut_d_apres: { media: PIEGE, lien: "https://exemple.re/a" }, autres_dates: [PIEGE] } as typeof value.evenements[number];
+    sansInjection(fichePage(O, r, { value, fetchedAt: now, stale: false }, undefined));
+    const passe = { titre: PIEGE, date: "2026-10-01T10:00", lieu: PIEGE, commune: "Saint-Paul", publie_par: PIEGE, lien: "https://exemple.re/b", fiche: "abcdabcd" } as unknown as Fiche;
+    sansInjection(fichePassee(O, passe));
   });
 
   it("in the headlines (/actualites)", () => {

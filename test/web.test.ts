@@ -310,7 +310,8 @@ describe("home page", () => {
   it("reads no tile from the data center's cache on a warm isolate whose copies are fresh", async () => {
     // Every tile's copy fresh in the data center's cache, as other isolates left them, and the weather's too.
     const edge = new ReadsByKey();
-    for (const key of ["web:meteo", "web:actualites", "web:volcan", "web:air", "web:electricite", "web:calendrier", "web:bus", "web:trafic", "web:velos", "web:bornes", "web:eau", "web:sentiers", "web:secheresse", "web:coupures", "web:sport", "web:cyclones", "web:historique", "web:agenda", "web:crues", "web:emploi", "web:marches-publics"]) {
+    // With the view of /volcan's copy the banner and its tile read, written with it (web/data.ts `volcanEtat`).
+    for (const key of ["web:meteo", "web:actualites", "web:volcan", "web:volcan:etat", "web:air", "web:electricite", "web:calendrier", "web:bus", "web:trafic", "web:velos", "web:bornes", "web:eau", "web:sentiers", "web:secheresse", "web:coupures", "web:sport", "web:cyclones", "web:historique", "web:agenda", "web:crues", "web:emploi", "web:marches-publics"]) {
       await edge.put(key, { value: {}, fetchedAt: NOW.getTime() });
     }
     const cache = isolate(edge);

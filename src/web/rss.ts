@@ -14,7 +14,7 @@ import { sectorsSaid } from "../providers/avis-eau.js";
 import { DANS_LES_SECTEURS, periodeCoupure } from "../tools/coupures.js";
 import { cyclone, cycloneHead, cycloneLevel, highest, raised, spans } from "../tools/vigilance.js";
 import { deCommune } from "./aujourdhui.js";
-import type { CoupuresAnswer, RandonneesAnswer, VolcanAnswer } from "./data.js";
+import { type CoupuresAnswer, type RandonneesAnswer, type VolcanAnswer, volcanInFeed } from "./data.js";
 import { esc } from "./map.js";
 import { coastal, type PlacePage } from "./places.js";
 
@@ -143,7 +143,7 @@ function trailItems(p: PlacePage, r: RandonneesAnswer): Item[] {
 
 function volcanoItems(v: VolcanAnswer): Item[] {
   const e = v.etat;
-  if (!e || (!e.eruption_en_cours && (e.niveau_orsec === "Vigilance" || e.niveau_inconnu))) return [];
+  if (!e || !volcanInFeed(e)) return [];
   // The eruption's start from an official text only: the OVPF's post, else the release's day.
   const start = e.eruption_en_cours ? (e.eruption_ovpf?.en_cours ? e.eruption_ovpf.date : e.communique_prefecture?.jour) : undefined;
   return [{

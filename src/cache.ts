@@ -90,8 +90,22 @@ export const unreadable = (key: string, entry: { version?: string } | undefined,
  * until it is built again. A change of a view's function raises the copy's family's revision (web/revisions.ts).
  */
 const VIEWS = new Map<string, { key: string; f: (value: any) => unknown }>();
+const VIEWED = new Map<string, string>();
 export function keepView<T, U>(key: string, derivedKey: string, f: (value: T) => U): void {
   VIEWS.set(key, { key: derivedKey, f });
+  VIEWED.set(derivedKey, key);
+}
+/** The key of the copy whose view is kept under `key`, if it is one. */
+export const viewSource = (key: string) => VIEWED.get(key);
+/** The view of `e`, a copy kept under `key`, with its time, stamp and cost; undefined when it has none or it cannot be made (an odd copy). */
+export function viewOf<E extends { value: unknown }>(key: string, e: E): { key: string; entry: E } | undefined {
+  const v = VIEWS.get(key);
+  if (!v) return undefined;
+  try {
+    return { key: v.key, entry: { ...e, value: v.f(e.value) } };
+  } catch {
+    return undefined;
+  }
 }
 
 /** Where entries live: process memory on Node; memory in front of the Cloudflare cache in the Worker. */
@@ -271,15 +285,8 @@ export class Cache {
    */
   private async put(key: string, e: CacheEntry): Promise<void> {
     await this.store.put(key, e);
-    const v = VIEWS.get(key);
-    if (!v) return;
-    let value: unknown;
-    try {
-      value = v.f(e.value);
-    } catch {
-      return;
-    }
-    await this.store.put(v.key, { ...e, value }).catch(() => undefined);
+    const v = viewOf(key, e);
+    if (v) await this.store.put(v.key, v.entry).catch(() => undefined);
   }
 
   /** The time the stores are read at, ms (its clock: tests set it). */

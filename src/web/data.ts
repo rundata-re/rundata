@@ -577,6 +577,33 @@ export const buildVolcan = async (cache: Cache, now = new Date()): Promise<Volca
   releve: await prefecture.releveDuVolcan(cache),
 });
 
+/** Whether a commune's feed has an item of the volcano (web/rss.ts `volcanoItems`): above vigilance, or an eruption. */
+export const volcanInFeed = (e: VolcanAnswer["etat"]) => !!e && (!!e.eruption_en_cours || (e.niveau_orsec !== "Vigilance" && !e.niveau_inconnu));
+
+/**
+ * What every page's banner (web/volcan-alerte.ts `volcanNow`), the home page's and the communes' tiles, their feeds and
+ * /trafic read of /volcan's copy (cache.ts `keepView`): the state, the earthquakes' counts, the OVPF's newest post
+ * without its text, the sources, and the summary only while a feed says it: 1 Ko of the copy's 15 in the test on a
+ * quiet day, 5 of 16 during an alert (25/11/2026: the whole copy, 19 Ko, read 81 Mo a day, 25 by /bus/* for the banner
+ * alone). A shared copy: the other data centers make it from KV's copy (web/partagees.ts `SharedFallback`).
+ */
+export const VOLCAN_ETAT = "web:volcan:etat";
+export const volcanEtat = (v: VolcanAnswer): VolcanAnswer => {
+  const q = typeof v.seismes === "object" && v.seismes ? v.seismes : undefined;
+  const p0 = Array.isArray(v.publications_ovpf) ? v.publications_ovpf[0] : undefined;
+  return {
+    resume: volcanInFeed(v.etat) ? v.resume : "",
+    ...(v.etat && { etat: v.etat }),
+    ...(q && { seismes: { sous_le_volcan: q.sous_le_volcan, ailleurs_sur_l_ile: q.ailleurs_sur_l_ile, ...(q.lus_jusqu_au && { lus_jusqu_au: q.lus_jusqu_au }), derniers: [], note: "" } }),
+    // The home page says when it is in images and whether their text was read elsewhere, never the text.
+    ...(p0 && { publications_ovpf: [{ date: p0.date, texte: "", ...(p0.lien && { lien: p0.lien }), ...(p0.texte_lu_dans_l_image && { texte_lu_dans_l_image: "…" }) }] }),
+    avertissements: [],
+    sources: v.sources,
+  };
+};
+// Written with the copy (cache.ts `keepView`): the banner finds it as current as /volcan's.
+keepView("web:volcan", VOLCAN_ETAT, volcanEtat);
+
 export interface AirAnswer {
   resume: string;
   /** The day the index of `communes` is forecast for, « 2026-11-06 » (atmo.ts `date_ech`); for the pages only. */
@@ -1976,7 +2003,7 @@ export async function buildTrafic(cache: Cache, now = new Date()): Promise<Trafi
   const [bus, carte, volcan, fuel] = await Promise.all([
     cache.get("web:bus", FRESH_SECONDS, () => buildBus(now, cache)).then((c) => c.value).catch((err) => (console.error("trafic : bus indisponibles", why(err)), null)),
     onf.carte(cache).then((c) => c.value).catch((err) => (console.error("trafic : routes forestières indisponibles", why(err)), null)),
-    cache.peek<VolcanAnswer>("web:volcan", now.getTime() - FRESH_SECONDS * 1000).catch(() => null),
+    cache.peek<VolcanAnswer>(VOLCAN_ETAT, now.getTime() - FRESH_SECONDS * 1000).catch(() => null),
     carburants.prix(cache, now).then((c) => c.value).catch((err) => (console.error("trafic : prix des carburants indisponibles", why(err)), null)),
   ]);
   const live = bus?.gares.flatMap((g) => g.departs.filter((d) => d.retard_min !== undefined).map((d) => ({ gare: g.commune, d }))) ?? [];

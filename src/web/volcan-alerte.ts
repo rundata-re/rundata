@@ -8,7 +8,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { Cache } from "../cache.js";
 import { localTime } from "../geo.js";
-import type { ActualitesAnswer, VolcanAnswer } from "./data.js";
+import { type ActualitesAnswer, type VolcanAnswer, VOLCAN_ETAT } from "./data.js";
 import { esc, fenetre } from "./map.js";
 import { DESCRIPTION_MAX, ligne } from "./pages.js";
 import { givenAt as postAt, NON_ANNONCEE } from "../tools/volcan.js";
@@ -75,7 +75,7 @@ async function read(cache: Cache, now: Date): Promise<VolcanAlerte | undefined> 
   let timer: ReturnType<typeof setTimeout> | undefined;
   const late = new Promise<undefined>((resolve) => (timer = setTimeout(() => resolve(undefined), READ_MS)));
   try {
-    const got = await Promise.race([cache.peek<VolcanAnswer>("web:volcan", now.getTime() - MEMORY_MS), late]);
+    const got = await Promise.race([cache.peek<VolcanAnswer>(VOLCAN_ETAT, now.getTime() - MEMORY_MS), late]);
     return alerteVolcan(got?.value);
   } catch {
     return undefined; // a store problem must never cost a page

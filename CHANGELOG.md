@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Jeudi 26 novembre 2026
 
+- Antennes : comptez les antennes autour de vous, d'un point de la carte ou d'une antenne, à 500 m, 1 km et 2 km (ANFR).
 - Avec les enfants : chaque lieu est placé dans sa commune d'après le contour officiel, comme l'aire de jeux de Domenjod.
 
 ## Mercredi 25 novembre 2026

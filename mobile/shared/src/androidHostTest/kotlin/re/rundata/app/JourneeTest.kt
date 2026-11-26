@@ -9,6 +9,8 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.TextContent
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -225,5 +227,33 @@ class JourneeTest {
         assertEquals(listOf("Marché forain de Saint-Pierre", "Marché couvert de Saint-Pierre"), sp.sorties!!.map { it.titre })
         assertEquals("de 5\u00a0h à\u00a012\u00a0h", sp.sorties!!.first().quand)
         assertTrue(sp.sorties!!.all { it.marche })
+    }
+
+    /**
+     * La version d'essai (item 2286) : l'alerte simulée change aussi la vigilance du résumé, sa carte et la phrase de « La
+     * journée », pour que l'écran ne dise pas à la fois orange et vert.
+     */
+    @Test
+    fun uneAlerteSimuleeChangeAussiLaVigilanceDuResume() = runTest {
+        val simulee = Json.parseToJsonElement(
+            """{"zone_vigilance":"Sud : Saint-Pierre, Le Tampon","emise":"26/11 15:04 heure de La Réunion",
+            "alerte_cyclonique":"Pas d'alerte cyclonique en cours.",
+            "niveaux":[{"phenomene":"Fortes pluies / orages","maintenant":"orange"},{"phenomene":"Vents forts","maintenant":"jaune"},
+            {"phenomene":"Houle","maintenant":"vert"}],
+            "officiel":"Consulter le site officiel de Météo-France : https://vigilance.meteofrance.fr/fr/la-reunion"}""",
+        ).jsonObject
+        val reponses = mapOf("resume_du_jour" to enregistree("resume-saint-pierre-2"))
+        val j = JourneeSource(serveur(reponses), simulees = { simulee to null }).journee(saintPierre)
+        val v = assertNotNull(j.vigilance)
+        assertEquals("orange fortes pluies / orages, jaune vents forts", v.etat)
+        assertEquals(listOf(Pastille("Vigilance orange fortes pluies / orages", Couleur.ORANGE), Pastille("Vigilance jaune vents forts", Couleur.JAUNE)), v.pastilles)
+        assertTrue(v.auDessusDuVert)
+        assertEquals("Sud", v.zone)
+        assertEquals("26/11 15:04", v.emise)
+        val resume = assertNotNull(j.resume)
+        assertTrue("Vigilance météo\u00a0: orange fortes pluies / orages, jaune vents forts pour le Sud (Météo-France)" in resume, resume)
+        assertFalse("verte" in resume, resume)
+        // Sans simulation, rien ne change.
+        assertEquals("verte", JourneeSource(serveur(reponses)).journee(saintPierre).vigilance!!.etat)
     }
 }

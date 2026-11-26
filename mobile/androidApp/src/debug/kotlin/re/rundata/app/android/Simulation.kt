@@ -14,8 +14,9 @@ import java.time.format.DateTimeFormatter
 
 /**
  * La version d'essai seulement (jamais publiée) : une alerte simulée, pour les captures du bandeau, des widgets et des
- * notifications quand aucune n'est en cours. Elle remplace les réponses de `vigilance_meteo` et de `cyclones` ; tout le
- * reste (journée, météo) est lu de rundata.re.
+ * notifications quand aucune n'est en cours. Elle remplace les réponses de `vigilance_meteo` et de `cyclones`, et la
+ * vigilance du résumé du jour (sa carte et la phrase de « La journée », resumeAvecVigilance) ; tout le reste (météo, mer,
+ * sorties) est lu de rundata.re.
  *
  *     adb shell am broadcast -n re.rundata.app.essai/re.rundata.app.android.Simuler --es alerte orange
  *

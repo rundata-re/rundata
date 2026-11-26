@@ -29,4 +29,16 @@ class ApercusTest {
         assertEquals("27,1\u00a0°C mer", texte("apercu_bandeau_mer"))
         assertEquals("Zone de la commune · d\\'après Météo-France · heure du bulletin", texte("apercu_alerte_detail"))
     }
+
+    /**
+     * Les grands nombres des aperçus (« 25,5 °C ») sont en dp, pas en sp : ils ne grossissent pas avec le texte d'Android.
+     * À 200 %, « °C » passait sous « 25,5 » dans la liste des widgets (item 2132), comme dans le widget posé avant 0.3.5.
+     */
+    @Test
+    fun lesGrandsNombresDesApercusNeSuiventPasLaTailleDuTexte() {
+        val grands = File("src/main/res/layout").listFiles()!!.filter { it.name.startsWith("widget_apercu") }.flatMap { f ->
+            Regex("""android:textSize="(\d+)sp"""").findAll(f.readText()).map { it.groupValues[1].toInt() }.filter { it >= 20 }.map { "${f.name} ${it}sp" }
+        }
+        assertEquals(emptyList(), grands)
+    }
 }

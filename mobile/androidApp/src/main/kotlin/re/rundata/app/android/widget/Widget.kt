@@ -237,6 +237,10 @@ private fun T(texte: String, taille: TextUnit, couleur: Couleur = ENCRE, gras: B
     Text(texte, modifier = modifier, style = TextStyle(color = couleur, fontSize = taille, fontWeight = if (gras) FontWeight.Bold else FontWeight.Normal), maxLines = lignes)
 }
 
+/** Le texte d'Android est réglé plus grand que PLAFOND_CHIFFRES (à 200 %, par exemple). */
+@Composable
+private fun grandTexte(): Boolean = LocalContext.current.resources.configuration.fontScale > PLAFOND_CHIFFRES
+
 /** Un grand nombre à `sp`, qui suit la taille du texte d'Android jusqu'à PLAFOND_CHIFFRES (tailleChiffre). */
 @Composable
 private fun chiffre(sp: Float): TextUnit = tailleChiffre(sp, LocalContext.current.resources.configuration.fontScale).sp
@@ -246,7 +250,9 @@ private fun Puce(p: Pastille, action: Action, taille: TextUnit = 12.sp, lignes: 
     val (fondClair, encreClair) = p.couleur.teinte(CLAIR)
     val (fondSombre, encreSombre) = p.couleur.teinte(SOMBRE)
     Box(GlanceModifier.clickable(action).background(fondClair, fondSombre).cornerRadius(6.dp).padding(horizontal = 6.dp, vertical = 2.dp)) {
-        Text(p.texte, style = TextStyle(color = ColorProvider(day = encreClair, night = encreSombre), fontSize = taille, fontWeight = FontWeight.Medium), maxLines = lignes)
+        // La taille suit le texte d'Android jusqu'à PLAFOND_CHIFFRES, comme les grands nombres : au-delà, « Vigilance »
+        // ne tenait plus sur une ligne de la colonne et se coupait au milieu du mot (« Vigi / lance », item 2132).
+        Text(p.texte, style = TextStyle(color = ColorProvider(day = encreClair, night = encreSombre), fontSize = chiffre(taille.value), fontWeight = FontWeight.Medium), maxLines = lignes)
     }
 }
 
@@ -311,7 +317,8 @@ private fun ColumnScope.Bandeau(commune: Commune?, d: Donnees?) {
             Column(GlanceModifier.defaultWeight().fillMaxHeight().clickable(ouvrir(Pages.MER)), verticalAlignment = Alignment.CenterVertically) {
                 T(d.mer, chiffre(if (haut) 22f else 20f), gras = true)
                 // Deux lignes quand le widget est haut : « mer, vue par satellite le 21/11 » ne tient pas sur une à 411 dp.
-                T(if (haut) libelleMer(d.merJour, d.merBouee, d.merHeure) else "mer", 11.sp, ATTENUE, lignes = if (haut) 2 else 1)
+                // Trois lignes quand le texte d'Android est grand : à 200 %, « mer, bouée à 23:50 » perdait l'heure (item 2132).
+                T(if (haut) libelleMer(d.merJour, d.merBouee, d.merHeure) else "mer", 11.sp, ATTENUE, lignes = if (!haut) 1 else if (grandTexte()) 3 else 2)
             }
         }
         Spacer(GlanceModifier.width(8.dp))

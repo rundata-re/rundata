@@ -35,7 +35,7 @@
         android:layout_height="wrap_content"
         android:text="@string/apercu_temperature"
         android:textColor="@color/encre"
-        android:textSize="36sp"
+        android:textSize="36dp"
         android:textStyle="bold" />
 
     <TextView

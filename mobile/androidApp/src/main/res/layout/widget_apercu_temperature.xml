@@ -32,6 +32,6 @@
         android:layout_height="wrap_content"
         android:text="@string/apercu_temperature"
         android:textColor="@color/encre"
-        android:textSize="26sp"
+        android:textSize="26dp"
         android:textStyle="bold" />
 </LinearLayout>

@@ -126,7 +126,8 @@ fun enPlusAlertes(n: Int): String? = if (n <= 0) null else "et $n autre${if (n >
  * ne tenait pas : « Saint-Pierre (large) ») ;
  * sinon « mer, vue par satellite le 21/11 », le jour du passage ; sans lui, « mer, vue par satellite ». */
 fun libelleMer(jour: String?, bouee: String? = null, heure: String? = null): String = when {
-    bouee != null -> "mer, bouée" + (heure?.let { " à $it" } ?: "")
+    // « à » et l'heure restent ensemble (espace insécable) : à 200 %, l'heure passe à la ligne avec « à », jamais coupée.
+    bouee != null -> "mer, bouée" + (heure?.let { " à\u00a0$it" } ?: "")
     jour != null -> "mer, vue par satellite le $jour"
     else -> "mer, vue par satellite"
 }

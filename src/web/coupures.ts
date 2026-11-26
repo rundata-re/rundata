@@ -15,12 +15,12 @@ import { a } from "../tools/format.js";
 import { type Alerte, type CoupuresAnswer, type DernierAvis, type EauAnswer, lusLe, type SecheresseAnswer } from "./data.js";
 import { cycloneWater } from "./eau-cyclone.js";
 import { copieBandeau, afterCutNote, afterCutShort, connectorAsk, describe, droughtBadge, loading, nobreak, noticeCard, noticesHead, silentText, sourcesNote, tapCard, webPage } from "./domains.js";
-import { esc, islandMap } from "./map.js";
+import { islandMap } from "./map.js";
 import { ask, cityLd, icon, layout, type Live, SITE, leAt } from "./pages.js";
 import { PAGES, type PlacePage } from "./places.js";
 import * as ARRETES from "../providers/arretes-travaux.js";
 import type { BlocArretes } from "../providers/arretes-travaux.js";
-import { href as lienSur } from "./html.js";
+import { brut, echappe, href as lienSur, html, type Html } from "./html.js";
 
 const TITLE_MAX = 60;
 const COMMUNES = PAGES.filter((p) => p.commune);
@@ -67,10 +67,10 @@ export function derniersAvis(commune: string, w: WaterCopies, shown: { titre: st
   if (!list.length) return "";
   const oldest = Date.parse(w.coupures?.value.plus_ancien_avis?.[commune] ?? "");
   const day = Number.isFinite(oldest) ? new Date(oldest + 4 * 3600_000).toISOString().slice(0, 10).split("-").reverse().join("/") : "";
-  const scope = `<p class="note">Ce sont les avis que les flux des distributeurs listent encore, pas un historique complet${day ? ` : le plus ancien date du ${day}` : ""}.</p>`;
-  return `<h3>Derniers avis publiés ${esc(a(commune))}</h3>
-  <ul class="plain">${list.map((n) => `<li>${n.lien ? `<a href="${lienSur(n.lien)}" rel="noopener">${esc(n.titre)}</a>` : esc(n.titre)} <span class="note">publié le ${esc(publieLe(n))} par ${esc(n.distributeur)}</span></li>`).join("")}</ul>
-  ${scope}`;
+  const scope = html`<p class="note">Ce sont les avis que les flux des distributeurs listent encore, pas un historique complet${day ? ` : le plus ancien date du ${day}` : ""}.</p>`;
+  return html`<h3>Derniers avis publiés ${a(commune)}</h3>
+  <ul class="plain">${list.map((n) => html`<li>${n.lien ? html`<a href="${lienSur(n.lien)}" rel="noopener">${n.titre}</a>` : n.titre} <span class="note">publié le ${publieLe(n)} par ${n.distributeur}</span></li>`)}</ul>
+  ${scope}`.texte;
 }
 
 /**
@@ -81,12 +81,11 @@ export function reseauxCommune(commune: string, c: EauAnswer["communes"][number]
   const rows = c.reseaux_detail;
   if (!rows?.length) return "";
   const dist = distributeur(commune);
-  const by = dist && !dist.partage ? `, géré${rows.length > 1 ? "s" : ""} par ${esc(dist.nom)}` : "";
+  const by = dist && !dist.partage ? html`, géré${rows.length > 1 ? "s" : ""} par ${dist.nom}` : "";
   // « Au Tampon », « Aux Avirons », « À Saint-Paul »: no verb to agree with the commune's name.
   const at = a(commune);
-  return `<p>${esc(at.charAt(0).toUpperCase() + at.slice(1))}, l'eau du robinet passe par ${rows.length} réseau${rows.length > 1 ? "x" : ""} de distribution${by}, d'après l'ARS :</p>
-  <ul class="rows eau">${rows.map((r) => `<li><span>Réseau ${esc(r.reseau)}${r.quartiers.length ? ` <small>${esc(r.quartiers.join(" ; "))}</small>` : ""}</span>` +
-    ` <span class="note">${r.derniere_analyse ? `Dernier prélèvement le ${esc(r.derniere_analyse.split("-").reverse().join("/"))}${r.conclusion ? `. Conclusion de l'ARS : « ${esc(r.conclusion.trim())} »` : ""}` : "Pas d'analyse publiée depuis 6 mois"}</span></li>`).join("")}</ul>`;
+  return html`<p>${at.charAt(0).toUpperCase() + at.slice(1)}, l'eau du robinet passe par ${rows.length} réseau${rows.length > 1 ? "x" : ""} de distribution${by}, d'après l'ARS :</p>
+  <ul class="rows eau">${rows.map((r) => html`<li><span>Réseau ${r.reseau}${r.quartiers.length ? html` <small>${r.quartiers.join(" ; ")}</small>` : ""}</span>${html` <span class="note">${r.derniere_analyse ? html`Dernier prélèvement le ${r.derniere_analyse.split("-").reverse().join("/")}${r.conclusion ? html`. Conclusion de l'ARS : « ${r.conclusion.trim()} »` : ""}` : html`Pas d'analyse publiée depuis 6 mois`}</span></li>`}`)}</ul>`.texte;
 }
 
 /**
@@ -96,7 +95,7 @@ export function reseauxCommune(commune: string, c: EauAnswer["communes"][number]
 export function secheresseLigne(c: SecheresseAnswer["communes"][number] | undefined, arrete: SecheresseAnswer["arrete"]): string {
   if (!c?.eau_du_robinet || !arrete?.signe_le) return "";
   const n = arrete.numero.startsWith("n°") ? arrete.numero : `n°${arrete.numero}`;
-  return `<p>Sécheresse\u00a0: ${esc(c.eau_du_robinet)} depuis l'arrêté ${esc(n)} du ${esc(arrete.signe_le)}. Ce qui est interdit\u00a0: <a href="/secheresse">page Sécheresse</a>.</p>`;
+  return html`<p>Sécheresse\u00a0: ${c.eau_du_robinet} depuis l'arrêté ${n} du ${arrete.signe_le}. Ce qui est interdit\u00a0: <a href="/secheresse">page Sécheresse</a>.</p>`.texte;
 }
 
 /**
@@ -107,13 +106,13 @@ export function eauFaq(commune: string, c: EauAnswer["communes"][number] | undef
   const faq: Faq[] = [];
   const dist = distributeur(commune);
   const qui = dist?.partage ? dist.partage.par.map((d) => d.nom).join(" et ") : dist?.nom;
-  if (qui) faq.push({ q: `Qui distribue l'eau ${a(commune)}\u00a0?`, a: `${esc(qui.charAt(0).toUpperCase() + qui.slice(1))}, d'après l'ARS.` });
+  if (qui) faq.push({ q: `Qui distribue l'eau ${a(commune)}\u00a0?`, a: html`${qui.charAt(0).toUpperCase() + qui.slice(1)}, d'après l'ARS.`.texte });
   const last = [...(c?.reseaux_detail ?? [])].filter((r) => r.derniere_analyse).sort((x, y) => y.derniere_analyse!.localeCompare(x.derniere_analyse!))[0];
   if (last) {
     const conclusion = last.conclusion?.trim();
     faq.push({
       q: `Quand l'eau ${de(commune)} a-t-elle été analysée pour la dernière fois\u00a0?`,
-      a: `Le ${esc(last.derniere_analyse!.split("-").reverse().join("/"))}, sur le réseau ${esc(last.reseau)}.${conclusion ? ` Conclusion de l'ARS\u00a0: «\u00a0${esc(conclusion)}\u00a0».` : ""} Les résultats complets sont sur le site du ministère de la Santé.`,
+      a: html`Le ${last.derniere_analyse!.split("-").reverse().join("/")}, sur le réseau ${last.reseau}.${conclusion ? html` Conclusion de l'ARS\u00a0: «\u00a0${conclusion}\u00a0».` : ""} Les résultats complets sont sur le site du ministère de la Santé.`.texte,
     });
   }
   return faq;
@@ -129,10 +128,10 @@ export function waterLive(p: PlacePage, w: WaterCopies): Live | undefined {
   const valeur = x.dry ? upper(NE_PAS_BOIRE()) : cuts ? plural(cuts, "avis de coupure", "avis de coupure") : x.avis.length ? plural(x.avis.length, "avis sur l'eau", "avis sur l'eau") : x.muet ? "Site sans réponse" : x.distributeur?.avis ? "Pas de coupure annoncée" : "Site pas lu";
   const detail = [
     // When its notices were read, unless its site did not answer: that says its own hour.
-    x.muet ? esc(x.muet.court) : x.distributeur?.avis || x.avis.length ? `avis lus ${esc(leAt(lusLe(w.coupures)))}` : "",
-    x.distributeur ? (x.distributeur.partage ? `distributeurs ${esc(x.distributeur.partage.par.map((d) => d.nom).join(" et "))}` : `distributeur ${esc(x.distributeur.nom)}`) : "",
-    x.secheresse ? `sécheresse : ${esc(x.secheresse.eau_du_robinet ?? "aucune restriction")}` : "",
-    x.robinet ? (x.robinet.non_conformes_6_mois ? `robinet : ${plural(x.robinet.non_conformes_6_mois, "analyse non conforme", "analyses non conformes")} en 6 mois` : x.robinet.analyses_6_mois ? "robinet : analyses conformes" : "") : "",
+    x.muet ? html`${x.muet.court}` : x.distributeur?.avis || x.avis.length ? html`avis lus ${leAt(lusLe(w.coupures))}` : "",
+    x.distributeur ? (x.distributeur.partage ? html`distributeurs ${x.distributeur.partage.par.map((d) => d.nom).join(" et ")}` : html`distributeur ${x.distributeur.nom}`) : "",
+    x.secheresse ? html`sécheresse : ${x.secheresse.eau_du_robinet ?? "aucune restriction"}` : "",
+    x.robinet ? (x.robinet.non_conformes_6_mois ? html`robinet : ${plural(x.robinet.non_conformes_6_mois, "analyse non conforme", "analyses non conformes")} en 6 mois` : x.robinet.analyses_6_mois ? "robinet : analyses conformes" : "") : "",
   ].filter(Boolean).join(" · ");
   return { valeur, detail: detail || "coupures, sécheresse et eau du robinet" };
 }
@@ -154,14 +153,14 @@ export const indexable = (commune: string) => avisLus(commune) || !!GUIDES_AVIS[
 export function arretesSection(commune: string, b: BlocArretes | undefined): string {
   if (commune !== ARRETES.COMMUNE || !b) return "";
   const items = b.arretes?.length
-    ? `<ul class="zones">${b.arretes.map((x) => `<li class="card"><p>Arrêté ${esc(x.arrete)} : ${esc(x.lieu)}, du ${esc(x.du)} au ${esc(x.au)}. <a href="${lienSur(x.lien)}" rel="noopener">L'arrêté →</a></p></li>`).join("")}</ul>`
-    : `<p class="card">${esc(b.aucun ?? "")}</p>`;
-  return `<section aria-labelledby="h-arretes">
-  <div class="sec-h"><h2 id="h-arretes">${esc(ARRETES.TITRE)}</h2></div>
-  <p>${esc(ARRETES.PHRASE)}</p>
+    ? html`<ul class="zones">${b.arretes.map((x) => html`<li class="card"><p>Arrêté ${x.arrete} : ${x.lieu}, du ${x.du} au ${x.au}. <a href="${lienSur(x.lien)}" rel="noopener">L'arrêté →</a></p></li>`)}</ul>`
+    : html`<p class="card">${b.aucun ?? ""}</p>`;
+  return html`<section aria-labelledby="h-arretes">
+  <div class="sec-h"><h2 id="h-arretes">${ARRETES.TITRE}</h2></div>
+  <p>${ARRETES.PHRASE}</p>
   ${items}
-  ${b.arretes?.length ? `<p class="note">D'après <a href="${lienSur(b.lien)}" rel="noopener">le site de la ville de Sainte-Suzanne</a>, lu le ${esc(b.lu_le)}.</p>` : ""}
-</section>`;
+  ${b.arretes?.length ? html`<p class="note">D'après <a href="${lienSur(b.lien)}" rel="noopener">le site de la ville de Sainte-Suzanne</a>, lu le ${b.lu_le}.</p>` : ""}
+</section>`.texte;
 }
 
 export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies, now = new Date(), alerte?: Alerte): string {
@@ -179,10 +178,10 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
   // A mairie that also posts the notices of a distributor read elsewhere (Les Trois-Bassins, La Créole's).
   const aussi = MAIRIES_AUSSI[p.nom];
   // A home page only (ACCUEILS, none since 20/11/2026): opened in a new window.
-  const lienA = lien ? ` <a href="${esc(lien.site)}" rel="noopener"${ACCUEILS.has(lien.site) ? ' target="_blank"' : ""}>${nobreak(lien.libelle)} →</a>` : "";
+  const lienA = lien ? html` <a href="${lien.site}" rel="noopener"${ACCUEILS.has(lien.site) ? brut(' target="_blank"') : ""}>${brut(nobreak(lien.libelle))} →</a>` : "";
 
   // Its feed silent: what was read before, said with its hour, the site linked; or that its read failed.
-  const silent = x.muet ? `<p class="note">${silentText(x.muet)}</p>` : "";
+  const silent = x.muet ? html`<p class="note">${brut(silentText(x.muet))}</p>` : "";
   // The site of a distributor whose notices are not read, linked only (CISE Réunion at Les Avirons).
   const siteDist = dist && !dist.avis ? SITES_DISTRIBUTEURS[dist.nom] : undefined;
   // Where its notices are published, in words of its own (GUIDES_AVIS): the lead, the distributor's card and the list.
@@ -195,7 +194,7 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
   // notices read are its own (Cilaos, Sainte-Marie…).
   const ailleurs = /^(?:la )?(?:ville|commune|mairie)\b/i.test(publisher ?? "") ? "Une coupure peut être annoncée ailleurs." : "Une coupure peut être annoncée ailleurs, par la mairie par exemple.";
   // The same sentence opens the page and its description (meta, og, twitter, JSON-LD), so that neither says it otherwise.
-  // Given `esc` for the page, which escapes only the names and the hour.
+  // Given `echappe` for the page, which escapes only the names and the hour.
   // A publisher that names the commune already (« la ville du Tampon », « la ville de Trois-Bassins ») is not followed by
   // « au Tampon » (24/11/2026): the commune is looked for without its article.
   const named = (who: string) => who.includes(p.nom.replace(/^(?:Les?|La) |^L'/, ""));
@@ -203,88 +202,86 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
   // Not read again for a while (tools/copie-ancienne.ts): said first, the publisher's site and the mairie's linked when
   // known (wording validated on 23/11/2026); the mairie alone when the notices read are its own.
   const ancienne = w.coupures && (dist?.avis || x.avis.length) ? copieAncienne("eau", new Date(lusLe(w.coupures)), now, "page") : undefined;
-  const siteDe = (nom: string, href?: string) => (href ? `<a href="${esc(href)}" rel="noopener">${esc(nom)}</a>` : esc(nom));
+  const siteDe = (nom: string, href?: string): Html => (href ? html`<a href="${href}" rel="noopener">${nom}</a>` : html`${nom}`);
   const pubSite = dist?.avis ? dist.site : siteDist ?? undefined;
   // « de <a>La Créole</a> », the article out of the link (validated wording: « Voir le site de runéo ou de la mairie »).
   const deLien = (nom: string, href?: string) => {
     const [, pre, reste] = /^(d'|du |des |de (?:la |l')?)(.*)$/.exec(deNom(nom)) ?? ["", "", deNom(nom)];
-    return `${esc(pre)}${siteDe(reste, href)}`;
+    return html`${pre}${siteDe(reste, href)}`;
   };
   const sienne = /^(?:la )?(?:ville|commune|mairie)\b/i.test(publisher ?? "");
   const mairieDe = `la mairie ${de(p.nom)}`;
   const voir = !publisher
-    ? esc(VOIR_EAU)
+    ? html`${VOIR_EAU}`
     : sienne
-      ? `Voir le site de ${siteDe(mairieDe, lien?.site)}.`
-      : `Voir le site ${deLien(publisher, pubSite)} ou de ${siteDe(mairieDe, lien?.site)}.`;
-  const bandeau = copieBandeau(ancienne, voir);
+      ? html`Voir le site de ${siteDe(mairieDe, lien?.site)}.`
+      : html`Voir le site ${deLien(publisher, pubSite)} ou de ${siteDe(mairieDe, lien?.site)}.`;
+  const bandeau = brut(copieBandeau(ancienne, voir.texte));
+  // The guides' words (GUIDES_AVIS), the notices' head and the loading line: HTML the site writes itself.
   const status = !d
-    ? loading("Les avis des distributeurs")
-    : bandeau + (x.muet && !x.avis.length
-      ? `<p class="lead">${esc(x.muet.texte)}</p>`
+    ? brut(loading("Les avis des distributeurs"))
+    : html`${bandeau}${x.muet && !x.avis.length
+      ? html`<p class="lead">${x.muet.texte}</p>`
       : x.avis.length
-      ? noticesHead(x.avis, where, [], x.muet ? "" : at)
+      ? brut(noticesHead(x.avis, where, [], x.muet ? "" : at))
       : dist?.avis
         // Validated wording: who publishes the notices read, without the commune when that name already says it.
-        ? `<p class="lead">${noNotice(esc)} ${guideLu?.bandeau ?? ailleurs}</p>`
+        ? html`<p class="lead">${brut(noNotice(echappe))} ${brut(guideLu?.bandeau ?? ailleurs)}</p>`
         : guide
-        ? `<p class="lead">${guide.bandeau}</p>`
+        ? html`<p class="lead">${brut(guide.bandeau)}</p>`
         : siteDist
-        ? `<p class="lead">Les avis de coupure de ${esc(nomDit(dist!))} ne sont pas lus par rundata.re\u00a0: voir <a href="${esc(siteDist)}" rel="noopener">son site</a>, rubrique «\u00a0L'eau dans ma commune\u00a0», ou la mairie.${lienA}</p>`
-        : `<p class="lead">Les avis de coupure ${dist ? `de ${esc(nomDit(dist))}` : "du distributeur"} ne sont pas lus par rundata.re : voir ses avis aux abonnés ou la mairie.${lienA}</p>`);
+        ? html`<p class="lead">Les avis de coupure de ${nomDit(dist!)} ne sont pas lus par rundata.re\u00a0: voir <a href="${siteDist}" rel="noopener">son site</a>, rubrique «\u00a0L'eau dans ma commune\u00a0», ou la mairie.${lienA}</p>`
+        : html`<p class="lead">Les avis de coupure ${dist ? html`de ${nomDit(dist)}` : "du distributeur"} ne sont pas lus par rundata.re : voir ses avis aux abonnés ou la mairie.${lienA}</p>`}`;
 
   const list = !d
-    ? `<p class="card">Les avis se chargent : rechargez la page dans quelques secondes.</p>`
+    ? html`<p class="card">Les avis se chargent : rechargez la page dans quelques secondes.</p>`
     : x.avis.length
-      ? `${silent}<ul class="zones">${x.avis.map(noticeCard).join("")}</ul>`
+      ? html`${silent}<ul class="zones">${brut(x.avis.map(noticeCard).join(""))}</ul>`
       : x.muet ? ""
-      : `<p class="card">${dist?.avis ? `Pas d'avis de coupure récent ou à venir, ni d'avis «\u00a0ne pas boire l'eau\u00a0», lu ${esc(at)}.` : guide?.texte ?? `rundata.re ne lit pas les avis de coupure ${esc(de(p.nom))}\u00a0: ils sont sur le site de la mairie ou du distributeur.${lienA}`}</p>`;
+      : html`<p class="card">${dist?.avis ? html`Pas d'avis de coupure récent ou à venir, ni d'avis «\u00a0ne pas boire l'eau\u00a0», lu ${at}.` : guide?.texte != null ? brut(guide.texte) : html`rundata.re ne lit pas les avis de coupure ${de(p.nom)}\u00a0: ils sont sur le site de la mairie ou du distributeur.${lienA}`}</p>`;
 
   const unreadShare = dist?.partage?.par.filter((x) => !x.site).map((x) => x.nom) ?? [];
-  const distBlock = `<div class="card">${icon("drop")}<h3>Le distributeur</h3>` +
-    (dist
-      ? (dist.partage ? `<p>${esc(phrasePartage(p.nom, dist.partage))}</p>` : `<p><b>${esc(dist.nom)}</b> distribue l'eau ${esc(where)}, d'après le contrôle sanitaire de l'ARS.</p>`) +
-        (dist.avis
+  const distBlock = html`<div class="card">${brut(icon("drop"))}<h3>Le distributeur</h3>${dist
+      ? html`${dist.partage ? html`<p>${phrasePartage(p.nom, dist.partage)}</p>` : html`<p><b>${dist.nom}</b> distribue l'eau ${where}, d'après le contrôle sanitaire de l'ARS.</p>`}${dist.avis
           ? dist.site === CIREST.site
-            ? `<p>Les avis de la commune, publiés par la CIREST, sont relus au moins toutes les 30 minutes : <a href="${esc(dist.site)}" rel="noopener">les avis de la CIREST</a>.</p>`
+            ? html`<p>Les avis de la commune, publiés par la CIREST, sont relus au moins toutes les 30 minutes : <a href="${dist.site}" rel="noopener">les avis de la CIREST</a>.</p>`
             : dist.site === MAIRIE_SAINTE_MARIE
-            ? `<p>rundata.re lit, au moins toutes les 30 minutes, les communiqués de CISE Réunion publiés sur <a href="${esc(dist.site)}" rel="noopener">le site de la ville de Sainte-Marie</a> : ils s'affichent en haut de cette page. Un communiqué publié en image ou en PDF n'est pas lu : la page donne seulement son lien.</p>`
+            ? html`<p>rundata.re lit, au moins toutes les 30 minutes, les communiqués de CISE Réunion publiés sur <a href="${dist.site}" rel="noopener">le site de la ville de Sainte-Marie</a> : ils s'affichent en haut de cette page. Un communiqué publié en image ou en PDF n'est pas lu : la page donne seulement son lien.</p>`
             : dist.site === MAIRIE_SAINT_LEU
-            ? `<p>rundata.re lit, au moins toutes les 30 minutes, les avis de coupure publiés sur <a href="${esc(dist.site)}" rel="noopener">le site de la commune de Saint-Leu</a> : ils s'affichent en haut de cette page, avec un court extrait et le lien vers l'avis complet. Un avis publié en image n'est pas lu : la page donne seulement son lien.</p>`
+            ? html`<p>rundata.re lit, au moins toutes les 30 minutes, les avis de coupure publiés sur <a href="${dist.site}" rel="noopener">le site de la commune de Saint-Leu</a> : ils s'affichent en haut de cette page, avec un court extrait et le lien vers l'avis complet. Un avis publié en image n'est pas lu : la page donne seulement son lien.</p>`
             : dist.site === CREOLE.url
-            ? `<p>rundata.re lit, au moins toutes les 30 minutes, les avis de <a href="${esc(dist.site)}" rel="noopener">la page « flash infos » de La Créole</a>${aussi ? ` et ceux que publie <a href="${esc(aussi.site)}" rel="noopener">le site de ${esc(aussi.par)}</a>` : ""} : ils s'affichent en haut de cette page.</p>`
+            ? html`<p>rundata.re lit, au moins toutes les 30 minutes, les avis de <a href="${dist.site}" rel="noopener">la page « flash infos » de La Créole</a>${aussi ? html` et ceux que publie <a href="${aussi.site}" rel="noopener">le site de ${aussi.par}</a>` : ""} : ils s'affichent en haut de cette page.</p>`
             : dist.par
             // A mairie that posts its distributor's notices (Saint-Philippe, Petite-Île, Cilaos).
-            ? `<p>rundata.re lit, au moins toutes les 30 minutes, les avis de coupure publiés sur <a href="${esc(dist.site!)}" rel="noopener">le site de ${esc(dist.par)}</a> : ils s'affichent en haut de cette page, avec le lien vers chaque avis.</p>`
-            : `<p>${dist.partage ? `Les avis de ${esc(dist.nom)}` : "Ses avis"} sont relus au moins toutes les 30 minutes : <a href="${esc(dist.site!)}" rel="noopener">le site de ${esc(dist.nom)}</a>.</p>`
+            ? html`<p>rundata.re lit, au moins toutes les 30 minutes, les avis de coupure publiés sur <a href="${dist.site!}" rel="noopener">le site de ${dist.par}</a> : ils s'affichent en haut de cette page, avec le lien vers chaque avis.</p>`
+            : html`<p>${dist.partage ? html`Les avis de ${dist.nom}` : "Ses avis"} sont relus au moins toutes les 30 minutes : <a href="${dist.site!}" rel="noopener">le site de ${dist.nom}</a>.</p>`
           : guide
-          ? `<p>${guide.distributeur}</p>`
+          ? html`<p>${brut(guide.distributeur)}</p>`
           : siteDist
-          ? `<p>Ses avis de coupure ne sont pas lus par rundata.re\u00a0: voir <a href="${esc(siteDist)}" rel="noopener">le site de ${esc(dist.nom)}</a>, qui donne la qualité de l'eau et les travaux en cours de chaque commune (rubrique «\u00a0L'eau dans ma commune\u00a0»), ou la mairie.${lienA}</p>`
-          : `<p>Ses avis de coupure ne sont pas lus par rundata.re : ils sont sur ses avis aux abonnés et auprès de la mairie.${lienA}</p>`)
-      : `<p>Le distributeur de la commune n'est pas connu ici : voir la mairie.${lienA}</p>`) +
+          ? html`<p>Ses avis de coupure ne sont pas lus par rundata.re\u00a0: voir <a href="${siteDist}" rel="noopener">le site de ${dist.nom}</a>, qui donne la qualité de l'eau et les travaux en cours de chaque commune (rubrique «\u00a0L'eau dans ma commune\u00a0»), ou la mairie.${lienA}</p>`
+          : html`<p>Ses avis de coupure ne sont pas lus par rundata.re : ils sont sur ses avis aux abonnés et auprès de la mairie.${lienA}</p>`}`
+      : html`<p>Le distributeur de la commune n'est pas connu ici : voir la mairie.${lienA}</p>`}${
     // A shared commune: the distributors whose notices are not read, the mairie's site linked (L'Étang-Salé).
-    (dist?.partage && unreadShare.length ? `<p>Les avis de ${esc(unreadShare.join(" et "))} ne sont pas lus par rundata.re.${lienA}</p>` : "") +
-    `<p class="note">Son numéro d'urgence (fuite, coupure non annoncée) est sur la facture d'eau. <a href="/communes/${p.slug}">${esc(p.nom)} en direct : la mairie, ses horaires et son téléphone →</a></p></div>`;
+    dist?.partage && unreadShare.length ? html`<p>Les avis de ${unreadShare.join(" et ")} ne sont pas lus par rundata.re.${lienA}</p>` : ""}<p class="note">Son numéro d'urgence (fuite, coupure non annoncée) est sur la facture d'eau. <a href="/communes/${p.slug}">${p.nom} en direct : la mairie, ses horaires et son téléphone →</a></p></div>`;
 
+  // droughtBadge(): the level's badge, HTML the site writes itself.
   const drought = x.secheresse
-    ? `<div class="card">${icon("sun")}<h3>Sécheresse</h3><p>Eau du robinet : ${droughtBadge(x.secheresse.eau_du_robinet)}${x.secheresse.rivieres_et_sources ? ` · rivières et sources : ${droughtBadge(x.secheresse.rivieres_et_sources)}` : ""}${x.secheresse.nappes ? ` · nappes : ${droughtBadge(x.secheresse.nappes)}` : ""}</p>` +
-      `<p class="note"><a href="/secheresse">L'arrêté sécheresse, commune par commune →</a></p></div>`
-    : `<div class="card">${icon("sun")}<h3>Sécheresse</h3><p><a href="/secheresse">Les restrictions d'eau de l'arrêté en vigueur, commune par commune →</a></p></div>`;
+    ? html`<div class="card">${brut(icon("sun"))}<h3>Sécheresse</h3><p>Eau du robinet : ${brut(droughtBadge(x.secheresse.eau_du_robinet))}${x.secheresse.rivieres_et_sources ? html` · rivières et sources : ${brut(droughtBadge(x.secheresse.rivieres_et_sources))}` : ""}${x.secheresse.nappes ? html` · nappes : ${brut(droughtBadge(x.secheresse.nappes))}` : ""}</p><p class="note"><a href="/secheresse">L'arrêté sécheresse, commune par commune →</a></p></div>`
+    : html`<div class="card">${brut(icon("sun"))}<h3>Sécheresse</h3><p><a href="/secheresse">Les restrictions d'eau de l'arrêté en vigueur, commune par commune →</a></p></div>`;
 
   // The portrait of the commune's water, at the top: its networks and its last
   // samples from the ARS, its drought level from the order. Each part left out without its data: without Hub'Eau, the
   // drought line alone; without either, a link.
   const sec = secheresseLigne(x.secheresse, w.secheresse?.value.arrete);
   const tap = x.robinet || sec
-    ? `<section aria-labelledby="h-robinet"><div class="sec-h"><p class="eyebrow">Contrôle sanitaire de l'ARS</p><h2 id="h-robinet">L'eau du robinet ${esc(where)}</h2></div>
-  ${x.robinet ? `${reseauxCommune(p.nom, x.robinet)}
-  <ul class="zones">${tapCard(x.robinet)}</ul>` : ""}${sec}<p class="note"><a href="/eau">L'eau du robinet de chaque commune, et la baignade →</a></p></section>`
-    : `<p class="note"><a href="/eau">La qualité de l'eau du robinet, commune par commune →</a></p>`;
+    ? html`<section aria-labelledby="h-robinet"><div class="sec-h"><p class="eyebrow">Contrôle sanitaire de l'ARS</p><h2 id="h-robinet">L'eau du robinet ${where}</h2></div>
+  ${x.robinet ? html`${brut(reseauxCommune(p.nom, x.robinet))}
+  <ul class="zones">${brut(tapCard(x.robinet))}</ul>` : ""}${brut(sec)}<p class="note"><a href="/eau">L'eau du robinet de chaque commune, et la baignade →</a></p></section>`
+    : html`<p class="note"><a href="/eau">La qualité de l'eau du robinet, commune par commune →</a></p>`;
   const faq = eauFaq(p.nom, x.robinet);
 
-  const others = `<section aria-labelledby="h-autres"><div class="sec-h"><h2 id="h-autres">Les autres communes</h2></div>
-  <p>${COMMUNES.filter((c) => c.slug !== p.slug).map((c) => `<a href="/coupures-eau/${c.slug}">${esc(c.nom)}</a>`).join(" · ")}</p>
+  const others = html`<section aria-labelledby="h-autres"><div class="sec-h"><h2 id="h-autres">Les autres communes</h2></div>
+  <p>${COMMUNES.filter((c) => c.slug !== p.slug).map((c, i) => html`${i ? " · " : ""}<a href="/coupures-eau/${c.slug}">${c.nom}</a>`)}</p>
   <p class="note"><a href="/coupures-eau">Tous les avis de l'île</a>, sur une carte.</p></section>`;
 
   // A commune whose notices are not read, its distributor's site linked (L'Entre-Deux): the page is named by what it holds, not by notices it does not show (24/11/2026: it was
@@ -329,16 +326,16 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
     itemListElement: [[SITE, "/"], ["Coupures d'eau", "/coupures-eau"], [p.nom, path]].map(([n, u], i) => ({ "@type": "ListItem", position: i + 1, name: n, item: `${origin}${u}` })),
   };
 
-  const band = `<div class="wrap"><nav class="crumbs" aria-label="Fil d'Ariane"><ol><li><a href="/">${SITE}</a></li><li><a href="/coupures-eau">Coupures d'eau</a></li><li aria-current="page">${esc(p.nom)}</li></ol></nav></div>
+  const band = html`<div class="wrap"><nav class="crumbs" aria-label="Fil d'Ariane"><ol><li><a href="/">${SITE}</a></li><li><a href="/coupures-eau">Coupures d'eau</a></li><li aria-current="page">${p.nom}</li></ol></nav></div>
 <div class="wrap intro">
   <div class="pitch">
     <p class="pill"><span class="dot"></span>Avis des distributeurs</p>
-    <h1>${nonLus ? "L'eau" : "Coupures d'eau"} ${esc(where)} <span class="n974">974</span></h1>
+    <h1>${nonLus ? html`L'eau` : html`Coupures d'eau`} ${where} <span class="n974">974</span></h1>
     ${status}
-    ${ask(`Dolo la koupé ${p.nom} ? Kansa i rovien ? Gèt si ${url} é di amwin.`,
-      `Y a-t-il une coupure d'eau ${where} ? Lis ${url} et dis-moi quand l'eau revient.`)}
+    ${brut(ask(`Dolo la koupé ${p.nom} ? Kansa i rovien ? Gèt si ${url} é di amwin.`,
+      `Y a-t-il une coupure d'eau ${where} ? Lis ${url} et dis-moi quand l'eau revient.`))}
   </div>
-  <figure class="card mapcard nophone">${islandMap({ highlight: p.nom, label: `Carte de La Réunion (974) situant ${p.nom}` })}</figure>
+  <figure class="card mapcard nophone">${brut(islandMap({ highlight: p.nom, label: `Carte de La Réunion (974) situant ${p.nom}` }))}</figure>
 </div>`;
 
   // Up the page in the cyclone season, at its foot the rest of the year.
@@ -346,29 +343,30 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
   // /coupures-eau, where the sentence links. While a notice is in progress, or the notices are loading, both stay here.
   const calm = !!d && !x.avis.length;
   const cyclone = calm ? { html: "", lead: false } : cycloneWater(now, p.nom);
-  const notices = `<section aria-labelledby="h-coupures-eau">
-  <div class="sec-h"><p class="eyebrow">Récents ou à venir</p><h2 id="h-coupures-eau">Les avis ${esc(where)}</h2></div>
+  const notices = html`<section aria-labelledby="h-coupures-eau">
+  <div class="sec-h"><p class="eyebrow">Récents ou à venir</p><h2 id="h-coupures-eau">Les avis ${where}</h2></div>
   ${list}
-  ${derniersAvis(p.nom, w, x.avis)}
-  ${d ? (calm ? afterCutShort : afterCutNote) : ""}
+  ${brut(derniersAvis(p.nom, w, x.avis))}
+  ${d ? brut(calm ? afterCutShort : afterCutNote) : ""}
 </section>`;
   // A notice in progress or to come: the notices first, as the page says (« ils s'affichent en haut de cette page »);
   // at 390 px, two notices of Saint-Paul came 3 664 px down, under its 13 networks (24/11/2026).
   // None: the portrait of the water at the top.
-  const body = `${x.avis.length ? `${notices}\n${tap}` : `${tap}\n${notices}`}
-${arretesSection(p.nom, d?.arretes_sainte_suzanne)}
-${cyclone.lead ? cyclone.html : ""}
+  // The cyclone's section, the FAQ's answers (eauFaq), the sources and the connector: HTML the site writes itself.
+  const body = html`${x.avis.length ? html`${notices}\n${tap}` : html`${tap}\n${notices}`}
+${brut(arretesSection(p.nom, d?.arretes_sainte_suzanne))}
+${brut(cyclone.lead ? cyclone.html : "")}
 <section aria-labelledby="h-qui"><div class="sec-h"><h2 id="h-qui">Qui distribue l'eau, et les restrictions</h2></div>
   <div class="two">${distBlock}${drought}</div>
 </section>
-${faq.length ? `<section aria-labelledby="h-faq">
+${faq.length ? html`<section aria-labelledby="h-faq">
   <div class="sec-h"><h2 id="h-faq">Questions fréquentes</h2></div>
-  <div class="card faq">${faq.map((f) => `<h3>${esc(f.q)}</h3><p>${f.a}</p>`).join("")}</div>
+  <div class="card faq">${faq.map((f) => html`<h3>${f.q}</h3><p>${brut(f.a)}</p>`)}</div>
 </section>` : ""}
 ${others}
-${cyclone.lead ? "" : cyclone.html}
-${d && w.coupures ? sourcesNote([...d.sources, ...(p.nom === ARRETES.COMMUNE && d.arretes_sainte_suzanne ? [{ source: ARRETES.SOURCE.nom, licence: ARRETES.SOURCE.licence, attribution: ARRETES.SOURCE.attribution }] : []), { source: DISTRIBUTEURS, licence: "Licence Ouverte Etalab 2.0", attribution: "ARS La Réunion" }], w.coupures) : ""}
-${connectorAsk("les coupures d'eau", p.nom)}`;
+${brut(cyclone.lead ? "" : cyclone.html)}
+${d && w.coupures ? brut(sourcesNote([...d.sources, ...(p.nom === ARRETES.COMMUNE && d.arretes_sainte_suzanne ? [{ source: ARRETES.SOURCE.nom, licence: ARRETES.SOURCE.licence, attribution: ARRETES.SOURCE.attribution }] : []), { source: DISTRIBUTEURS, licence: "Licence Ouverte Etalab 2.0", attribution: "ARS La Réunion" }], w.coupures)) : ""}
+${brut(connectorAsk("les coupures d'eau", p.nom))}`;
 
-  return layout(origin, { title, description, path, jsonld: [trail, webPage(origin, path, title, description, w.coupures, cityLd(p)), ...(faq.length ? [faqPage(faq)] : [])], alerte, iaAside: true, ...(hook ? { hook } : {}), ...(indexable(p.nom) ? {} : { noindex: true }) }, band, body);
+  return layout(origin, { title, description, path, jsonld: [trail, webPage(origin, path, title, description, w.coupures, cityLd(p)), ...(faq.length ? [faqPage(faq)] : [])], alerte, iaAside: true, ...(hook ? { hook } : {}), ...(indexable(p.nom) ? {} : { noindex: true }) }, band.texte, body.texte);
 }

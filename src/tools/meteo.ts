@@ -12,7 +12,8 @@ import { radarAt } from "./radar.js";
 import { recentRainBlock } from "./pluie-recente.js";
 import { pluieCommune } from "./pluie-commune.js";
 import { hasExtremes, todayTemperatureBlock } from "./temperature-du-jour.js";
-import { type Observation, type SourceInfo, why } from "../types.js";
+import { type Observation, type SourceInfo, type Station, why } from "../types.js";
+import { SITE_URL } from "./citer.js";
 import { fit, mieux, pluieDabord } from "./representativeness.js";
 import { credits, de, fr, notFound, phrases, placeBlock, placeWarning, show, text, when } from "./format.js";
 
@@ -152,6 +153,19 @@ const BY_INSEE = new Map(Object.entries(INSEE).map(([nom, code]) => [code, nom])
 export const stationCommune = (s: Pick<Observation["station"], "source" | "id" | "lon" | "lat">) =>
   (s.source === "meteofrance" && BY_INSEE.get(s.id.slice(0, 5))) || communeAt(s.lon, s.lat);
 
+/**
+ * Where each station's measure is read, for the answer to give it beside the station (règle 3 sexies): an answer that
+ * named four stations linked one page only, which showed one of them (26/11/2026, off Saint-Gilles: 8 facts of 29 on
+ * the page). Its page on rundata.re for Météo-France's; else its producer's public page, never an API nor a key.
+ */
+export function stationLien(s: Station): string | undefined {
+  if (s.source === meteofrance.SOURCE.id) return `${SITE_URL}/meteo/station/${s.id}?ref=mcp`;
+  if (s.source === ffvl.SOURCE.id) return `https://www.balisemeteo.com/balise.php?idBalise=${s.id}`;
+  if (s.source === metar.SOURCE.id) return `https://aviationweather.gov/data/metar/?ids=${s.id}`;
+  if (s.source === meteorOi.SOURCE.id) return meteorOi.SITE;
+  return undefined;
+}
+
 function stationBlock(o: Observation, stale: boolean, now: Date) {
   const mesures: Record<string, string> = {};
   for (const r of o.readings) mesures[r.variable] = show(r);
@@ -168,7 +182,8 @@ function stationBlock(o: Observation, stale: boolean, now: Date) {
     nature: natureStation(o.station.source),
     ...(amateur(o.station.source) ? { amateur: true } : {}),
     // The credit the association asked for, beside each of its measures.
-    ...(o.station.source === meteorOi.SOURCE.id ? { credit: meteorOi.CREDIT, lien: meteorOi.SITE } : {}),
+    ...(o.station.source === meteorOi.SOURCE.id ? { credit: meteorOi.CREDIT } : {}),
+    ...(stationLien(o.station) ? { lien: stationLien(o.station) } : {}),
     altitude_m: o.station.altitude_m,
     ...t,
     mesures,

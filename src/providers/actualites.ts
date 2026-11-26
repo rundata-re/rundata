@@ -329,7 +329,12 @@ const WEATHER_WORD = new RegExp(`\\b(?:${WEATHER})\\b`);
 // des financements » (20/11/2026). A word of these within the two words after it, or a figure right after it, leaves it
 // out; « la mobilisation du 24 octobre » keeps it, its figure coming a word later. Real ones seldom say who marches
 // (« Mobilisation du 24 octobre : ce qui est prévu »), so the word is not asked to come with a union or a strike.
-const MOBILISATION = String.raw`mobilis\w*(?! (?:\w+ ){0,2}?(?:financ\w*|entreprises?|moyens|fonds|credits?|euros?|millions?|milliards?|ressources|budget\w*)\b)(?! \d)`;
+// Nor a cause people rally to: « Monique Orphé salue la mobilisation contre les violences intrafamiliales » (Freedom,
+// 26/11/2026), « une mobilisation pour la recherche ». « Contre », « pour », « en faveur de » or « autour de » leave it
+// out unless a protest's own cause follows (« contre la vie chère », « pour les salaires ») or a date (« pour le 5
+// décembre »); a word of the streets in the lead (MOBILISES) still says it whatever the cause.
+const LUTTE = String.raw`vie chere|salaires?|retraites?|reformes?|prix|carburants?|licenciements?|fermetures?|lois?|projets? de loi|octroi de mer|pouvoir d achat|\d`;
+const MOBILISATION = String.raw`mobilis\w*(?! (?:\w+ ){0,2}?(?:financ\w*|entreprises?|moyens|fonds|credits?|euros?|millions?|milliards?|ressources|budget\w*)\b)(?! \d)(?! (?:\w+ ){0,2}?(?:contre|pour|en faveur d\w*|autour d\w*) (?!(?:(?:la|le|les|l|des|du|de) )?(?:${LUTTE})\b))`;
 
 // An accident of the road, not « un accident vasculaire cérébral » nor a day « sans accident » at work (Freedom, 29/10/2026:
 // two articles on health and safety at work under « routes et circulation »). On normalised text.

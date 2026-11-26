@@ -10,6 +10,8 @@ import { actualitesPage, courantItem, electriciteCommune, noticeCard } from "../
 import { concertsPage, weekendPage } from "../src/web/evenements.js";
 import { pointsSvg } from "../src/web/evenements-carte.js";
 import { type Fiche, fichePage, fichePassee } from "../src/web/fiche-evenement.js";
+import { coupuresCommunePage } from "../src/web/coupures.js";
+import { PAGES } from "../src/web/places.js";
 
 /**
  * The pages that show a text read elsewhere (an event's title, a headline, a stop's name), rendered with that text set
@@ -92,6 +94,25 @@ describe("a text read elsewhere, trapped, never comes out as a tag", () => {
     sansInjection(fichePage(O, r, { value, fetchedAt: now, stale: false }, undefined));
     const passe = { titre: PIEGE, date: "2026-10-01T10:00", lieu: PIEGE, commune: "Saint-Paul", publie_par: PIEGE, lien: "https://exemple.re/b", fiche: "abcdabcd" } as unknown as Fiche;
     sansInjection(fichePassee(O, passe));
+  });
+
+  it("on a commune's water page: its last notices, the networks of its tap water, its drought and the works' orders", () => {
+    const now = new Date("2026-10-24T04:00:00Z");
+    const at = <T>(value: T) => ({ value, fetchedAt: now, stale: false }) as Cached<T>;
+    const p = PAGES.find((x) => x.commune && x.nom === "Sainte-Suzanne")!;
+    const coupures = {
+      resume: "", avis: [], couverture: PIEGE, a_savoir: "", sources: [], communes_suivies: [],
+      derniers_avis: { "Sainte-Suzanne": [{ publie: "2026-10-20T05:00:00Z", titre: PIEGE, distributeur: PIEGE, lien: "https://exemple.re/a" }] },
+      arretes_sainte_suzanne: { note: "", arretes: [{ arrete: PIEGE, lieu: PIEGE, du: PIEGE, au: PIEGE, etat: "en cours", lien: "https://exemple.re/b" }], lu_le: PIEGE, lien: "https://exemple.re/c" },
+    };
+    const secheresse = { resume: "", communes: [{ commune: "Sainte-Suzanne", eau_du_robinet: PIEGE }], arrete: { numero: PIEGE, signe_le: PIEGE, publie: "", lien: "https://exemple.re/d", remplace: "" }, echelle: "", a_savoir: "", sources: [], interdits: [] };
+    const eau = { communes: [{ commune: "Sainte-Suzanne", reseaux_detail: [{ reseau: PIEGE, quartiers: [PIEGE], derniere_analyse: "2026-10-01", conclusion: PIEGE }], non_conformes_6_mois: 0, analyses_6_mois: 1, a_surveiller: [], prelevements: [] }], a_savoir: "", sources: [] };
+    const page = coupuresCommunePage(O, p, { coupures: at(coupures as never), secheresse: at(secheresse as never), eau: at(eau as never) }, now);
+    sansInjection(page);
+    // Each place where a text read elsewhere is shown.
+    expect(page).toContain(`<a href="https://exemple.re/a" rel="noopener">${ECHAPPE}</a>`);
+    expect(page).toContain(`Réseau ${ECHAPPE}`);
+    expect(page).toContain(`Arrêté ${ECHAPPE}`);
   });
 
   it("in the headlines (/actualites)", () => {

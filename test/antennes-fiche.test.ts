@@ -4,6 +4,10 @@ import { antennesPage } from "../src/web/antennes.js";
 import { ficheScript, fichesFile, fichesJson, fichesPath, FICHES_DU, type Ligne } from "../src/web/antennes-fiche.js";
 import { lienNom } from "../src/web/domains.js";
 import { estDeclare } from "../src/web/scripts-declares.js";
+import { H, W } from "../src/web/map.js";
+import island from "../src/places/island.json" with { type: "json" };
+import { distanceKm } from "../src/geo.js";
+import { antennas } from "../src/tools/terrain.js";
 
 type Sheet = { du: string; s: Record<string, { c: string; h: number; n: string; e: Ligne[] }> };
 const sheets = () => JSON.parse(fichesJson()) as Sheet;
@@ -18,18 +22,61 @@ const dot = (id: number, x: number, y: number, hidden = false) => {
   };
 };
 
-/** The sheet's script on a map of `dots`, with the file answered by `answer`; the click and what the box holds. */
-function run(dots: ReturnType<typeof dot>[], answer: () => Promise<unknown>) {
+const [LON0, LAT0, LON1, LAT1] = island.bbox;
+/** Screen point = map point (no zoom, the map at the window's corner): a click at (x, y) is that point of the map. */
+const lieu = (lon: number, lat: number): [number, number] => [((lon - LON0) / (LON1 - LON0)) * W, ((LAT1 - lat) / (LAT1 - LAT0)) * H];
+const flush = async () => {
+  for (let i = 0; i < 6; i++) await Promise.resolve();
+};
+
+/**
+ * The sheet's script on a map of `dots`, with the file answered by `answer` and the visitor's position by `position`
+ * (null: refused); the clicks, the button « autour de moi » and what the box holds.
+ */
+function run(dots: ReturnType<typeof dot>[], answer: () => Promise<unknown>, position?: { lat: number; lon: number } | null) {
   const on: Record<string, (e: unknown) => void> = {};
+  const marks: { cx?: string; cy?: string }[] = [];
   const box = { hidden: true, innerHTML: "", scrollIntoView: () => {}, addEventListener: (t: string, f: (e: unknown) => void) => (on[`box:${t}`] = f) };
-  const svg = { querySelectorAll: () => dots, addEventListener: (t: string, f: (e: unknown) => void) => (on[`svg:${t}`] = f) };
+  const group = { appendChild: (c: { a: Record<string, string> }) => marks.push({ cx: c.a.cx, cy: c.a.cy }) };
+  const svg = {
+    querySelectorAll: () => dots,
+    querySelector: () => group,
+    addEventListener: (t: string, f: (e: unknown) => void) => (on[`svg:${t}`] = f),
+    getScreenCTM: () => ({ inverse: () => "id" }),
+    createSVGPoint: () => ({ x: 0, y: 0, matrixTransform(this: { x: number; y: number }) { return { x: this.x, y: this.y }; } }),
+  };
+  const bloc = { hidden: true }, msg = { hidden: true, textContent: "" };
+  const moi = { disabled: false, addEventListener: (t: string, f: (e: unknown) => void) => (on[`moi:${t}`] = f) };
+  const els: Record<string, unknown> = { amap: svg, antfiche: box, "ant-moi-bloc": bloc, "ant-moi": moi, "ant-moi-msg": msg };
+  const document = { getElementById: (i: string) => els[i] ?? null, createElementNS: () => ({ a: {} as Record<string, string>, setAttribute(k: string, v: string) { this.a[k] = String(v); }, remove() {} }) };
+  const navigator = {
+    geolocation: {
+      getCurrentPosition: (ok: (p: unknown) => void, ko: (e: unknown) => void) => (position ? ok({ coords: { latitude: position.lat, longitude: position.lon } }) : ko({ code: 1 })),
+    },
+  };
   const asked: string[] = [];
-  new Function("document", "fetch", ficheScript())({ getElementById: (i: string) => (i === "amap" ? svg : i === "antfiche" ? box : null) }, (u: string) => (asked.push(u), answer()));
+  new Function("document", "fetch", "navigator", ficheScript())(document, (u: string) => (asked.push(u), answer()), navigator);
   const click = async (x: number, y: number) => {
     on["svg:click"]({ clientX: x, clientY: y });
-    for (let i = 0; i < 5; i++) await Promise.resolve();
+    await flush();
   };
-  return { box, asked, click, close: () => on["box:click"]({ target: { closest: () => ({}) } }) };
+  const target = (sel: string, data: Record<string, string> = {}) => ({ target: { closest: (q: string) => (q === sel ? { dataset: data } : null) } });
+  return {
+    box, asked, click, marks, bloc, msg,
+    close: () => on["box:click"](target(".antf-x")),
+    autour: async (id: string) => {
+      on["box:click"](target(".antf-autour", { i: id }));
+      await flush();
+    },
+    voir: async (id: string) => {
+      on["box:click"](target(".antf-voir", { i: id }));
+      await flush();
+    },
+    moi: async () => {
+      on["moi:click"]({});
+      await flush();
+    },
+  };
 }
 
 const ok = () => Promise.resolve({ ok: true, json: async () => sheets() });
@@ -80,12 +127,12 @@ describe("the sheet of an antenna (ANFR)", () => {
     expect(m.asked).toEqual([fichesPath()]);
     expect(m.box.hidden).toBe(false);
     const h = m.box.innerHTML;
-    expect(h).toContain(`Support n° ${id} · ${f.c}`);
+    expect(h).toContain(`Support n°\u00a0${id}\u00a0· ${f.c}`);
     expect(h).toContain("<h4>SFR Réunion</h4>");
-    expect(h).toContain("5G (5G NR), bande des 3 500 MHz\u00a0: techniquement opérationnel, mise en service le 17/10/2024");
-    expect(h).toContain("2G (GSM), bande des 900 MHz\u00a0: en service, mise en service le 15/03/2021");
-    expect(h).toContain("Azimuts des antennes\u00a0: 60 °, 140 ° et 225 ° (0 ° = nord).");
-    expect(h).toContain(`hauteur ${String(f.h).replace(".", ",")} m`);
+    expect(h).toContain("5G (5G NR), bande des 3\u202f500\u00a0MHz\u00a0: techniquement opérationnel, mise en service le 17/10/2024");
+    expect(h).toContain("2G (GSM), bande des 900\u00a0MHz\u00a0: en service, mise en service le 15/03/2021");
+    expect(h).toContain("Azimuts des antennes\u00a0: 60\u00a0°, 140\u00a0° et 225\u00a0° (0\u00a0° = nord).");
+    expect(h).toContain(`hauteur ${String(f.h).replace(".", ",")}\u00a0m`);
     expect(h).toContain("Puissance d'émission\u00a0: non publiée par l'ANFR.");
     expect(h).toContain("pas des mesures");
     // By generation, then by band: the 2G first, the 5G last.
@@ -96,7 +143,7 @@ describe("the sheet of an antenna (ANFR)", () => {
     // A second dot: the file is not asked again.
     await m.click(300, 300);
     expect(m.asked).toHaveLength(1);
-    expect(m.box.innerHTML).toContain("Support n° 47169");
+    expect(m.box.innerHTML).toContain("Support n°\u00a047169");
     m.close();
     expect(m.box.hidden).toBe(true);
   });
@@ -110,13 +157,99 @@ describe("the sheet of an antenna (ANFR)", () => {
     expect(m.box.innerHTML).toContain("Nature du support non publiée, hauteur non publiée.");
   });
 
-  it("leaves a click far from any dot, or on a hidden one, without a sheet, and says when the file failed", async () => {
-    const m = run([dot(47165, 100, 100), dot(47169, 200, 200, true)], () => Promise.resolve({ ok: false }));
-    await m.click(160, 160);
-    await m.click(200, 200);
+  it("says when the file failed", async () => {
+    const m = run([dot(47165, 100, 100)], () => Promise.resolve({ ok: false }));
+    await m.click(100, 100);
+    expect(m.box.innerHTML).toBe("<p>La fiche n'a pas pu être chargée\u00a0: réessayez.</p>");
+  });
+
+  /** What the file says around a point: actives and projects within r metres, the nearest active. */
+  const compte = (lon: number, lat: number) => {
+    const L = Object.entries(sheets().s).map(([id, f]) => ({ id, f, d: distanceKm(lon, lat, (f as unknown as { p: number[] }).p[0], (f as unknown as { p: number[] }).p[1]) * 1000 }));
+    const actif = (x: (typeof L)[number]) => x.f.e.some((r) => r[2] !== "p");
+    return {
+      r: [500, 1000, 2000].map((r) => [L.filter((x) => x.d <= r && actif(x)).length, L.filter((x) => x.d <= r && !actif(x)).length]),
+      proche: L.filter(actif).sort((a, b) => a.d - b.d)[0],
+    };
+  };
+
+  it("counts, on a click away from any dot, the supports around that point, and opens the nearest one's sheet", async () => {
+    // Saint-Denis, the Barachois: many supports around.
+    const [lon, lat] = [55.4489, -20.8746];
+    const want = compte(lon, lat);
+    const [x, y] = lieu(lon, lat);
+    const m = run([dot(47165, x + 200, y + 200), dot(47169, x - 100, y, true)], ok);
+    await m.click(x, y);
+    expect(m.asked).toEqual([fichesPath()]);
+    expect(m.marks.at(-1)).toEqual({ cx: String(x), cy: String(y) });
+    const h = m.box.innerHTML;
+    expect(h).toContain("<h3>Autour de ce point</h3>");
+    const n = (a: number, p: number, t: string) => `<li>à moins de ${t}\u00a0: ${a ? `${a} actif${a > 1 ? "s" : ""}` : "aucun actif"}${p ? `, ${p} en projet` : ""}</li>`;
+    expect(h).toContain(n(want.r[0][0], want.r[0][1], "500\u00a0m") + n(want.r[1][0], want.r[1][1], "1\u00a0km") + n(want.r[2][0], want.r[2][1], "2\u00a0km"));
+    expect(want.r[2][0]).toBeGreaterThan(10);
+    expect(h).toContain(`Le plus proche des actifs\u00a0: support n°\u00a0${want.proche.id}, Saint-Denis, à `);
+    expect(h).toContain("pas une mesure de l'exposition aux ondes");
+    await m.voir(want.proche.id);
+    expect(m.box.innerHTML).toContain(`<h3>Support n°\u00a0${want.proche.id}\u00a0· Saint-Denis</h3>`);
+    expect(m.asked).toHaveLength(1);
+  });
+
+  it("counts around a support from its sheet, without that support", async () => {
+    const id = "47165";
+    const f = sheets().s[id] as unknown as { p: number[] };
+    const m = run([dot(47165, 100, 100)], ok);
+    await m.click(100, 100);
+    expect(m.box.innerHTML).toContain('class="antf-voir antf-autour" data-i="47165">Les antennes autour de ce support</button>');
+    await m.autour(id);
+    const h = m.box.innerHTML;
+    expect(h).toContain("<h3>Autour de ce support</h3>");
+    const L = Object.entries(sheets().s).filter(([k]) => k !== id).map(([k, x]) => ({ k, d: distanceKm(f.p[0], f.p[1], (x as unknown as { p: number[] }).p[0], (x as unknown as { p: number[] }).p[1]) * 1000, a: x.e.some((r) => r[2] !== "p") }));
+    const proche = L.filter((x) => x.a).sort((a, b) => a.d - b.d)[0];
+    expect(h).toContain(`support n°\u00a0${proche.k},`);
+    expect(m.marks).toHaveLength(1);
+  });
+
+  it("leaves a click outside the map without anything", async () => {
+    const m = run([dot(47165, 100, 100)], ok);
+    await m.click(-50, -50);
     expect(m.box.hidden).toBe(true);
     expect(m.asked).toEqual([]);
-    await m.click(100, 100);
-    expect(m.box.innerHTML).toBe("<p>La fiche n'a pas pu être chargée : réessayez.</p>");
+  });
+
+  it("counts around the visitor's position, with the button shown by the script; out of the island or refused, says so", async () => {
+    const [lon, lat] = [55.4489, -20.8746];
+    const m = run([], ok, { lat, lon });
+    expect(m.bloc.hidden).toBe(false);
+    await m.moi();
+    expect(m.box.innerHTML).toContain("<h3>Autour de votre position</h3>");
+    expect(m.box.innerHTML).toContain(`support n°\u00a0${compte(lon, lat).proche.id}`);
+    const loin = run([], ok, { lat: 48.85, lon: 2.35 });
+    await loin.moi();
+    expect(loin.msg.textContent).toBe("Votre position n'est pas à La Réunion.");
+    expect(loin.asked).toEqual([]);
+    const non = run([], ok, null);
+    await non.moi();
+    expect(non.msg.textContent).toBe("Position non autorisée.");
+  });
+});
+
+describe("fiche_terrain and the page count the same antennas around a place", () => {
+  it("gives the counts of /antennes at 500 m, 1 km and 2 km, active or planned, with the page's sentence", () => {
+    const sheet = JSON.parse(fichesJson()) as { s: Record<string, { e: Ligne[]; p: [number, number] }> };
+    // The page's rule (ficheScript): active when one of a support's lines is not « projet ».
+    const page = (lon: number, lat: number) =>
+      [500, 1000, 2000].map((r) => {
+        const a = Object.values(sheet.s).filter((f) => distanceKm(lon, lat, f.p[0], f.p[1]) * 1000 <= r);
+        const n = a.filter((f) => f.e.some((x) => x[2] !== "p")).length;
+        return { rayon_m: r, actifs: n, en_projet: a.length - n };
+      });
+    // The Barachois (Saint-Denis), Cilaos, and the Plaine des Cafres' forest.
+    for (const [lon, lat] of [[55.4481, -20.8789], [55.4719, -21.1347], [55.53, -21.13]] as [number, number][]) {
+      const m = antennas(lon, lat).bloc.antennes_mobiles;
+      expect(m.autour).toEqual(page(lon, lat));
+      expect(m.autour[0].actifs + m.autour[0].en_projet).toBe(m.supports);
+    }
+    expect(antennas(55.4481, -20.8789).bloc.antennes_mobiles.autour[2].actifs).toBeGreaterThan(13);
+    expect(antennas(55.4481, -20.8789).bloc.antennes_mobiles.autour_note).toBe("Un nombre et une distance de supports déclarés, pas une mesure de l'exposition aux ondes.");
   });
 });

@@ -239,13 +239,23 @@ const ANTENNES = {
     "Supports d'antennes déclarés à l'ANFR, avec l'état que chaque opérateur déclare pour chaque génération (en service, techniquement opérationnel, projet approuvé)\u00a0: " +
     "ce n'est ni l'état du réseau en ce moment, ni la couverture. Pour la 5G, l'ANFR n'emploie pas «\u00a0en service\u00a0»\u00a0: son état le plus avancé est «\u00a0techniquement opérationnel\u00a0». Free et SFR Réunion sont déclarés sous les noms Telco OI et SRR. Émetteurs de radio et de télévision de plus de 5 W seulement. " +
     "L'exposition aux ondes n'est pas mesurée ici\u00a0: les mesures sont sur https://www.cartoradio.fr",
+  /** The sentence of /antennes under the same counts (antennes-fiche.ts). */
+  autour: "Un nombre et une distance de supports déclarés, pas une mesure de l'exposition aux ondes.",
 };
 
 const gens = (g: string) => [...g].map((x) => `${x}G`).join(", ");
 
 /** The antennas within 500 m of the point (vie/antennes.ts): the mobile supports, then the radio and TV ones. */
 export function antennas(lon: number, lat: number) {
-  const mob = antennes.near(antennes.SUPPORTS, lon, lat);
+  const loin = antennes.near(antennes.SUPPORTS, lon, lat, 2000);
+  const mob = loin.filter((s) => s.d <= 500);
+  // The counts of /antennes « autour » (its fiche, antennes-fiche.ts): within 500 m, 1 km and 2 km as the crow flies,
+  // active when an operator declares a generation « en service » or « techniquement opérationnel », else planned.
+  const actif = (s: antennes.Support) => Object.values(s.ops).some((g) => g?.service || g?.operationnel);
+  const autour = [500, 1000, 2000].map((r) => {
+    const a = loin.filter((s) => s.d <= r), n = a.filter(actif).length;
+    return { rayon_m: r, actifs: n, en_projet: a.length - n };
+  });
   const radio = antennes.near(antennes.EMETTEURS, lon, lat);
   const m10 = (d: number) => Math.round(d / 10) * 10;
   const where = (x: { d: number; h: number; nature?: string }) => ({
@@ -263,6 +273,8 @@ export function antennas(lon: number, lat: number) {
       antennes_mobiles: {
         fichier_du: antennes.date(antennes.MOBILE_DU),
         supports: mob.length,
+        autour,
+        autour_note: ANTENNES.autour,
         plus_proches: mob.slice(0, 5).map((s) => ({
           ...where(s),
           operateurs: antennes.OPERATEURS.filter((o) => s.ops[o]).map((o) => ({

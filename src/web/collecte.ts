@@ -3,6 +3,8 @@
  * the validated words. The streets are grouped by calendar, the rhythm said once per group; a search box shows the
  * line of the streets typed. Built from the bundled calendars and the day: no source is read.
  */
+import * as tco from "../providers/tco-communiques.js";
+import { TCO_UNREAD } from "../tools/collecte.js";
 import * as col from "../vie/collecte.js";
 import { a, de, nombre } from "../tools/format.js";
 import { insecables } from "../typographie.js";
@@ -170,7 +172,18 @@ ${mine.map((i) => dated[i]).join("\n")}</details>`;
   return [commune ? byCommune.join("\n") : `<div class="plis">\n${byCommune.join("\n")}\n</div>`, nc].join("\n");
 }
 
-export function collectePage(origin: string, now: Date, commune?: string, alerte?: Alerte): string {
+/**
+ * The TCO's notices running (a collection put off), on a commune of the West's page and on /collecte, with their
+ * communes there; `avis` undefined when not read (outside the West), null when the feed did not answer.
+ */
+function tcoNotices(avis: readonly tco.Communique[] | null | undefined, now: Date, commune?: string): string {
+  if (avis === undefined || (commune && !(tco.TCO_COMMUNES as readonly string[]).includes(commune))) return "";
+  if (avis === null) return commune ? `<p class="note">${esc(TCO_UNREAD)}</p>` : "";
+  return tco.running(avis, now, "collecte", commune).map((c) =>
+    `<p class="card" role="note">${esc(tco.line(c))}${commune ? "" : ` (${esc(c.communes.join(", "))})`}. <a href="${esc(c.lien)}" rel="noopener">Lire le communiqué</a></p>`).join("");
+}
+
+export function collectePage(origin: string, now: Date, commune?: string, alerte?: Alerte, avis?: readonly tco.Communique[] | null): string {
   const path = commune ? `/collecte/${communeSlug(commune)}` : "/collecte";
   const title = commune ? titleOf(commune) : TITLE;
   const description = commune ? metaOf(commune) : META;
@@ -185,6 +198,7 @@ export function collectePage(origin: string, now: Date, commune?: string, alerte
   <p class="pill">Calendriers ${des(commune)} · ${col.YEAR}</p>
   <h1>${esc(commune ? h1Of(commune) : H1)}</h1>
   <p class="lead">${esc(leadOf(commune))}</p>
+  ${tcoNotices(avis, now, commune)}
   <label class="search">Votre rue <input id="rue" type="search" placeholder="Rue, chemin, impasse…" autocomplete="off" aria-describedby="ouest"></label>
   <p class="note" id="ouest">${esc(OUEST)}</p>
 </div></div>`;

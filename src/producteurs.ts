@@ -163,6 +163,7 @@ export const FICHES: Record<string, Fiche> = {
   onisr_accidents: { famille: "licence_ouverte", producteurs: ["Ministère de l'Intérieur"] },
   tco_decheteries: { famille: "licence_ouverte", producteurs: ["TCO"] },
   casud_decheteries: { famille: "information_publique", producteurs: ["CASUD"] },
+  tco_communiques: { famille: "information_publique", producteurs: ["TCO"] },
   ademe_decheteries: { famille: "licence_ouverte", producteurs: ["ADEME"] },
   tco_collecte: { famille: "licence_ouverte", producteurs: ["TCO"] },
   cirest_collecte: { famille: "information_publique", producteurs: ["CIREST"] },

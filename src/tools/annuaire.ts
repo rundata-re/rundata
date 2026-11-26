@@ -8,7 +8,9 @@ import { why } from "../types.js";
 import { pageOf, slugify } from "../web/places.js";
 import { carburantsAnswer, FUEL } from "./carburants.js";
 import { credits, de, fr, minutees, notFound, paire, text, tranche } from "./format.js";
-import { COLLECTION, collecteAnswer } from "./collecte.js";
+import { COLLECTION, collecteAnswer, parseLieu } from "./collecte.js";
+import * as tco from "../providers/tco-communiques.js";
+import { findStreets } from "../vie/collecte.js";
 import { decheteriesAnswer, WASTE } from "./decheteries.js";
 import { crechesAnswer, NURSERY } from "./creches.js";
 import { CHILDREN, enfantsAnswer } from "./enfants.js";
@@ -186,6 +188,13 @@ export function branche(quoi: string, adresse?: string) {
   return "annuaire";
 }
 
+/** Whether `lieu` is in the West: its commune, else the first street found for it. */
+function tcoCommunes(lieu: string | undefined): boolean {
+  const { commune, rue } = parseLieu(lieu ?? "");
+  const c = commune ?? (rue.length >= 3 ? findStreets(rue)[0]?.commune : undefined);
+  return !!c && (tco.TCO_COMMUNES as readonly string[]).includes(c);
+}
+
 export async function annuaireTool(cache: Cache, quoi: string, lieu: string | undefined, now = new Date(), adresse?: string) {
   // Practical life, asked the same way: the pharmacies, the doctor on duty, the emergencies, the markets, the déchèteries,
   // the fuel prices, the doctors, the schools, where to go with children.
@@ -198,7 +207,8 @@ export async function annuaireTool(cache: Cache, quoi: string, lieu: string | un
     case "marches_publics": return marchesPublicsAnswer(cache, lieu, now);
     case "evenement": return text({ resume: "Un marché de Noël ou un marché nocturne est un événement\u00a0: l'outil evenements le donne, avec sa date et son lien." });
     case "marches": return marchesAnswer(lieu);
-    case "collecte": return collecteAnswer(lieu, now);
+    // The TCO's notices read only for a commune of the West (a collection put off), a feed that fails said as such.
+    case "collecte": return collecteAnswer(lieu, now, tcoCommunes(lieu) ? await tco.communiques(cache).then((r) => r.value, () => null) : undefined);
     case "decheteries": return decheteriesAnswer(cache, quoi, lieu, now);
     case "carburants": return carburantsAnswer(cache, now);
     case "medecins": return medecinsAnswer(quoi, lieu);

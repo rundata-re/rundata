@@ -101,6 +101,7 @@ import { bathingPage, PATH as BAIGNADE } from "./baignade.js";
 import { buildMerHistorique, KEY as MER_HISTORIQUE_KEY, merHistoriquePage, PATH as MER_HISTORIQUE } from "./mer-historique.js";
 import { carburantsPage } from "./carburants.js";
 import { collectePage, communeOf } from "./collecte.js";
+import * as tcoCommuniques from "../providers/tco-communiques.js";
 import { decheteriesPage } from "./decheteries.js";
 import { alertePage } from "./alerte-cyclone.js";
 import { kitPage } from "./kit-cyclone.js";
@@ -846,13 +847,16 @@ async function pages(request: Request, cache: Cache, background: Background, now
       ? homePage(origin, h, now, alerteLue(vigilance, now))
       : homePage(origin, null, now)), meteo, background, [rebuild(cache, DOMAINS["/meteo"].key, () => buildHome(cache, now))]);
   }
-  // The bins' days: the bundled calendars and the day, nothing read but the vigilance's banner.
+  // The bins' days: the bundled calendars and the day; read, the vigilance's banner and in the West the TCO's notices.
   const collecte = /^\/collecte(?:\/([a-z-]+))?\/?$/.exec(path);
   if (collecte) {
     const commune = collecte[1] ? communeOf(collecte[1]) : undefined;
     if (collecte[1] && !commune) return (await missing());
     const a = await alerte(cache, background, now);
-    return new Response(collectePage(origin, now, commune, a), { headers: HTML });
+    // The TCO's notices, on /collecte and its communes' pages only (a collection put off); a feed that fails said as such.
+    const west = !commune || (tcoCommuniques.TCO_COMMUNES as readonly string[]).includes(commune);
+    const avis = west ? await tcoCommuniques.communiques(cache).then((r) => r.value, () => null) : undefined;
+    return new Response(collectePage(origin, now, commune, a, avis), { headers: HTML });
   }
   // A past cyclone: the bundled measures, nothing read but the vigilance's banner.
   const passe = /^\/cyclones\/([a-z0-9-]+)\/?$/.exec(path);

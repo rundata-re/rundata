@@ -41,7 +41,7 @@ describe("the pills without a green dot", () => {
 
   it("say where a past cyclone's measures come from, the TCO's calendars their year, the past days how far they go", () => {
     expect(pill(passePage(O, passeOf("garance-2025")!))).toBe(`<p class="pill">Cyclones passés · Archives de Météo-France</p>`);
-    expect(pill(collectePage(O, NOW))).toBe(`<p class="pill">Calendriers du <abbr title="Territoire de la Côte Ouest">TCO</abbr> et de la CIREST · ${col.YEAR}</p>`);
+    expect(pill(collectePage(O, NOW))).toBe(`<p class="pill">Calendriers du <abbr title="Territoire de la Côte Ouest">TCO</abbr>, de la CIREST et de la CINOR · ${col.YEAR}</p>`);
     const value = { resume: "", periode: { du: "05/10/2026", au: "03/11/2026", jours: 30 }, stations: [], a_savoir: [], sources: [] } as HistoriqueAnswer;
     expect(pill(historiquePage(O, cached(value), NOW))).toBe(`<p class="pill">Mesures jusqu'au 03/11</p>`);
   });

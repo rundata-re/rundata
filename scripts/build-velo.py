@@ -11,11 +11,12 @@ Two lists of the open data portal of the Région, data.regionreunion.com, both u
   at 30 characters). The list has no date: the portal's is the day it read it again.
 Never the names of the people who made the lists, nor the Région's « exploitant » (often « A définir »). The state of a
 lane on the day is in none of them. Read through the portal's API, one request a minute per host at most.
-Usage: python3 -I scripts/build-velo.py [--dir DIR]  (DIR: local copies, <dataset>.fiche.json and <dataset>.geojson)
+Usage: python3 -I scripts/build-velo.py [--dir DIR] [--verifier SEUIL]  (DIR: local copies, <dataset>.fiche.json and <dataset>.geojson)
 """
 import argparse
 import importlib.util
 import json
+import sys
 import time
 import urllib.request
 from datetime import date
@@ -71,10 +72,30 @@ def encoded(pieces):
     return [bt.encode(bt.simplify(piece, bt.SIMPLIFY_M)) for piece in sorted(pieces, key=lambda p: -len(p))]
 
 
+def verifier(seuil):
+    """The two datasets against src/vie/velo.json (see --verifier); 1 when one of them is to be redone."""
+    spec = importlib.util.spec_from_file_location("verifier", Path(__file__).with_name("verifier.py"))
+    v = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(v)
+    bundled = json.loads((ROOT / "src/vie/velo.json").read_text())
+    rc = v.plus_recent("Voie vélo régionale", bundled["sources"]["region"]["liste_du"], opened(API + REGION)["metas"]["default"]["modified"],
+                       "build-velo.py", "la liste de la Région")
+    _, feats = read(CIVIS, None)
+    now = [{"n": f["properties"]["nbre_accro"], "lon": round(f["geometry"]["coordinates"][0], 5), "lat": round(f["geometry"]["coordinates"][1], 5)} for f in feats]
+    key = lambda r: (r["n"], r["lon"], r["lat"])
+    return max(rc, v.ecarts("Accroches vélo (CIVIS)", bundled["accroches"], now, key, seuil, "build-velo.py", lambda r: f'{r.get("nom", "sans nom")}, {r["n"]} places ({r["lon"]}, {r["lat"]})'))
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--dir", type=Path, help="local copies of the portal's answers")
+    # Each dataset as it moves, four requests a minute apart: the Région's by its date (its pieces change in place, with
+    # no id to follow); the CIVIS's racks by content (104 points, one export), past SEUIL racks added, gone or changed in
+    # number: 2, a rack or two a year.
+    p.add_argument("--verifier", type=int, metavar="SEUIL", help="write nothing: compare with src/vie/velo.json, fail on a newer source or past SEUIL racks")
     a = p.parse_args()
+    if a.verifier is not None:
+        sys.exit(verifier(a.verifier))
     voies, accroches = [], []
 
     meta, feats = read(REGION, a.dir)

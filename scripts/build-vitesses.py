@@ -9,12 +9,13 @@ its speed is not the right one's, and a side's where it is not the centre's (SAM
 kept at the same speed). The pieces that follow each other on the same route and side, at the same speed and of the
 same year, are joined into one. Never a speed of today: the signs on the spot and the works' limits come first. Read
 through the portal's API, one request a minute per host at most.
-Usage: python3 -I scripts/build-vitesses.py [--dir DIR]  (DIR: local copies, <dataset>.fiche.json and <dataset>.geojson)
+Usage: python3 -I scripts/build-vitesses.py [--dir DIR] [--verifier]  (DIR: local copies, <dataset>.fiche.json and <dataset>.geojson)
 """
 import argparse
 import importlib.util
 import json
 import re
+import sys
 import time
 import urllib.request
 from collections import defaultdict
@@ -35,6 +36,14 @@ SAME_SHARE = 0.8
 # Simplified to this: at 5 m, the layer's file weighs 31,9 Ko compressed, over the 30 Ko of /carte (web/couches.ts, MAX_GZIP).
 SIMPLIFY_M = 10
 last = {}
+
+
+def verifier():
+    """scripts/verifier.py, the checks shared by the build scripts (`python3 -I` does not put scripts/ on the path)."""
+    spec = importlib.util.spec_from_file_location("verifier", Path(__file__).with_name("verifier.py"))
+    v = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(v)
+    return v
 
 
 def opened(url):
@@ -62,7 +71,21 @@ def route(numero):
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--dir", type=Path, help="local copies of the portal's answers")
+    # By the update the dataset's description states (« Dernière mise à jour : août 2024 »), one request: the portal's
+    # own dates move without new data (a retouch of every dataset's metadata on 17/06/2026), and the export needs the
+    # joining and simplifying of 1 567 sections to be compared.
+    p.add_argument("--verifier", action="store_true", help="write nothing: fail when the description states another update than the list's")
     a = p.parse_args()
+    if a.verifier:
+        desc = opened(API)["metas"]["default"]["description"]
+        m = re.search(r"Dernière mise à jour\s*:\s*([^.<]+)", desc)
+        said = m[1].strip() if m else None
+        print(f"Limitations de vitesse : liste embarquée d'août 2024, la description dit « {said} »")
+        if said != "août 2024":
+            if not said:
+                sys.exit(verifier().cassee("Limitations de vitesse", "la description de la Région ne dit plus sa dernière mise à jour"))
+            sys.exit(verifier().vieillie("Limitations de vitesse", "build-vitesses.py", f"la description de la Région, mise à jour « {said} »"))
+        sys.exit(0)
     if a.dir:
         fiche = json.loads((a.dir / f"{DATASET}.fiche.json").read_text(encoding="utf-8"))
         feats = json.loads((a.dir / f"{DATASET}.geojson").read_text(encoding="utf-8"))["features"]

@@ -4,12 +4,14 @@
 From the ministry of the Interior's « Liste des radars fixes en France » on data.gouv.fr (Licence Ouverte 2.0, updated
 once a year): each fixed camera of the island, with its number, its type, the speed limit it checks and when it was put
 in service. The list is the ministry's, not a survey: a camera may be missing from it. Never the mobile checks.
-Usage: python3 -I scripts/build-radars.py [--csv liste.csv]
+Usage: python3 -I scripts/build-radars.py [--csv liste.csv] [--verifier SEUIL]
 """
 import argparse
 import csv
+import importlib.util
 import io
 import json
+import sys
 import urllib.request
 from pathlib import Path
 
@@ -29,6 +31,14 @@ TYPES = {
 }
 
 
+def verifier():
+    """scripts/verifier.py, the checks shared by the build scripts (`python3 -I` does not put scripts/ on the path)."""
+    spec = importlib.util.spec_from_file_location("verifier", Path(__file__).with_name("verifier.py"))
+    v = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(v)
+    return v
+
+
 def opened(url):
     return urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=120)
 
@@ -40,11 +50,8 @@ def latest():
     return r["url"], r["last_modified"][:10]
 
 
-def main():
-    p = argparse.ArgumentParser()
-    p.add_argument("--csv", help="a local copy of the CSV")
-    p.add_argument("--du", help="the day of that copy, 2025-12-30")
-    a = p.parse_args()
+def build(a):
+    """The island's cameras from the ministry's list (the newest CSV, or a's local copy), and the day of that list."""
     if a.csv:
         raw, url, day = Path(a.csv).read_bytes(), None, a.du
     else:
@@ -70,7 +77,24 @@ def main():
             "lat": round(y, 5),
         })
     out.sort(key=lambda r: r["numero"])
+    return out, day
+
+
+def main():
+    p = argparse.ArgumentParser()
+    p.add_argument("--csv", help="a local copy of the CSV")
+    p.add_argument("--du", help="the day of that copy, 2025-12-30")
+    # A new camera, or one taken down, changes what the tool and /radars say at once; the list comes once a year
+    # (the ministry's file of 30/12/2025), so between two files nothing is to move: 0.
+    p.add_argument("--verifier", type=int, metavar="SEUIL", help="write nothing: compare with src/routes/radars.json by number, fail past SEUIL cameras added or gone")
+    a = p.parse_args()
+    out, day = build(a)
     dest = ROOT / "src/routes/radars.json"
+    if a.verifier is not None:
+        bundled = json.loads(dest.read_text())
+        print(f"fichier du ministère : {day}, liste embarquée : {bundled['fichier_du']}")
+        sys.exit(verifier().ecarts("Radars fixes", bundled["radars"], out, lambda r: r["numero"], a.verifier,
+                                   "build-radars.py", lambda r: f'{r["numero"]} ({r["type"]}, {r["lon"]}, {r["lat"]})'))
     dest.write_text(json.dumps({
         "fichier_du": day,
         "source": "Ministère de l'Intérieur, « Liste des radars fixes en France », Licence Ouverte 2.0",

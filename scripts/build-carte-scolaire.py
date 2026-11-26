@@ -7,12 +7,14 @@ collège it depends on, or a whole commune with a single sector. Written to a co
 in the browser (public/carte-scolaire/, each name changing with its content, src/vie/carte-scolaire.json): the address typed is
 matched there and never leaves the phone. The collèges' names come from src/vie/ecoles.json (scripts/build-ecoles.py).
 The map changes once a year, before the school year: run this by hand.
-Usage: python3 -I scripts/build-carte-scolaire.py [--json FILE]   (FILE: the API's JSON export, already downloaded)
+Usage: python3 -I scripts/build-carte-scolaire.py [--json FILE] [--verifier]   (FILE: the API's JSON export, already downloaded)
 """
 import argparse
 import gzip
 import hashlib
+import importlib.util
 import json
+import sys
 import urllib.request
 from pathlib import Path
 
@@ -22,6 +24,14 @@ API = f"https://data.education.gouv.fr/api/explore/v2.1/catalog/datasets/{DATASE
 EXPORT = f"{API}/exports/json?where=code_departement%3D%22974%22"
 UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 PARITE = {"PI": 0, "I": 1, "P": 2}
+
+
+def verifier():
+    """scripts/verifier.py, the checks shared by the build scripts (`python3 -I` does not put scripts/ on the path)."""
+    spec = importlib.util.spec_from_file_location("verifier", Path(__file__).with_name("verifier.py"))
+    v = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(v)
+    return v
 
 
 def get(url: str):
@@ -34,7 +44,13 @@ def get(url: str):
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--json")
+    # By the dataset's date: the map is redone once a year before the school year, and its 9 835 sections are 3 Mo;
+    # one request instead of the export.
+    ap.add_argument("--verifier", action="store_true", help="write nothing: fail when the ministry put its map online after the list's")
     a = ap.parse_args()
+    if a.verifier:
+        sys.exit(verifier().plus_recent("Carte scolaire", json.loads((ROOT / "src/vie/carte-scolaire.json").read_text())["maj"],
+                                        get(API)["metas"]["default"]["modified"], "build-carte-scolaire.py", "la publication du ministère"))
     rows = json.load(open(a.json)) if a.json else get(EXPORT)
     maj = get(API)["metas"]["default"]["modified"][:10]
     ecoles = {e["uai"]: e for e in json.load(open(ROOT / "src/vie/ecoles.json"))["etablissements"]}

@@ -11,13 +11,15 @@ accidents. The communes' casualties as one count: the split between « hospitali
 one to another, and the ONISR says the first is no longer certified since 2019. A user whose injury is not given
 (grav -1, some of those who fled since 2021) is counted neither killed nor hurt.
 The ONISR corrects its files after putting them online: the day they were read is kept with them.
-Usage: python3 -I scripts/build-accidents.py [--dossier DIR]
+Usage: python3 -I scripts/build-accidents.py [--dossier DIR] [--verifier]
 """
 import argparse
 import csv
+import importlib.util
 import io
 import json
 import re
+import sys
 import time
 import urllib.request
 from collections import Counter
@@ -36,6 +38,14 @@ COMMUNES = [f"974{n:02d}" for n in range(1, 25)]
 # The file's kinds of road (catr), as the island has them: no motorway, no « route de métropole urbaine ».
 ROUTES = {"2": "nationales", "3": "departementales", "4": "communales"}
 last = [0.0]
+
+
+def verifier():
+    """scripts/verifier.py, the checks shared by the build scripts (`python3 -I` does not put scripts/ on the path)."""
+    spec = importlib.util.spec_from_file_location("verifier", Path(__file__).with_name("verifier.py"))
+    v = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(v)
+    return v
 
 
 def opened(url):
@@ -83,11 +93,21 @@ def year_of(y, car, usagers):
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--dossier", help="a local copy of the files, caract-2025.csv, usagers-2025.csv, lieux-2025.csv…")
+    # By the files' dates, not the counts (one request instead of eleven files, ~110 Mo, a minute apart): a new year,
+    # or one of the files read modified after the build (the ONISR corrects its files after putting them online).
+    p.add_argument("--verifier", action="store_true", help="write nothing: fail on a new year, or on a file read modified after the list was built")
     a = p.parse_args()
     page, by = resources()
     year = max(y for y, f in by.items() if {"car", "usagers", "lieux"} <= set(f))
     years = list(range(year - YEARS + 1, year + 1))
     assert all({"car", "usagers"} <= set(by[y]) for y in years), years
+    if a.verifier:
+        bundled = json.loads((ROOT / "src/routes/accidents.json").read_text())
+        if year > bundled["annee"]:
+            sys.exit(verifier().vieillie("Accidents de la route", "build-accidents.py", f"l'année {year} en ligne, la liste s'arrête à {bundled['annee']}"))
+        read_ones = [by[y][k] for y in years for k in ("car", "usagers")] + [by[year]["lieux"]]
+        sys.exit(verifier().plus_recent(f"Accidents de la route ({year})", bundled["construit"], max(r["last_modified"] for r in read_ones),
+                                        "build-accidents.py", "la dernière modification d'un des fichiers lus"))
 
     def read(y, kind):
         if a.dossier:

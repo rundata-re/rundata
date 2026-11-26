@@ -10,12 +10,16 @@ commune, the estimate is that of its mesh, neighbouring communes grouped with it
 The ANIL asks for caution below 30 ads in the commune or an R² under 0.5. These are rents asked in ads, not rents
 signed; vintages cannot be compared (the meshes change). One vintage a year (published in December): run again then,
 with the new dataset's id and VINTAGE.
-Usage: python3 -I scripts/build-loyers.py [--dir folder with the 4 CSV]
+Usage: python3 -I scripts/build-loyers.py [--dir folder with the 4 CSV] [--verifier]
 """
 import argparse
 import csv
+import importlib.util
 import io
 import json
+import re
+import sys
+import urllib.parse
 import urllib.request
 from datetime import date
 from pathlib import Path
@@ -23,19 +27,48 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 DATASET = "https://www.data.gouv.fr/api/1/datasets/693aa2feed1bf4da603faa49/"
 VINTAGE = 2025
+# Each vintage is a new dataset of the ministry (« … par commune en 2025 »): the check looks for a later one by its title.
+SEARCH = "https://www.data.gouv.fr/api/1/datasets/?" + urllib.parse.urlencode({"q": "carte des loyers", "organization": "534fff8da3a7292c64a77eee", "page_size": 50})
+TITLE = re.compile(r"Indicateurs de loyers d.annonce par commune en (\d{4})")
 UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 # Each file of the dataset, by the end of its name.
 KINDS = {"appartement": "pred-app-", "appartement_1_2_pieces": "pred-app12-", "appartement_3_pieces_et_plus": "pred-app3-", "maison": "pred-mai-"}
+
+
+def verifier():
+    """scripts/verifier.py, the checks shared by the build scripts (`python3 -I` does not put scripts/ on the path)."""
+    spec = importlib.util.spec_from_file_location("verifier", Path(__file__).with_name("verifier.py"))
+    v = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(v)
+    return v
 
 
 def number(s):
     return float(s.replace(",", "."))
 
 
+def vintages():
+    """The vintages the ministry has put online, by their datasets' titles."""
+    found = json.load(urllib.request.urlopen(urllib.request.Request(SEARCH, headers=UA), timeout=120))["data"]
+    return sorted({int(m[1]) for d in found if (m := TITLE.search(d["title"]))})
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dir", help="a folder holding the 4 CSV files (pred-app-…, pred-app12-…, pred-app3-…, pred-mai-…), else downloaded")
+    # By the vintage, not the figures: a vintage is never updated, the next one comes as a new dataset in December.
+    ap.add_argument("--verifier", action="store_true", help="write nothing: fail when the ministry put a later vintage online than the list's")
     args = ap.parse_args()
+    if args.verifier:
+        seen = vintages()
+        bundled = json.loads((ROOT / "src/vie/loyers.json").read_text())["millesime"]
+        print(f"Loyers d'annonce : liste embarquée du millésime {bundled}, millésimes en ligne : {', '.join(map(str, seen)) or 'aucun trouvé'}")
+        if not seen or bundled not in seen:
+            sys.exit(verifier().cassee("Loyers d'annonce", "la recherche sur data.gouv.fr ne retrouve plus le millésime embarqué"))
+        if max(seen) > bundled:
+            sys.exit(verifier().vieillie("Loyers d'annonce", "build-loyers.py", f"le millésime {max(seen)} en ligne",
+                                         consigne="Mettre son jeu dans DATASET et VINTAGE, lancer scripts/build-loyers.py et proposer la PR."))
+        sys.exit(0)
     meta = None if args.dir else json.load(urllib.request.urlopen(urllib.request.Request(DATASET, headers=UA), timeout=120))
     communes = {}
     for kind, prefix in KINDS.items():

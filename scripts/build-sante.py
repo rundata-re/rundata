@@ -8,15 +8,18 @@ rehabilitation sites and the hospital pharmacies. FINESS says neither the openin
 department: the tool says so, and sends to the 15. Coordinates are given in RGR92 / UTM 40S (EPSG:2975).
 A point more than MAX_KM from its address, geocoded by the Géoplateforme (IGN, etalab-2.0), is put at the address: FINESS
 placed a pharmacy of Mont-Vert-les-Hauts in the centre of Saint-Pierre, 7.8 km away (04/11/2026).
-Usage: python3 -I scripts/build-sante.py [--csv etalab-cs1100507-stock.csv | --recaler]
+Usage: python3 -I scripts/build-sante.py [--csv etalab-cs1100507-stock.csv | --recaler | --verifier]
   --recaler: only the check of the points against their addresses, on the list as it is, without reading FINESS again.
+  --verifier: write nothing; fail when data.gouv.fr put a FINESS file online after the list was built.
 """
 import argparse
 import csv
+import importlib.util
 import io
 import json
 import math
 import re
+import sys
 import urllib.request
 from datetime import date
 from pathlib import Path
@@ -39,6 +42,14 @@ SMALL = {"de", "du", "des", "la", "le", "les", "et", "d", "l", "à", "au", "aux"
 KEEP = {"CHU", "CHOR", "GHER", "CH", "ZA", "ZI", "ZAC", "RN", "RD", "CD", "II", "III", "IV"}
 # The company's form before or after a pharmacy's name: « SELARL PHARMACIE DU CENTRE ».
 FORMS = re.compile(r"\b(SELARL|SELEURL|SELAS|SELAFA|SELCA|SARL|EURL|SNC|SAS|SA|SPFPL)\b\.?", re.I)
+
+
+def verifier():
+    """scripts/verifier.py, the checks shared by the build scripts (`python3 -I` does not put scripts/ on the path)."""
+    spec = importlib.util.spec_from_file_location("verifier", Path(__file__).with_name("verifier.py"))
+    v = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(v)
+    return v
 
 
 def utm40s(x, y):
@@ -123,10 +134,20 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--csv", help="the file etalab-cs1100507-stock-*.csv, else downloaded")
     ap.add_argument("--recaler", action="store_true", help="only check the current list's points against their addresses")
+    # By the file's date, not its content: the file is 48 Mo and each new extraction also asks the Géoplateforme for
+    # every address. FINESS puts a new extraction online a few times a year; the build day is the one compared (a
+    # file put online before it was read by it, whatever the extraction date written inside).
+    ap.add_argument("--verifier", action="store_true", help="write nothing: fail when the FINESS file is newer than the list")
     args = ap.parse_args()
     # The communes by INSEE code, as the server spells them (src/places/insee.ts).
     names = {code: nom for nom, code in re.findall(r'"([^"]+)": "(974\d\d)"', (ROOT / "src/places/insee.ts").read_text())}
     dest = ROOT / "src/sante/etablissements.json"
+    if args.verifier:
+        doc = json.loads(dest.read_text())
+        meta = json.load(urllib.request.urlopen(urllib.request.Request(DATASET, headers=UA), timeout=120))
+        put = next((r["last_modified"] for r in meta["resources"] if "cs1100507" in r["url"]), None)
+        print(f"extraction embarquée du {doc['extraction']}")
+        sys.exit(verifier().plus_recent("Établissements de santé (FINESS)", doc["construit"], put, "build-sante.py", "la ressource FINESS"))
     if args.recaler:
         doc = json.loads(dest.read_text())
         placed(doc["etablissements"], names)

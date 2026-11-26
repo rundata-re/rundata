@@ -9,10 +9,13 @@ figure alone. Kept: the latest year, the crèches' (EAJE) rate and places, and t
 (crèches, assistantes maternelles, at home, school before 3). Never a crèche's name nor a person: the list of the
 crèches is on monenfant.fr, which does not allow its reuse.
 One year a year (the Cnaf put 2023 online on 22/01/2026): run again when the next one comes. Seven requests, a minute apart.
-Usage: python3 -I scripts/build-creches.py
+Usage: python3 -I scripts/build-creches.py [--verifier]
 """
+import argparse
 import gzip
+import importlib.util
 import json
+import sys
 import time
 import urllib.parse
 import urllib.request
@@ -33,6 +36,14 @@ EPCI = {
     "249740077": ("la CIVIS", ["97416", "97414", "97405", "97404", "97401", "97424"]),
     "249740085": ("la CASUD", ["97422", "97403", "97412", "97417"]),
 }
+
+
+def verifier():
+    """scripts/verifier.py, the checks shared by the build scripts (`python3 -I` does not put scripts/ on the path)."""
+    spec = importlib.util.spec_from_file_location("verifier", Path(__file__).with_name("verifier.py"))
+    v = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(v)
+    return v
 
 
 def get(url):
@@ -73,8 +84,16 @@ def latest(taux, places, key, scale):
 
 
 def main():
+    ap = argparse.ArgumentParser()
+    # By the dataset's date, not the figures: they are rates and counts of one year, all new at each release, which a
+    # key cannot see change. One request instead of seven a minute apart.
+    ap.add_argument("--verifier", action="store_true", help="write nothing: fail when the Cnaf put its data online after the list's")
+    args = ap.parse_args()
     # The day the Cnaf put the year online.
     meta = get(f"{API}/txcouv_pe_com")["metas"]["default"]
+    if args.verifier:
+        sys.exit(verifier().plus_recent("Places en crèche (CAF)", json.loads((ROOT / "src/vie/creches.json").read_text())["publie_le"],
+                                        meta["modified"], "build-creches.py", "la publication de la Cnaf"))
     year, communes = latest(records("txcouv_pe_com", 'numcom like "974*"'), records("nbpla_pe_com", 'numcom like "974*"'), "numcom", "com")
     y2, epci = latest(records("txcouv_pe_epci", 'numepci like "24974*"'), records("nbpla_pe_epci", 'numepci like "24974*"'), "numepci", "epci")
     y3, dep = latest(records("txcouv_pe_dep", 'numdep = "974"'), records("nbpla_pe_dep", 'numdep = "974"'), "numdep", "dep")

@@ -3,6 +3,7 @@
  * summary (tools/resume.ts) cut from the same copies. Nothing more is fetched; a part without a recent copy links to
  * the page that has it.
  */
+import { horsCompte } from "../vie/decheteries.js";
 import type { Cached } from "../cache.js";
 import * as mf from "../providers/vigilance.js";
 import { ACCUEILS } from "../providers/agenda.js";
@@ -317,7 +318,7 @@ export function aujourdhuiPage(origin: string, p: PlacePage, r: Resume, at: Cach
     ...(r.coupures_electricite?.avis ?? []).map(courantItem),
     ...marketItems(r.marches_du_jour, p.nom, g.aller),
     d
-      ? `<li>Déchèteries : <b>${dFresh.length ? `déchets verts acceptés dans ${dGreen} sur ${dFresh.length}` : "état des bennes à vérifier sur place"}</b> <span class="note">d'après les agents du TCO</span> · <a href="${esc(d.page.replace(/^https:\/\/rundata\.re/, ""))}">les bennes →</a></li>`
+      ? `<li>Déchèteries : <b>${dFresh.length ? `déchets verts acceptés dans ${dGreen} sur ${dFresh.length}` : "état des bennes à vérifier sur place"}</b>${((h) => (h ? ` (${esc(h)})` : ""))(horsCompte(d?.sites.map((x) => ({ nom: x.nom, a_jour: !!x.accepte })) ?? []))} <span class="note">d'après les agents du TCO</span> · <a href="${esc(d.page.replace(/^https:\/\/rundata\.re/, ""))}">les bennes →</a></li>`
       : "",
     r.carburants?.prix_maximum ? `<li>Carburants (prix maximum du mois) : <b>${esc(r.carburants.prix_maximum)}</b> · <a href="/carburants">les prix →</a></li>` : "",
     r.collecte_dechets ? `<li>Collecte des déchets : le jour de votre rue sur ${cheminLien(r.collecte_dechets.page.replace(/^https:\/\/rundata\.re/, ""))}.</li>` : "",

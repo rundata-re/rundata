@@ -329,8 +329,34 @@ export function streetLine(s: Street, today: number): string {
  * name (« Chemin Safer (Grand Coude) », « Impasse Morel (Jean) »): their builders have already put a stretch after
  * « , » (27/11/2026).
  */
-export const streetName = (s: Street) =>
-  !balanced(s.nom) ? s.nom.replace(/\s*\(.*$/, "") : s.epci === "tco" || s.epci === "cirest" || badBracket(s.nom) ? s.nom.replace(/\s*\([^)]*\)$/, "") : s.nom;
+export const streetName = (s: Street) => {
+  const nom = s.epci === "cinor" || s.epci === "casud" ? tidy(s.nom) : s.nom;
+  return !balanced(nom) ? nom.replace(/\s*\(.*$/, "") : s.epci === "tco" || s.epci === "cirest" || badBracket(nom) ? nom.replace(/\s*\([^)]*\)$/, "") : nom;
+};
+
+// The kinds of way a name starts with, and the road numbers: written twice by mistake (« Chemin Chemin Guevara »,
+// « N2002 N2002 »), where « Rue Ylang Ylang », « Allée Monsieur Lou Lou » are names.
+const TWICE = /^(Allée|Avenue|Boulevard|Chemin|Impasse|Lotissement|Résidence|Route|Rue|Ruelle|[A-Z]{1,2}\d+)\s+\1\b/;
+// The short forms and acronyms the CINOR writes, each one seen in its lists, written out (27/11/2026).
+const WRITTEN: [RegExp, string][] = [
+  [/\bShlmr\b/g, "SHLMR"], [/\bSidr\b/g, "SIDR"], [/\bSodiac\b/g, "SODIAC"], [/\bZac\b/g, "ZAC"], [/\(Z\.a\.\)/g, "(ZA)"],
+  [/^Lot\.? /, "Lotissement "], [/\bLot\.? (?=\p{Lu})/gu, "lotissement "], [/\bImm /g, "immeuble "], [/\bch\.commins\b/g, "chemin Commins"],
+  [/\(Rle /g, "(ruelle "], [/\(R (?=\p{Lu})/gu, "(rue "], [/\(Bande de Roulement /g, "(bande de roulement "],
+];
+/**
+ * A name of the CINOR or the CASUD as it should read: a word written twice, the short forms and acronyms, a space
+ * before « , » or between two numbers (« 25b , », « n° 2 -2b »), the number of an impasse put after its name
+ * (« Impasse (1) des Pruniers » → « Impasse des Pruniers (1) »), a bracket left open inside another closed
+ * (« (avenue Mahatma Gandhi (Marine) » → « (avenue Mahatma Gandhi, Marine) »).
+ */
+export function tidy(nom: string): string {
+  let n = nom.replace(TWICE, "$1");
+  for (const [re, w] of WRITTEN) n = n.replace(re, w);
+  n = n.replace(/\s+,/g, ",").replace(/(\d\w*) -(?=\d)/g, "$1-");
+  n = n.replace(/^(\p{L}+) \((\d+)\) (.+)$/u, "$1 $3 ($2)");
+  if (!balanced(n)) n = n.replace(/\(([^()]*) \(([^()]*)\)$/, "($1, $2)");
+  return n;
+}
 
 const balanced = (nom: string) => (nom.match(/\(/g) ?? []).length === (nom.match(/\)/g) ?? []).length;
 
@@ -347,7 +373,8 @@ export function badBracket(nom: string): boolean {
   if (!m) return false;
   if (!balanced(nom)) return true;
   if (m[1].includes(".")) return true;
-  return m[1].split(/[\s'-]+/).some((w) => /^\p{L}{2,}$/u.test(w) && (!VOWEL.test(w) || (!VOWEL.test(w[0]) && !VOWEL.test(w[1]) && !ONSETS.has(w.slice(0, 2).toLowerCase()))));
+  // An acronym (« SHLMR », written out by tidy) is not a short form.
+  return m[1].split(/[\s'-]+/).some((w) => /^\p{L}{2,}$/u.test(w) && !/^\p{Lu}+$/u.test(w) && (!VOWEL.test(w) || (!VOWEL.test(w[0]) && !VOWEL.test(w[1]) && !ONSETS.has(w.slice(0, 2).toLowerCase()))));
 }
 
 // « r. » for « rue », and the other short forms people type.
@@ -369,8 +396,10 @@ export function findStreets(asked: string, commune?: string): Street[] {
   const pool = commune ? STREETS.filter((s) => s.commune === commune) : STREETS;
   // A name's bracket of the CINOR or the CASUD is a part of it (streetName): its words found too (« Chemin Safer Grand
   // Coude »); the TCO's and the CIREST's still set aside.
-  const said = (s: Street) => (s.epci === "tco" || s.epci === "cirest" ? s.nom : s.nom.replace(/[()]/g, " "));
+  // Found by its name as said (tidy) and as the CINOR wrote it (« Lot Duparc »).
+  const said = (s: Street) => (s.epci === "tco" || s.epci === "cirest" ? s.nom : tidy(s.nom).replace(/[()]/g, " "));
+  const raw = (s: Street) => (s.epci === "tco" || s.epci === "cirest" ? s.nom : s.nom.replace(/[()]/g, " "));
   const head = (s: Street) => key(said(s).split(", ")[0]);
-  const rank = (s: Street) => (key(said(s)) === q ? 2 : holds(head(s), words) ? 1 : 0);
-  return pool.filter((s) => holds(key(said(s)), words)).sort((x, y) => rank(y) - rank(x) || x.nom.length - y.nom.length);
+  const rank = (s: Street) => (key(said(s)) === q || key(raw(s)) === q ? 2 : holds(head(s), words) ? 1 : 0);
+  return pool.filter((s) => holds(key(said(s)), words) || holds(key(raw(s)), words)).sort((x, y) => rank(y) - rank(x) || x.nom.length - y.nom.length);
 }

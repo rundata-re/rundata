@@ -57,8 +57,8 @@ describe("the bins' calendars of the West", () => {
     // A bracket the CINOR wrote short or broken left out until those names are written again; the others whole.
     const said = (nom: string) => col.streetName(col.STREETS.find((s) => s.nom === nom)!);
     expect(["Chemin de la Vierge (P.cailloux)", "Rue Général de Gaulle (Z.a.)", "Immeuble les Tamarins (Shlmr)", "Route Piton Cailloux (Rle Turpin)", "N2002 N2002 (avenue Mahatma Gandhi (Marine)"].map(said))
-      .toEqual(["Chemin de la Vierge", "Rue Général de Gaulle", "Immeuble les Tamarins", "Route Piton Cailloux", "N2002 N2002"]);
-    for (const n of ["Impasse des Camélias, sur le chemin Henri Cabeu (secteur B)", "Rue Jean XXIII (Bras Sec)", "Impasse Bailly (Mini-Crèche)", "Lotissement des Maraîchers (Sidr Triskell)"]) expect(said(n)).toBe(n);
+      .toEqual(["Chemin de la Vierge", "Rue Général de Gaulle (ZA)", "Immeuble les Tamarins (SHLMR)", "Route Piton Cailloux (ruelle Turpin)", "N2002 (avenue Mahatma Gandhi, Marine)"]);
+    for (const n of ["Impasse des Camélias, sur le chemin Henri Cabeu (secteur B)", "Rue Jean XXIII (Bras Sec)", "Impasse Bailly (Mini-Crèche)"]) expect(said(n)).toBe(n);
     for (const s of col.STREETS) expect(col.streetName(s), s.nom).not.toMatch(/\([^)]*$|\.\)$/);
     for (const t of ["(P.cailloux)", "(Shlmr)", "(Rle Turpin)", "(Z.a.)", "N2002 N2002 ("]) expect(page, t).not.toContain(t);
     // And in the tool's answer.
@@ -360,5 +360,33 @@ describe("the tool and the pages", () => {
     expect(resume(pageOf("saint-denis")!, {} as never, NOW).collecte_dechets?.texte).toBe("Collecte des déchets : le jour de votre rue sur rundata.re/collecte/saint-denis.");
     expect(resume(pageOf("le-tampon")!, {} as never, NOW).collecte_dechets?.texte).toBe("Collecte des déchets : le jour de votre rue sur rundata.re/collecte/le-tampon.");
     expect(resume(pageOf("saint-pierre")!, {} as never, NOW).collecte_dechets).toBeUndefined();
+  });
+});
+
+describe("the names of the CINOR and the CASUD as they read (27/11/2026)", () => {
+  const said = (nom: string) => col.streetName(col.STREETS.find((s) => s.nom === nom)!);
+  it("writes once a word written twice, out the short forms and acronyms, and without a space before « , »", () => {
+    expect([
+      "N2002 N2002 (avenue Mahatma Gandhi (Marine)", "Chemin Chemin Guevara", "Route Route de Bellevue, chemin Robert", "Boulevard Boulevard Lenepveu",
+      "Lotissement des Maraîchers (Sidr Triskell)", "Zac Triangle", "Lot Duparc", "Rue Heliconia (Lot Palme Royale)", "Rue Raoûl Nativel, ex partie chemin Vierge Imm Sodiac",
+      "Impasse Rameya (R Notre Dame des Rochers)", "Chemin des Niaoulis (Bande de Roulement du 91 au 155)", "Impasse (1) des Pruniers",
+      "Lotissement Equinoxes, n° 15-15b-17-17b-19-19b-21-21b-23-23b-25-25b , ch.commins", "Chemin Fontaine, n° 2 -2b-4-6-10-10b",
+    ].map(said)).toEqual([
+      "N2002 (avenue Mahatma Gandhi, Marine)", "Chemin Guevara", "Route de Bellevue, chemin Robert", "Boulevard Lenepveu",
+      "Lotissement des Maraîchers (SIDR Triskell)", "ZAC Triangle", "Lotissement Duparc", "Rue Heliconia (lotissement Palme Royale)", "Rue Raoûl Nativel, ex partie chemin Vierge immeuble SODIAC",
+      "Impasse Rameya (rue Notre Dame des Rochers)", "Chemin des Niaoulis (bande de roulement du 91 au 155)", "Impasse des Pruniers (1)",
+      "Lotissement Equinoxes, n° 15-15b-17-17b-19-19b-21-21b-23-23b-25-25b, chemin Commins", "Chemin Fontaine, n° 2-2b-4-6-10-10b",
+    ]);
+    // Names that are names: kept as they are.
+    for (const n of ["Rue Ylang Ylang", "Allée Monsieur Lou Lou", "Impasse des Pruniers", "Rue (chemin) Lanternes"]) expect(said(n)).toBe(n);
+    // Nowhere a word of a kind of way twice, a space before « , », a short form the CINOR wrote.
+    for (const s of col.STREETS.filter((x) => x.epci === "cinor" || x.epci === "casud")) {
+      expect(col.streetName(s), s.nom).not.toMatch(/^(\p{L}+|N\d+) \1\b| ,|\b(?:Lot|Imm|Rle|Shlmr|Sidr|Zac)\b|\bch\./u);
+    }
+  });
+  it("finds a street by its name as it reads and as the CINOR wrote it", () => {
+    for (const q of ["Lotissement Duparc", "Lot Duparc"]) expect(col.findStreets(q).map(col.streetName), q).toContain("Lotissement Duparc");
+    expect(col.findStreets("N2002 avenue Mahatma Gandhi").map(col.streetName)).toContain("N2002 (avenue Mahatma Gandhi, Marine)");
+    expect(col.findStreets("Chemin Guevara").map(col.streetName)[0]).toBe("Chemin Guevara");
   });
 });

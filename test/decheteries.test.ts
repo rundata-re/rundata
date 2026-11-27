@@ -236,4 +236,15 @@ describe("the CASUD's state of the déchèteries", () => {
     const paul = resume(pageOf("saint-paul")!, { dechets: mute } as never, NOW);
     expect(paul.decheteries!.sites.every((x) => x.etat !== "non disponible")).toBe(true);
   });
+
+  it("names the site left out of the count, its state older than 6 h, on the tile and in the day's summary (27/11/2026)", () => {
+    const morning = { ...copy, value: { etats: read, absents: [], sources: [] } };
+    const tampon = communePage("https://rundata.re", pageOf("le-tampon")!, { place: null, dechets: morning }, AT);
+    expect(tampon).toMatch(/<p class="tv">4 <span class="mc">dé\u00adchè\u00adte\u00adries<\/span><\/p><p class="td">d'après les agents : déchets verts acceptés dans \d sur 3, encombrants dans \d sur 3 ; sans mise à jour depuis 6\u00a0h, hors du compte\u00a0: Point d'apport de Bois Court<\/p>/);
+    expect(resume(pageOf("le-tampon")!, { dechets: morning } as never, AT).resume).toMatch(/déchets verts acceptés dans \d déchèteries? sur 3 à jour\u00a0;/);
+    // Every site counted, or none: nothing more said.
+    expect(resume(pageOf("saint-joseph")!, { dechets: morning } as never, AT).resume).not.toMatch(/à jour\u00a0;/);
+    const joseph = communePage("https://rundata.re", pageOf("saint-joseph")!, { place: null, dechets: morning }, AT);
+    expect(joseph).not.toContain("hors du compte");
+  });
 });

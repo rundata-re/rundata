@@ -741,7 +741,7 @@ describe("coupures d'eau", () => {
     expect(c.resume).toContain("Source : rundata.re, d'après l'ARS La Réunion (données Hub'Eau)");
     // Saint-Joseph: Sudéau's notices posted by the town, read on its site since 24/11/2026.
     const sj = body(await coupuresEau(cache(), "Saint-Joseph", NOW));
-    expect(sj.resume).toBe("Pas d'avis de coupure récent ou à venir à Saint-Joseph sur le site de la ville de Saint-Joseph, lu le 24/10 à 08:00\u00a0: https://saintjoseph.re/. D'après l'ARS, Sudéau distribue l'eau à Saint-Joseph. Une coupure peut être annoncée ailleurs.");
+    expect(sj.resume).toBe("Pas d'avis de coupure récent ou à venir à Saint-Joseph sur le site de la ville de Saint-Joseph, lu le 24/10 à 08:00\u00a0: https://saintjoseph.re/. D'après l'ARS, Sudéau distribue l'eau à Saint-Joseph. Les avis de coupure de Saint-Joseph sont publiés par Sudéau sur son site, dans ses communiqués\u00a0: https://www.sudeau.re/. La mairie peut aussi vous renseigner.");
     expect(sj.avis_lus_sur).toEqual({ publie_par: "la ville de Saint-Joseph", distributeur: "Sudéau", lien: "https://saintjoseph.re/" });
     expect(sj.distributeur).toBeUndefined();
     // Two distributors named by the ARS (L'Étang-Salé): runéo's notices are read, the sharing is said.

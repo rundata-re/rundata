@@ -123,12 +123,14 @@ export const SHARED: Shared[] = [
   // and one read more of the data center's cache. 21 with the page of Sainte-Suzanne's orders allowing runéo's works
   // (providers/arretes-travaux.ts: the data center's cache read, the page, the cache written). 23 since 21/11/2026:
   // those orders are an island copy, read and written in KV too (`islandRead`). 24 since 24/11/2026: Le Tampon's site, one
-  // request more; 26 since the same day: Saint-Joseph's and Les Avirons's sites.
+  // request more; 26 since the same day: Saint-Joseph's and Les Avirons's sites. 27 since 27/11/2026, cold only: Saint-Joseph's
+  // notices are first looked for in the agendas' bundle (one read of KV, providers/avis-eau.ts `saintJoseph`), then its
+  // site read once while the hourly read of its news has kept none; warm, that read of KV replaces the site's.
   // Every 15 minutes since 21/11/2026, at minutes 10, 25, 40 and 55, the rivers' (30 before): the notices are read by
   // this copy's build only (providers/avis-eau.ts `lecture`), once their copy is 15 minutes old, and the pages serve it.
   // Beside the copies after it (`alongside`): a commune's site read by another copy of the event a minute before is
   // read after its turn (http.ts `sharedSite`), and the others need not wait for it.
-  { key: "web:coupures", build: buildCoupures, every: 15, cold: 26, cpu: 60, offset: 10, alongside: true },
+  { key: "web:coupures", build: buildCoupures, every: 15, cold: 27, cpu: 60, offset: 10, alongside: true },
   // The index (3), the copy of the measures at the stations (3: the data center's cache, KV, written back), the copy
   // of the sensors (1: KV, kept in memory).
   // Every quarter of an hour from 10 h to 14 h while the day's forecast is not out (tools/air.ts `airEvery`): 3 KV writes

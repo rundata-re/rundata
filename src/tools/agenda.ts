@@ -433,7 +433,8 @@ export async function refreshPlanned(cache: Cache, now = new Date()): Promise<{ 
     return out;
   }
   const bundle = await src.planifiees(cache);
-  const direct: src.AgendaStore = { get: async (_k, _s, load) => ({ value: await load(), fetchedAt: now, stale: false }) };
+  // `set`: what a reading gives besides its events, kept in the bundle (Saint-Joseph's water notices, src.news `aussi`).
+  const direct: src.AgendaStore = { get: async (_k, _s, load) => ({ value: await load(), fetchedAt: now, stale: false }), set: (k, v) => bundle.set(k, v) };
   const from = Date.now();
   for (const agenda of planned) {
     const old = bundle.peek(`agenda:${agenda.id}`);

@@ -28,7 +28,8 @@ import { inReunion } from "../geo.js";
 import { INSEE } from "../places/insee.js";
 import { normalize, resolvePlace } from "../places/resolve.js";
 import { type SourceInfo, UpstreamError } from "../types.js";
-import { communesIn, strip } from "./avis-eau.js";
+import { communesIn, parseSaintJoseph, strip } from "./avis-eau.js";
+import { AVIS_SAINT_JOSEPH, PLANIFIES, planifiees } from "./agendas-planifies.js";
 import { CIREST as EST_CIREST } from "../eau/distributeurs.js";
 import { annonceEvenement, avisDeService, extrait, lead, monthOf, premiere, statusOf, type Statut } from "./agenda-mots.js";
 import { SALLES, SOURCE as SALLES_SOURCE, TIMEOUT_MS, tokens } from "./salles.js";
@@ -179,19 +180,16 @@ export const programmeSportif = (e: Pick<Evenement, "titre">) => PROGRAMME_SPORT
  * Where an agenda keeps its copy: its entry in the bundle of all the agendas (tools/agenda.ts), one read and one write
  * per invocation whatever their number. A `Cache` will do too.
  */
-export type AgendaStore = Pick<Bundle, "get">;
+/** `set`: where the scheduled event keeps what a reading gives besides its events (`news`, `aussi`). */
+export type AgendaStore = Pick<Bundle, "get"> & { set?: Bundle["set"] };
 
 // Every agenda's copy in one entry of the cache: one read and at most one write per invocation, whatever their number
 // (a read and a write each would take two subrequests per agenda). An isolate looks for another's copies once a minute.
 // The data center's cache: those of the agendas read by the questions.
 export const BUNDLE = "agendas";
 export const BUNDLE_SYNC_SECONDS = 60;
-// Those of the agendas read by the scheduled event (`planifie`), in KV, written by it only: it runs in any data center,
-// and the questions are answered in all of them (in the data center's cache, its copies were seen only where it ran).
-export const PLANIFIES = "agendas:planifies";
-
-/** The copies of the agendas read by the scheduled event: one read of KV per isolate and per minute at most. */
-export const planifiees = (cache: Pick<Cache, "bundle">) => cache.bundle(PLANIFIES, BUNDLE_SYNC_SECONDS, true);
+// Those of the agendas read by the scheduled event (`planifie`), in KV: providers/agendas-planifies.ts.
+export { PLANIFIES, planifiees };
 
 /** How long the copy of an agenda read by the scheduled event is served: past it, a tournament may have been called off. */
 export const PLANIFIE_MAX_AGE_SECONDS = 48 * 3600;
@@ -810,7 +808,8 @@ export const NEWS_GARDE_SECONDS = 110 * 60;
 /** Whether a page of news is its list of articles: WordPress's JSON, a feed, Salazie's loop of posts. */
 export const listeLue = (body: string) => /^\s*\[/.test(body) || /<(?:rss|feed)\b/.test(body) || /\be-loop-item\b/.test(body);
 
-function news(id: string, nom: string, site: string, url: string, commune: string, parse: (body: string, now: Date) => Evenement[], licence = "Information publique (actualités municipales)"): Agenda {
+/** `aussi`: a second parse of the same reading, kept under `cle` in the store (Saint-Joseph's water notices, 27/11/2026). */
+function news(id: string, nom: string, site: string, url: string, commune: string, parse: (body: string, now: Date) => Evenement[], licence = "Information publique (actualités municipales)", aussi?: { cle: string; lire: (body: string) => unknown }): Agenda {
   const source: SourceInfo = {
     id: `actus_${id}`,
     nom: `Actualités de la ${nom} (événements annoncés)`,
@@ -831,6 +830,7 @@ function news(id: string, nom: string, site: string, url: string, commune: strin
     load: (cache, now) => cache.get(`agenda:${id}`, FRESH_SECONDS, async () => {
       const body = await getText(source.id, url, TIMEOUT_MS, HEADERS);
       if (!listeLue(body)) throw new Error("liste des articles illisible");
+      if (aussi) cache.set?.(aussi.cle, aussi.lire(body));
       return parse(body, now);
     }),
   };
@@ -845,8 +845,9 @@ export const ACTUS_MAIRIES: Agenda[] = [
   { ...news("cilaos", "Ville de Cilaos", "https://ville-cilaos.fr/", `https://ville-cilaos.fr${WP_NEWS}&categories=17`, "Cilaos",
     (body, now) => parseWpNews(JSON.parse(body), "Ville de Cilaos", "Cilaos", now)), site_commune: "site de la commune de Cilaos", faits: true },
   // Its feed of articles; not `?page=ical`, whose dates are the articles' publication, not events.
+  // Read once an hour for its news and for the water's notices it posts too (providers/agendas-planifies.ts).
   { ...news("saint_joseph", "Ville de Saint-Joseph", "https://saintjoseph.re/", "https://saintjoseph.re/spip.php?page=backend", "Saint-Joseph",
-    (body, now) => parseSpipNews(body, "Ville de Saint-Joseph", "Saint-Joseph", now)), site_commune: "site de la commune de Saint-Joseph", faits: true },
+    (body, now) => parseSpipNews(body, "Ville de Saint-Joseph", "Saint-Joseph", now), undefined, { cle: AVIS_SAINT_JOSEPH, lire: parseSaintJoseph }), site_commune: "site de la commune de Saint-Joseph", faits: true },
   // Saint-Denis and Saint-Pierre: the commune's public information (autorisations.ts « publique », 20/11/2026); no
   // agenda on either site. Saint-Denis's SPIP feed (« À la une »); Saint-Pierre's Drupal feed, whose events give their
   // start and end as data (parseDrupalNews).

@@ -128,7 +128,7 @@ export function waterLive(p: PlacePage, w: WaterCopies): Live | undefined {
   const valeur = x.dry ? upper(NE_PAS_BOIRE()) : cuts ? plural(cuts, "avis de coupure", "avis de coupure") : x.avis.length ? plural(x.avis.length, "avis sur l'eau", "avis sur l'eau") : x.muet ? "Site sans réponse" : x.distributeur?.avis ? "Pas de coupure annoncée" : "Site pas lu";
   const detail = [
     // When its notices were read, unless its site did not answer: that says its own hour.
-    x.muet ? html`${x.muet.court}` : x.distributeur?.avis || x.avis.length ? html`avis lus ${leAt(lusLe(w.coupures))}` : "",
+    x.muet ? html`${x.muet.court}` : x.distributeur?.avis || x.avis.length ? html`avis lus ${leAt(lusLe(w.coupures, x.distributeur?.site))}` : "",
     x.distributeur ? (x.distributeur.partage ? html`distributeurs ${x.distributeur.partage.par.map((d) => d.nom).join(" et ")}` : html`distributeur ${x.distributeur.nom}`) : "",
     x.secheresse ? html`sécheresse : ${x.secheresse.eau_du_robinet ?? "aucune restriction"}` : "",
     x.robinet ? (x.robinet.non_conformes_6_mois ? html`robinet : ${plural(x.robinet.non_conformes_6_mois, "analyse non conforme", "analyses non conformes")} en 6 mois` : x.robinet.analyses_6_mois ? "robinet : analyses conformes" : "") : "",
@@ -169,7 +169,7 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
   const url = `${origin}${path}`;
   const x = waterOf(p.nom, w);
   const dist = x.distributeur;
-  const at = w.coupures ? leAt(lusLe(w.coupures)) : "";
+  const at = w.coupures ? leAt(lusLe(w.coupures, dist?.site)) : "";
   const by = [...new Set(x.avis.map((n) => n.distributeur))].join(", ") || dist?.nom || "le distributeur";
   const where = a(p.nom);
   // Who publishes the notices read (the CIREST, a mairie), else the distributor; a mairie only linked to (LIENS).
@@ -201,7 +201,7 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
   const noNotice = (e = (t: string) => t) => `Pas d'avis de coupure récent ou à venir publié par ${e(publisher!)}${named(publisher!) ? "" : ` ${e(where)}`}, lu ${e(at)}.`;
   // Not read again for a while (tools/copie-ancienne.ts): said first, the publisher's site and the mairie's linked when
   // known (wording validated on 23/11/2026); the mairie alone when the notices read are its own.
-  const ancienne = w.coupures && (dist?.avis || x.avis.length) ? copieAncienne("eau", new Date(lusLe(w.coupures)), now, "page") : undefined;
+  const ancienne = w.coupures && (dist?.avis || x.avis.length) ? copieAncienne("eau", new Date(lusLe(w.coupures, dist?.site)), now, "page") : undefined;
   const siteDe = (nom: string, href?: string): Html => (href ? html`<a href="${href}" rel="noopener">${nom}</a>` : html`${nom}`);
   const pubSite = dist?.avis ? dist.site : siteDist ?? undefined;
   // « de <a>La Créole</a> », the article out of the link (validated wording: « Voir le site de runéo ou de la mairie »).

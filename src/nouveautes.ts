@@ -59,6 +59,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded for the site): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-27T18:57:00+04:00", texte: "Aujourd'hui, au Tampon et à Saint-Joseph\u00a0: l'état des bennes est attribué aux agents de la CASUD, et non plus au TCO." },
   { date: "2026-11-27T18:42:00+04:00", texte: "Collecte\u00a0: noms de rue de la CINOR et de la CASUD écrits en entier\u00a0; la tuile des déchèteries nomme celle qui n'est pas à jour." },
   { date: "2026-11-27T11:22:00+04:00", texte: "Coupures d'eau\u00a0: quand le site de Saint-Joseph ne répond pas, la fiche dit aussi où Sudéau publie ses avis." },
   { date: "2026-11-27T11:01:00+04:00", texte: "Antennes\u00a0: sur la carte, les zones sans couverture déclarée sont hachurées, bien visibles sur la photo, même sur un téléphone." },

@@ -84,6 +84,20 @@ describe("actualités", () => {
     ]) expect(sujetsOf(titre + suite, titre), titre).toContain("mobilisation");
   });
 
+  it("says no « mobilisation » for who rallies to a cause, but for a protest's cause, a figure or a word of the streets (27/11/2026)", () => {
+    // A text BUILT for this test, after a college's lead seen in the tool on 26/11/2026 under « manifestations » (« une
+    // importante mobilisation réunissant… »), whose headline and media are no longer known: not a real article.
+    const construit = "Collège : une importante mobilisation réunissant parents et enseignants pour une cause";
+    expect(sujetsOf(construit, construit)).not.toContain("mobilisation");
+    for (const t of ["Une mobilisation rassemblant les familles du quartier autour de l'école", "Forte mobilisation regroupant bénévoles et associations pour le Téléthon"])
+      expect(sujetsOf(t, t), t).not.toContain("mobilisation");
+    for (const [titre, suite] of [
+      ["Une mobilisation réunissant 3 000 personnes dans les rues de Saint-Denis", ""],
+      ["Mobilisation réunissant les syndicats contre la réforme des retraites", ""],
+      ["Une importante mobilisation réunissant parents et enseignants", " Les parents bloquent l'entrée du collège depuis ce matin."],
+    ]) expect(sujetsOf(titre + suite, titre), titre).toContain("mobilisation");
+  });
+
   let down: RegExp | undefined;
   let asked: string[];
   beforeEach(() => {

@@ -605,7 +605,8 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
     power.map((x) => shortOf(x, now)).join("\u00a0; "),
     markets.length ? `marché aujourd'hui : ${markets.map((m) => `${m.nom} ${m.horaires_aujourd_hui}`).join(", ")}` : "",
     prices && fuelShort(prices) ? `carburants (prix maximum) : ${fuelShort(prices)}` : "",
-    fresh.length ? `déchets verts acceptés dans ${green} déchèterie${green > 1 ? "s" : ""} sur ${fresh.length}` : "",
+    // « sur 3 à jour » when a site is left out of the count: each site says its own time in `decheteries` (27/11/2026).
+    fresh.length ? `déchets verts acceptés dans ${green} déchèterie${green > 1 ? "s" : ""} sur ${fresh.length}${fresh.length < sites!.length ? " à jour" : ""}` : "",
     bins ? `collecte des déchets : le jour de votre rue sur rundata.re/collecte/${col.communeSlug(nom)}` : "",
     "pharmacie de garde : 3237.fr",
   ].filter(Boolean).join("\u00a0; ") + ".";

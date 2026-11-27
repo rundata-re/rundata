@@ -325,7 +325,7 @@ function wasteLive(p: PlacePage, data: Cached<DechetsAnswer> | null | undefined,
   return {
     valeur: `${here.length} déchèterie${here.length > 1 ? "s" : ""}`,
     detail: fresh.length
-      ? `d'après les agents : déchets verts acceptés dans ${taking("déchets verts")} sur ${fresh.length}, encombrants dans ${taking("encombrants")} sur ${fresh.length}`
+      ? `d'après les agents : déchets verts acceptés dans ${taking("déchets verts")} sur ${fresh.length}, encombrants dans ${taking("encombrants")} sur ${fresh.length}${((h) => (h ? ` ; ${h}` : ""))(dech.horsCompte(here))}`
       : unknown ? "état des bennes non disponible pour le moment" : "état des bennes à vérifier sur place",
   };
 }

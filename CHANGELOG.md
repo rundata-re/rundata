@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Vendredi 27 novembre 2026
 
+- Collecte : noms de rue de la CINOR et de la CASUD écrits en entier ; la tuile des déchèteries nomme celle qui n'est pas à jour.
 - Coupures d'eau : quand le site de Saint-Joseph ne répond pas, la fiche dit aussi où Sudéau publie ses avis.
 - Antennes : sur la carte, les zones sans couverture déclarée sont hachurées, bien visibles sur la photo, même sur un téléphone.
 - Coupures d'eau : la fiche de Saint-Joseph dit aussi où Sudéau, le distributeur, publie ses avis.

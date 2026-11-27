@@ -100,6 +100,15 @@ export interface SiteNow extends Site {
   refuse: string[];
 }
 
+/**
+ * The sites left out of « acceptés dans N sur M », said by their name: « 4 déchèteries … dans 3 sur 3 » read as if the
+ * fourth were not there (Bois Court, 27/11/2026). Empty when every site is counted, or none.
+ */
+export function horsCompte(sites: { nom: string; a_jour: boolean }[]): string {
+  const out = sites.filter((s) => !s.a_jour);
+  return out.length && out.length < sites.length ? `sans mise à jour depuis plus de ${STALE_HOURS}\u00a0h, hors du compte\u00a0: ${out.map((s) => s.nom).join(", ")}` : "";
+}
+
 /** Each site with what its skips take, as recent as the staff's last update allows (`etats`: the TCO's and the CASUD's). */
 export function sitesNow(etats: tco.Etat[] | undefined, now: Date): SiteNow[] {
   const byLink = new Map((etats ?? []).map((e) => [e.lien, e]));

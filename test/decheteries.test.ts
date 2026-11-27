@@ -248,6 +248,13 @@ describe("the CASUD's state of the déchèteries", () => {
     const counted = day.decheteries!.sites.filter((x) => x.accepte).length;
     expect(counted).toBe(3);
     expect(aujourdhuiPage("https://rundata.re", pageOf("le-tampon")!, day, null)).toMatch(new RegExp(`<b>déchets verts acceptés dans \\d sur ${counted}</b> \\(sans mise à jour depuis plus de 6\u00a0h, hors du compte\u00a0: Point d&#39;apport de Bois Court\\)`));
+    // Its skips said by the CASUD's staff, not the TCO's (27/11/2026).
+    for (const c of ["le-tampon", "saint-joseph"]) {
+      const html = aujourdhuiPage("https://rundata.re", pageOf(c)!, resume(pageOf(c)!, { dechets: morning } as never, AT), null);
+      expect(html, c).toContain("<span class=\"note\">d'après les agents de la CASUD</span>");
+      expect(html, c).not.toMatch(/agents du (?:<abbr[^>]*>)?TCO/);
+    }
+    expect(aujourdhuiPage("https://rundata.re", pageOf("saint-paul")!, resume(pageOf("saint-paul")!, { dechets: morning } as never, AT), null)).toMatch(/<span class="note">d'après les agents du <abbr title="Territoire de la Côte Ouest">TCO<\/abbr><\/span>/);
     // Every site counted, or none: nothing more said.
     expect(resume(pageOf("saint-joseph")!, { dechets: morning } as never, AT).resume).not.toMatch(/à jour\u00a0;/);
     expect(aujourdhuiPage("https://rundata.re", pageOf("saint-joseph")!, resume(pageOf("saint-joseph")!, { dechets: morning } as never, AT), null)).toMatch(/<b>déchets verts acceptés dans \d sur 1<\/b> <span class="note">/);

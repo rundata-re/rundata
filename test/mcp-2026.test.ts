@@ -99,6 +99,19 @@ describe("/mcp in the 2026-07-28 revision", () => {
     expect(method.hits).toEqual([expect.objectContaining({ name: "tools/list", outcome: "rpc -32020", message: expect.stringMatching(/headers and body disagree/) })]);
   });
 
+  it("serves on the 2025 path an envelope that names a 2025 version, as before the SDK 2", async () => {
+    // A probe's tools/list as it reached the site: « 2025-06-18 » in the header and in the envelope (27/11/2026).
+    const meta = { ...META, "io.modelcontextprotocol/protocolVersion": "2025-06-18" };
+    const probe = await ask({ jsonrpc: "2.0", id: 2, method: "tools/list", params: { _meta: meta } }, { "mcp-protocol-version": "2025-06-18" });
+    expect(probe.status).toBe(200);
+    expect(probe.json.result.tools).toEqual((await legacy(2, "tools/list")).json.result.tools);
+    expect(probe.hits).toEqual([expect.objectContaining({ name: "tools/list", outcome: "ok" })]);
+    // Without the header alike; a version past 2026-07-28 stays the SDK's to refuse, with the versions it serves.
+    expect((await ask({ jsonrpc: "2.0", id: 2, method: "tools/list", params: { _meta: meta } }, {})).status).toBe(200);
+    const future = await ask({ jsonrpc: "2.0", id: 2, method: "tools/list", params: { _meta: { ...META, "io.modelcontextprotocol/protocolVersion": "2099-01-01" } } }, { "mcp-method": "tools/list" });
+    expect([future.status, future.json.error.code]).toEqual([400, -32022]);
+  });
+
   it("keeps the limit of a body's size, before the SDK reads it", async () => {
     const big = JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list", params: { _meta: META, x: "a".repeat(4 * 1024 * 1024) } });
     const r = await ask(big, { "mcp-protocol-version": V, "mcp-method": "tools/list" });

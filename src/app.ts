@@ -95,12 +95,21 @@ export function batchRefused(version: string | null, body: unknown): string | un
 
 // The first revision of the per-request envelope, and its key: a request without either is 2025 traffic, sent as it was
 // without asking the SDK (isLegacyRequest), which cost about 1 ms of CPU a request (26/11/2026).
+// An envelope that names a 2025 version (a probe sends tools/list so, « 2025-06-18 » in both the header and `_meta`) is
+// 2025 traffic too: on the 2026 path the SDK refused it -32022 with only 2026-07-28 « supported », though the 2025
+// path serves that version, and served it before the SDK 2 (27/11/2026).
 const FIRST_MODERN = "2026-07-28";
 const ENVELOPE = "io.modelcontextprotocol/protocolVersion";
 export function mayBeModern(version: string | null, body: unknown): boolean {
   if (version && version >= FIRST_MODERN) return true;
   const meta = (m: unknown) => (m && typeof m === "object" ? (m as { params?: { _meta?: unknown } }).params?._meta : undefined);
-  return (Array.isArray(body) ? body : [body]).some((m) => { const x = meta(m); return !!x && typeof x === "object" && ENVELOPE in x; });
+  return (Array.isArray(body) ? body : [body]).some((m) => {
+    const x = meta(m);
+    if (!x || typeof x !== "object" || !(ENVELOPE in x)) return false;
+    const named = (x as Record<string, unknown>)[ENVELOPE];
+    // A version that is not a string, or one past 2026-07-28, is the SDK's to answer.
+    return typeof named !== "string" || named >= FIRST_MODERN;
+  });
 }
 
 /** A refusal before the transport, in its own shape. */

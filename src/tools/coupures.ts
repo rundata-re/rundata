@@ -372,7 +372,8 @@ export async function coupuresEau(cache: Cache, lieu: string | undefined, now = 
       : covered ? `Pas d'avis de coupure récent ou à venir ${a(commune)}${where}. ${ailleurs}`
       : unread ? `Pas d'avis en ligne lisible pour ${commune} : rundata.re ne lit pas les avis de coupure de ${unread.nom}, qui y distribue l'eau. ${siteDist ? `Voir le site ${deNom(unread.nom)}, rubrique «\u00a0L'eau dans ma commune\u00a0»\u00a0: ${siteDist}, ou la mairie.` : `Voir ${unread.nom} ou la mairie.`}`
       : `Pas d'avis en ligne lisible pour ${commune} : voir la mairie ou le distributeur d'eau.`,
-    mute ? mute.texte : "",
+    // Silent, its distributor's site said all the same (GUIDES_AVIS), in the words of « Pas d'avis » (27/11/2026).
+    mute ? (siteGuide ? `${mute.texte} ${ailleurs}` : mute.texte) : "",
     sharedText ?? "",
   ].filter(Boolean).join(" ");
   // Sainte-Suzanne: the orders allowing runéo's works, a block of their own, never a notice (providers/arretes-travaux.ts).

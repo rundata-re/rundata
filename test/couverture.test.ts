@@ -3,6 +3,7 @@ import data from "../src/vie/couverture.json" with { type: "json" };
 import { antennesPage } from "../src/web/antennes.js";
 import { couvertureFile, couverturePath, couvertureScript, MOTS } from "../src/web/couverture.js";
 import { estDeclare } from "../src/web/scripts-declares.js";
+import { CSS } from "../src/web/style.js";
 
 /** The section's buttons, map and caption, as the script sees them; `fetch` answers with `answer`. */
 function run(answer: Record<string, string> | null) {
@@ -103,5 +104,14 @@ describe("/antennes, the zones with no declared coverage (Arcep)", () => {
     await s.pick("OF", "4g");
     expect(s.part.textContent).toBe("La carte n'a pas pu être chargée\u00a0: réessayez.");
     expect(s.path.d).toBe(data.couches["aucun-4g"]);
+  });
+
+  it("draws the zones in a solid colour, the same in light and dark, that the aerial photo has nowhere (27/11/2026)", () => {
+    // A pale grey at 60 % read as clouds on the photo at 390 px (dark), a navy as its shadows (light): a magenta, no red
+    // nor orange (they say danger on the site), no outline (a white one made the small zones look like clouds again).
+    const regles = CSS.match(/\.couvmap\{--cv:([^}]+)\}/g) ?? [];
+    expect(regles).toEqual([".couvmap{--cv:#c026d3}"]);
+    expect(CSS).toMatch(/\.couvmap \.trou\{fill:var\(--cv\);fill-opacity:\.9;/);
+    expect(CSS).not.toMatch(/\.couvmap \.trou\{[^}]*stroke/);
   });
 });

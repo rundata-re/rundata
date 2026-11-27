@@ -88,12 +88,25 @@ export const LIENS: Record<string, { par: string; site: string; libelle: string 
  * - Les Avirons: CISE Réunion, edited by Saur, whose terms allow a link to the home page only (art. 8) and forbid
  *   copying without its written agreement (art. 5); the mairie stopped relaying its notices on 18/11/2024. Its site is
  *   read since 24/11/2026 (MAIRIES): its bandeau follows « Pas d'avis », its site in the tool's answer.
+ * - Saint-Joseph (27/11/2026): Sudéau, edited by Saur too (read on 14/11/2026, same terms: its home page linked only),
+ *   whose notices the mairie relays seldom (none since 16/07/2020); the CASUD's page « L'eau potable » sends to Sudéau's
+ *   communiqués. Its site is not read: nothing is said of it beyond that (no rubric, no path).
+ *   Its mairie's site read (MAIRIES), as at Les Avirons: its bandeau follows « Pas d'avis ».
  */
-export const GUIDES_AVIS: Readonly<Record<string, { bandeau: string; distributeur: string; texte: string }>> = {
+/** `ou`: where on the distributor's site, after « sur son site, » in the tool's answer. */
+export const GUIDES_AVIS: Readonly<Record<string, { ou: string; bandeau: string; distributeur: string; texte: string }>> = {
   "Les Avirons": {
+    ou: "rubrique «\u00a0L'eau dans ma commune\u00a0»",
     bandeau: `Les avis de coupure des Avirons sont publiés par CISE Réunion sur <a href="https://www.cise-reunion.re/" rel="noopener">son site</a>, rubrique «\u00a0L'eau dans ma commune\u00a0». La mairie peut aussi vous renseigner.`,
     distributeur: `Ses avis de coupure sont publiés sur <a href="https://www.cise-reunion.re/" rel="noopener">son site</a>, rubrique «\u00a0L'eau dans ma commune\u00a0».`,
     texte: `Les avis de coupure et de travaux des Avirons sont publiés par CISE Réunion, le distributeur, sur son site\u00a0: <a href="https://www.cise-reunion.re/" rel="noopener">cise-reunion.re</a>, rubrique «\u00a0L'eau dans ma commune\u00a0», puis Les Avirons (97425). Chaque avis y donne les secteurs, les horaires et la consigne pour l'eau à la reprise. rundata.re ne les reprend pas encore. La <a href="https://www.mairie-avirons.fr/" rel="noopener">mairie des Avirons</a> peut aussi vous renseigner.`,
+  },
+  "Saint-Joseph": {
+    // Only what is known: the CASUD's page « L'eau potable » sends to Sudéau's communiqués; its site is not read.
+    ou: "dans ses communiqués",
+    bandeau: `Les avis de coupure de Saint-Joseph sont publiés par Sudéau sur <a href="https://www.sudeau.re/" rel="noopener">son site</a>, dans ses communiqués. La mairie peut aussi vous renseigner.`,
+    distributeur: `Ses avis de coupure sont publiés sur <a href="https://www.sudeau.re/" rel="noopener">son site</a>, dans ses communiqués.`,
+    texte: `Les avis de coupure et de travaux de Saint-Joseph sont publiés par Sudéau, le distributeur, dans les communiqués de son site\u00a0: <a href="https://www.sudeau.re/" rel="noopener">sudeau.re</a>. La <a href="https://saintjoseph.re/" rel="noopener">mairie de Saint-Joseph</a> peut aussi vous renseigner.`,
   },
 };
 

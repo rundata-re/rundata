@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Vendredi 27 novembre 2026
 
+- Coupures d'eau : la fiche de Saint-Joseph dit aussi où Sudéau, le distributeur, publie ses avis.
 - Collecte des déchets : les rues du Nord et de la CASUD gardent leur nom entier, « Chemin Safer (Grand Coude) », et se trouvent par lui.
 - Terrain : la fiche d'une adresse détaille les antennes proches (bandes, dates, azimuts) et la couverture mobile déclarée par opérateur.
 - Baignade : jours et heures d'ouverture de la piscine du Baril, à Saint-Philippe, d'après la commune, sur /mer, /baignade et les réponses.

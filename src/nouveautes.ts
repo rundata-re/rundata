@@ -59,6 +59,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded for the site): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-27T10:58:00+04:00", texte: "Coupures d'eau\u00a0: la fiche de Saint-Joseph dit aussi où Sudéau, le distributeur, publie ses avis." },
   { date: "2026-11-27T10:42:00+04:00", texte: "Collecte des déchets\u00a0: les rues du Nord et de la CASUD gardent leur nom entier, «\u00a0Chemin Safer (Grand Coude)\u00a0», et se trouvent par lui." },
   { date: "2026-11-27T07:50:00+04:00", texte: "Terrain\u00a0: la fiche d'une adresse détaille les antennes proches (bandes, dates, azimuts) et la couverture mobile déclarée par opérateur." },
   { date: "2026-11-27T07:47:00+04:00", texte: "Baignade\u00a0: jours et heures d'ouverture de la piscine du Baril, à Saint-Philippe, d'après la commune, sur /mer, /baignade et les réponses." },

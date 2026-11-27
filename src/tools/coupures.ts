@@ -273,9 +273,12 @@ export async function coupuresEau(cache: Cache, lieu: string | undefined, now = 
   let silent: FluxMuet[];
   // When the notices were read: « Pas d'avis … sur le site de Dionéo, lu le 22/11 à 08:47 ».
   let readAt: Date;
+  // A site read at its own hour (Saint-Joseph's feed, with its news): that hour, for its communes.
+  let ownTimes: Record<string, string>;
   try {
     const read = await notices.lecture(cache);
     readAt = read.fetchedAt;
+    ownTimes = Object.fromEntries(read.value.filter((f) => f.lu_le).map((f) => [f.site, f.lu_le!]));
     all = read.value.flatMap((f) => f.avis).sort((x, y) => y.publie.localeCompare(x.publie));
     silent = muets(read, now);
   } catch (err) {
@@ -307,7 +310,7 @@ export async function coupuresEau(cache: Cache, lieu: string | undefined, now = 
       injoignable: silent.length ? silent : undefined,
       // When the notices were read, for the pages: their copy is built later from that read (24/11/2026: « lu le … à
       // 05:33 », the copy's hour, against 05:25 for the tool).
-      ...(complet && { avis_lus_le: readAt.toISOString() }),
+      ...(complet && { avis_lus_le: readAt.toISOString(), ...(Object.keys(ownTimes).length && { avis_lus_le_par_site: ownTimes }) }),
       ne_pas_boire: dry.length ? dry : undefined,
       avis: cut ? cut.avis : rows,
       ...(cut?.abreges && { avis_abreges: TEXTE_ET_SECTEURS_PAR_LE_LIEN }),
@@ -339,13 +342,13 @@ export async function coupuresEau(cache: Cache, lieu: string | undefined, now = 
   // No notice found: the distributor and where its notices are, never the bare « aucun avis » (a question on Cambuston
   // was answered without naming the CIREST nor O2LEST).
   // « Pas d'avis » with where it was looked for and when, never « aucun avis », which reads as « no cut ».
-  const lu = `, lu le ${published({ publie: readAt.toISOString() } as notices.Avis).replace(/^(\d\d\/\d\d)\/\d{4}/, "$1")}`;
+  const lu = `, lu le ${published({ publie: (dist?.site && ownTimes[dist.site]) || readAt.toISOString() } as notices.Avis).replace(/^(\d\d\/\d\d)\/\d{4}/, "$1")}`;
   // The mairie named as elsewhere, unless the notices read are its own (Cilaos, Sainte-Marie…).
   // Its mairie's site read, and its distributor's own site where it publishes its notices (Les Avirons, GUIDES_AVIS):
   // that site in place of « ailleurs », as the commune's page says it.
   const siteGuide = dist?.avis && GUIDES_AVIS[commune] ? SITES_DISTRIBUTEURS[dist.nom] : undefined;
   const ailleurs = siteGuide
-    ? `Les avis de coupure ${de(commune)} sont publiés par ${dist!.nom} sur son site, rubrique «\u00a0L'eau dans ma commune\u00a0»\u00a0: ${siteGuide}. La mairie peut aussi vous renseigner.`
+    ? `Les avis de coupure ${de(commune)} sont publiés par ${dist!.nom} sur son site, ${GUIDES_AVIS[commune].ou}\u00a0: ${siteGuide}. La mairie peut aussi vous renseigner.`
     : lus && /^(?:la )?(?:ville|commune|mairie)\b/i.test(lus.publie_par) ? "Une coupure peut être annoncée ailleurs." : "Une coupure peut être annoncée ailleurs, par la mairie par exemple.";
   const where = !lus
     ? (dist ? `. D'après l'ARS, ${nomDit(dist)} distribue l'eau ${a(commune)}, et rundata.re ne lit pas ses avis` : "")

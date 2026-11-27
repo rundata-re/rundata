@@ -1340,7 +1340,8 @@ export async function buildSecheresse(cache: Cache, now = new Date()): Promise<S
 }
 
 /** When the notices of a coupures copy were read: the read it was built from, not the copy's own hour (24/11/2026). */
-export const lusLe = (c: { value: CoupuresAnswer; fetchedAt: Date | string }) => c.value.avis_lus_le ?? c.fetchedAt;
+/** `site`: a commune's site of notices, read at its own hour (Saint-Joseph's feed): that hour. */
+export const lusLe = (c: { value: CoupuresAnswer; fetchedAt: Date | string }, site?: string) => (site && c.value.avis_lus_le_par_site?.[site]) || c.value.avis_lus_le || c.fetchedAt;
 
 export interface CoupuresAnswer {
   resume: string;
@@ -1350,6 +1351,8 @@ export interface CoupuresAnswer {
   injoignable?: FluxMuet[];
   /** When the notices were read (ISO), which the copy may postdate. Absent from a copy built before 24/11/2026. */
   avis_lus_le?: string;
+  /** The sites read at their own hour (ISO), not with the others: Saint-Joseph's feed, read with its news. */
+  avis_lus_le_par_site?: Record<string, string>;
   couverture: string;
   a_savoir: string;
   sources: Credit[];

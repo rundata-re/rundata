@@ -191,8 +191,9 @@ describe("MétéoR-OI's stations", () => {
     // (one request every six hours, the only events of Sainte-Rose and Salazie, 24/11/2026); 485 with Saint-Joseph's and
     // Les Avirons's water notices (two requests in web:coupures, 24/11/2026); 486 with the alerts' state written at each
     // new bulletin or /volcan copy, at most once a run (alertes-etat.ts, 24/11/2026); 487 with the TCO's « Agenda des
-    // manifestations » (one request every six hours, 24/11/2026).
-    expect(worstMain().subrequests).toBeLessThanOrEqual(487);
+    // manifestations » (one request every six hours, 24/11/2026); 488 with Saint-Joseph's notices first looked for in the
+    // agendas' bundle (one read of KV, cold only: warm, it replaces the site's request, 27/11/2026).
+    expect(worstMain().subrequests).toBeLessThanOrEqual(488);
   });
 
   it("has its own cron, never the minute of the event of every 5 minutes", () => {

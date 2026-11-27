@@ -24,7 +24,8 @@ import { getJson, getText, httpUrl, sharedSite, UA_RUNDATA } from "../http.js";
 import { INSEE } from "../places/insee.js";
 import { normalize, resolvePlace } from "../places/resolve.js";
 import { localTime } from "../geo.js";
-import { type SourceInfo, why } from "../types.js";
+import { type SourceInfo, UpstreamError, why } from "../types.js";
+import { AVIS_SAINT_JOSEPH, planifiees } from "./agendas-planifies.js";
 import { unlessSpent } from "../budget.js";
 import { unstyled } from "../typographie.js";
 import { casse } from "../tools/casse.js";
@@ -532,10 +533,25 @@ const PETITE_ILE = "https://www.petite-ile.re/taxonomy/term/301/feed";
 // the notice (its /wp-json/ has no route for the news). Sudéau's own site is a private delegate's, not read (rule 3 bis).
 const LE_TAMPON = "https://letampon.fr/?s=sud%C3%A9au&post_type=actualites&feed=rss2";
 // Saint-Joseph posts Sudéau's notices among its news, seldom (« Coupures d'eau - Hauts de l'ouest », « Sudéau :
-// Perturbations et coupures d'eau sur certains secteurs »): its SPIP feed of its ten newest articles, whose description is
-// the article's first paragraph (also read once an hour for its news, agenda.ts). It has answered 522 to the Worker since
-// 20/11/2026, not to other addresses: the page then says since when (`muet`).
+// Perturbations et coupures d'eau sur certains secteurs », none since 16/07/2020): its SPIP feed of its ten newest
+// articles, whose description is the article's first paragraph. It has answered 522 to the Worker since 20/11/2026, not
+// to other addresses: the page then says since when (`muet`). Read once an hour, with its news (agenda.ts), since
+// 27/11/2026: the notices it held are kept with the agendas read by the scheduled event (`saintJoseph`).
 const SAINT_JOSEPH = "https://saintjoseph.re/spip.php?page=backend";
+// As long as its news are served (agenda.ts NEWS_GARDE_SECONDS): past it, its reads failed, and it is said silent.
+const SAINT_JOSEPH_GARDE_MS = 110 * 60_000;
+
+/**
+ * Saint-Joseph's notices, from the hourly read of its feed (providers/agendas-planifies.ts), with the time of that read.
+ * None kept yet (just put online): its feed read here once, as before, unless that read is failing already.
+ */
+export async function saintJoseph(cache: Cache): Promise<{ avis: Avis[]; lu_le: string }> {
+  const bundle = await planifiees(cache);
+  const kept = bundle.peek(AVIS_SAINT_JOSEPH);
+  if (kept && kept.ageMs <= SAINT_JOSEPH_GARDE_MS) return { avis: kept.value as Avis[], lu_le: new Date(kept.fetchedAt).toISOString() };
+  if (kept || bundle.peek("echec:saint_joseph")) throw new UpstreamError(SOURCE.id, "le flux de Saint-Joseph n'a pas répondu à ses dernières lectures");
+  return { avis: parseSaintJoseph(await getText(SOURCE.id, SAINT_JOSEPH, 12_000, COMMUNE)), lu_le: new Date(cache.time()).toISOString() };
+}
 // Les Avirons relayed the CISE's notices among its articles (2022-2024, the last on 18/11/2024); its site has no feed: its
 // sitemap, which gives each article's address and the day of its last change (`avirons`).
 const AVIRONS = "https://www.mairie-avirons.fr/sitemap.xml";
@@ -833,9 +849,11 @@ export interface Flux {
   muet?: true;
   /** When the notices kept were read (« 24/10 10:00 »), when it is silent. */
   lu_a?: string;
+  /** When it was read (ISO), when not with the others: Saint-Joseph's feed, read once an hour with its news. */
+  lu_le?: string;
 }
 
-const PARTS: { de: string; site: string; load: (cache: Cache, before?: Avis[]) => Promise<Avis[]> }[] = [
+const PARTS: { de: string; site: string; load: (cache: Cache, before?: Avis[]) => Promise<Avis[] | { avis: Avis[]; lu_le: string }> }[] = [
   ...FEEDS.map((f) => ({ de: f.nom === "Eaux de La Possession" ? "des Eaux de La Possession" : `de ${f.nom}`, site: new URL(f.url).origin + "/", load: async () => parseRss(await getText(SOURCE.id, f.url, 12_000), f) })),
   { de: "de la CIREST", site: "https://www.cirest.fr/categorie/communique/communique-eau/", load: async () => parseCirest(await getJson<Post[]>(SOURCE.id, CIREST, 12_000)) },
   { de: "de La Créole", site: CREOLE.url, load: async () => parseCreole(await getText(SOURCE.id, CREOLE.url, 12_000)) },
@@ -846,7 +864,7 @@ const PARTS: { de: string; site: string; load: (cache: Cache, before?: Avis[]) =
   { de: "de la ville de Trois-Bassins", site: "https://trois-bassins.re/", load: async () => parseTroisBassins(await getText(SOURCE.id, TROIS_BASSINS, 12_000, COMMUNE)) },
   { de: "de la ville de Petite-Île", site: "https://www.petite-ile.re/taxonomy/term/301", load: (cache, before) => petiteIle(cache, before) },
   { de: "de la ville du Tampon", site: "https://letampon.fr/?s=sud%C3%A9au&post_type=actualites", load: async () => parseLeTampon(await getText(SOURCE.id, LE_TAMPON, 12_000, COMMUNE)) },
-  { de: "de la ville de Saint-Joseph", site: "https://saintjoseph.re/", load: async () => parseSaintJoseph(await getText(SOURCE.id, SAINT_JOSEPH, 12_000, COMMUNE)) },
+  { de: "de la ville de Saint-Joseph", site: "https://saintjoseph.re/", load: (cache) => saintJoseph(cache) },
   { de: "de la commune des Avirons", site: "https://www.mairie-avirons.fr/", load: (cache, before) => avirons(cache, before) },
 ];
 
@@ -877,11 +895,12 @@ export async function lecture(cache: Cache): Promise<Cached<Flux[]>> {
     const parts = unlessSpent(await Promise.allSettled(PARTS.map((p) => p.load(cache, before?.value.find((f) => f.site === p.site)?.avis))));
     const flux = PARTS.map((p, i): Flux => {
       const r = parts[i];
-      if (r.status === "fulfilled") return { de: p.de, site: p.site, avis: r.value };
+      if (r.status === "fulfilled") return { de: p.de, site: p.site, ...(Array.isArray(r.value) ? { avis: r.value } : r.value) };
       console.error(`source ${SOURCE.id} indisponible (${p.site}):`, why(r.reason));
       const was = before?.value.find((f) => f.site === p.site);
       const kept = was?.avis.length ? was.avis : [];
-      return { de: p.de, site: p.site, avis: kept, muet: true, ...(kept.length ? { lu_a: was!.muet ? was!.lu_a : localTime(before!.fetchedAt) } : {}) };
+      // The hour of the read that gave them: its own when it was not read with the others (`lu_le`).
+      return { de: p.de, site: p.site, avis: kept, muet: true, ...(kept.length ? { lu_a: was!.muet ? was!.lu_a : localTime(was!.lu_le ? new Date(was!.lu_le) : before!.fetchedAt) } : {}) };
     });
     if (parts.every((p) => p.status === "rejected") && !flux.some((f) => f.avis.length)) throw (parts[0] as PromiseRejectedResult).reason;
     return flux;

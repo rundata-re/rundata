@@ -107,4 +107,21 @@ describe("Saint-Joseph's feed, read once an hour for its news and its water noti
     // Only Sudéau's home page is linked (Saur's terms), never a page of its site.
     expect(page.match(/https?:\/\/www\.sudeau\.re\/[^"]+/g)).toBeNull();
   });
+
+  it("says where Sudéau publishes its notices when Saint-Joseph's site does not answer, on its page and in the tool (27/11/2026)", async () => {
+    sites();
+    // The news's reads failed past their keeping: the site said without answer, as seen live on 27/11 at 11:10.
+    const c = await keptAt(new Date(NOW.getTime() - 111 * 60_000), { [AVIS_SAINT_JOSEPH]: [] });
+    const coupures = { value: await buildCoupures(c, NOW), fetchedAt: NOW };
+    const page = coupuresCommunePage("https://rundata.re", pageOf("saint-joseph")!, { coupures }, NOW).replace(/[\u00a0\u202f]/g, " ");
+    const lead = page.match(/<p class="lead">[^]*?<\/p>/)![0];
+    expect(lead).toContain("n&#39;a pas répondu");
+    expect(lead).toContain(`Les avis de coupure de Saint-Joseph sont publiés par Sudéau sur <a href="https://www.sudeau.re/" rel="noopener">son site</a>, dans ses communiqués. La mairie peut aussi vous renseigner.</p>`);
+    expect(page.match(/https?:\/\/www\.sudeau\.re\/[^"]+/g)).toBeNull();
+    const sj = body(await coupuresEau(c, "Saint-Joseph", NOW));
+    expect(sj.resume).toContain("n'a pas répondu");
+    expect(sj.resume).toMatch(/n'a pas répondu[^]*Les avis de coupure de Saint-Joseph sont publiés par Sudéau sur son site, dans ses communiqués\u00a0: https:\/\/www\.sudeau\.re\/\. La mairie peut aussi vous renseigner\.$/);
+    // Not for a silent commune with no such text: Le Tampon says only that its site did not answer.
+    expect(body(await coupuresEau(c, "Le Tampon", NOW)).resume).not.toContain("Sudéau sur son site");
+  });
 });

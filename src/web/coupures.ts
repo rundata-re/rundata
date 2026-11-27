@@ -181,7 +181,10 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
   const lienA = lien ? html` <a href="${lien.site}" rel="noopener"${ACCUEILS.has(lien.site) ? brut(' target="_blank"') : ""}>${brut(nobreak(lien.libelle))} →</a>` : "";
 
   // Its feed silent: what was read before, said with its hour, the site linked; or that its read failed.
-  const silent = x.muet ? html`<p class="note">${brut(silentText(x.muet))}</p>` : "";
+  // Its mairie's site read and silent: where the distributor publishes its notices said all the same (GUIDES_AVIS,
+  // Saint-Joseph's site unanswered from the Worker, 27/11/2026), when its notices matter most.
+  const guideMuet = x.muet && dist?.avis ? GUIDES_AVIS[p.nom]?.bandeau : undefined;
+  const silent = x.muet ? html`<p class="note">${brut(silentText(x.muet))}${guideMuet ? html` ${brut(guideMuet)}` : ""}</p>` : "";
   // The site of a distributor whose notices are not read, linked only (CISE Réunion at Les Avirons).
   const siteDist = dist && !dist.avis ? SITES_DISTRIBUTEURS[dist.nom] : undefined;
   // Where its notices are published, in words of its own (GUIDES_AVIS): the lead, the distributor's card and the list.
@@ -221,7 +224,7 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
   const status = !d
     ? brut(loading("Les avis des distributeurs"))
     : html`${bandeau}${x.muet && !x.avis.length
-      ? html`<p class="lead">${x.muet.texte}</p>`
+      ? html`<p class="lead">${x.muet.texte}${guideMuet ? html` ${brut(guideMuet)}` : ""}</p>`
       : x.avis.length
       ? brut(noticesHead(x.avis, where, [], x.muet ? "" : at))
       : dist?.avis

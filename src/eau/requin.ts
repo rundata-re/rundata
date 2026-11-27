@@ -55,6 +55,23 @@ export interface Zone {
   par?: "BSAN et RESSAC";
   /** What a source says of the watch over the zone, said in place of its kind's line (rule and decree or not). */
   surveillance?: Surveillance;
+  /** The days and hours the commune opens it, said in place of its kind's line (rule and decree or not: they come from the commune). */
+  horaires?: Horaires;
+}
+
+/** A pool's days and hours, from its commune's page, with the order that page cites. */
+export interface Horaires {
+  /** The days and hours, after « bassin, »; then the swimming it forbids, in its own sentence. */
+  ouverture: string;
+  interdit: string;
+  /** « la commune de Saint-Philippe »: linked to `url` on the pages. */
+  source: string;
+  url: string;
+  /** The order the page cites: « arrêté n° 157/2026 AC du 06/11/2026 », linked to `url` on the pages. */
+  arrete: { numero: string; du: string; url: string };
+  /** ISO day the page says it was last updated, and the day it was read. */
+  page_du: string;
+  lu_le: string;
 }
 
 /** « aucune » : the commune says nobody watches it. With who says so, its page and the day it was read. */
@@ -102,7 +119,20 @@ export const ZONES: Zone[] = [
       url: "https://saintjoseph.re/Zones-de-baignade", page_du: "2013-02-22", lu_le: "2026-11-26",
     },
   },
-  { nom: "Piscine du Baril les Bains", type: "bassin", commune: "Saint-Philippe", lon: 55.7147, lat: -21.3707 },
+  {
+    // Where the pool is (the bathing water of the ARS and the sports' census agree), not the middle of Le Baril, 1.9 km west.
+    nom: "Piscine du Baril les Bains", type: "bassin", commune: "Saint-Philippe", lon: 55.7326, lat: -21.3695,
+    // saintphilippe.re, « Piscine de Baril les Bains : jours et horaires d'ouverture », after the order 157/2026 AC of 06/11/2026.
+    horaires: {
+      ouverture: "ouvert du 1er octobre au 31 mai, du mercredi au samedi (aussi le mardi pendant les vacances scolaires d'octobre à mars), " +
+        "de 11:00 à 18:30, jusqu'à 17:30 en avril et en mai\u00a0; fermé du 1er juin au 30 septembre.",
+      interdit: "Baignade interdite pendant le remplissage et la vidange du bassin, et dès un avis de forte houle.",
+      source: "la commune de Saint-Philippe",
+      url: "https://saintphilippe.re/piscine-de-baril-les-bains-jours-et-horaires-douverture/",
+      arrete: { numero: "157/2026 AC", du: "2026-11-06", url: "https://publiact.fr/documentPublic/1218895" },
+      page_du: "2026-11-24", lu_le: "2026-11-27",
+    },
+  },
 ];
 
 /** A beach this close to a zone is told about it. */
@@ -194,14 +224,29 @@ export function zoneLines(zones: Zone[], now: Date): string[] {
 export const surveillanceLine = (z: Zone & { surveillance: Surveillance }) =>
   `${z.nom} : baignade non surveillée, d'après ${z.surveillance.source} (${z.surveillance.pourquoi}, page de ${z.surveillance.page_du.slice(0, 4)}).`;
 
+/** « arrêté n° 157/2026 AC du 06/11/2026 »: the words linked to the order on the pages. */
+export const arreteDe = (h: Horaires) => `arrêté n° ${h.arrete.numero} du ${h.arrete.du.split("-").reverse().join("/")}`;
+
+/** « Piscine du Baril les Bains : bassin, ouvert du 1er octobre […]. Baignade interdite […]. D'après la commune […] (arrêté n° …). » */
+export const horairesLine = (z: Zone & { horaires: Horaires }) =>
+  `${z.nom} : bassin, ${z.horaires.ouverture} ${z.horaires.interdit} D'après ${z.horaires.source} (${arreteDe(z.horaires)}).`;
+
 export function zoneLine(z: Zone, now: Date): string {
   if (z.surveillance) return surveillanceLine(z as Zone & { surveillance: Surveillance });
+  if (z.horaires) return horairesLine(z as Zone & { horaires: Horaires });
   return (inForce(now) ? LINE : KIND)[z.type](z);
 }
 
 /** The sources of the zones' watch, for an answer: the page of each, and the day it was read. */
 export const surveillances = (zones: Zone[]) =>
   zones.flatMap((z) => (z.surveillance ? [{ zone: z.nom, surveillance: z.surveillance.valeur, source: z.surveillance.source, lien: z.surveillance.url, page_du: z.surveillance.page_du, lu_le: z.surveillance.lu_le }] : []));
+
+/** The days and hours of the zones that have them, for an answer: the commune's page, the order it cites, and the day it was read. */
+export const horaires = (zones: Zone[]) =>
+  zones.flatMap((z) => (z.horaires ? [{
+    zone: z.nom, ouverture: z.horaires.ouverture, interdit: z.horaires.interdit, source: z.horaires.source, lien: z.horaires.url,
+    arrete: { numero: z.horaires.arrete.numero, du: z.horaires.arrete.du, lien: z.horaires.arrete.url }, page_du: z.horaires.page_du, lu_le: z.horaires.lu_le,
+  }] : []));
 
 /** No zone near the place: where the list comes from, then the rule if it still applies. */
 export function noneLine(nom: string, now: Date): string {
@@ -220,10 +265,12 @@ export function ruleText(now: Date): string {
 export function requinBlock(now: Date, near?: { nom: string; lon: number; lat: number; commune?: string }) {
   const zones = near ? zonesNear(near.lon, near.lat, near.commune) : ZONES;
   const watch = surveillances(zones);
+  const hours = horaires(zones);
   return {
     regle: ruleText(now),
     zones: zones.length ? [T.intro, ...zoneLines(zones, now), T.ouverture] : noneLine(near!.nom, now),
     ...(watch.length ? { surveillance_des_zones: watch } : {}),
+    ...(hours.length ? { horaires_des_zones: hours } : {}),
     deploiements_du_jour: { texte: T.stories, ...STORIES },
     drapeaux: T.drapeaux,
     source_des_zones: { texte: T.source, lien: CSR_URL },

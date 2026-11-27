@@ -250,6 +250,7 @@ describe("the CASUD's state of the déchèteries", () => {
     expect(aujourdhuiPage("https://rundata.re", pageOf("le-tampon")!, day, null)).toMatch(new RegExp(`<b>déchets verts acceptés dans \\d sur ${counted}</b> \\(sans mise à jour depuis plus de 6\u00a0h, hors du compte\u00a0: Point d&#39;apport de Bois Court\\)`));
     // Every site counted, or none: nothing more said.
     expect(resume(pageOf("saint-joseph")!, { dechets: morning } as never, AT).resume).not.toMatch(/à jour\u00a0;/);
+    expect(aujourdhuiPage("https://rundata.re", pageOf("saint-joseph")!, resume(pageOf("saint-joseph")!, { dechets: morning } as never, AT), null)).toMatch(/<b>déchets verts acceptés dans \d sur 1<\/b> <span class="note">/);
     const joseph = communePage("https://rundata.re", pageOf("saint-joseph")!, { place: null, dechets: morning }, AT);
     expect(joseph).not.toContain("hors du compte");
   });

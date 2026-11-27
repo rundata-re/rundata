@@ -82,7 +82,7 @@ function groups(today: number, commune?: string): string {
   for (const s of streets) {
     const k = `${s.calendrier}|${s.commune}`;
     const g = byCal.get(k) ?? { c: s.calendrier, cals: [s.calendrier], commune: s.commune, noms: [] };
-    g.noms.push(s.nom.replace(/\s*\([^)]*\)$/, ""));
+    g.noms.push(col.streetName(s));
     byCal.set(k, g);
   }
   // Two calendars of a commune with the same days to the end of the year: one group, their streets together, both PDFs

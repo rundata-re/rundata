@@ -2,7 +2,7 @@
  * /baignade and the « Baignade et requins » block of /mer and of the coastal places' pages: the prefect's shark
  * rule and the zones of the GIP Centre Sécurité Requin, from the package (src/eau/requin.ts), with no request.
  */
-import { ARRETE, CSR, CSR_URL, noneLine, REGLE_COURTE, regleCourte, ruleText, saysBsan, SOURCE, STORIES, T, ZONES, zoneLine, zonesNear, inForce } from "../eau/requin.js";
+import { ARRETE, arreteDe, CSR, CSR_URL, noneLine, REGLE_COURTE, regleCourte, ruleText, saysBsan, SOURCE, STORIES, T, ZONES, zoneLine, zonesNear, inForce } from "../eau/requin.js";
 import type { Alerte } from "./data.js";
 import { porte, type Porte } from "./aller.js";
 import { lienNom } from "./domains.js";
@@ -34,9 +34,10 @@ const bsan = (zones: typeof ZONES, now: Date) => (saysBsan(zones, now) ? `<p>${e
 /** A zone's line, with « Y aller » (aller.ts; the page adds the sheet). */
 const zoneLi = (z: (typeof ZONES)[number], now: Date, g: Porte) => {
   const go = g.aller({ nom: z.nom, lat: z.lat, lon: z.lon }, "baignade");
-  const w = z.surveillance;
+  const w = z.surveillance ?? z.horaires;
   const line = say(zoneLine(z, now));
-  const text = w ? line.replace(esc(w.source), `<a href="${esc(w.url)}">${esc(w.source)}</a>`) : line;
+  let text = w ? line.replace(esc(w.source), `<a href="${esc(w.url)}">${esc(w.source)}</a>`) : line;
+  if (z.horaires) text = text.replace(say(arreteDe(z.horaires)), `<a href="${esc(z.horaires.arrete.url)}">${say(arreteDe(z.horaires))}</a>`);
   return `<li>${text}${go ? ` ${go}` : ""}</li>`;
 };
 

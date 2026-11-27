@@ -4,6 +4,10 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 <!-- Généré à partir de src/nouveautes.ts par `npm run changelog` : modifier la liste là-bas. -->
 
+## Vendredi 27 novembre 2026
+
+- Baignade : jours et heures d'ouverture de la piscine du Baril, à Saint-Philippe, d'après la commune, sur /mer, /baignade et les réponses.
+
 ## Jeudi 26 novembre 2026
 
 - Mer : un lien vers les webcams des plages en direct, sur le site de l'IRT.

@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { handle } from "../src/app.js";
 import { Cache, MemoryStore } from "../src/cache.js";
+import baignadesJson from "../src/eau/baignades.json" with { type: "json" };
+import { distanceKm } from "../src/geo.js";
 import { CSR_URL, inForce, noneLine, requinBlock, SOURCE, STORIES, T, ZONES, zonesNear } from "../src/eau/requin.js";
 import { bathingPage, LINE } from "../src/web/baignade.js";
 import { placePage } from "../src/web/lieu-page.js";
@@ -52,6 +54,38 @@ describe("the shark rule and the zones where bathing is allowed", () => {
     expect(requinBlock(NOW, { nom: "Manapany", lon: 55.5882, lat: -21.3733 }).zones).not.toContain(T.bsan);
   });
 
+  it("says the Baril pool's days and hours, after the commune of Saint-Philippe and its order, in the answers and on the pages", async () => {
+    const LINE_B = "Piscine du Baril les Bains : bassin, ouvert du 1er octobre au 31 mai, du mercredi au samedi (aussi le mardi pendant les vacances scolaires d'octobre à mars), " +
+      "de 11:00 à 18:30, jusqu'à 17:30 en avril et en mai\u00a0; fermé du 1er juin au 30 septembre. Baignade interdite pendant le remplissage et la vidange du bassin, et dès un avis de forte houle. " +
+      "D'après la commune de Saint-Philippe (arrêté n° 157/2026 AC du 06/11/2026).";
+    const URL_B = "https://saintphilippe.re/piscine-de-baril-les-bains-jours-et-horaires-douverture/";
+    const URL_A = "https://publiact.fr/documentPublic/1218895";
+    // Asked about the pool itself, at its place (not the middle of Le Baril), and for the island, before and after the prefect's order.
+    for (const b of [requinBlock(NOW, { nom: "Le Baril", lon: 55.7326, lat: -21.3695 }), requinBlock(NOW, { nom: "Saint-Philippe", lon: 55.7676, lat: -21.3584, commune: "Saint-Philippe" }), requinBlock(NOW), requinBlock(AFTER)]) {
+      expect(b.zones).toContain(LINE_B);
+      expect(b.zones).toContain(T.ouverture);
+      expect(b.horaires_des_zones).toEqual([{
+        zone: "Piscine du Baril les Bains", ouverture: expect.stringContaining("du mercredi au samedi"), interdit: expect.stringContaining("forte houle"),
+        source: "la commune de Saint-Philippe", lien: URL_B, arrete: { numero: "157/2026 AC", du: "2026-11-06", lien: URL_A }, page_du: "2026-11-24", lu_le: "2026-11-27",
+      }]);
+      expect(JSON.stringify(b)).not.toContain("Piscine du Baril les Bains : bassin, baignade permise");
+    }
+    // The pool's point is the pool's, where the ARS samples its water (Bassin du Baril), not the middle of Le Baril 1.9 km west.
+    const baril = ZONES.find((z) => z.nom === "Piscine du Baril les Bains")!;
+    const ars = baignadesJson.sites.find((x) => x.id === "974000699")!;
+    expect(ars.nom).toBe("Bassin du Baril");
+    expect(distanceKm(baril.lon, baril.lat, ars.lon, ars.lat)).toBeLessThan(0.1);
+    expect(zonesNear(55.7326, -21.3695).map((z) => z.nom)).toEqual(["Piscine du Baril les Bains"]);
+    expect(requinBlock(NOW, { nom: "Saint-Leu", lon: 55.2882, lat: -21.1678, commune: "Saint-Leu" })).not.toHaveProperty("horaires_des_zones");
+    const cache = new Cache(new MemoryStore(), () => NOW.getTime());
+    for (const path of ["/baignade", "/mer"]) {
+      const html = await (await handle(new Request(`${O}${path}`), cache)).text();
+      expect(html).toContain(`D&#39;après <a href="${URL_B}">la commune de Saint-Philippe</a> (<a href="${URL_A}">arrêté n°\u00a0157/2026 AC du 06/11/<wbr class="adr">2026</a>).`);
+      expect(text(html)).toContain("du mercredi au samedi (aussi le mardi pendant les vacances scolaires d'octobre à mars)");
+      expect(text(html)).not.toContain("Piscine du Baril les Bains : bassin, baignade permise");
+    }
+  });
+
   it("says Manapany has no watch, after the commune of Saint-Joseph, in the answers and on the pages, with its page", async () => {
     const LINE_M = "Bassin de Manapany : baignade non surveillée, d'après la commune de Saint-Joseph (aucune zone de baignade aménagée, page de 2013).";
     const URL_M = "https://saintjoseph.re/Zones-de-baignade";
@@ -79,8 +113,8 @@ describe("the shark rule and the zones where bathing is allowed", () => {
     expect(b.regle).toBe(T.echu);
     const lines = (b.zones as string[]).slice(1, -1);
     expect(lines).toHaveLength(ZONES.length);
-    for (const l of lines.filter((x) => !x.startsWith("Bassin naturel de Grand-Anse"))) expect(l).not.toMatch(/permis|interdit|arrêté|ouvert/);
-    // What the GIP says of Grand-Anse comes from it, not from the decree.
+    for (const l of lines.filter((x) => !/^(Bassin naturel de Grand-Anse|Piscine du Baril les Bains) /.test(x))) expect(l).not.toMatch(/permis|interdit|arrêté|ouvert/);
+    // What the GIP says of Grand-Anse comes from it, and the Baril's days and hours from its commune, not from the decree.
     expect(lines).toContain("Bassin naturel de Grand-Anse : de nouveau ouvert au public, d'après le GIP Centre Sécurité Requin (27/10/2026).");
     expect(lines).not.toContain(T.bsan);
     expect(lines).toContain("Filet de la baie de Saint-Paul : filet de baignade ponctuel, déployé en été.");
@@ -166,7 +200,7 @@ describe("the shark rule and the zones where bathing is allowed", () => {
     expect(all).toContain("Filet de la baie de Saint-Paul : filet de baignade ponctuel, déployé en été\u00a0; baignade permise seulement quand il est ouvert et surveillé.");
     expect(all).not.toMatch(/Water Patrol|depuis 2014|bassin aménagé/);
     expect(all).toContain("Piscine naturelle de Boucan-Canot : bassin, baignade permise seulement quand il est ouvert et surveillé.");
-    expect(requinBlock(AFTER).zones).toContain("Piscine du Baril les Bains : bassin.");
+    expect(requinBlock(AFTER).zones).toContain("Piscine naturelle de Boucan-Canot : bassin.");
     expect(SOURCE.organisme).toBe("Préfecture de La Réunion\u00a0; GIP Centre Sécurité Requin");
     expect(SOURCE.licence).toBe("Information publique (arrêté préfectoral, reunion.gouv.fr)\u00a0; GIP Centre Sécurité Requin : zones reprises avec son accord écrit du 27/10/2026");
 

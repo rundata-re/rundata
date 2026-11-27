@@ -59,6 +59,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded for the site): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-27T07:47:00+04:00", texte: "Baignade\u00a0: jours et heures d'ouverture de la piscine du Baril, à Saint-Philippe, d'après la commune, sur /mer, /baignade et les réponses." },
   { date: "2026-11-26T15:32:00+04:00", texte: "Mer\u00a0: un lien vers les webcams des plages en direct, sur le site de l'IRT." },
   { date: "2026-11-26T10:07:00+04:00", texte: "Ouest\u00a0: les tournées reportées et les déchèteries fermées annoncées par le TCO, sur /collecte, /decheteries et dans les réponses." },
   { date: "2026-11-26T09:47:00+04:00", texte: "Déchèteries\u00a0: les bennes pleines en direct aussi au Tampon et à Saint-Joseph, avec les horaires, d'après les agents de la CASUD." },

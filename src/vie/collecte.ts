@@ -323,8 +323,13 @@ export function streetLine(s: Street, today: number): string {
   return `${head}${r}.${nearYearEnd(today) ? ` ${untilYearEnd(e)}` : ""}`;
 }
 
-/** Its name without the commune the TCO adds in brackets. */
-export const streetName = (s: Street) => s.nom.replace(/\s*\([^)]*\)$/, "");
+/**
+ * Its name as said. The bracket at the end of a TCO or CIREST name says the commune, the district or the stretch
+ * (« (Trois Bassins) », « (de la Rn3 au Rond-Point) »): left out. Those of the CINOR and the CASUD are a part of the
+ * name (« Chemin Safer (Grand Coude) », « Impasse Morel (Jean) »): their builders have already put a stretch after
+ * « , » (27/11/2026).
+ */
+export const streetName = (s: Street) => (s.epci === "tco" || s.epci === "cirest" ? s.nom.replace(/\s*\([^)]*\)$/, "") : s.nom);
 
 // « r. » for « rue », and the other short forms people type.
 const SHORT: [RegExp, string][] = [[/\br\b\.?/g, "rue"], [/\bch\b\.?/g, "chemin"], [/\bav\b\.?/g, "avenue"], [/\bbd\b\.?/g, "boulevard"], [/\bimp\b\.?/g, "impasse"], [/\bst\b/g, "saint"], [/\bste\b/g, "sainte"]];
@@ -343,7 +348,10 @@ export function findStreets(asked: string, commune?: string): Street[] {
   if (q.length < 3) return [];
   const words = q.split(" ").filter(Boolean);
   const pool = commune ? STREETS.filter((s) => s.commune === commune) : STREETS;
-  const head = (s: Street) => key(s.nom.split(", ")[0]);
-  const rank = (s: Street) => (key(s.nom) === q ? 2 : holds(head(s), words) ? 1 : 0);
-  return pool.filter((s) => holds(key(s.nom), words)).sort((x, y) => rank(y) - rank(x) || x.nom.length - y.nom.length);
+  // A name's bracket of the CINOR or the CASUD is a part of it (streetName): its words found too (« Chemin Safer Grand
+  // Coude »); the TCO's and the CIREST's still set aside.
+  const said = (s: Street) => (s.epci === "tco" || s.epci === "cirest" ? s.nom : s.nom.replace(/[()]/g, " "));
+  const head = (s: Street) => key(said(s).split(", ")[0]);
+  const rank = (s: Street) => (key(said(s)) === q ? 2 : holds(head(s), words) ? 1 : 0);
+  return pool.filter((s) => holds(key(said(s)), words)).sort((x, y) => rank(y) - rank(x) || x.nom.length - y.nom.length);
 }

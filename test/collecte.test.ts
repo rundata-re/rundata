@@ -50,6 +50,16 @@ describe("the bins' calendars of the West", () => {
     expect(names).toContain("Rue Renoyal de l'Escouble");
     expect(names).toContain("Chemin Safer (Grand Coude)");
     for (const n of names) expect(n).not.toMatch(/^Ch\b|\p{L}\(|\( | \)|’/u);
+    // And on the page, as written: the bracket of a name kept (the bracket of a TCO district is left out).
+    const page = collectePage("https://rundata.re", NOW);
+    for (const n of ["Chemin Safer (Grand Coude)", "Impasse Morel (Jean)", "Chemin Coteau Rouge (Beaumont)"]) expect(page, n).toContain(`<li>${n}</li>`);
+    expect(page).not.toContain("<li>Allée Célimène (Trois Bassins)</li>");
+    // And in the tool's answer.
+    const safer = col.STREETS.find((s) => s.nom === "Chemin Safer (Grand Coude)")!;
+    expect(col.streetLine(safer, day("2026-10-24"))).toMatch(/^Chemin Safer \(Grand Coude\), /);
+    expect(body(collecteAnswer(`Chemin Safer Grand Coude, ${safer.commune}`, NOW)).rues.map((r: { rue: string }) => r.rue)).toEqual(["Chemin Safer (Grand Coude)"]);
+    expect(body(collecteAnswer(`Chemin Safer (Grand Coude), ${safer.commune}`, NOW)).rues.map((r: { rue: string }) => r.rue)).toEqual(["Chemin Safer (Grand Coude)"]);
+    expect(body(collecteAnswer(`Chemin Safer, ${safer.commune}`, NOW)).rues.map((r: { rue: string }) => r.rue)).toContain("Chemin Safer (Grand Coude)");
     expect(col.STREETS.every((s) => s.calendrier === -1 || col.CALENDARS[s.calendrier])).toBe(true);
   });
 

@@ -7,7 +7,7 @@
  */
 import data from "../vie/couverture.json" with { type: "json" };
 import { nombre } from "../tools/format.js";
-import { esc, islandMap, zoomIsland } from "./map.js";
+import { esc, islandMap, W, zoomIsland } from "./map.js";
 import { hash } from "./pwa.js";
 import { SOURCE_COUVERTURE } from "../vie/couverture.js";
 
@@ -30,7 +30,7 @@ export const MOTS = {
   operateur: "Opérateur :",
   aucun: "Aucun opérateur",
   techno: "Réseau :",
-  legende: "En couleur : pas de couverture déclarée.",
+  legende: "Hachures\u00a0: pas de couverture déclarée par l'opérateur choisi (Arcep)",
   part: (p: number) => `${nombre(p)}\u00a0% de l'île`,
   tableau: "Part de l'île sans couverture déclarée",
   cote: "Calculé hors d'une bande de 100\u00a0m le long du littoral, où les contours de l'Arcep et ceux des communes diffèrent.",
@@ -65,8 +65,18 @@ function tableau(): string {
   return `<div class="card table-wrap"><table class="drought niveaux"><caption>${esc(MOTS.tableau)}</caption><thead><tr><th scope="col">Opérateur</th>${TECHNOS.map(([, tn]) => `<th scope="col">${esc(tn)}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table></div><p class="note">${esc(MOTS.cote)}</p>`;
 }
 
+/**
+ * The zones hatched in the map's two tones, the same in both themes as the aerial photo under them does not change
+ * (the site's map charter, 27/11/2026: a zone where nothing is declared): night and white strokes of 2.5 px, 5 px
+ * apart, at 45°, no veil under them. A grey or a navy at 60 % read as clouds or shadows on the photo at 390 px, and a
+ * new colour is not in the kit. The pattern is 10 units wide, scaled so that a unit is a CSS pixel: by the page's
+ * script from the map's width and viewBox (a zoom changes it), from a map 330 px wide until then.
+ */
+const ECHELLE0 = W / 330;
+const HACHURES = `<defs><pattern id="couv-h" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45) scale(${ECHELLE0.toFixed(3)})"><rect width="2.5" height="10" fill="rgba(11,31,54,.85)"/><rect x="5" width="2.5" height="10" fill="rgba(241,245,249,.85)"/></pattern></defs>`;
+
 export function couvertureSection(): string {
-  const overlay = `<path class="trou" fill-rule="evenodd" d="${data.couches[PREMIERE]}"/>`;
+  const overlay = HACHURES + `<path class="trou" fill="url(#couv-h)" fill-rule="evenodd" d="${data.couches[PREMIERE]}"/>`;
   const filtres = `<div class="couvf" hidden>${choix("co", MOTS.operateur, [["aucun", MOTS.aucun], ...OPS], "aucun")}${choix("ct", MOTS.techno, TECHNOS, "4g")}</div>`;
   return `<section aria-labelledby="h-couv"><h2 id="h-couv">${esc(MOTS.titre)}</h2>
   <p>${esc(MOTS.intro)}</p>
@@ -91,5 +101,7 @@ const nb=(x)=>String(x).replace(".",",");
 const draw=()=>{const o=f.querySelector("input[name=co]:checked").value,t=f.querySelector("input[name=ct]:checked").value,k=o+"-"+t,show=(d)=>{path.setAttribute("d",d);part.textContent=N[o]+", "+TN[t]+" : "+nb(P[o][t])+"\\u00a0% de l'île"};
 if(L[k]!=null)return show(L[k]);if(data)return show(data[k]);
 wait??=fetch(${js(couverturePath())}).then((r)=>{if(!r.ok)throw 0;return r.json()});wait.then((d)=>{data=d;Object.assign(L,d);draw()}).catch(()=>{wait=null;part.textContent=${js(MOTS.echec)}})};
-f.addEventListener("change",draw);f.hidden=false})();`;
+f.addEventListener("change",draw);f.hidden=false;
+const svg=fig.querySelector("svg"),pat=fig.querySelector("pattern");if(svg&&pat){const fit=()=>{const vb=svg.viewBox.baseVal,cw=svg.clientWidth;if(vb&&vb.width&&cw)pat.setAttribute("patternTransform","rotate(45) scale("+(vb.width/cw).toFixed(3)+")")};
+fit();if(window.ResizeObserver)new ResizeObserver(fit).observe(svg);new MutationObserver(fit).observe(svg,{attributes:true,attributeFilter:["viewBox"]})}})();`;
 }

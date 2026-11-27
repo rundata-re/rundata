@@ -66,7 +66,7 @@ describe("/antennes, the zones with no declared coverage (Arcep)", () => {
     }
     expect(visible).not.toMatch(/Telco OI|TELC|ZEOP|\bOF\b|\bSRR\b/);
     // The first layer is in the page, drawn without the script; the nine others are not.
-    expect(page).toContain(`<path class="trou" fill-rule="evenodd" d="${data.couches["aucun-4g"]}"/>`);
+    expect(page).toContain(`<path class="trou" fill="url(#couv-h)" fill-rule="evenodd" d="${data.couches["aucun-4g"]}"/>`);
     expect(page).not.toContain(data.couches["TELC-4g"]);
     expect(page).toContain("Arcep, Mon Réseau Mobile");
     expect(estDeclare(couvertureScript())).toBe(true);
@@ -106,12 +106,14 @@ describe("/antennes, the zones with no declared coverage (Arcep)", () => {
     expect(s.path.d).toBe(data.couches["aucun-4g"]);
   });
 
-  it("draws the zones in a solid colour, the same in light and dark, that the aerial photo has nowhere (27/11/2026)", () => {
-    // A pale grey at 60 % read as clouds on the photo at 390 px (dark), a navy as its shadows (light): a magenta, no red
-    // nor orange (they say danger on the site), no outline (a white one made the small zones look like clouds again).
-    const regles = CSS.match(/\.couvmap\{--cv:([^}]+)\}/g) ?? [];
-    expect(regles).toEqual([".couvmap{--cv:#c026d3}"]);
-    expect(CSS).toMatch(/\.couvmap \.trou\{fill:var\(--cv\);fill-opacity:\.9;/);
-    expect(CSS).not.toMatch(/\.couvmap \.trou\{[^}]*stroke/);
+  it("hatches the zones in the map's two tones, the same in light and dark, no colour of its own (27/11/2026)", () => {
+    // A pale grey or a navy at 60 % read as clouds or shadows on the aerial photo at 390 px; a new colour is not in the
+    // kit, and a magenta read as Free's pink. The map charter: night and white strokes of 2.5 px, 5 px apart, at 45°.
+    const html = antennesPage("https://rundata.re", null).match(/<pattern id="couv-h"[\s\S]*?<\/pattern>/)?.[0] ?? "";
+    expect(html).toContain('width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45) scale(');
+    expect(html).toContain('<rect width="2.5" height="10" fill="rgba(11,31,54,.85)"/><rect x="5" width="2.5" height="10" fill="rgba(241,245,249,.85)"/>');
+    expect(CSS).not.toMatch(/--cv/);
+    expect(CSS).toMatch(/\.couvmap \.trou\{stroke:rgba\(11,31,54,\.8\);stroke-width:1px;vector-effect:non-scaling-stroke;/);
+    expect(MOTS.legende).toBe("Hachures\u00a0: pas de couverture déclarée par l'opérateur choisi (Arcep)");
   });
 });

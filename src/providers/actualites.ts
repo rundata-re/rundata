@@ -333,8 +333,11 @@ const WEATHER_WORD = new RegExp(`\\b(?:${WEATHER})\\b`);
 // 26/11/2026), « une mobilisation pour la recherche ». « Contre », « pour », « en faveur de » or « autour de » leave it
 // out unless a protest's own cause follows (« contre la vie chère », « pour les salaires ») or a date (« pour le 5
 // décembre »); a word of the streets in the lead (MOBILISES) still says it whatever the cause.
+// Nor who it gathers: « une importante mobilisation réunissant parents et enseignants » (a college's lead, seen in the
+// tool on 26/11/2026) is people rallying to a cause; « réunissant », « rassemblant » or « regroupant » leave it out unless
+// a protest's cause or a figure follows within six words (« réunissant 3 000 personnes », « … contre la réforme »).
 const LUTTE = String.raw`vie chere|salaires?|retraites?|reformes?|prix|carburants?|licenciements?|fermetures?|lois?|projets? de loi|octroi de mer|pouvoir d achat|\d`;
-const MOBILISATION = String.raw`mobilis\w*(?! (?:\w+ ){0,2}?(?:financ\w*|entreprises?|moyens|fonds|credits?|euros?|millions?|milliards?|ressources|budget\w*)\b)(?! \d)(?! (?:\w+ ){0,2}?(?:contre|pour|en faveur d\w*|autour d\w*) (?!(?:(?:la|le|les|l|des|du|de) )?(?:${LUTTE})\b))`;
+const MOBILISATION = String.raw`mobilis\w*(?! (?:\w+ ){0,2}?(?:financ\w*|entreprises?|moyens|fonds|credits?|euros?|millions?|milliards?|ressources|budget\w*)\b)(?! \d)(?! (?:\w+ ){0,2}?(?:contre|pour|en faveur d\w*|autour d\w*) (?!(?:(?:la|le|les|l|des|du|de) )?(?:${LUTTE})\b))(?! (?:reunissant|rassemblant|regroupant)\b(?! (?:\w+ ){0,6}?(?:${LUTTE})\b))`;
 
 // An accident of the road, not « un accident vasculaire cérébral » nor a day « sans accident » at work (Freedom, 29/10/2026:
 // two articles on health and safety at work under « routes et circulation »). On normalised text.

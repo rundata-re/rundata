@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Vendredi 27 novembre 2026
 
+- Terrain : la fiche d'une adresse détaille les antennes proches (bandes, dates, azimuts) et la couverture mobile déclarée par opérateur.
 - Baignade : jours et heures d'ouverture de la piscine du Baril, à Saint-Philippe, d'après la commune, sur /mer, /baignade et les réponses.
 
 ## Jeudi 26 novembre 2026

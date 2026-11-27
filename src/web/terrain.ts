@@ -212,12 +212,35 @@ function antennes(fiche: O): string {
   const m = obj(a?.antennes_mobiles);
   if (!a || !m) return "";
   const near = Array.isArray(m.plus_proches) ? (m.plus_proches.map(obj).filter(Boolean) as O[]) : [];
+  // Each of the nearest supports as the sheet of /antennes says it: operators, systems and bands, state, day, azimuths.
+  const support = (x: O) => {
+    const ops = Array.isArray(x.operateurs) ? (x.operateurs.map(obj).filter(Boolean) as O[]) : [];
+    const head = `à ${esc(String(x.distance_m))}${N}m${x.support_n != null ? `, support n°${N}${esc(String(x.support_n))}` : ""}${x.support || x.hauteur_m ? ` (${[x.support && esc(String(x.support)), x.hauteur_m && `${esc(String(x.hauteur_m).replace(".", ","))}${N}m`].filter(Boolean).join(", ")})` : ""}${N}: ${esc(ops.map((o) => String(o.operateur)).join(", "))}`;
+    const detail = ops.map((o) => {
+      const sys = Array.isArray(o.systemes) ? (o.systemes.map(obj).filter(Boolean) as O[]) : [];
+      const rows = sys.map((y) => `<li>${esc(String(y.systeme))}${N}: ${esc(String(y.etat))}, ${y.mise_en_service === "non publiée" ? "date de mise en service non publiée" : `mise en service le ${esc(String(y.mise_en_service))}`}${y.azimuts ? `${N}; azimuts${N}: ${esc(String(y.azimuts))}` : ""}</li>`).join("");
+      return `<p><b>${esc(String(o.operateur))}</b></p><ul>${rows}</ul>${o.azimuts ? `<p>Azimuts des antennes${N}: ${esc(String(o.azimuts))} (0${N}° = nord).</p>` : ""}`;
+    }).join("");
+    return `<li><details><summary>${head}</summary>${detail}</details></li>`;
+  };
   return block(
     "antennes",
-    "Antennes à moins de 500 m",
-    `<p>${esc(String(m.supports))} support${Number(m.supports) > 1 ? "s" : ""} d'antennes mobiles déclaré${Number(m.supports) > 1 ? "s" : ""} à l'ANFR${near.length ? `, le plus proche à ${esc(String(near[0].distance_m))}${N}m` : ""} (fichier du ${esc(String(m.fichier_du))}).</p>`,
-    esc(String(a.note).split(". ")[0] + "."),
+    "Antennes à moins de 500 m",
+    `<p>${esc(String(m.supports))} support${Number(m.supports) > 1 ? "s" : ""} d'antennes mobiles déclaré${Number(m.supports) > 1 ? "s" : ""} à l'ANFR${near.length ? `, le plus proche à ${esc(String(near[0].distance_m))}${N}m` : ""} (fichier du ${esc(String(m.fichier_du))}).</p>` +
+      (near.length ? `<ul class="antproches">${near.map(support).join("")}</ul>${m.puissance ? `<p>Puissance d'émission${N}: ${esc(String(m.puissance))}.</p>` : ""}` : ""),
+    `${esc(String(a.note).split(". ")[0] + ".")} Valeurs déclarées par les opérateurs à l'ANFR, pas des mesures.`,
   );
+}
+
+function couverture(fiche: O): string {
+  const c = obj(fiche.couverture_mobile_declaree);
+  if (!c) return "";
+  const ops = Array.isArray(c.operateurs) ? (c.operateurs.map(obj).filter(Boolean) as O[]) : [];
+  const carte = `<a href="/antennes#h-couv">Zones sans couverture déclarée</a>`;
+  const inner = ops.length
+    ? `<p>D'après les cartes de l'Arcep du ${esc(String(c.trimestre))} (situation au ${esc(String(c.situation_au))}).</p><div class="table-wrap"><table class="drought niveaux"><caption>Couverture mobile déclarée à ce point</caption><thead><tr><th scope="col">Opérateur</th><th scope="col">Internet 4G</th><th scope="col">Appels (2G, 3G)</th></tr></thead><tbody>${ops.map((o) => `<tr><th scope="row">${esc(String(o.operateur))}</th><td data-label="Internet 4G">${esc(String(o.internet_4g))}</td><td data-label="Appels (2G, 3G)">${esc(String(o.appels))}</td></tr>`).join("")}</tbody></table></div>`
+    : `<p>${esc(String(c.non_calculee).replace(/\s*: voir la carte des zones sans couverture déclarée\.$/, "."))}</p>`;
+  return block("couverture", "Couverture mobile déclarée", `${inner}<p>${carte}${N}: la carte de l'île.</p>`, esc(String(c.note)));
 }
 
 function sources(fiche: O): string {
@@ -264,6 +287,7 @@ export function terrainPage(origin: string, adresse: string, r: Fiche | undefine
       loyers(f),
       fibre(f),
       vague ? "" : antennes(f),
+      vague ? "" : couverture(f),
       sources(f),
     ].filter(Boolean).join("\n");
   }

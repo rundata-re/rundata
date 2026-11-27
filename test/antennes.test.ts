@@ -46,8 +46,25 @@ describe("the antennas of the island (ANFR)", () => {
       distance_m: 170,
       hauteur_m: 30,
       support: "bâtiment",
-      operateurs: [{ operateur: "SFR Réunion", en_service: "2G, 3G, 4G", techniquement_operationnel: "5G" }],
+      support_n: 53020,
+      operateurs: [{
+        operateur: "SFR Réunion",
+        en_service: "2G, 3G, 4G",
+        techniquement_operationnel: "5G",
+        // As the sheet of /antennes says it: each system with its band, state and day, the azimuths once when shared.
+        systemes: [
+          { systeme: "2G (GSM), bande des 900\u00a0MHz", etat: "en service", mise_en_service: "09/04/2018" },
+          { systeme: "3G (UMTS), bande des 900\u00a0MHz", etat: "en service", mise_en_service: "04/04/2018" },
+          { systeme: "3G (UMTS), bande des 2\u202f100\u00a0MHz", etat: "en service", mise_en_service: "16/12/2009" },
+          { systeme: "4G (LTE), bande des 800\u00a0MHz", etat: "en service", mise_en_service: "01/12/2016" },
+          { systeme: "4G (LTE), bande des 1\u202f800\u00a0MHz", etat: "en service", mise_en_service: "09/10/2019" },
+          { systeme: "4G (LTE), bande des 2\u202f600\u00a0MHz", etat: "en service", mise_en_service: "29/08/2017" },
+          { systeme: "5G (5G NR), bande des 3\u202f500\u00a0MHz", etat: "techniquement opérationnel", mise_en_service: "19/07/2022" },
+        ],
+        azimuts: "90\u00a0°, 185\u00a0° et 330\u00a0°",
+      }],
     });
+    expect(r.bloc.antennes_mobiles).toMatchObject({ fiches_du: "19/11/2026", puissance: "non publiée par l'ANFR" });
     expect(r.bloc.antennes_mobiles.plus_proches).toHaveLength(5);
     expect(r.bloc.radio_et_television).toEqual({ fichier_du: "31/10/2026", supports: 0, plus_proches: [] });
     expect(r.bloc.note).toContain("ce n'est ni l'état du réseau en ce moment, ni la couverture");

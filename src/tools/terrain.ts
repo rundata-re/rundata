@@ -5,6 +5,8 @@ import { resolvePlace, type Place } from "../places/resolve.js";
 import * as annuaireSrc from "../providers/annuaire.js";
 import * as terrain from "../providers/terrain.js";
 import * as antennes from "../vie/antennes.js";
+import * as systemes from "../vie/antennes-systemes.js";
+import * as couverture from "../vie/couverture.js";
 import * as internet from "../vie/internet.js";
 import * as loyers from "../vie/loyers.js";
 import { bounded, LectureTardive } from "../lectures.js";
@@ -275,13 +277,24 @@ export function antennas(lon: number, lat: number) {
         supports: mob.length,
         autour,
         autour_note: ANTENNES.autour,
-        plus_proches: mob.slice(0, 5).map((s) => ({
-          ...where(s),
-          operateurs: antennes.OPERATEURS.filter((o) => s.ops[o]).map((o) => ({
-            operateur: o,
-            ...Object.fromEntries(antennes.ETATS.filter((e) => s.ops[o]![e]).map((e) => [ANTENNES.etat[e], gens(s.ops[o]![e]!)])),
-          })),
-        })),
+        // As the sheet of /antennes: each system of each operator, its band, state, day in service and azimuths.
+        fiches_du: antennes.date(systemes.FICHES_DU),
+        plus_proches: mob.slice(0, 5).map((s) => {
+          const sys = new Map(systemes.systemesDu(s.id).map((x) => [x.operateur, x]));
+          return {
+            ...where(s),
+            support_n: s.id,
+            operateurs: antennes.OPERATEURS.filter((o) => s.ops[o]).map((o) => {
+              const x = sys.get(o);
+              return {
+                operateur: o,
+                ...Object.fromEntries(antennes.ETATS.filter((e) => s.ops[o]![e]).map((e) => [ANTENNES.etat[e], gens(s.ops[o]![e]!)])),
+                ...(x ? { systemes: x.systemes, ...(x.azimuts ? { azimuts: x.azimuts } : {}) } : {}),
+              };
+            }),
+          };
+        }),
+        puissance: systemes.PUISSANCE,
       },
       radio_et_television: {
         fichier_du: antennes.date(antennes.RADIO_DU),
@@ -290,6 +303,35 @@ export function antennas(lon: number, lat: number) {
       },
       note: ANTENNES.note,
     },
+  };
+}
+
+// The coverage's words: the validated ones of /antennes (web/couverture.ts, 25/11/2026): « déclarée par les opérateurs,
+// vérifiée par sondage par l'Arcep », never « mesurée ».
+export const COUVERTURE = {
+  declaree: "déclarée",
+  non_declaree: "pas de couverture déclarée",
+  note:
+    "Couverture déclarée par les opérateurs, vérifiée par sondage par l'Arcep\u00a0: une carte théorique, pas une mesure. " +
+    "À l'intérieur d'un bâtiment, le signal peut manquer même en zone couverte. Lue au point sur la carte de l'Arcep, à environ 70\u00a0m près.",
+  cote: `À moins de ${couverture.COTE_M}\u00a0m du littoral, la couverture n'est pas calculée à ce point par rundata.re\u00a0: voir la carte des zones sans couverture déclarée.`,
+  carte: "https://rundata.re/antennes#h-couv",
+};
+
+const parOperateurs = (l: string[]) => (l.length === 4 ? "les quatre opérateurs" : l.length > 1 ? `${l.slice(0, -1).join(", ")} et ${l[l.length - 1]}` : l[0]);
+
+/** The coverage declared at the point (vie/couverture.ts), by operator, for 4G internet and calls. */
+export function couvertureMobile(lon: number, lat: number) {
+  const c = couverture.couvertureAu(lon, lat);
+  const quand = { trimestre: couverture.TRIMESTRE, situation_au: couverture.SITUATION_AU };
+  if (!c) return { ligne: undefined, bloc: { ...quand, non_calculee: COUVERTURE.cote, carte: COUVERTURE.carte, note: COUVERTURE.note } };
+  const dit = (b: boolean) => (b ? COUVERTURE.declaree : COUVERTURE.non_declaree);
+  const net = c.filter((x) => x.internet_4g).map((x) => x.operateur);
+  const voix = c.filter((x) => x.appels).map((x) => x.operateur);
+  const ligne = `couverture mobile déclarée à l'Arcep\u00a0: ${net.length ? `internet 4G par ${parOperateurs(net)}` : "internet 4G par aucun opérateur"}, ${voix.length ? `appels par ${parOperateurs(voix)}` : "appels par aucun opérateur"}`;
+  return {
+    ligne,
+    bloc: { ...quand, operateurs: c.map((x) => ({ operateur: x.operateur, internet_4g: dit(x.internet_4g), appels: dit(x.appels) })), carte: COUVERTURE.carte, note: COUVERTURE.note },
   };
 }
 
@@ -589,6 +631,8 @@ export async function ficheDonnees(cache: Cache, adresse: string, now = new Date
   if (net) parts.push(net.ligne);
   const ant = vague ? undefined : antennas(lon, lat);
   if (ant) parts.push(ant.ligne);
+  const couv = vague ? undefined : couvertureMobile(lon, lat);
+  if (couv?.ligne) parts.push(couv.ligne);
 
   const used = [
     // The town hall's point from the directory, checked against OSM's town hall and the address base, which give it when
@@ -607,6 +651,7 @@ export async function ficheDonnees(cache: Cache, adresse: string, now = new Date
     ...(net ? [internet.SOURCE] : []),
     ...(ant ? [antennes.SOURCE_MOBILE] : []),
     ...(ant?.bloc.radio_et_television.supports ? [antennes.SOURCE_RADIO] : []),
+    ...(couv ? [couverture.SOURCE_COUVERTURE] : []),
   ];
   if (vague) {
     const r_ = risksBlock(lon, lat, insee, undefined, cat, undefined);
@@ -657,6 +702,7 @@ export async function ficheDonnees(cache: Cache, adresse: string, now = new Date
     ...(r ? { loyers_d_annonce: r.bloc } : {}),
     ...(net ? { internet_dans_la_commune: net.bloc } : {}),
     antennes_a_moins_de_500_m: point.bloc,
+    couverture_mobile_declaree: couv!.bloc,
     risques: risksBlock(lon, lat, insee, ppr, cat, mvt),
     avertissements: [
       "Le cadastre est un document fiscal : il ne prouve pas la propriété ni les limites exactes (bornage par un géomètre).",

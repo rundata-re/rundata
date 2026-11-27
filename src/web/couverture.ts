@@ -9,7 +9,7 @@ import data from "../vie/couverture.json" with { type: "json" };
 import { nombre } from "../tools/format.js";
 import { esc, islandMap, zoomIsland } from "./map.js";
 import { hash } from "./pwa.js";
-import type { SourceInfo } from "../types.js";
+import { SOURCE_COUVERTURE } from "../vie/couverture.js";
 
 /** The Arcep's operators, as the site names them (scripts/build-antennes.py: Telco OI sells as Free, SRR as SFR Réunion). */
 const OPS = [["OF", "Orange"], ["SRR", "SFR Réunion"], ["TELC", "Free"], ["ZEOP", "Zeop"]] as const;
@@ -19,14 +19,8 @@ const PREMIERE = "aucun-4g";
 const [an, t] = data.trimestre.split("_T");
 const date = `${data.date.slice(8, 10)}/${data.date.slice(5, 7)}/${data.date.slice(0, 4)}`;
 
-export const SOURCE_COUVERTURE: SourceInfo = {
-  id: "arcep_couvertures_theoriques",
-  nom: "Mon Réseau Mobile, cartes de couverture théorique",
-  organisme: "Arcep",
-  licence: "Licence Ouverte Etalab 2.0",
-  attribution: "Arcep, Mon Réseau Mobile",
-  url: "https://www.data.gouv.fr/datasets/mon-reseau-mobile",
-};
+// The source, in vie/couverture.ts with the reading at a point (fiche_terrain).
+export { SOURCE_COUVERTURE };
 
 // The words, the validated ones (25/11/2026): « déclarée par les opérateurs, vérifiée par sondage par
 // l'Arcep », never « mesurée ».

@@ -145,7 +145,7 @@ import * as peche from "./tools/peche.js";
 import * as cetaces from "./tools/cetaces.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.1042";
+export const VERSION = "1.0.1043";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -645,7 +645,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "Ce que disent les registres officiels du bien ou du lieu de La Réunion (974) sur lequel on s'interroge, pas la position de " +
         "l'utilisateur : parcelle cadastrale, " +
         "zone du plan local d'urbanisme (U, AU, A, N : constructible ou non), altitude du sol, prix médians des maisons, " +
-        "appartements et terrains vendus autour, et sur la voie demandée, depuis 5 ans (DVF), loyers d'annonce de la commune pour un logement type (carte des loyers de l'ANIL), part des logements et locaux de la commune éligibles à la fibre (Arcep), antennes mobiles (opérateurs, 2G à 5G) et émetteurs de radio et de télévision à moins de 500 m (ANFR), et risques : plan de prévention des risques (PPR inondation, " +
+        "appartements et terrains vendus autour, et sur la voie demandée, depuis 5 ans (DVF), loyers d'annonce de la commune pour un logement type (carte des loyers de l'ANIL), part des logements et locaux de la commune éligibles à la fibre (Arcep), antennes mobiles (2G à 5G, bandes, azimuts) et émetteurs radio et TV à moins de 500 m (ANFR), couverture déclarée (Arcep), et risques : plan de prévention des risques (PPR inondation, " +
         "mouvements de terrain, littoral) au point, arrêtés de catastrophe naturelle de la commune, glissements et éboulements recensés " +
         "à moins de 500 m, sismicité, radon. Pour : « cette parcelle est constructible ? », " +
         "« prix au m² des maisons à l'Hermitage ? », « quels risques à cette adresse ? ».",

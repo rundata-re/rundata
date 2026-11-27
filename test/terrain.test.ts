@@ -243,7 +243,13 @@ describe("fiche terrain", () => {
     expect(r.internet_dans_la_commune).toMatchObject({ commune: "Saint-Paul", eligibles_a_la_fibre: "95,1\u00a0%" });
     expect(r.sources.map((x: { source: string }) => x.source)).toContain("Ma connexion internet (statistiques d'éligibilité par commune)");
     // Then the antennas around, from the bundled files of the ANFR.
-    expect(r.resume).toMatch(/\u00a0; 3 supports d'antennes mobiles à moins de 500\u00a0m, le plus proche à 310\u00a0m \(ANFR\)\.$/);
+    expect(r.resume).toMatch(/\u00a0; 3 supports d'antennes mobiles à moins de 500\u00a0m, le plus proche à 310\u00a0m \(ANFR\)\u00a0; couverture mobile déclarée à l'Arcep\u00a0: internet 4G par /);
+    // Then the coverage declared at the point, by the Arcep's maps of /antennes, by operator.
+    expect(r.resume).toMatch(/\u00a0; couverture mobile déclarée à l'Arcep\u00a0: internet 4G par les quatre opérateurs, appels par les quatre opérateurs\.$/);
+    expect(r.couverture_mobile_declaree).toMatchObject({ trimestre: "2e\u00a0trimestre 2026", situation_au: "30/06/2026", carte: "https://rundata.re/antennes#h-couv" });
+    expect(r.couverture_mobile_declaree.operateurs).toEqual(["Orange", "SFR Réunion", "Free", "Zeop"].map((operateur) => ({ operateur, internet_4g: "déclarée", appels: "déclarée" })));
+    expect(r.couverture_mobile_declaree.note).toContain("déclarée par les opérateurs, vérifiée par sondage par l'Arcep");
+    expect(r.sources.map((x: { source: string }) => x.source)).toContain("Mon Réseau Mobile, cartes de couverture théorique");
     expect(r.antennes_a_moins_de_500_m.antennes_mobiles).toMatchObject({ fichier_du: "19/11/2026", supports: 3 });
     expect(r.sources.map((x: { source: string }) => x.source)).toContain("Données sur les réseaux mobiles (antennes 2G, 3G, 4G, 5G)");
     // One file a year of the commune, from 2021; none of a sale, its parcel or its price alone in the answer.

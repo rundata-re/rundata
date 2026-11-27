@@ -507,6 +507,25 @@ describe("actualités", () => {
     expect((await actualites(cache(), undefined, undefined, undefined, NOW)).isError).toBe(true);
   });
 
+  it("logs one line per medium that fails, at each reading, with the reason; nothing for the media read (27/11/2026)", async () => {
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      down = /temoignages|freedom/;
+      await lire(NOW);
+      const media = err.mock.calls.filter((c) => String(c[0]).startsWith("source medias_locaux"));
+      expect(media).toEqual([
+        ["source medias_locaux Freedom indisponible:", "medias_locaux: HTTP 503"],
+        ["source medias_locaux Témoignages indisponible:", "medias_locaux: HTTP 503"],
+      ]);
+      err.mockClear();
+      down = undefined;
+      await lire(NOW);
+      expect(err.mock.calls.filter((c) => String(c[0]).startsWith("source medias_locaux"))).toEqual([]);
+    } finally {
+      err.mockRestore();
+    }
+  });
+
   it("says the media that did not answer, and never « aucune information » when none of them answered", async () => {
     down = /^(?!.*reunion\.gouv\.fr)/;
     const b = body(await actualites(cache(), "Saint-Pierre", undefined, undefined, NOW));

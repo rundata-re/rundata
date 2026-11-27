@@ -20,11 +20,11 @@ import { de } from "../articles.js";
 import { getText, httpUrl, UA_RUNDATA } from "../http.js";
 import gazetteer from "../places/gazetteer.js";
 import { normalize } from "../places/resolve.js";
-import { type SourceInfo, UpstreamError } from "../types.js";
+import { type SourceInfo, UpstreamError, why } from "../types.js";
 import { ACCUEIL, ACCUEILS } from "./accueils-medias.js";
 import { strip } from "./avis-eau.js";
 import * as copie from "./prefecture-copie.js";
-import { unlessSpent } from "../budget.js";
+import { outOfBudget, unlessSpent } from "../budget.js";
 
 /**
  * The media, by the name their items carry (`media`), their name in the credits and as a producer. One in SUSPENDUS is
@@ -735,6 +735,11 @@ export async function lire(now = new Date(), avant?: Fil): Promise<Fil> {
   const at = fresh?.lu ?? before;
   const reussie = at && now.getTime() - Date.parse(at) < PREFECTURE_KEPT_MS ? at : undefined;
   const pref = !reussie ? null : fresh ? fresh.liste : avant!.prefecture;
+  // One line per medium not read, at each reading (every 5 minutes): its refusals can be counted in the logs. A read
+  // refused for the budget is not the medium's; a live blog that fails is one article, not the medium.
+  feeds.forEach((r, k) => {
+    if (r.status === "rejected" && !outOfBudget(r.reason)) console.error(`source medias_locaux ${feedsRead[k].media} indisponible:`, why(r.reason));
+  });
   const items = feeds.flatMap((r) => (r.status === "fulfilled" ? r.value : []));
   const lives = unlessSpent(await Promise.allSettled(liveCandidates(items, now).map(async (u) => parseImazLive(await read(u), u, now))));
   const all = [...items, ...lives.flatMap((r) => (r.status === "fulfilled" ? r.value : []))];

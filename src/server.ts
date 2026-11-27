@@ -38,7 +38,7 @@ import * as medecinsAmeli from "./vie/medecins.js";
 import * as gardeArs from "./sante/garde.js";
 import * as marchesOsm from "./vie/marches.js";
 import { z } from "zod";
-import type { Cache } from "./cache.js";
+import { Cache } from "./cache.js";
 import type { Recorder } from "./metrics.js";
 import type { SourceInfo } from "./types.js";
 import { type Background, fordNews } from "./web/data.js";
@@ -145,7 +145,7 @@ import * as peche from "./tools/peche.js";
 import * as cetaces from "./tools/cetaces.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.1054";
+export const VERSION = "1.0.1055";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -361,6 +361,8 @@ const listesGardees = new Map<string, ListToolsResult>();
  * field names and descriptions are checked, and a shape that changed is made again.
  */
 const schemasGardes = new Map<string, { signature: string; schema: z.ZodObject }>();
+/** The JSON Schemas made so far in this isolate (test/serveur-prechauffe.test.ts reads it). */
+export let conversions = 0;
 function schemaGarde(name: string, shape: z.ZodRawShape): z.ZodObject {
   const signature = Object.entries(shape).map(([k, v]) => `${k}\u0000${(v as z.ZodType).description ?? ""}`).join("\u0001");
   const kept = schemasGardes.get(name);
@@ -370,7 +372,7 @@ function schemaGarde(name: string, shape: z.ZodRawShape): z.ZodObject {
   const made = new Map<string, unknown>();
   const once = (io: "input" | "output") => (o: unknown) => {
     const k = `${io}${JSON.stringify(o)}`;
-    if (!made.has(k)) made.set(k, standard.jsonSchema[io](o));
+    if (!made.has(k)) { made.set(k, standard.jsonSchema[io](o)); conversions++; }
     return made.get(k);
   };
   // The zod object itself, its `~standard` alone made to keep what it converts.
@@ -1236,3 +1238,13 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
 
   return server;
 }
+
+// Preconversion at load. Since the SDK 2, each isolate's first request paid the conversion of the tools' JSON Schemas:
+// in production the median CPU of /mcp's POST 200 went from 13 to 20-23 ms, a fresh process's first request about
+// 30 ms more than with SDK 1 (bench of fresh processes, 27/11/2026). Building one server here registers every tool once
+// (schemaGarde keeps its schema), then the input JSON Schema is made with the SDK's own options, so a request finds it
+// made. In workerd this costs about 10 ms of startup, against a limit of 1 s; no I/O, no timer in it. Should the SDK
+// change its options, the schema is made at the first tools/list as before: slower, never wrong.
+const CIBLE_SCHEMA = { target: "draft-2020-12" }; // the SDK's JSON_SCHEMA_CONVERSION_TARGET (2.3.0)
+createServer(new Cache());
+for (const { schema } of schemasGardes.values()) (schema["~standard"] as unknown as { jsonSchema: { input: (o: unknown) => unknown } }).jsonSchema.input(CIBLE_SCHEMA);

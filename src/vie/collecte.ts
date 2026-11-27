@@ -329,7 +329,26 @@ export function streetLine(s: Street, today: number): string {
  * name (« Chemin Safer (Grand Coude) », « Impasse Morel (Jean) »): their builders have already put a stretch after
  * « , » (27/11/2026).
  */
-export const streetName = (s: Street) => (s.epci === "tco" || s.epci === "cirest" ? s.nom.replace(/\s*\([^)]*\)$/, "") : s.nom);
+export const streetName = (s: Street) =>
+  !balanced(s.nom) ? s.nom.replace(/\s*\(.*$/, "") : s.epci === "tco" || s.epci === "cirest" || badBracket(s.nom) ? s.nom.replace(/\s*\([^)]*\)$/, "") : s.nom;
+
+const balanced = (nom: string) => (nom.match(/\(/g) ?? []).length === (nom.match(/\)/g) ?? []).length;
+
+// French words start with a vowel, one consonant or one of these pairs; « Rle », « Shlmr » are short forms.
+const ONSETS = new Set(["bl", "br", "ch", "cl", "cr", "dr", "fl", "fr", "gl", "gn", "gr", "ph", "pl", "pr", "ps", "sc", "sp", "st", "th", "tr", "vr"]);
+const VOWEL = /[aeiouyàâäéèêëîïôöùûü]/i;
+/**
+ * A bracket at the end of a name the CINOR wrote short or broken (« (P.cailloux) », « (Z.a.) », « (Shlmr) »,
+ * « (Rle Turpin) », « N2002 N2002 (avenue Mahatma Gandhi (Marine) »): left out until those names are written again,
+ * where « (Grand Coude) », « (secteur B) » stay (27/11/2026).
+ */
+export function badBracket(nom: string): boolean {
+  const m = nom.match(/\(([^()]*)\)$/);
+  if (!m) return false;
+  if (!balanced(nom)) return true;
+  if (m[1].includes(".")) return true;
+  return m[1].split(/[\s'-]+/).some((w) => /^\p{L}{2,}$/u.test(w) && (!VOWEL.test(w) || (!VOWEL.test(w[0]) && !VOWEL.test(w[1]) && !ONSETS.has(w.slice(0, 2).toLowerCase()))));
+}
 
 // « r. » for « rue », and the other short forms people type.
 const SHORT: [RegExp, string][] = [[/\br\b\.?/g, "rue"], [/\bch\b\.?/g, "chemin"], [/\bav\b\.?/g, "avenue"], [/\bbd\b\.?/g, "boulevard"], [/\bimp\b\.?/g, "impasse"], [/\bst\b/g, "saint"], [/\bste\b/g, "sainte"]];

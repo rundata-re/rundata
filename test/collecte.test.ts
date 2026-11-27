@@ -54,6 +54,13 @@ describe("the bins' calendars of the West", () => {
     const page = collectePage("https://rundata.re", NOW);
     for (const n of ["Chemin Safer (Grand Coude)", "Impasse Morel (Jean)", "Chemin Coteau Rouge (Beaumont)"]) expect(page, n).toContain(`<li>${n}</li>`);
     expect(page).not.toContain("<li>Allée Célimène (Trois Bassins)</li>");
+    // A bracket the CINOR wrote short or broken left out until those names are written again; the others whole.
+    const said = (nom: string) => col.streetName(col.STREETS.find((s) => s.nom === nom)!);
+    expect(["Chemin de la Vierge (P.cailloux)", "Rue Général de Gaulle (Z.a.)", "Immeuble les Tamarins (Shlmr)", "Route Piton Cailloux (Rle Turpin)", "N2002 N2002 (avenue Mahatma Gandhi (Marine)"].map(said))
+      .toEqual(["Chemin de la Vierge", "Rue Général de Gaulle", "Immeuble les Tamarins", "Route Piton Cailloux", "N2002 N2002"]);
+    for (const n of ["Impasse des Camélias, sur le chemin Henri Cabeu (secteur B)", "Rue Jean XXIII (Bras Sec)", "Impasse Bailly (Mini-Crèche)", "Lotissement des Maraîchers (Sidr Triskell)"]) expect(said(n)).toBe(n);
+    for (const s of col.STREETS) expect(col.streetName(s), s.nom).not.toMatch(/\([^)]*$|\.\)$/);
+    for (const t of ["(P.cailloux)", "(Shlmr)", "(Rle Turpin)", "(Z.a.)", "N2002 N2002 ("]) expect(page, t).not.toContain(t);
     // And in the tool's answer.
     const safer = col.STREETS.find((s) => s.nom === "Chemin Safer (Grand Coude)")!;
     expect(col.streetLine(safer, day("2026-10-24"))).toMatch(/^Chemin Safer \(Grand Coude\), /);

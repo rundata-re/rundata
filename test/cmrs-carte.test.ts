@@ -8,6 +8,7 @@ import { carteOfficielle, cyclones } from "../src/tools/cyclones.js";
 import { carteHtml, carteRoute } from "../src/web/cmrs-carte.js";
 import { buildCyclones } from "../src/web/data.js";
 import { cyclonesPage } from "../src/web/cyclones.js";
+import { cartes } from "./contexte.js";
 
 // Météo-France's list of the RSMC's bulletins as read on 27/10/2026 (AGUEDA's, the newest of 23/10/2026 at 13:06 UTC),
 // and its forecast track map as web.archive.org kept it on 02/01/2026 (GRANT, written at 12:44:09 UTC): to test the
@@ -66,10 +67,10 @@ const cache = (now: Date) => new Cache(new MemoryStore(), () => now.getTime());
 let kv: FakeKv;
 beforeEach(() => {
   kv = new FakeKv();
-  cmrs.configure(kv);
+  cartes(kv);
 });
 afterEach(() => {
-  cmrs.configure();
+  cartes();
   vi.unstubAllGlobals();
 });
 
@@ -134,7 +135,7 @@ describe("the scheduled event's turn", () => {
   it("reads nothing outside its minutes, nor without KV", async () => {
     const calls = stubFetch({ liste: html(LISTE()) });
     expect(await cmrs.passage(cache(LIST_AT), new Date("2026-02-03T08:10:00Z"))).toBe("rien à lire");
-    cmrs.configure();
+    cartes();
     expect(await cmrs.passage(cache(LIST_AT), LIST_AT)).toBe("rien à lire");
     expect(calls).toEqual([]);
   });

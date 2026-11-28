@@ -30,7 +30,12 @@ import * as connexions from "../src/connecteurs/connexions.js";
 import * as propositions from "../src/propositions.js";
 import * as abonnements from "../src/push/abonnements.js";
 import * as sansReponse from "../src/sans-reponse.js";
-import { baseAvis, bases, dansLeWorker, horsWorker } from "./contexte.js";
+import * as vigilanceCarte from "../src/providers/vigilance-carte.js";
+import * as vigilanceEpisodes from "../src/providers/vigilance-episodes.js";
+import * as cmrsCarte from "../src/providers/cmrs-carte.js";
+import * as carteScolaire from "../src/vie/carte-scolaire.js";
+import { PROPOSITION_PATH } from "../src/web/propositions.js";
+import { baseAvis, bases, cartes, dansLeWorker, fichiers, horsWorker } from "./contexte.js";
 
 // The Worker builds its modules' context in its own modules, dropped after (test/modules-neufs.ts).
 await vi.hoisted(async () => (await import("./modules-neufs.js")).modulesNeufs());
@@ -366,3 +371,127 @@ describe("the modules' context (src/contexte.ts)", () => {
   });
 });
 
+describe("what a module keeps from one request to the next (src/contexte.ts)", () => {
+  const requete = (e: Record<string, unknown>, chemin = "/robots.txt") => worker.fetch(new Request(`https://rundata.re${chemin}`), e as never, { waitUntil: () => {} });
+
+  it("propositions: a secret found in nothing is not asked again at the next request, and 20 a minute at most are asked", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-28T10:00:05Z"));
+    const lus: unknown[][] = [];
+    const d1 = {
+      prepare: (sql: string) => ({
+        bind: (...params: unknown[]) => ({
+          all: async () => {
+            if (sql.includes("FROM propositions WHERE jeton")) lus.push(params);
+            return { results: [] };
+          },
+          run: async () => ({ meta: { changes: 0 } }),
+        }),
+      }),
+      batch: async () => [],
+    };
+    const env = { AVIS: d1 };
+    try {
+      const jeton = (i: number) => `${String(i).padStart(2, "0")}${"a".repeat(20)}`;
+      expect((await requete(env, `${PROPOSITION_PATH}${jeton(0)}`)).status).toBe(404);
+      expect(lus).toHaveLength(1);
+      // The same secret at the next request: from the isolate's memory, not the database.
+      expect((await requete(env, `${PROPOSITION_PATH}${jeton(0)}`)).status).toBe(404);
+      expect(lus).toHaveLength(1);
+      // One request per secret: once 20 were found in nothing within the minute, the others are not asked.
+      for (let i = 1; i <= 25; i++) await requete(env, `${PROPOSITION_PATH}${jeton(i)}`);
+      expect(lus).toHaveLength(20);
+      // The next minute, they are asked again.
+      vi.setSystemTime(new Date("2026-11-28T10:01:05Z"));
+      await requete(env, `${PROPOSITION_PATH}${jeton(30)}`);
+      expect(lus).toHaveLength(21);
+    } finally {
+      vi.useRealTimers();
+      horsWorker();
+    }
+  });
+
+  it("maps: the store as each map reads it, a file found in nothing not asked again at the next request, an episode's index read once", async () => {
+    const kv = new FakeKv({ "vigilance:carte:png:abc": new Uint8Array([1, 2]).buffer });
+    const gets: [string, string][] = [];
+    const puts: [string, unknown, unknown][] = [];
+    const store = {
+      get: async (key: string, type: string) => (gets.push([key, type]), kv.get(key)),
+      put: async (key: string, value: unknown, options: unknown) => void puts.push([key, value, options]),
+      list: kv.list,
+    };
+    await requete({ STORE: store });
+    expect(contexte().brut).toBe(store);
+    const png = await counted(50, () => vigilanceCarte.fichier("png", "abc"));
+    expect([new Uint8Array(png.value!)[1], png.used]).toEqual([2, 1]);
+    expect(gets).toEqual([["vigilance:carte:png:abc", "arrayBuffer"]]);
+    expect(await vigilanceCarte.fichier("pdf", "rien")).toBeNull();
+    expect(await cmrsCarte.fichier("rien")).toBeNull();
+    const avant = gets.length;
+    await requete({ STORE: store });
+    expect(await vigilanceCarte.fichier("pdf", "rien")).toBeNull();
+    expect(await cmrsCarte.fichier("rien")).toBeNull();
+    expect(await vigilanceCarte.fichier("png", "abc")).not.toBeNull();
+    expect(gets.length).toBe(avant);
+    // A bulletin above green kept once: at the next request, the index is not read again for it.
+    const v = { emise: "2026-11-28T10:00:00Z", zones: { "974-1": { vent: [{ couleur: 2 }] } } } as never;
+    await vigilanceEpisodes.garder(new Uint8Array([9]).buffer, v, Date.parse("2026-11-28T10:00:00Z"));
+    expect(gets.slice(avant)).toEqual([["vigilance:episodes", "json"]]);
+    expect(puts.map(([k, , o]) => [k, o])).toEqual([["vigilance:episode:2026-11-28T10:00:00Z", { expirationTtl: expect.any(Number) }], ["vigilance:episodes", { expirationTtl: expect.any(Number) }]]);
+    await requete({ STORE: store });
+    await vigilanceEpisodes.garder(new Uint8Array([9]).buffer, v, Date.parse("2026-11-28T10:00:00Z"));
+    expect(gets.length).toBe(avant + 1);
+    // Another store (another test's Worker): its own memory.
+    const autre = { ...store };
+    await requete({ STORE: autre });
+    expect(await cmrsCarte.fichier("rien")).toBeNull();
+    expect(gets.length).toBe(avant + 2);
+    horsWorker();
+  });
+
+  it("gives the browser, with the store only, and the static assets, each read counted, and is built again when one changes", async () => {
+    const browser = { quickAction: async () => new Response("") };
+    const demandes: string[] = [];
+    const assets = { fetch: async (r: Request) => (demandes.push(r.url), r.url.endsWith("/97407.json") ? Response.json({ troncons: [] }) : Response.json({ introuvable: true }, { status: 404 })) };
+    await requete({ BROWSER: browser, ASSETS: assets });
+    expect(contexte().navigateur).toBe(browser);
+    expect(vigilanceCarte.configured()).toBe(false);
+    const premier = contexte();
+    await requete({ BROWSER: browser, ASSETS: assets });
+    expect(contexte()).toBe(premier);
+    const lu = await counted(50, () => contexte().fichiers!.json("/carte-scolaire/97407.json"));
+    expect(lu).toMatchObject({ value: { troncons: [] }, used: 1 });
+    expect(await contexte().fichiers!.json("/carte-scolaire/rien.json")).toBeNull();
+    expect(demandes).toEqual(["https://rundata.re/carte-scolaire/97407.json", "https://rundata.re/carte-scolaire/rien.json"]);
+    const autre = { ...browser };
+    await requete({ BROWSER: autre, ASSETS: assets });
+    expect(contexte().navigateur).toBe(autre);
+    const neufs: string[] = [];
+    await requete({ BROWSER: autre, ASSETS: { fetch: async (r: Request) => (neufs.push(r.url), new Response("", { status: 404 })) } });
+    expect(await contexte().fichiers!.json("/carte-scolaire/97407.json")).toBeNull();
+    expect([demandes.length, neufs]).toEqual([2, ["https://rundata.re/carte-scolaire/97407.json"]]);
+    await requete({});
+    expect([contexte().navigateur, contexte().fichiers]).toEqual([undefined, undefined]);
+    expect(await carteScolaire.fichier("97407")).toBeNull();
+    horsWorker();
+  });
+
+  it("gives a test's maps and files in place, without putting the other modules in the Worker (test/contexte.ts)", async () => {
+    horsWorker();
+    const ecrit: unknown[][] = [];
+    cartes({ json: async () => ({ a: 1 }), bytes: async () => new Uint8Array([3]).buffer, put: async (...a) => void ecrit.push(a) });
+    expect(contexte().worker).toBe(false);
+    expect(await contexte().brut!.get("k", "json")).toEqual({ a: 1 });
+    expect(new Uint8Array((await contexte().brut!.get("k", "arrayBuffer"))!)[0]).toBe(3);
+    await contexte().brut!.put("k", "v", { expirationTtl: 60 });
+    await contexte().brut!.put("k", "w");
+    expect(ecrit).toEqual([["k", "v", 60], ["k", "w", undefined]]);
+    fichiers({ json: async <T>() => ({ f: 1 }) as T });
+    dansLeWorker();
+    expect([!!contexte().brut, !!contexte().fichiers, contexte().worker]).toEqual([true, true, true]);
+    cartes();
+    fichiers();
+    expect([contexte().brut, contexte().fichiers, contexte().worker]).toEqual([undefined, undefined, true]);
+    horsWorker();
+  });
+});

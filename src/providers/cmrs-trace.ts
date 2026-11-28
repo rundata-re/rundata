@@ -22,7 +22,7 @@ import { getText } from "../http.js";
 import { noteLecture } from "../lectures.js";
 import { type SourceInfo, why } from "../types.js";
 import * as gdacs from "./cyclones.js";
-import type { Store } from "./vigilance-carte.js";
+import { magasin } from "./vigilance-carte.js";
 
 /** The date of Météo-France's written agreement to show these positions; null: nothing is read nor shown. */
 export const ACCORD: string | null = "2026-11-02";
@@ -59,12 +59,6 @@ const TIMEOUT_MS = 20_000;
 const MAX_POINTS = 200;
 const HOUR = 3_600_000;
 
-let store: Store | undefined;
-
-/** The Worker's KV (worker.ts). Without it, nothing is read, kept or shown. */
-export function configure(kv?: Store): void {
-  store = kv;
-}
 
 /** One advisory, as its bulletin gives it. */
 export interface Avis {
@@ -246,7 +240,9 @@ export function dueQuiet(now: Date): boolean {
   return due(now) && (m - FROM_MINUTE) % QUIET_MINUTES === 0;
 }
 
+// The Worker's KV (vigilance-carte.ts `magasin`). Without it, nothing is read, kept or shown.
 async function etat(): Promise<Etat | undefined> {
+  const store = magasin();
   if (!store) return undefined;
   count(1, "read");
   return ((await store.json(KEY)) as Etat | null) ?? undefined;
@@ -292,6 +288,7 @@ export async function suivisKept(now = new Date()): Promise<Suivi[]> {
  */
 export async function passage(cache: Cache, now = new Date()): Promise<string> {
   if (!enLigne()) return "pas d'accord";
+  const store = magasin();
   if (!store || !due(now)) return "rien à lire";
   const list = (await gdacs.systemes(cache, now)).value;
   if (!list.some((s) => gdacs.isActive(s, now)) && !dueQuiet(now)) return "aucun système actif";

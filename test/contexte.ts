@@ -1,5 +1,6 @@
-import { contexte, installer, retirer, type Bases, type Contexte, type Secrets } from "../src/contexte.js";
+import { contexte, installer, retirer, type Bases, type Contexte, type Fichiers, type Navigateur, type Secrets } from "../src/contexte.js";
 import type { KvBinding } from "../src/kv.js";
+import type { Store } from "../src/providers/vigilance-carte.js";
 
 let installe: Contexte | undefined;
 let donneesInstallees: Record<string, unknown> = {};
@@ -16,12 +17,14 @@ export function dansLeWorker(donnees: Record<string, unknown> = {}, secrets: Sec
   const suite = contexte() === installe;
   donneesInstallees = suite ? { ...donneesInstallees, ...donnees } : { ...donnees };
   secretsInstalles = suite ? { ...secretsInstalles, ...secrets } : { ...secrets };
-  if (!suite) brutInstalle = undefined;
+  if (!suite) brutInstalle = contexte().brut;
   const lues = donneesInstallees;
-  const bases = contexte().bases;
+  const { bases, navigateur, fichiers } = contexte();
   installe = {
     worker: true,
     ...(bases && { bases }),
+    ...(navigateur && { navigateur }),
+    ...(fichiers && { fichiers }),
     ...(brutInstalle && { brut: brutInstalle }),
     secrets: secretsInstalles,
     kv: {
@@ -56,6 +59,34 @@ export function bases(donnees: Bases) {
   const apres: Contexte = { ...avant, bases: fusion };
   if (avant === installe) installe = apres;
   installer(apres);
+}
+
+/** Some of the context's parts changed in place, in the Worker or not: a part given as undefined is taken back. */
+function enPlace(parts: Partial<Contexte>) {
+  const avant = contexte();
+  const apres: Contexte = { ...avant, ...parts };
+  for (const k of Object.keys(parts) as (keyof Contexte)[]) if (parts[k] === undefined) delete apres[k];
+  if (avant === installe) installe = apres;
+  installer(apres);
+}
+
+/**
+ * The maps' store and browser (contexte.ts `brut` and `navigateur`, read by providers/vigilance-carte.ts and the RSMC's
+ * maps) from a test's `Store`, a new store each call, as each `configure` gave before; none given, both taken back.
+ * Giving them does not put the other modules in the Worker.
+ */
+export function cartes(kv?: Store, navigateur?: Navigateur) {
+  const brut: KvBinding | undefined = kv && {
+    get: ((cle: string, type: "json" | "arrayBuffer") => (type === "json" ? kv.json(cle) : kv.bytes(cle))) as KvBinding["get"],
+    put: (cle, valeur, options) => kv.put(cle, valeur, options?.expirationTtl),
+  };
+  if (contexte() === installe) brutInstalle = brut;
+  enPlace({ brut, navigateur });
+}
+
+/** The site's static files as a test gives them (contexte.ts `fichiers`); none given, taken back. */
+export function fichiers(f?: Fichiers) {
+  enPlace({ fichiers: f });
 }
 
 /** The feedback database's doors as a test gives them, uncounted here (contexte.ts `portesAvis` counts them). */

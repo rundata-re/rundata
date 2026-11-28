@@ -9,6 +9,7 @@ import { cyclones } from "../src/tools/cyclones.js";
 import { basinMap, label, W } from "../src/web/cyclones-bassin.js";
 import { buildCyclones } from "../src/web/data.js";
 import { cyclonesPage } from "../src/web/cyclones.js";
+import { cartes } from "./contexte.js";
 
 // An invented bulletin in the form of the RSMC's WTIO31 FMEE (system, name and positions made up), with forecasts
 // that must never be read. GDACS as in test/cyclones.test.ts: FYTIA active on 03/02/2026.
@@ -85,10 +86,10 @@ const cache = (now: Date) => new Cache(new MemoryStore(), () => now.getTime());
 let kv: FakeKv;
 beforeEach(() => {
   kv = new FakeKv();
-  trace.configure(kv);
+  cartes(kv);
 });
 afterEach(() => {
-  trace.configure();
+  cartes();
   trace.ouvrir(trace.ACCORD !== null);
   vi.unstubAllGlobals();
 });
@@ -198,7 +199,7 @@ describe("once Météo-France agrees", () => {
     const calls = stubFetch(() => new Response(B7));
     expect(await trace.passage(cache(OCTOBER), OCTOBER)).toBe("aucun système actif");
     expect(await trace.passage(cache(AT), new Date("2026-02-03T08:40:00Z"))).toBe("rien à lire");
-    trace.configure();
+    cartes();
     expect(await trace.passage(cache(AT), AT)).toBe("rien à lire");
     expect(calls.some((u) => u.includes("noaa"))).toBe(false);
   });

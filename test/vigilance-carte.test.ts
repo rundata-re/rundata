@@ -13,6 +13,7 @@ import { unzip, unzipBytes } from "../src/zip.js";
 import { counted, SCHEDULED_BUDGET, scheduled } from "../src/budget.js";
 import { configure as configureMf } from "../src/providers/mf-auth.js";
 import { vigilanceMeteo } from "../src/tools/vigilance.js";
+import { cartes } from "./contexte.js";
 
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url));
 const ZIP = () => {
@@ -60,7 +61,7 @@ function fakeBrowser(answer: () => Response) {
   };
 }
 
-afterEach(() => carte.configure());
+afterEach(() => cartes());
 
 describe("the bulletin's time of issue", () => {
   it("is read on page 1 of Météo-France's bulletin, at La Réunion's offset", async () => {
@@ -91,7 +92,7 @@ describe("the scheduled event's turn", () => {
   it("keeps a new bulletin, then has it photographed at the next event, once", async () => {
     const kv = new FakeKv();
     const browser = fakeBrowser(() => new Response(PNG, { headers: { "content-type": "image/png" } }));
-    carte.configure(kv, browser);
+    cartes(kv, browser);
     const empreinte = await carte.fingerprint(PDF());
 
     const first = await carte.passage(PDF(), T0);
@@ -119,7 +120,7 @@ describe("the scheduled event's turn", () => {
   it("tries twice per bulletin, one try per event, then says it failed", async () => {
     const kv = new FakeKv();
     const browser = fakeBrowser(() => new Response("non", { status: 500 }));
-    carte.configure(kv, browser);
+    cartes(kv, browser);
     await carte.passage(PDF(), T0);
     expect((await carte.passage(undefined, T0 + 5 * MIN))?.image).toBeUndefined();
     expect(browser.calls).toHaveLength(1);
@@ -132,7 +133,7 @@ describe("the scheduled event's turn", () => {
 
   it("refuses an answer that is not a PNG", async () => {
     const kv = new FakeKv();
-    carte.configure(kv, fakeBrowser(() => new Response("<html>", { headers: { "content-type": "text/html" } })));
+    cartes(kv, fakeBrowser(() => new Response("<html>", { headers: { "content-type": "text/html" } })));
     await carte.passage(PDF(), T0);
     expect((await carte.passage(undefined, T0 + 5 * MIN))?.image).toBeUndefined();
   });
@@ -140,7 +141,7 @@ describe("the scheduled event's turn", () => {
   it("makes no more than 24 pictures a day", async () => {
     const kv = new FakeKv();
     const browser = fakeBrowser(() => new Response(PNG));
-    carte.configure(kv, browser);
+    cartes(kv, browser);
     await carte.passage(PDF(), T0);
     const etat = (await kv.json("vigilance:carte")) as carte.Etat;
     etat.jour = { date: "2026-10-22", n: 24 };
@@ -153,7 +154,7 @@ describe("the scheduled event's turn", () => {
 
   it("keeps no map of a bulletin whose time of issue it cannot read, and says when it tried", async () => {
     const kv = new FakeKv();
-    carte.configure(kv, fakeBrowser(() => new Response(PNG)));
+    cartes(kv, fakeBrowser(() => new Response(PNG)));
     const seen = await carte.passage(new Uint8Array([37, 80, 68, 70, 45, 49]), T0);
     expect(seen).toEqual({ illisible: new Date(T0).toISOString() });
     expect([...kv.data.keys()]).toEqual(["vigilance:carte"]);
@@ -162,7 +163,7 @@ describe("the scheduled event's turn", () => {
   it("does nothing without KV, and no picture without the browser", async () => {
     expect(await carte.passage(PDF(), T0)).toBeUndefined();
     const kv = new FakeKv();
-    carte.configure(kv);
+    cartes(kv);
     await carte.passage(PDF(), T0);
     expect((await carte.passage(undefined, T0 + 5 * MIN))?.image).toBeUndefined();
   });
@@ -247,7 +248,7 @@ describe("the map on /vigilance", () => {
 describe("the map's addresses", () => {
   it("serves the picture and the PDF as kept, the newest PDF by its own address", async () => {
     const kv = new FakeKv();
-    carte.configure(kv, fakeBrowser(() => new Response(PNG)));
+    cartes(kv, fakeBrowser(() => new Response(PNG)));
     await carte.passage(PDF(), T0);
     await carte.passage(undefined, T0 + 5 * MIN);
     const e = await carte.fingerprint(PDF());
@@ -267,7 +268,7 @@ describe("the map's addresses", () => {
 
   it("opens the browser's page with the bulletin's token only, never indexed", async () => {
     const kv = new FakeKv();
-    carte.configure(kv);
+    cartes(kv);
     await carte.passage(PDF(), T0);
     const { jeton, empreinte } = ((await kv.json("vigilance:carte")) as carte.Etat).bulletin!;
     const page = await carteRoute(carte.RENDU_PATH, new URL(`https://rundata.re${carte.RENDU_PATH}?j=${jeton}`));
@@ -307,7 +308,7 @@ describe("the vigilance's copy, built by the scheduled event", () => {
     configureMf({ applicationId: "test" });
     vi.stubGlobal("fetch", async (url: string) => (String(url).includes("/token") ? Response.json({ access_token: "t", expires_in: 3600 }) : new Response(ZIP())));
     const kv = new FakeKv();
-    carte.configure(kv, fakeBrowser(() => new Response(PNG)));
+    cartes(kv, fakeBrowser(() => new Response(PNG)));
     const e = await carte.fingerprint(PDF());
     // Two events, 5 minutes apart: the bulletin kept, then photographed. Read outside an event, the copy has the state.
     const event = () => counted(SCHEDULED_BUDGET, async () => (scheduled(), mf.read()));

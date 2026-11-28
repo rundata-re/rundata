@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Samedi 28 novembre 2026
 
+- Mer : la dernière mesure des deux bouées, Sainte-Marie et Saint-Pierre, en haut de la page, avec son heure.
 - Alertes sur le téléphone : vigilance orange ou rouge, alerte cyclonique et volcan, sans compte, sur la page /alertes
 - Mer : en courbes, la houle et la température de la mer aux deux bouées, Sainte-Marie et Saint-Pierre, chacune avec sa prévision.
 

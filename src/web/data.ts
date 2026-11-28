@@ -337,7 +337,7 @@ export interface BeachNow {
   heure?: string;
   distance_km?: number;
   /** The waves FORECAST near the beach; missing on a copy made before they were read. */
-  houle?: { hauteur_m: number; maintenant: string; heure: string; max: string; max_jour: string };
+  houle?: { hauteur_m: number; maintenant: string; heure: string; max: string; max_jour: string; /** The wave model of this forecast (houle.WaveModel.nom); missing in a copy older code wrote. */ modele?: string };
 }
 
 export interface SeaData {
@@ -416,7 +416,7 @@ export async function buildSea(cache: Cache, now = new Date()): Promise<SeaData>
         ...(r
           ? { valeur: r.valeur, jour: r.mesure.jour_mesure, ...("passe" in r && { heure: r.passe }), distance_km: r.mesure.distance_km }
           : before ? { valeur: before.valeur, jour: before.jour, ...(before.heure && { heure: before.heure }), distance_km: before.distance_km } : {}),
-        ...(l ? { houle: { hauteur_m: l.hauteur_m, maintenant: l.maintenant, heure: l.heure, max: l.max, max_jour: l.max_jour } } : {}),
+        ...(l ? { houle: { hauteur_m: l.hauteur_m, maintenant: l.maintenant, heure: l.heure, max: l.max, max_jour: l.max_jour, modele: l.at.model.nom } } : {}),
       };
     }),
     ...(read ? { maree: tide.map((g) => gaugeRow(g, now)) } : {}),

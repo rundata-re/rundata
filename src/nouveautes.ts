@@ -59,6 +59,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded for the site): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-28T12:56:00+04:00", texte: "Mer\u00a0: la dernière mesure des deux bouées, Sainte-Marie et Saint-Pierre, en haut de la page, avec son heure." },
   { date: "2026-11-28T12:11:00+04:00", texte: "Alertes sur le téléphone\u00a0: vigilance orange ou rouge, alerte cyclonique et volcan, sans compte, sur la page /alertes" },
   { date: "2026-11-28T12:07:00+04:00", texte: "Mer\u00a0: en courbes, la houle et la température de la mer aux deux bouées, Sainte-Marie et Saint-Pierre, chacune avec sa prévision." },
   { date: "2026-11-27T18:57:00+04:00", texte: "Aujourd'hui, au Tampon et à Saint-Joseph\u00a0: l'état des bennes est attribué aux agents de la CASUD, et non plus au TCO." },

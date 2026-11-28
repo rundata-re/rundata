@@ -3,7 +3,8 @@
  * the bathing water, the risk of coral bleaching and the whales' season. The page of each commune or famous place is in
  * lieu-page.ts, the layout shared by every page in pages.ts, the vigilance in vigilance-page.ts.
  */
-import { courbesSection } from "./mer-courbes.js";
+import { courbesSection, satelliteSection } from "./mer-courbes.js";
+import { leQuand } from "../tools/mer-courbes.js";
 import { porte } from "./aller.js";
 import { resolvePlace } from "../places/resolve.js";
 import type { Cached } from "../cache.js";
@@ -22,7 +23,7 @@ import { legende } from "./carte-legende.js";
 import { slugify } from "./places.js";
 import { bathingBlock, ruleTop } from "./baignade.js";
 import { coupable } from "./domains.js";
-import { adressesCoupables, anchorId, ask, chip, connector, credits, dayMonth, deg, DESCRIPTION_MAX, icon, ISLAND, jourDe, layout, leAt, leJour, lesJours, seaName, SITE, thin } from "./pages.js";
+import { adressesCoupables, anchorId, chip, connector, credits, dayMonth, deg, DESCRIPTION_MAX, icon, ISLAND, jourDe, layout, leAt, leJour, lesJours, seaName, SITE, thin } from "./pages.js";
 
 const CROWDED = new Set(["Plage de la Saline les Bains", "Plage de Saint-Paul"]);
 
@@ -93,11 +94,29 @@ export function seaPage(origin: string, data: Cached<SeaData> | null, now = new 
   const day = seen.map((b) => b.jour!).sort().pop();
   const warm = seen.length ? seen.reduce((a, b) => (b.valeur! > a.valeur! ? b : a)) : undefined;
   const cool = seen.length ? seen.reduce((a, b) => (b.valeur! < a.valeur! ? b : a)) : undefined;
-  const url = `${origin}/mer`;
   // Not every beach of the west coast: their markers would sit on one another.
   const markers: Marker[] = seen.filter((b) => !CROWDED.has(b.nom)).map((b) => ({ lon: b.lon, lat: b.lat, label: `${Math.round(b.valeur!)}°`, say: `eau à ${Math.round(b.valeur!)} °C`, name: seaName(b.nom), color: chip(b.valeur!), round: true, href: `#${anchorId("p", b.nom)}` }));
 
-  const status = warm && cool
+  // The buoys first, while recent at the view: measured on the half hour, where the satellite's pass is of the night or
+  // the day before (the user, 28/11/2026: the first two screens said only the satellite). Each line starts with its time.
+  const buoys = (d?.bouees ?? []).filter((b) => now.getTime() - b.t <= candhis.MESURE_MAX_HOURS * 3600_000);
+  const latest = buoys.length ? buoys.reduce((a, b) => (b.t > a.t ? b : a)) : undefined;
+  const buoysTop = buoys.map((b) => {
+    const [jour, h] = b.mesuree_a.split(" ");
+    const what = [b.hauteur_significative && `houle de <b>${esc(thin(b.hauteur_significative))}</b>${b.venant ? ` ${esc(b.venant)}` : ""}`, b.vague_max && `vagues jusqu'à ${esc(thin(b.vague_max))}`, b.periode && `période ${esc(thin(b.periode))}`, b.temperature_eau && `mer à <b>${esc(thin(b.temperature_eau))}</b>`].filter(Boolean).join(", ");
+    return `<div class="now"><p><b>Mesurée le ${esc(jour)} à ${esc(h)}</b> à la bouée de ${esc(b.bouee)}\u00a0: ${what || "pas de hauteur mesurée"}.</p></div>`;
+  }).join("") +
+    // A buoy silent for more than 6 hours says so, from its curves: it never goes away without a word.
+    (d?.courbes?.bouees ?? []).filter((c) => !buoys.some((b) => b.bouee === c.nom)).map((c) => {
+      const last = Math.max(...Object.values(c.chiffres).map((x) => (typeof x?.le === "number" ? x.le : 0)));
+      return last ? `<div class="now"><p>Bouée de ${esc(c.nom)}\u00a0: <b>dernière mesure ${esc(leQuand(last))}</b>, plus rien depuis.</p></div>` : "";
+    }).join("");
+  const satelliteTop = warm && cool
+    ? `<div class="now"><p>L'eau au large des plages, vue par satellite\u00a0: <b>${esc(thin(`${fourchette(fr(Math.round(cool.valeur! * 10) / 10), fr(Math.round(warm.valeur! * 10) / 10))} °C`))}</b>, plus chaude à ${esc(seaName(warm.nom))}, plus fraîche à ${esc(seaName(cool.nom))}. ${esc(seaMeasure(seen))}</p></div>`
+    : "";
+  const status = buoysTop
+    ? `${buoysTop}<div class="now"><p>Source\u00a0: ${esc(candhis.SOURCE.attribution)} (${esc(candhis.SOURCE.licence)}), relevée toutes les 30 minutes.</p></div>`
+    : warm && cool
     ? `<div class="now"><span class="big span">${enGrand(esc(thin(`${fourchette(fr(Math.round(cool.valeur! * 10) / 10), fr(Math.round(warm.valeur! * 10) / 10))} °C`)))}</span>` +
       `<p>Température de surface de la mer autour de l'île, mesurée par satellite <b>${esc(lesJours(seen.map((b) => b.jour!)))}</b>. ` +
       `Plus chaude à <b>${esc(seaName(warm.nom))}</b>, plus fraîche à <b>${esc(seaName(cool.nom))}</b>.</p></div>`
@@ -113,23 +132,6 @@ export function seaPage(origin: string, data: Cached<SeaData> | null, now = new 
       `<p class="note">Mis à jour ${leAt(data!.fetchedAt)}.</p><p class="sources">Sources : ${credits(d.sources)}.</p>`
     : `<p class="card">Les mesures satellite se chargent : rechargez la page dans quelques secondes.</p>`;
 
-  // The buoys' measurements, while recent at the view (providers/candhis.ts): a measurement, never mixed with the forecast.
-  // Its producer said under it, in a note: a « sources » paragraph is moved to the page's end (sourcesLast).
-  const buoys = (d?.bouees ?? []).filter((b) => now.getTime() - b.t <= candhis.MESURE_MAX_HOURS * 3600_000);
-  const measuredSwell = buoys.length
-    ? `<section aria-labelledby="h-houle-mesuree">
-  <div class="sec-h"><p class="eyebrow">Mesure, pas une prévision</p><h2 id="h-houle-mesuree">La houle mesurée au large</h2>
-  <p>La dernière demi-heure mesurée par ${buoys.length > 1 ? "les bouées" : "la bouée"} du réseau Candhis du Cerema : la hauteur significative (celle du tiers des plus hautes vagues), la vague la plus haute, la période, la direction d'où viennent les vagues et la température de la mer à la bouée. Au large, avant le récif : dans le lagon, les vagues sont bien plus petites.</p></div>
-  <div class="card"><ul class="seas">${buoys.map((b) => {
-      const [jour, h] = b.mesuree_a.split(" ");
-      const what = [b.venant, b.periode && `période ${b.periode}`, b.vague_max && `vagues jusqu'à ${b.vague_max}`].filter(Boolean).join(", ");
-      return `<li><span>${esc(b.bouee)}</span> <b>${b.hauteur_significative ? esc(thin(b.hauteur_significative)) : "—"}</b> <span>${esc(thin(what))}</span>` +
-        ` <span>mesurée le ${esc(jour)} à ${esc(h)}${b.temperature_eau ? `, mer à ${esc(thin(b.temperature_eau))}` : ""}</span></li>`;
-    }).join("")}</ul>
-  <p class="note">Source\u00a0: ${esc(candhis.SOURCE.attribution)} (${esc(candhis.SOURCE.licence)}).</p></div>
-</section>`
-    : "";
-
   const waves = d?.plages.filter((b) => b.houle) ?? [];
   const top = waves.length ? waves.reduce((a, b) => (b.houle!.hauteur_m > a.houle!.hauteur_m ? b : a)) : undefined;
   const swell = waves.length
@@ -138,7 +140,7 @@ export function seaPage(origin: string, data: Cached<SeaData> | null, now = new 
   <p>Hauteur, direction et période des vagues au large, pour les 3 heures en cours, puis la plus haute des 4 jours, d'après deux modèles de vagues : celui de Météo-France (MFWAM, maille d'environ 9 km), qui distingue la houle principale du reste de la mer, à l'ouest et au sud\u00a0; celui du Centre européen (ECMWF, maille de 9 km) au nord et à l'est, où le premier n'a pas de point près de la côte. Dans le lagon et derrière le récif, les vagues sont bien plus petites. Pour la sécurité : <a href="/vigilance">la vigilance vagues-submersion</a>, les drapeaux et les maîtres-nageurs.</p></div>
   <div class="card"><ul class="seas">${waves.map((b) => `<li><span>${esc(seaName(b.nom))}</span>` +
       ` <b>${esc(thin(`${fr(b.houle!.hauteur_m)} m`))}</b> <span>${esc(b.houle!.maintenant.replace(/^\S+ m /, ""))}, vers ${esc(b.houle!.heure)}</span>` +
-      ` <span>jusqu'à ${esc(thin(b.houle!.max))} ${esc(b.houle!.max_jour)}</span></li>`).join("")}</ul></div>
+      ` <span>jusqu'à ${esc(thin(b.houle!.max))} ${esc(b.houle!.max_jour)}</span>${b.houle!.modele ? ` <span>modèle ${esc(b.houle!.modele)}</span>` : ""}</li>`).join("")}</ul></div>
 </section>`
     : "";
 
@@ -167,6 +169,21 @@ export function seaPage(origin: string, data: Cached<SeaData> | null, now = new 
 </section>`
     : "";
 
+  // The tide at the top, after the buoys (the user, 28/11/2026, had not seen it so low on the page): what it does now at
+  // each gauge, its time first, then the next high and low water, computed, and a link to the block.
+  const tideTop = GAUGES.map((gauge) => {
+    const g = (d?.maree ?? []).find((r) => r.maregraphe === computed.find((x) => x!.gauge === gauge)?.nom);
+    const x = computed.find((c) => c!.gauge === gauge);
+    const lu = g && "hauteur_m" in g && g.hauteur_m != null && !("avertissement" in g && g.avertissement)
+      ? `<b>Marée mesurée le ${esc(g.heure_mesure!.replace(" ", " à "))}</b> au marégraphe ${esc(g.maregraphe)}\u00a0: ${g.tendance === "étale" ? "mer étale" : `marée ${esc(g.tendance!)}`}, ${esc(thin(`${fr(g.hauteur_m)} m`))}.`
+      : "";
+    const pm = x?.next.liste.find((e) => e.type === "pleine mer");
+    const bm = x?.next.liste.find((e) => e.type === "basse mer");
+    const prochaines = x && (pm || bm)
+      ? `${lu ? "" : `Au marégraphe ${esc(x.nom)}, `}${lu ? "Prochaines" : "prochaines"} marées, un calcul, pas la prédiction du SHOM\u00a0: ${x.next.liste.filter((e) => e === pm || e === bm).map((e) => `${esc(e.type)} ${esc(e.heure)}`).join(", ")}.`
+      : "";
+    return lu || prochaines ? `<div class="now"><p>${[lu, prochaines].filter(Boolean).join(" ")}</p></div>` : "";
+  }).join("");
   const title = "Mer : houle, température de l'eau, marée · La Réunion (974)";
   // The swell forecast from the copy's day: its day counts more than its height, which goes first when the description
   // does not fit; undated, as before, only when even that does not fit.
@@ -205,38 +222,47 @@ export function seaPage(origin: string, data: Cached<SeaData> | null, now = new 
   ];
 
   const band = `<div class="wrap"><nav class="crumbs" aria-label="Fil d'Ariane"><ol><li><a href="/">${SITE}</a></li><li aria-current="page">Mer</li></ol></nav></div>
-<div class="wrap intro">
+<div class="wrap intro solo">
   <div class="pitch">
-    <p class="pill">Mesure satellite${day ? ` · ${esc(lesJours(seen.map((b) => b.jour!)).replace(/^(le|les|du) /, ""))}` : ""}</p>
+    <p class="pill">${latest ? `Mesure des bouées · ${esc(latest.mesuree_a.replace(" ", " à "))}` : `Mesure satellite${day ? ` · ${esc(lesJours(seen.map((b) => b.jour!)).replace(/^(le|les|du) /, ""))}` : ""}`}</p>
     <h1>Mer à La Réunion\u00a0: température et houle <span class="n974">974</span></h1>
     ${status}
+    ${tideTop ? `${tideTop}<div class="now"><p><a href="#h-maree">La marée en ce moment, et les prochaines →</a></p></div>` : ""}
     ${ruleTop(now)}
-    ${ask(`Dolo la mèr lé sho ? Gèt si ${url} é di amwin pou chak plaj.`,
-      `Quelle est la température de l'eau à La Réunion ? Lis ${url} et donne-moi la température plage par plage, avec la date de la mesure.`)}
+    ${buoysTop ? satelliteTop : ""}
   </div>
-  <figure class="card mapcard">${islandMap({ markers, apart: true, listed: true, label: "Carte de La Réunion (974) avec la température de la mer au large de chaque plage" })}
-  ${day ? `<figcaption class="note" style="color:var(--on-night-muted)">${legende([{ forme: "rond", couleur: chip(26), texte: "26°", dit: "température de l'eau au large de la plage" }], esc(seaMeasure(seen)))}</figcaption>` : ""}</figure>
 </div>`;
+  // The beaches' map, once, in their block (the user, 28/11/2026: each subject in one block); it was the band's.
+  const carte = `<figure class="card mapcard">${islandMap({ markers, apart: true, listed: true, label: "Carte de La Réunion (974) avec la température de la mer au large de chaque plage" })}
+  ${day ? `<figcaption class="note">${legende([{ forme: "rond", couleur: chip(26), texte: "26°", dit: "température de l'eau au large de la plage" }], esc(seaMeasure(seen)))}</figcaption>` : ""}</figure>`;
 
+  // The third card of « Ce que mesure le satellite »: where the swell is measured, from the buoys shown, and forecast.
+  const nomsBouees = [...new Set([...buoys.map((b) => b.bouee), ...(d?.courbes?.bouees ?? []).map((b) => b.nom)])];
+  const houleDite = nomsBouees.length
+    ? `La houle est mesurée ${nomsBouees.length > 1 ? "aux bouées" : "à la bouée"} ${nomsBouees.map((n) => `de ${esc(n)}`).join(", ").replace(/, (de [^,]+)$/, " et $1")}, et prévue près des plages`
+    : "La houle près des plages est une prévision";
   const body = `${courbesSection(d?.courbes, now)}
+${tide}
+${swell}
 <section aria-labelledby="h-plages">
-  <div class="sec-h"><p class="eyebrow">Plage par plage</p><h2 id="h-plages">La mer au large de chaque plage</h2>
+  <div class="sec-h"><p class="eyebrow">Par satellite</p><h2 id="h-plages">La mer au large de chaque plage</h2>
   <p>Du nord à l'ouest en passant par l'est et le sud : la dernière mesure satellite à moins de 12 km de chaque plage.</p></div>
+  ${carte}
   <div class="card">${list}</div>
+  ${satelliteSection(d?.courbes)}
+  <p><a href="/mer/historique">Les années d'avant\u00a0: l'histoire de la mer, ses records et le même jour chaque année →</a></p>
   <p><a href="${esc(WEBCAMS_PLAGES.lien)}">${esc(WEBCAMS_PLAGES.texte)}</a> (sur le site de l'IRT).</p>
 </section>
-${reef !== undefined ? reefSection(reef) : ""}
-${whaleSection(now)}
-${measuredSwell}${swell}
-${tide}
 ${bathingBlock(now, undefined, g)}${g.feuille}
 <p class="lead"><a href="/peche">Pêche de loisir\u00a0: langouste, bichiques, capucin nain, ce qui est fermé aujourd'hui →</a></p>
+${reef !== undefined ? reefSection(reef) : ""}
+${whaleSection(now)}
 <section aria-labelledby="h-lire-mer">
   <div class="sec-h"><p class="eyebrow">Bon à savoir</p><h2 id="h-lire-mer">Ce que mesure le satellite</h2></div>
   <div class="three">
     <div class="card">${icon("wave")}<h3>La surface, au large</h3><p>Le satellite mesure la toute première couche d'eau, en moyenne sur des carrés de 2 à 4 km. Le lagon et le bord de plage, peu profonds, sont souvent plus chauds en journée.</p></div>
     <div class="card">${icon("cloud")}<h3>Pas à travers les nuages</h3><p>Un ciel couvert cache la mer : la mesure retenue est alors celle d'un jour précédent, ou d'un carré un peu plus loin. La date et la distance sont toujours données.</p></div>
-    <div class="card">${icon("gauge")}<h3>Au mieux, la mesure d'hier</h3><p>Une mesure par satellite paraît au plus tôt le lendemain du jour mesuré : celle d'aujourd'hui n'existe pas encore. La houle, elle, est une prévision ; pour la vigilance vagues-submersion, voyez <a href="/vigilance">la vigilance</a>.</p></div>
+    <div class="card">${icon("gauge")}<h3>Un passage, pas la journée</h3><p>Le satellite passe au-dessus de l'île vers 01:40 et vers 14:00, et sa mesure paraît moins de 1 h 30 après : un instant, pas la moyenne de la journée. Les jours de nuages, c'est la moyenne d'un jour précédent, publiée au plus tôt le lendemain. ${houleDite} ; pour la vigilance vagues-submersion, voyez <a href="/vigilance">la vigilance</a>.</p></div>
   </div>
 </section>
 <section class="card cta" aria-labelledby="h-ia">

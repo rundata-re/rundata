@@ -278,6 +278,6 @@ export function historiqueBlock(c: Courbes, near?: { lon: number; lat: number },
   return {
     ...(bouees.length ? { bouees } : {}),
     ...(satellite.length ? { satellite, reference_noaa: REFERENCE_OUTIL } : {}),
-    page: "https://rundata.re/mer#h-courbes",
+    page: bouees.length ? "https://rundata.re/mer#h-courbes" : "https://rundata.re/mer#h-satellite-courbes",
   };
 }

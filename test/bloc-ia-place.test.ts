@@ -40,8 +40,12 @@ describe("the question to an assistant", () => {
     expect(askAfterData('<div class="pitch"><h1>Titre</h1></div>', main)).toEqual(['<div class="pitch"><h1>Titre</h1></div>', main]);
   });
 
-  it("is in no band, and follows the band's map on /air and /mer", () => {
-    for (const [html, first] of [[airPage(O, null, NOW), "<section"], [seaPage(O, null, NOW), "<section"]]) {
+  it("is in no band, and follows the band's map on /air; on /mer, only at its end", () => {
+    // /mer asks its question once, at its end (#h-ia, 28/11/2026: one subject, one block), and its band has no map.
+    const sea = seaPage(O, null, NOW);
+    expect(sea).not.toContain('class="askbox"');
+    expect(sea).toContain('id="h-ia"');
+    for (const [html, first] of [[airPage(O, null, NOW), "<section"]]) {
       expect(band(html)).not.toContain('class="askbox"');
       expect(band(html)).toContain("<figure");
       const t = text(html);

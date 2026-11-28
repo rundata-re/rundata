@@ -481,7 +481,7 @@ const HOOKS: [string, string][] = [
   ["/vigilance", "Avant de sortir : la vigilance officielle de Météo-France, zone par zone."],
   ["/crues", "Fortes pluies ? La vigilance crues et la hauteur des rivières en ce moment, station par station, d'après Vigicrues Réunion."],
   ["/mer/historique", "Plus chaude que d'habitude ? La mer de chaque jour face à ses années passées."],
-  ["/mer", "Avant la plage : la température de l'eau au large de chaque plage."],
+  ["/mer", "Avant la plage : la houle mesurée aux bouées, la marée, puis l'eau au large de chaque plage."],
   ["/volcan", "Éruption ou pas, Enclos ouvert ou fermé : l'état du volcan avant de monter."],
   ["/bus", "Votre prochain bus, à l'heure annoncée par le réseau, sans appli à installer."],
   ["/trafic", "Avant de prendre la route : la carte officielle des bouchons et des travaux, et ce que signalent les médias."],

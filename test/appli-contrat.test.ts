@@ -2,11 +2,11 @@ import { readFileSync } from "node:fs";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { appliDe } from "../src/appli.js";
 import { Cache, MemoryStore } from "../src/cache.js";
-import { configure } from "../src/providers/mf-auth.js";
 import * as mf from "../src/providers/vigilance.js";
 import { activeRow, cyclones, suiviRow } from "../src/tools/cyclones.js";
 import { vigilanceMeteo } from "../src/tools/vigilance.js";
 import { unzip } from "../src/zip.js";
+import { meteoFrance } from "./contexte.js";
 
 // Le contrat entre l'appli (mobile/) et les deux outils qui nourrissent ses alertes et ses notifications :
 // `vigilance_meteo` (avec la commune) et `cyclones`. Les clés sont lues dans le code Kotlin lui-même : une clé que
@@ -60,8 +60,8 @@ function cacheAvec(v: mf.Vigilance) {
   return new Cache(store, () => NOW.getTime());
 }
 
-beforeAll(() => configure({ token: "test" }));
-afterAll(() => configure({}));
+beforeAll(() => meteoFrance({ token: "test" }));
+afterAll(() => meteoFrance({}));
 
 describe("ce que l'appli lit", () => {
   it("est déclaré ici, clé par clé", () => {

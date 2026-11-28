@@ -1,13 +1,12 @@
 import { readFileSync } from "node:fs";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
-import { configure as mfConfigure } from "../src/providers/mf-auth.js";
 import * as mf from "../src/providers/vigilance.js";
 import * as episodes from "../src/providers/vigilance-episodes.js";
 import { vigilanceMeteo } from "../src/tools/vigilance.js";
 import { vigilancePage } from "../src/web/vigilance-page.js";
 import { unzip } from "../src/zip.js";
-import { cartes } from "./contexte.js";
+import { cartes, meteoFrance } from "./contexte.js";
 
 const NOW = new Date("2026-11-24T06:00:00Z");
 const zip = readFileSync(new URL("./fixtures/vigilance_om.zip", import.meta.url));
@@ -102,8 +101,8 @@ describe("Météo-France's texts by zone", () => {
     void store.put(mf.KEY, { value: v, fetchedAt: NOW.getTime() });
     return new Cache(store, () => NOW.getTime());
   };
-  beforeAll(() => mfConfigure({ token: "test" }));
-  afterAll(() => mfConfigure({}));
+  beforeAll(() => meteoFrance({ token: "test" }));
+  afterAll(() => meteoFrance({}));
 
   it("keeps the zone of a text that has one, never one for the island's", async () => {
     const v = await orange(undefined, blocs);

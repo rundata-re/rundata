@@ -5,10 +5,10 @@ import { BUILD_BUDGET, PAGE_BUDGET, SCHEDULED_BUDGET, SERVICE_OPS_LIMIT, SUBREQU
 import { Cache, MemoryStore, TieredStore, type CacheEntry } from "../src/cache.js";
 import { KvStore, type KvBinding } from "../src/kv.js";
 import * as arome from "../src/providers/arome.js";
-import { configure } from "../src/providers/mf-auth.js";
 import { temperatureMer } from "../src/tools/mer.js";
 import { meteoActuelle } from "../src/tools/meteo.js";
 import { prefetchForecasts, previsionMeteo } from "../src/tools/prevision.js";
+import { meteoFrance } from "./contexte.js";
 
 // What a Worker counts: every fetch and every read or write of the data center's cache; KV has its own limit.
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url));
@@ -85,7 +85,7 @@ function upstream(url: string, init?: RequestInit): Response {
 
 beforeEach(() => {
   coverages = [];
-  configure({ applicationId: "test" });
+  meteoFrance({ applicationId: "test" });
   vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
     overLimit();
     return upstream(String(url), init);
@@ -94,7 +94,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
-  configure({});
+  meteoFrance({});
 });
 
 describe("subrequests of a cold question in the Worker", () => {
@@ -133,11 +133,11 @@ describe("subrequests of a cold question in the Worker", () => {
   });
 
   it("does not say AROME is coming when it is not plugged in, nor beyond its 48 hours", async () => {
-    configure({});
+    meteoFrance({});
     const off = await counted(PAGE_BUDGET, () => previsionMeteo(isolate(), "Cilaos", "demain", NOW));
     expect(body(off.value).resume).toMatch(/^PRÉVISION \(pas une mesure\)/);
     expect(body(off.value).modele.nom).toMatch(/^IFS HRES/);
-    configure({ applicationId: "test" });
+    meteoFrance({ applicationId: "test" });
     const far = await counted(PAGE_BUDGET, () => previsionMeteo(isolate(), "Cilaos", "dans 5 jours", NOW));
     expect(body(far.value).resume).not.toContain("AROME pas encore chargée");
   });

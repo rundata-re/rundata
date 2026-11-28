@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { configurerEquipe, handle, JETON_EQUIPE, sansBalise } from "../src/app.js";
+import { handle, JETON_EQUIPE, sansBalise } from "../src/app.js";
 import { Cache } from "../src/cache.js";
 import { AGENT, checkAnswer, checkPage, MARGE_DONNEES, MAX_BYTES, PAGES, parseTime, RADAR_HISTORY, sizesOf, sizesSummary, SUIT_LES_DONNEES, taillesSummary, TOOLS } from "../src/bin/check-sources.js";
 import type { Hit } from "../src/metrics.js";
+import { cles } from "./contexte.js";
 
 // Saturday 24 October 2026, 07:11 in Réunion.
 const NOW = new Date("2026-10-24T03:11:00Z");
@@ -222,14 +223,14 @@ describe("the daily check of the sources", () => {
   it("is not counted as a visit by the Worker when it sends the team's secret", async () => {
     const hits: Hit[] = [];
     const get = (headers: Record<string, string>) => handle(new Request("https://rundata.re/nouveautes", { headers: { accept: "text/html", "user-agent": AGENT, ...headers } }), new Cache(), () => {}, (h) => hits.push(h));
-    configurerEquipe(SECRET);
+    cles({ equipe: SECRET });
     try {
       await get({ [JETON_EQUIPE]: SECRET });
       expect(hits).toEqual([]);
       await get({});
       expect(hits).toHaveLength(1);
     } finally {
-      configurerEquipe(undefined);
+      cles({ equipe: undefined });
     }
   });
 
@@ -237,7 +238,7 @@ describe("the daily check of the sources", () => {
     // Cloudflare's edge writes its beacon into every HTML page unless it says no-transform: the team's browsers counted
     // as visits (666 loads of the beacon on 04/11/2026, 13:15-14:00).
     const get = (path: string, headers: Record<string, string> = {}) => handle(new Request(`https://rundata.re${path}`, { headers: { accept: "text/html", "user-agent": AGENT, ...headers } }), new Cache());
-    configurerEquipe(SECRET);
+    cles({ equipe: SECRET });
     try {
       const team = await get("/nouveautes", { [JETON_EQUIPE]: SECRET });
       const visitor = await get("/nouveautes");
@@ -251,7 +252,7 @@ describe("the daily check of the sources", () => {
       expect(sansBalise(new Response("{}", { headers: { "content-type": "application/json", "cache-control": "no-store" } })).headers.get("cache-control")).toBe("no-store");
       expect(sansBalise(new Response("<p>", { headers: { "content-type": "text/html", "cache-control": "no-store" } })).headers.get("cache-control")).toBe("no-store, no-transform");
     } finally {
-      configurerEquipe(undefined);
+      cles({ equipe: undefined });
     }
   });
 
@@ -269,7 +270,7 @@ describe("the daily check of the sources", () => {
         () => {},
         (h) => hits.push(h),
       );
-    configurerEquipe(SECRET);
+    cles({ equipe: SECRET });
     try {
       for (const ua of ["rundata-check/ship", "curl/8.5 rundata-audit", "Mozilla/5.0"]) {
         await page(ua, { [JETON_EQUIPE]: SECRET });
@@ -282,7 +283,7 @@ describe("the daily check of the sources", () => {
       await call("rundata-check/ship", { [JETON_EQUIPE]: SECRET.slice(1) });
       expect(hits.map((h) => h.kind)).toEqual(["rpc", "rpc", "rpc", "rpc", "rpc", "rpc"]);
     } finally {
-      configurerEquipe(undefined);
+      cles({ equipe: undefined });
     }
     await page("rundata-check/ship", { [JETON_EQUIPE]: SECRET });
     expect(hits).toHaveLength(7);

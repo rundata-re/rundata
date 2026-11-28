@@ -6,7 +6,7 @@
  * expires, or after a 401.
  */
 import { count, perInvocation } from "../budget.js";
-import { contexte } from "../contexte.js";
+import { contexte, secret, type Secrets } from "../contexte.js";
 import { delai, USER_AGENT } from "../http.js";
 import { UpstreamError, why } from "../types.js";
 
@@ -21,20 +21,23 @@ export interface Credentials {
   token?: string;
 }
 
-let credentials: Credentials = {};
+// The secrets the OAuth token in memory was issued with: the Worker keeps the same ones in an isolate; others (a
+// test's), and that token is not used.
+let oauthDe: Secrets | undefined;
 
-export function configure(c: Credentials) {
-  const next = {
-    applicationId: c.applicationId?.trim() || undefined,
-    apiKey: c.apiKey?.trim() || undefined,
-    token: c.token?.trim() || undefined,
-  };
-  if (next.applicationId !== credentials.applicationId) oauth = undefined;
-  credentials = next;
+/** The application's keys, as the Worker's secrets give them (contexte.ts `secret`), read when they are needed. */
+function identifiants(): Credentials {
+  const de = contexte().secrets;
+  if (de !== oauthDe) {
+    oauth = undefined;
+    oauthDe = de;
+  }
+  return { applicationId: secret("meteofranceApplication"), apiKey: secret("meteofranceCle"), token: secret("meteofranceJeton") };
 }
 
 export function enabled(): boolean {
-  return Boolean(credentials.applicationId || credentials.apiKey || credentials.token);
+  const c = identifiants();
+  return Boolean(c.applicationId || c.apiKey || c.token);
 }
 
 /** A token and the time (ms) it is reused until: 5 minutes before it expires. */
@@ -90,7 +93,7 @@ async function newToken(source: string, reason: string): Promise<string> {
     res = await fetch(TOKEN_URL, {
       method: "POST",
       headers: {
-        Authorization: `Basic ${credentials.applicationId}`,
+        Authorization: `Basic ${identifiants().applicationId}`,
         "Content-Type": "application/x-www-form-urlencoded",
         "User-Agent": USER_AGENT,
       },
@@ -140,7 +143,7 @@ export const RENEW_BEFORE_MS = 15 * 60_000;
  * isolate holds no token good for 15 minutes more; a token and a KV write about every 40 minutes.
  */
 export async function keepFresh(source: string): Promise<"gardé" | "renouvelé" | null> {
-  if (!credentials.applicationId || !contexte().brut) return null;
+  if (!identifiants().applicationId || !contexte().brut) return null;
   if (oauth && oauth.until - Date.now() > RENEW_BEFORE_MS) return "gardé";
   const kept = await stored();
   if (kept && kept.until - Date.now() > RENEW_BEFORE_MS) {
@@ -158,7 +161,7 @@ export async function keepFresh(source: string): Promise<"gardé" | "renouvelé"
  * renewed it), or none is needed (a key or a fixed token). For the scheduled event's step that must not take one.
  */
 export function held(): boolean {
-  return !credentials.applicationId || (oauth != null && Date.now() < oauth.until);
+  return !identifiants().applicationId || (oauth != null && Date.now() < oauth.until);
 }
 
 /** After a 401 with `failed`: KV's token when another isolate wrote a newer one, else a new one. */
@@ -203,10 +206,11 @@ type Getter<T> = (source: string, url: string, timeoutMs: number, headers: Recor
 
 /** One authenticated GET, tried again on a 401 with KV's token if it is newer, then with a new one. */
 export async function download<T>(url: string, s: Session, get: Getter<T>, timeoutMs = 20_000): Promise<T> {
-  if (!credentials.applicationId) {
-    const headers: Record<string, string> = credentials.apiKey
-      ? { apikey: credentials.apiKey }
-      : { Authorization: `Bearer ${credentials.token}` };
+  const c = identifiants();
+  if (!c.applicationId) {
+    const headers: Record<string, string> = c.apiKey
+      ? { apikey: c.apiKey }
+      : { Authorization: `Bearer ${c.token}` };
     return get(s.source, url, timeoutMs, headers);
   }
   let token = await s.token();

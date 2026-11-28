@@ -2,7 +2,8 @@ import { afterEach, describe, expect, it } from "vitest";
 import { handle } from "../src/app.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { cheminMasque } from "../src/chemin-secret.js";
-import { axeY, bonJeton, configurerUv, genereLe, heureLocale, pageUv, type Simulation, UV_KV_KEY, UV_PATH } from "../src/web/uv-moufia.js";
+import { axeY, bonJeton, genereLe, heureLocale, pageUv, type Simulation, UV_KV_KEY, UV_PATH } from "../src/web/uv-moufia.js";
+import { brutEnPlace, cles } from "./contexte.js";
 
 const SECRET = "Uq3vT8mWz1kP6sYd0nR4hB";
 const O = "https://rundata.re";
@@ -37,6 +38,12 @@ const DONNEES: Simulation = {
 };
 
 const kvDe = (valeur: unknown) => ({ lus: [] as string[], async get(key: string) { this.lus.push(key); return valeur; } });
+
+/** The link's secret and the store that holds the data (contexte.ts `secret` and `brut`), as the Worker gives them. */
+const configurerUv = (jeton: string | undefined, kv: { get(key: string): Promise<unknown> } | undefined) => {
+  cles({ uvMoufia: jeton });
+  brutEnPlace(kv as never);
+};
 
 afterEach(() => configurerUv(undefined, undefined));
 

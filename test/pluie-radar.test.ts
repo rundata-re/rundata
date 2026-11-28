@@ -26,7 +26,7 @@ function decodeMm(pluie: string, mm: string | undefined): Float64Array | null {
   return n === mm.length ? out : null;
 }
 import { KV_KEY as RETRO_KEY, rle, type Historique } from "../src/web/pluie-retro.js";
-import { horsWorker, stockageBrut } from "./contexte.js";
+import { horsWorker, meteoFrance, stockageBrut } from "./contexte.js";
 
 // The real lame d'eau of 22/10/2026 05:35–05:40 UTC: almost dry over the island.
 const file = readFileSync(new URL("./fixtures/radar_lame_eau.h5", import.meta.url));
@@ -113,7 +113,7 @@ describe("the live layer when this data center holds only an old copy of the rad
     read ? stockageBrut({ get: async (cle: string) => (cle === RETRO_KEY ? read() : null), put: async () => {} } as never) : horsWorker();
   afterEach(() => {
     vi.unstubAllGlobals();
-    meteofrance.configure({});
+    meteoFrance({});
     horsWorker();
   });
 
@@ -129,7 +129,7 @@ describe("the live layer when this data center holds only an old copy of the rad
     const cache = new Cache(new MemoryStore(), () => t);
     await cache.get("radar:2", 240, image);
     t = now;
-    meteofrance.configure({ applicationId: "test" });
+    meteoFrance({ applicationId: "test" });
     vi.stubGlobal("fetch", async (url: string) => (String(url).includes("/token") ? Response.json({ access_token: "t", expires_in: 3600 }) : new Response("", { status: 500 })));
     return cache;
   }
@@ -161,7 +161,7 @@ describe("the live layer when this data center holds only an old copy of the rad
     // A fresh image: no read of KV.
     const fresh = new Cache(new MemoryStore(), () => Date.now());
     await fresh.get("radar:2", 240, image);
-    meteofrance.configure({ applicationId: "test" });
+    meteoFrance({ applicationId: "test" });
     expect((await (await rainGrid(fresh)).json()).fin).toBe(g.fin);
     expect(reads).toBe(1);
   });

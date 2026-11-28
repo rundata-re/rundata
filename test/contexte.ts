@@ -1,5 +1,6 @@
 import { contexte, installer, retirer, type Bases, type Contexte, type Fichiers, type Navigateur, type Secrets } from "../src/contexte.js";
 import type { KvBinding } from "../src/kv.js";
+import type { Credentials } from "../src/providers/mf-auth.js";
 import type { Store } from "../src/providers/vigilance-carte.js";
 
 let installe: Contexte | undefined;
@@ -16,7 +17,7 @@ let brutInstalle: KvBinding | undefined;
 export function dansLeWorker(donnees: Record<string, unknown> = {}, secrets: Secrets = {}) {
   const suite = contexte() === installe;
   donneesInstallees = suite ? { ...donneesInstallees, ...donnees } : { ...donnees };
-  secretsInstalles = suite ? { ...secretsInstalles, ...secrets } : { ...secrets };
+  secretsInstalles = suite ? { ...secretsInstalles, ...secrets } : { ...contexte().secrets, ...secrets };
   if (!suite) brutInstalle = contexte().brut;
   const lues = donneesInstallees;
   const { bases, navigateur, fichiers } = contexte();
@@ -82,6 +83,28 @@ export function cartes(kv?: Store, navigateur?: Navigateur) {
   };
   if (contexte() === installe) brutInstalle = brut;
   enPlace({ brut, navigateur });
+}
+
+/**
+ * The Worker's secrets as a test gives them (contexte.ts `secret`), added to the context's in place, in the Worker or
+ * not: a secret given as undefined is taken back. Giving them does not put the other modules in the Worker.
+ */
+export function cles(s: Secrets) {
+  const fusion: Secrets = { ...contexte().secrets, ...s };
+  for (const k of Object.keys(fusion) as (keyof Secrets)[]) if (fusion[k] === undefined) delete fusion[k];
+  if (contexte() === installe) secretsInstalles = fusion;
+  enPlace({ secrets: fusion });
+}
+
+/** Météo-France's portal keys as a test gives them, as `configure` took them before: the ones not given taken back. */
+export function meteoFrance(c: Credentials = {}) {
+  cles({ meteofranceApplication: c.applicationId, meteofranceCle: c.apiKey, meteofranceJeton: c.token });
+}
+
+/** The store as the modules that count their own reads see it (contexte.ts `brut`), in place; none given, taken back. */
+export function brutEnPlace(brut?: KvBinding) {
+  if (contexte() === installe) brutInstalle = brut;
+  enPlace({ brut });
 }
 
 /** The site's static files as a test gives them (contexte.ts `fichiers`); none given, taken back. */

@@ -39,7 +39,7 @@ beforeEach(async () => {
   );
   formulaires.ouvrir(true);
   club.ouvrir(true);
-  formulaires.configure(undefined, async (t, _adresse, attendu) => t === "humain" && attendu.action === "club");
+  formulaires.verifierAvec(async (t, _adresse, attendu) => t === "humain" && attendu.action === "club");
   const lus = clubsDeLAccueil(ACCUEIL);
   await espace.relireAnnuaire(NOW, async () => [...lus, ...Array.from({ length: 8 }, (_, i) => ({ ref: `20${i}`, nom: `CLUB DE VOLLEY ${i}`, commune: "Saint-Paul", fiche: `${CLUBS}club-${i}/` }))]);
   tampon = rows<{ id: number }>("SELECT id FROM clubs WHERE ref = '101'")[0].id;
@@ -54,7 +54,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   donnerEspace(undefined);
-  formulaires.configure(undefined);
+  formulaires.verifierAvec();
   formulaires.ouvrir(formulaires.ASSOCIATIONS_EN_LIGNE);
   club.ouvrir(club.CLUB_EN_LIGNE);
   // Never the address in what is logged.

@@ -6,6 +6,7 @@ import { resolvePlace } from "../src/places/resolve.js";
 import { heuresHier } from "../src/tools/historique.js";
 import { meteoActuelle } from "../src/tools/meteo.js";
 import { ECART_FOIS, ECART_MM, gaugesOf, pluieCommune } from "../src/tools/pluie-commune.js";
+import { meteoFrance } from "./contexte.js";
 
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url), "utf8");
 const body = (r: { content: { text: string }[] }) => JSON.parse(r.content[0].text);
@@ -38,13 +39,13 @@ async function cache() {
 
 describe("the rain at every gauge of a commune asked as a whole", () => {
   beforeEach(() => {
-    meteofrance.configure({ token: "test" });
+    meteoFrance({ token: "test" });
     vi.stubGlobal("fetch", async () => {
       throw new Error("no network in tests");
     });
   });
   afterEach(() => {
-    meteofrance.configure({});
+    meteoFrance({});
     vi.unstubAllGlobals();
   });
 

@@ -15,6 +15,7 @@
  * a day) leaves out one silent for more than a day, said apart (`muets`).
  */
 import { left, perInvocation, unlessSpent } from "../budget.js";
+import { secret } from "../contexte.js";
 import type { Cache, Cached } from "../cache.js";
 import { getText } from "../http.js";
 import { placeAt } from "../places/resolve.js";
@@ -42,14 +43,11 @@ const FRESH_SECONDS = 30 * 60;
 const AVAILABILITY_SECONDS = 6 * 3600;
 const DAY_MS = 24 * 3600_000;
 
-let mapKey: string | undefined;
-
-export function configure(key?: string) {
-  mapKey = key?.trim() || undefined;
-}
+/** The FIRMS map key, as the Worker's secret gives it (contexte.ts `secret`). */
+const cleCarte = () => secret("firms");
 
 export function enabled(): boolean {
-  return !!mapKey;
+  return !!cleCarte();
 }
 
 export type Confiance = "faible" | "moyenne" | "forte";
@@ -115,7 +113,7 @@ export function parse(csv: string, satellite: string): Detection[] {
 /** The last day of data of each satellite, or {} when FIRMS does not say: then every satellite is asked. */
 async function availability(cache: Cache): Promise<Record<string, string>> {
   try {
-    return (await cache.island("feux:dispo", AVAILABILITY_SECONDS, async () => parseAvailability(await getText(SOURCE.id, `${AVAILABILITY}/${mapKey}/ALL`)))).value;
+    return (await cache.island("feux:dispo", AVAILABILITY_SECONDS, async () => parseAvailability(await getText(SOURCE.id, `${AVAILABILITY}/${cleCarte()}/ALL`)))).value;
   } catch (err) {
     console.error(`source ${SOURCE.id} : jours disponibles non lus:`, scrub(why(err)));
     return {};
@@ -127,7 +125,7 @@ async function island(cache: Cache, now: Date): Promise<Cached<Feux>> {
     const days = await availability(cache);
     const asked = Object.entries(SATELLITES).filter(([id]) => !silent(days[id], now));
     const muets = Object.entries(SATELLITES).filter(([id]) => silent(days[id], now)).map(([id, nom]) => ({ nom, dernier_jour: days[id] }));
-    const lists = unlessSpent(await Promise.allSettled(asked.map(async ([id, nom]) => parse(await getText(SOURCE.id, `${API}/${mapKey}/${id}/${AREA}/2`), nom))));
+    const lists = unlessSpent(await Promise.allSettled(asked.map(async ([id, nom]) => parse(await getText(SOURCE.id, `${API}/${cleCarte()}/${id}/${AREA}/2`), nom))));
     const ok = lists.flatMap((r, i) => (r.status === "fulfilled" ? [{ nom: asked[i][1], list: r.value }] : []));
     if (!ok.length) throw (lists[0] as PromiseRejectedResult | undefined)?.reason ?? new UpstreamError(SOURCE.id, "aucun satellite");
     const detections = ok.flatMap((x) => x.list).sort((x, y) => y.t.localeCompare(x.t));
@@ -159,4 +157,7 @@ async function load(cache: Cache, now: Date): Promise<(Feux & { fetchedAt: Date 
 }
 
 /** The key sits in the request's path: never in a log line, whatever an error ends up saying. */
-const scrub = (s: string) => (mapKey ? s.split(mapKey).join("<MAP_KEY>") : s);
+const scrub = (s: string) => {
+  const cle = cleCarte();
+  return cle ? s.split(cle).join("<MAP_KEY>") : s;
+};

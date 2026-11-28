@@ -10,6 +10,7 @@ import { feedReader, stopwatch, type Recorder } from "./metrics.js";
 import { bodyText } from "./http.js";
 import { metaWebhook, PATH as META_WEBHOOK } from "./meta-webhook.js";
 import { createServer, VERSION } from "./server.js";
+import { secret } from "./contexte.js";
 import { why } from "./types.js";
 import { watch } from "./usage.js";
 import type { Background } from "./web/data.js";
@@ -37,16 +38,13 @@ export function withCors(r: Response): Response {
 
 // The team's scripts: the daily check (bin/check-sources.ts) and the team's own reads. They are known by the team's
 // secret in the header `rundata-jeton` (the Worker's secret EQUIPE_JETON), never by their User-Agent alone, which
-// anyone can write. Without the secret set, no one is.
-let jetonEquipe: string | undefined;
-export function configurerEquipe(jeton: string | undefined) {
-  jetonEquipe = jeton || undefined;
-}
+// anyone can write. Without the secret set, no one is (contexte.ts `secret`).
 export const JETON_EQUIPE = "rundata-jeton";
 
 /** Whether the request carries the team's secret, compared in a time that does not tell how much of it matched. */
 export function equipe(headers: Headers): boolean {
   const j = headers.get(JETON_EQUIPE);
+  const jetonEquipe = secret("equipe");
   if (!jetonEquipe || !j || j.length !== jetonEquipe.length) return false;
   let diff = 0;
   for (let i = 0; i < j.length; i++) diff |= j.charCodeAt(i) ^ jetonEquipe.charCodeAt(i);

@@ -13,7 +13,7 @@
  *
  * In the Worker the rows go to D1; in Node, without a database, nothing is kept and the tool says where to write.
  */
-import { portesAvis } from "./contexte.js";
+import { portesAvis, secret } from "./contexte.js";
 import { visitor } from "./metrics.js";
 
 export const TYPES = ["manque", "erreur", "suggestion", "bravo"] as const;
@@ -42,12 +42,8 @@ export interface Avis {
 /** Runs one statement, returns the number of rows it changed. */
 export type Run = (sql: string, ...params: unknown[]) => Promise<number>;
 
-let sel: string | undefined;
-
-/** `secret`: the salt of the fingerprints, if the Worker has one (AVIS_SEL); the rows go to the feedback's database (contexte.ts `portesAvis`). */
-export function configure(secret?: string) {
-  sel = secret || undefined;
-}
+// The salt of the fingerprints, if the Worker has one (contexte.ts `secret`); the rows go to the feedback's database
+// (contexte.ts `portesAvis`).
 
 export const enabled = () => !!portesAvis().run;
 
@@ -73,7 +69,7 @@ export function reseau(ip: string): string {
  * connection is its `reseau`: in IPv6 the /64, which a single home or script holds whole, so it counts once.
  */
 export async function empreinte(adresse: string, now: Date): Promise<string> {
-  const data = new TextEncoder().encode(`${sel ?? salt()}|${now.toISOString().slice(0, 10)}|${reseau(adresse)}`);
+  const data = new TextEncoder().encode(`${secret("selAvis") ?? salt()}|${now.toISOString().slice(0, 10)}|${reseau(adresse)}`);
   const h = new Uint8Array(await crypto.subtle.digest("SHA-256", data));
   return Array.from(h.slice(0, 8), (b) => b.toString(16).padStart(2, "0")).join("");
 }

@@ -5,7 +5,7 @@ import * as meteofrance from "../src/providers/meteofrance.js";
 import * as meteorOi from "../src/providers/meteor-oi.js";
 import { meteoActuelle, stationLien } from "../src/tools/meteo.js";
 import { stationOf } from "../src/web/station.js";
-import { dansLeWorker, horsWorker } from "./contexte.js";
+import { dansLeWorker, horsWorker, meteoFrance } from "./contexte.js";
 
 // Off Saint-Gilles, meteo_actuelle named four stations and linked one page, which showed one of them (26/11/2026): each
 // station now gives where its measure is read, its page on rundata.re or its producer's public page.
@@ -31,13 +31,13 @@ async function cache(): Promise<Cache> {
 }
 
 beforeEach(() => {
-  meteofrance.configure({ token: "test" });
+  meteoFrance({ token: "test" });
   vi.stubGlobal("fetch", async () => {
     throw new Error("no network in tests");
   });
 });
 afterEach(() => {
-  meteofrance.configure({});
+  meteoFrance({});
   horsWorker();
   vi.unstubAllGlobals();
 });

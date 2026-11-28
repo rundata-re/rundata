@@ -1,12 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { counted } from "../src/budget.js";
-import { configure, download, keepFresh, RENEW_BEFORE_MS, session, tokensIssued, type Token, type TokenStore } from "../src/providers/mf-auth.js";
+import { download, keepFresh, RENEW_BEFORE_MS, session, tokensIssued, type Token, type TokenStore } from "../src/providers/mf-auth.js";
 import { UpstreamError } from "../src/types.js";
-import { horsWorker, stockageBrut } from "./contexte.js";
+import { brutEnPlace, horsWorker, meteoFrance, stockageBrut } from "./contexte.js";
 
 /** The token shared through the Worker's store (contexte.ts `brut`), as `s` holds it; without `s`, outside the Worker. */
 function share(s?: TokenStore) {
-  if (!s) return horsWorker();
+  if (!s) return brutEnPlace();
   stockageBrut({ get: async () => s.get(), put: async (_cle: string, v: string, o?: { expirationTtl?: number }) => s.put(JSON.parse(v), o!.expirationTtl!) } as never);
 }
 
@@ -40,7 +40,7 @@ let logs: string[];
 // The portal hands out the tokens of `portal` in turn; the API takes only those of `accepted`.
 beforeEach(() => {
   // A new application each time: this isolate holds no token yet (configure forgets it).
-  configure({ applicationId: `app${++app}` });
+  meteoFrance({ applicationId: `app${++app}` });
   kv = new Kv();
   share(kv);
   portal = [];
@@ -58,7 +58,8 @@ afterEach(() => {
   share(undefined);
   // No application left set for the files after this one, which share its modules (vitest.config.ts): their pages would
   // ask Météo-France for the vigilance.
-  configure({});
+  meteoFrance({});
+  horsWorker();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
@@ -208,9 +209,9 @@ describe("the token renewed by the scheduled event before it is due", () => {
   });
 
   it("does nothing without the application's id or without KV", async () => {
-    configure({ apiKey: "k" });
+    meteoFrance({ apiKey: "k" });
     expect(await renew()).toEqual({ value: null, used: 0, issued: 0 });
-    configure({ applicationId: `app${++app}` });
+    meteoFrance({ applicationId: `app${++app}` });
     share(undefined);
     expect(await renew()).toEqual({ value: null, used: 0, issued: 0 });
   });

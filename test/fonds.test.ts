@@ -46,6 +46,7 @@ import { proposerPage } from "../src/web/propositions.js";
 import { annuaireEcolesPage } from "../src/web/ecoles-annuaire.js";
 import { withVolcan } from "../src/web/volcan-alerte.js";
 import { unzip } from "../src/zip.js";
+import { cles } from "./contexte.js";
 
 const NOW = new Date("2026-10-28T06:00:00Z");
 const O = "https://rundata.re";
@@ -110,8 +111,8 @@ const picture = (html: string) => html.match(/<img class="fond"[^>]*>/)?.[0];
 
 describe("the illustrations behind the band", () => {
   // /feux without its key is kept out of the search engines, and so without its picture.
-  beforeEach(() => feux.configure("clé"));
-  afterEach(() => feux.configure());
+  beforeEach(() => cles({ firms: "clé" }));
+  afterEach(() => cles({ firms: undefined }));
 
   it("show each page's own picture, decorative and in low priority, with the mention beside it", () => {
     expect(Object.keys(FONDS).filter((p) => p !== "/vigilance").sort()).toEqual(Object.keys(PAGES).sort());

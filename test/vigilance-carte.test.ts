@@ -11,9 +11,8 @@ import { site } from "../src/web/site.js";
 import { Cache } from "../src/cache.js";
 import { unzip, unzipBytes } from "../src/zip.js";
 import { counted, SCHEDULED_BUDGET, scheduled } from "../src/budget.js";
-import { configure as configureMf } from "../src/providers/mf-auth.js";
 import { vigilanceMeteo } from "../src/tools/vigilance.js";
-import { cartes } from "./contexte.js";
+import { cartes, meteoFrance } from "./contexte.js";
 
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url));
 const ZIP = () => {
@@ -301,11 +300,11 @@ describe("the map's addresses", () => {
 describe("the vigilance's copy, built by the scheduled event", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
-    configureMf({});
+    meteoFrance({});
   });
 
   it("carries the map, which /vigilance and vigilance_meteo show", async () => {
-    configureMf({ applicationId: "test" });
+    meteoFrance({ applicationId: "test" });
     vi.stubGlobal("fetch", async (url: string) => (String(url).includes("/token") ? Response.json({ access_token: "t", expires_in: 3600 }) : new Response(ZIP())));
     const kv = new FakeKv();
     cartes(kv, fakeBrowser(() => new Response(PNG)));

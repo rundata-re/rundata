@@ -7,7 +7,7 @@ import * as espace from "../src/clubs/espace.js";
 import * as connexions from "../src/connecteurs/connexions.js";
 import * as propositions from "../src/propositions.js";
 import * as abonnements from "../src/push/abonnements.js";
-import { baseAvis, type PortesTest } from "./contexte.js";
+import { baseAvis, cles, type PortesTest } from "./contexte.js";
 
 type Run = NonNullable<PortesTest["run"]>;
 type All = NonNullable<PortesTest["all"]>;
@@ -15,7 +15,7 @@ type Batch = NonNullable<PortesTest["batch"]>;
 
 export function donnerAvis(run?: Run, sel?: string) {
   baseAvis({ run });
-  avis.configure(sel);
+  cles({ selAvis: sel });
 }
 
 export function donnerPropositions(run?: Run, envoi?: propositions.Envoi, all?: All) {

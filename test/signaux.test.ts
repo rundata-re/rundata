@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { configurerEquipe, handle, JETON_EQUIPE } from "../src/app.js";
+import { handle, JETON_EQUIPE } from "../src/app.js";
 import { Cache } from "../src/cache.js";
 import { point, type Hit } from "../src/metrics.js";
 import { connecteurPage } from "../src/web/connecteur.js";
 import { legalPage } from "../src/web/legal-page.js";
 import { CSS } from "../src/web/style.js";
 import { lire, SIGNAL_SCRIPT, VENU } from "../src/web/signaux.js";
+import { cles } from "./contexte.js";
 
 const O = "https://rundata.re";
 const BROWSER = {
@@ -89,12 +90,12 @@ describe("POST /signal, as recorded", () => {
     expect(other.hits).toEqual([]);
     expect((await hitsOf(beacon("e=o&v=oui&p=%2F", { ...BROWSER, "sec-fetch-site": "same-origin", origin: "https://example.org" }))).hits).toEqual([]);
     // The team is known by its secret, not by its User-Agent (src/app.ts).
-    configurerEquipe("secret-de-test-equipe");
+    cles({ equipe: "secret-de-test-equipe" });
     try {
       expect((await hitsOf(beacon("e=o&v=oui&p=%2F", { ...BROWSER, [JETON_EQUIPE]: "secret-de-test-equipe" }))).hits).toEqual([]);
       expect((await hitsOf(beacon("e=o&v=oui&p=%2F", { ...BROWSER, "user-agent": "rundata-check/essai" }))).hits).toHaveLength(1);
     } finally {
-      configurerEquipe(undefined);
+      cles({ equipe: undefined });
     }
     // A valid signal made long by a key the page never sends: kept at 300 bytes, refused at 301 by the length alone.
     const long = (n: number) => { const b = "e=o&v=oui&p=%2F&x="; return b + "a".repeat(n - b.length); };

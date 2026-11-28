@@ -6,14 +6,14 @@ import { buildChiffres } from "../src/chiffres.js";
 import { KvStore, type KvBinding } from "../src/kv.js";
 import { withLectures } from "../src/lectures.js";
 import * as meteofrance from "../src/providers/meteofrance.js";
-import { configure, type Token, type TokenStore } from "../src/providers/mf-auth.js";
+import { type Token, type TokenStore } from "../src/providers/mf-auth.js";
 import { checks, REGISTRY } from "../src/registre.js";
 import { SHARED } from "../src/web/partagees.js";
-import { horsWorker, stockageBrut } from "./contexte.js";
+import { brutEnPlace, horsWorker, meteoFrance, stockageBrut } from "./contexte.js";
 
 /** The token shared through the Worker's store (contexte.ts `brut`), as `s` holds it; without `s`, outside the Worker. */
 function share(s?: TokenStore) {
-  if (!s) return horsWorker();
+  if (!s) return brutEnPlace();
   stockageBrut({ get: async () => s.get(), put: async (_cle: string, v: string, o?: { expirationTtl?: number }) => s.put(JSON.parse(v), o!.expirationTtl!) } as never);
 }
 
@@ -87,7 +87,7 @@ beforeEach(() => {
   fetched.length = 0;
   token = null;
   portal = () => Response.json({ access_token: "t", expires_in: 3600 });
-  configure({ applicationId: "test" });
+  meteoFrance({ applicationId: "test" });
   share({ get: async () => token, put: async (t) => void (token = t) });
   vi.stubGlobal("fetch", async (input: string | URL | Request) => {
     const url = input instanceof Request ? input.url : String(input);
@@ -104,7 +104,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
-  configure({});
+  meteoFrance({});
   share(undefined);
 });
 

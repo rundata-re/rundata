@@ -2,11 +2,11 @@ import { createHash } from "node:crypto";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { failed, handle } from "../src/app.js";
 import { Cache } from "../src/cache.js";
-import { configurerDefiOpenai } from "../src/web/site.js";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { CSP_RAPPORT, enTetes, PERMISSIONS, politique, rapport, scriptsEnLigne, SECURITY_EXPIRES } from "../src/web/securite.js";
 import { script } from "../src/web/scripts-declares.js";
+import { cles } from "./contexte.js";
 
 const sha = (s: string) => createHash("sha256").update(s, "utf8").digest("base64");
 
@@ -170,10 +170,10 @@ describe("whom to tell of a security flaw, /.well-known/security.txt (RFC 9116)"
 });
 
 describe("the domain check of OpenAI's plugin portal, /.well-known/openai-apps-challenge", () => {
-  afterEach(() => configurerDefiOpenai(undefined));
+  afterEach(() => cles({ defiOpenai: undefined }));
 
   it("serves the token alone, as plain text, once the Worker's secret is set", async () => {
-    configurerDefiOpenai(" jeton-du-portail\n");
+    cles({ defiOpenai: " jeton-du-portail\n" });
     const r = await handle(new Request("https://rundata.re/.well-known/openai-apps-challenge"), new Cache());
     expect(r.status).toBe(200);
     expect(r.headers.get("content-type")).toBe("text/plain; charset=utf-8");

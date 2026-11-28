@@ -3,7 +3,6 @@ import { coastwatch } from "./sst.js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { costOf, count, counted, measured, oublierCouts, PAGE_BUDGET } from "../src/budget.js";
 import { Cache, type CacheEntry, MemoryStore, stampOf, TieredStore } from "../src/cache.js";
-import { configure } from "../src/providers/mf-auth.js";
 import { withLectures } from "../src/lectures.js";
 import { fraicheur } from "../src/tools/fraicheur.js";
 import { AFTER_ANSWER_CAP, apresAlertes, COURT, court, METEO_NOM, partiesLaissees, PREVISION_NOM, fromStations, readCopies, refresh, resume, RESUME_BUILD_WAIT_MS, RESUME_REFRESH_WAIT_MS, resumeDuJour, STATIONS_KEY, UPDATING, VOLCANO_COMMUNES } from "../src/tools/resume.js";
@@ -34,6 +33,7 @@ import { buildAir, buildPlace } from "../src/web/data.js";
 import * as candhis from "../src/providers/candhis.js";
 import { pageOf } from "../src/web/places.js";
 import { aujourdhuiPage } from "../src/web/aujourdhui.js";
+import { meteoFrance } from "./contexte.js";
 
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url));
 // Saturday 24 October 2026, 14:00 at La Réunion.
@@ -353,7 +353,7 @@ async function edgeWith(old: string[] = [], missing: string[] = []) {
 const isolate = (edge: EdgeLike) => new Cache(new TieredStore(new MemoryStore(), edge), () => NOW.getTime(), false, new MemoryStore());
 
 beforeEach(() => {
-  configure({ applicationId: "test" });
+  meteoFrance({ applicationId: "test" });
   vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
     const u = String(url);
     if (u.includes("/token")) return Response.json({ access_token: "t", expires_in: 3600 });
@@ -372,7 +372,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
-  configure({});
+  meteoFrance({});
 });
 
 describe("reading the copies", () => {

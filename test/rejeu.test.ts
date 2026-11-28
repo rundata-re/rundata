@@ -10,7 +10,7 @@ import { amateurs, assembler, CUMULS_PATH, fill, FINS, freshSeconds, heures, HEU
 import { HEURES_KEY, JOUR_PREFIX, PREMIER_JOUR } from "../src/web/radar-semaine.js";
 import { project } from "../src/web/map.js";
 import { site } from "../src/web/site.js";
-import { bases, horsWorker, stockageBrut } from "./contexte.js";
+import { bases, horsWorker, meteoFrance, stockageBrut } from "./contexte.js";
 const donnerClimat = (d?: climat.ClimatDb, horaire?: climat.ClimatDb) => bases({ climat: d, climatHoraire: horaire });
 
 const csv = readFileSync(new URL("./fixtures/meteofrance_horaire.csv", import.meta.url), "utf8");
@@ -44,7 +44,7 @@ function configure(s?: Sources) {
 afterEach(() => {
   configure(undefined);
   donnerClimat(undefined, undefined);
-  meteofrance.configure({});
+  meteoFrance({});
 });
 
 describe("the stations' week", () => {

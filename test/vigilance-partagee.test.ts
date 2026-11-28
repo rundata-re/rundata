@@ -2,12 +2,12 @@ import { readFileSync } from "node:fs";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { counted, SCHEDULED_BUDGET } from "../src/budget.js";
 import { Cache, type CacheEntry, MemoryStore, TieredStore } from "../src/cache.js";
-import { configure } from "../src/providers/mf-auth.js";
 import * as mf from "../src/providers/vigilance.js";
 import { alerte, vigilanceNow, BANNER_WAIT_MS } from "../src/web/data.js";
 import { homePage } from "../src/web/home.js";
 import { type Kv, kvKey, oublierEcritures, SHARED, SharedFallback, warmShared } from "../src/web/partagees.js";
 import { unzip } from "../src/zip.js";
+import { meteoFrance } from "./contexte.js";
 
 // What an earlier file wrote to KV, kept by partagees.ts as an isolate keeps it: forgotten, as in an isolate of this file's own.
 beforeAll(oublierEcritures);
@@ -54,7 +54,7 @@ let delayMs = 0;
 beforeEach(() => {
   zips = 0;
   delayMs = 0;
-  configure({ applicationId: "test" });
+  meteoFrance({ applicationId: "test" });
   vi.stubGlobal("fetch", async (url: string) => {
     if (String(url).includes("/token")) return Response.json({ access_token: "t", expires_in: 3600 });
     zips++;
@@ -67,7 +67,7 @@ afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
-  configure({});
+  meteoFrance({});
 });
 
 /** The home page of a data center whose cache holds `edge`, with Météo-France answering after `delayMs`. */

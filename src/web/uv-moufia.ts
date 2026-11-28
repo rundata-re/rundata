@@ -15,7 +15,7 @@
  * - Drawn on the server in SVG, without a script. The times of the data are UTC; the page writes La Réunion's (UTC+4).
  */
 import { count } from "../budget.js";
-import type { KvBinding } from "../kv.js";
+import { contexte, secret } from "../contexte.js";
 import { fr } from "../tools/format.js";
 import { esc } from "./map.js";
 import { enTetes } from "./securite.js";
@@ -24,14 +24,8 @@ import { typo } from "./typo.js";
 export const UV_PATH = "/essais/uv-moufia/";
 export const UV_KV_KEY = "essais:uv-moufia";
 
-let secret: string | undefined;
-let kv: Pick<KvBinding, "get"> | undefined;
-
-/** The secret of the link (UV_MOUFIA_JETON) and the KV that holds the data; without the secret, the page is not found. */
-export function configurerUv(jeton: string | undefined, store: Pick<KvBinding, "get"> | undefined) {
-  secret = jeton?.trim() || undefined;
-  kv = store;
-}
+// The secret of the link and the KV that holds the data, counted here (contexte.ts `secret` and `brut`); without the
+// secret, the page is not found.
 
 const sha = async (s: string) => new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)));
 
@@ -402,8 +396,9 @@ export async function uvMoufia(request: Request): Promise<Response | null> {
   const url = new URL(request.url);
   if (!url.pathname.startsWith(UV_PATH)) return null;
   const jeton = url.pathname.slice(UV_PATH.length);
-  if ((request.method !== "GET" && request.method !== "HEAD") || jeton.includes("/") || !(await bonJeton(jeton, secret))) return null;
+  if ((request.method !== "GET" && request.method !== "HEAD") || jeton.includes("/") || !(await bonJeton(jeton, secret("uvMoufia")))) return null;
   let d: Simulation | undefined;
+  const kv = contexte().brut;
   if (kv) {
     try {
       count(1, "read");

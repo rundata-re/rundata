@@ -9,6 +9,7 @@ import { CONVENTION, hierPartiel, recentRainBlock } from "../src/tools/pluie-rec
 import type { Fit } from "../src/tools/representativeness.js";
 import { placePage } from "../src/web/lieu-page.js";
 import { pageOf } from "../src/web/places.js";
+import { meteoFrance } from "./contexte.js";
 
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url), "utf8");
 const body = (r: { content: { text: string }[] }) => JSON.parse(r.content[0].text);
@@ -43,14 +44,14 @@ describe("the rain of the last hours", () => {
   let calls = 0;
   beforeEach(() => {
     calls = 0;
-    meteofrance.configure({ token: "test" });
+    meteoFrance({ token: "test" });
     vi.stubGlobal("fetch", async (url: string) => {
       if (String(url).includes("/paquet/horaire")) calls++;
       throw new Error("no network in tests");
     });
   });
   afterEach(() => {
-    meteofrance.configure({});
+    meteoFrance({});
     vi.unstubAllGlobals();
   });
 
@@ -235,8 +236,8 @@ describe("the rain of the last hours", () => {
 });
 
 describe("the max and min since midnight on a place's weather page", () => {
-  beforeEach(() => meteofrance.configure({ token: "test" }));
-  afterEach(() => meteofrance.configure({}));
+  beforeEach(() => meteoFrance({ token: "test" }));
+  afterEach(() => meteoFrance({}));
   const p = pageOf("saint-pierre")!;
 
   it("shows them under the measures of now, with their station and their time", async () => {

@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { configurerEquipe, handle } from "../src/app.js";
+import { handle } from "../src/app.js";
 import { Cache } from "../src/cache.js";
 import { sorteDe } from "../src/limite.js";
 import * as abonnements from "../src/push/abonnements.js";
@@ -9,6 +9,7 @@ import { b64u, cleVapid } from "../src/push/webpush.js";
 import * as alertes from "../src/web/alertes.js";
 import { ALERTES_EN_LIGNE, configurer, ouvrir } from "../src/web/alertes-drapeau.js";
 import { donnerAbonnements } from "./portes-avis.js";
+import { cles } from "./contexte.js";
 
 const subtle = crypto.subtle;
 let db: DatabaseSync;
@@ -40,7 +41,7 @@ afterEach(() => {
   ouvrir(ALERTES_EN_LIGNE);
   donnerAbonnements(undefined, undefined, undefined);
   alertes.configure(undefined);
-  configurerEquipe(undefined);
+  cles({ equipe: undefined });
   vi.unstubAllGlobals();
 });
 
@@ -113,7 +114,7 @@ describe("the alerts' addresses", () => {
   });
 
   it("send the test message to the team only: encrypted, signed, 6 h to live; a 410 deletes the subscription", async () => {
-    configurerEquipe("jeton-de-test");
+    cles({ equipe: "jeton-de-test" });
     const vivant = await navigateur("https://fcm.googleapis.com/fcm/send/vivant");
     const parti = await navigateur("https://updates.push.services.mozilla.com/wpush/v2/parti");
     await send("POST", alertes.ABONNEMENT_PATH, vivant);

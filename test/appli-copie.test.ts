@@ -4,8 +4,8 @@ import { copiesPour, handle } from "../src/app.js";
 import { APP_TOOLS, appliDe, cleCopie, COPY_SECONDS, type CopyStore } from "../src/appli.js";
 import { Cache } from "../src/cache.js";
 import { point, sansLieu, visitor, type Hit } from "../src/metrics.js";
-import { configure } from "../src/providers/mf-auth.js";
 import worker from "../src/worker.js";
+import { meteoFrance } from "./contexte.js";
 
 // The Worker sets the readers of its copies in the modules (worker.ts, at each request): its own modules, dropped after.
 await vi.hoisted(async () => (await import("./modules-neufs.js")).modulesNeufs());
@@ -47,7 +47,7 @@ describe("the app's calls to the MCP endpoint", () => {
     store = memoryStore();
     copiesPour(() => store);
     // Météo-France's vigilance bulletin, the only source read; anything else is offline.
-    configure({ applicationId: "test" });
+    meteoFrance({ applicationId: "test" });
     vi.stubGlobal("fetch", async (url: string) => {
       if (String(url).includes("/token")) return Response.json({ access_token: "t", expires_in: 3600 });
       if (String(url).includes("vigilance")) return new Response(ZIP);

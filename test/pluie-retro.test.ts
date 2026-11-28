@@ -7,6 +7,7 @@ import type { RainGrid } from "../src/web/pluie-radar.js";
 import { auQuart, type Entree, type Historique, type Image, parHeure, passage, quarters, rle, sansLame, suivant, unrle } from "../src/web/pluie-retro.js";
 import { oublier } from "../src/web/radar-semaine.js";
 import { site } from "../src/web/site.js";
+import { meteoFrance } from "./contexte.js";
 
 // The real lame d'eau of 22/10/2026 05:35–05:40 UTC, as in pluie-radar.test.ts.
 const h5 = readFileSync(new URL("./fixtures/radar_lame_eau.h5", import.meta.url));
@@ -128,11 +129,11 @@ describe("the radar's 24 hours, an image a quarter of an hour", () => {
 describe("a run of the scheduled event", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
-    meteofrance.configure({});
+    meteoFrance({});
   });
 
   it("costs a read of KV, a token and the image when cold; the image again then, but never a second token", async () => {
-    meteofrance.configure({ applicationId: "test" });
+    meteoFrance({ applicationId: "test" });
     const asked: string[] = [];
     // Only this run's requests: a fetch from the work an earlier file left going (its files share the process) is not
     // one, and is refused as the network is in the tests.
@@ -159,7 +160,7 @@ describe("a run of the scheduled event", () => {
   });
 
   it("reads and writes the 24 hours only when a new quarter of an hour ends the 6 hours", async () => {
-    meteofrance.configure({ applicationId: "test" });
+    meteoFrance({ applicationId: "test" });
     vi.stubGlobal("fetch", async (url: string) => (String(url).includes("/token") ? Response.json({ access_token: "t", expires_in: 3600 }) : new Response(h5)));
     // The fixture's image ends at 05:40: no quarter. Kept before it, the one of 05:30.
     let kept: Historique | null = suivant(null, { ...shot("2026-10-22T05:30:00Z"), w: 125, h: 112 }, at("2026-10-22T05:35:20Z"))!;
@@ -180,7 +181,7 @@ describe("a run of the scheduled event", () => {
   });
 
   it("adds the hour just ended to the radar's week with the 24 hours, outside the run's cost", async () => {
-    meteofrance.configure({ applicationId: "test" });
+    meteoFrance({ applicationId: "test" });
     vi.stubGlobal("fetch", async (url: string) => (String(url).includes("/token") ? Response.json({ access_token: "t", expires_in: 3600 }) : new Response(h5)));
     oublier();
     // 03:55 to 05:20 kept, every 5 minutes: the run reads 05:40, the quarter of 05:30 a gap, the hour of 04:00 to 05:00 whole.
@@ -202,7 +203,7 @@ describe("a run of the scheduled event", () => {
   });
 
   it("writes a gap when the radar answers an error, without throwing, after reading it twice more", async () => {
-    meteofrance.configure({ applicationId: "test" });
+    meteoFrance({ applicationId: "test" });
     vi.stubGlobal("fetch", async (url: string) => (String(url).includes("/token") ? Response.json({ access_token: "t", expires_in: 3600 }) : new Response("", { status: 503 })));
     let kept: Historique | null = suivant(null, shot("2026-10-29T13:00:00Z"), at("2026-10-29T13:05:20Z"))!;
     const store = { get: async () => kept, put: async (h: Historique) => void (kept = h) };
@@ -221,7 +222,7 @@ describe("a run of the scheduled event", () => {
      * first read `late` ms after the run's start, the others after the waits too.
      */
     async function run(now: string, answers: (Buffer | number)[], late = 0) {
-      meteofrance.configure({ applicationId: "test" });
+      meteoFrance({ applicationId: "test" });
       const asked: string[] = [];
       let i = 0;
       vi.stubGlobal("fetch", async (url: string) => {
@@ -266,7 +267,7 @@ describe("a run of the scheduled event", () => {
     });
 
     it("says a copy the cache kept as such, never as the image read", async () => {
-      meteofrance.configure({ applicationId: "test" });
+      meteoFrance({ applicationId: "test" });
       let fail = false;
       vi.stubGlobal("fetch", async (url: string) => (String(url).includes("/token") ? Response.json({ access_token: "t", expires_in: 3600 }) : fail ? new Response("", { status: 500 }) : new Response(h5)));
       let clock = Date.parse("2026-10-22T05:41:00Z");

@@ -24,7 +24,7 @@ export interface Contexte {
    * the kind it needs (budget.ts `count`), or that writes.
    */
   brut?: KvBinding;
-  /** The keys of the sources that ask for one, given only with the store (the state they read is kept there). */
+  /** The Worker's secrets (on Node, the ones src/bin/http.ts is given): read only by `secret`. */
   secrets?: Secrets;
   /** The D1 databases the Worker has (on Node, the local copies src/bin/http.ts is given). */
   bases?: Bases;
@@ -105,12 +105,33 @@ export function portesAvis(): PortesAvis {
   };
 }
 
-/** A source's key as the Worker's secret holds it; never written in a log or an answer. */
+/**
+ * The Worker's secrets, each by what it is for, read by `secret` alone at the time a module needs it; never written in
+ * a log or an answer. An absent one leaves its module as it was without it.
+ */
 export interface Secrets {
-  /** The Candhis API's key (CANDHIS_API_KEY), for the buoys. */
+  /** The Candhis API's key (CANDHIS_API_KEY), for the buoys; given with the store only. */
   candhis?: string;
-  /** The token SolarDB sent (SOLARDB_JETON), for the UV index measured at Moufia. */
+  /** The token SolarDB sent (SOLARDB_JETON), for the UV index measured at Moufia; given with the store only. */
   solardb?: string;
+  /** Météo-France's portal: the application's ID (METEOFRANCE_APPLICATION_ID), traded for OAuth tokens (providers/mf-auth.ts). */
+  meteofranceApplication?: string;
+  /** Météo-France's portal: its API key (METEOFRANCE_API_KEY), without an application. */
+  meteofranceCle?: string;
+  /** Météo-France's portal: a one-hour token, for trying things out on Node (METEOFRANCE_TOKEN, src/bin/http.ts). */
+  meteofranceJeton?: string;
+  /** NASA FIRMS's map key (FIRMS_MAP_KEY), for the fires seen by satellite (providers/feux.ts). */
+  firms?: string;
+  /** The salt of the feedback's fingerprints (AVIS_SEL, avis.ts). */
+  selAvis?: string;
+  /** The forms' Turnstile secret key (TURNSTILE_SECRET, web/propositions.ts). */
+  turnstile?: string;
+  /** The team's secret, in the header `rundata-jeton` (EQUIPE_JETON, app.ts). */
+  equipe?: string;
+  /** The secret of an internal trial's link (UV_MOUFIA_JETON, web/uv-moufia.ts). */
+  uvMoufia?: string;
+  /** OpenAI's plugin portal token (OPENAI_APPS_CHALLENGE, web/site.ts). */
+  defiOpenai?: string;
 }
 
 /** A secret of the context, without its spaces; undefined when it is not given or empty. */

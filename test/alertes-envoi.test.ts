@@ -27,7 +27,7 @@ async function abonner(n: number) {
 }
 
 const pluie: Changement = { sujet: "vigilance", cle: "vigilance:2026-11-24T05:00:00Z:VIGI974-13:12:3", texte: "vigilance orange fortes pluies / orages, Sud-Est", urgent: false };
-const volcan: Changement = { sujet: "volcan", cle: "volcan:2026-11-24T05:00:00.000Z:Alerte 1:calme", texte: "volcan : Alerte 1 (était Vigilance)", urgent: true };
+const volcan: Changement = { sujet: "volcan", cle: "volcan:2026-11-24T05:00:00.000Z:Alerte 1:calme", texte: "volcan : Alerte 1, après Vigilance", urgent: true };
 const lignes = (t: string) => db.prepare(`SELECT COUNT(*) AS n FROM ${t}`).get() as { n: number };
 
 beforeEach(async () => {
@@ -56,7 +56,7 @@ describe("the message of a run", () => {
   it("says each change with its source, opens the page of the most pressing, and is urgent when one is", () => {
     expect(message([pluie])).toEqual({ m: { titre: "rundata.re : alerte", corps: "Vigilance orange fortes pluies / orages, Sud-Est (Météo-France)", lien: "https://rundata.re/vigilance" }, urgent: false });
     expect(message([pluie, volcan])).toEqual({
-      m: { titre: "rundata.re : 2 alertes", corps: "Vigilance orange fortes pluies / orages, Sud-Est (Météo-France)\nVolcan : Alerte 1 (était Vigilance) (préfecture)", lien: "https://rundata.re/volcan" },
+      m: { titre: "rundata.re : 2 alertes", corps: "Vigilance orange fortes pluies / orages, Sud-Est (Météo-France)\nVolcan : Alerte 1, après Vigilance (préfecture)", lien: "https://rundata.re/volcan" },
       urgent: true,
     });
     expect(message([{ sujet: "cyclone", texte: "alerte cyclonique levée", urgent: true }, volcan]).m.lien).toBe("https://rundata.re/alerte-cyclone");
@@ -138,7 +138,7 @@ describe("the log line of a run", () => {
     await detecter(store, undefined, vol(0, "Vigilance"), new Date(T0), (x) => l.push(x), true);
     await detecter(store, undefined, vol(1, "Alerte 1"), new Date(T0), (x) => l.push(x), true);
     const ch = await detecter(store, undefined, vol(2, "Alerte 1"), new Date(T0), (x) => l.push(x), true);
-    expect(l).toEqual(["alertes push : volcan : Alerte 1 (était Vigilance)"]);
-    expect(ch).toEqual([{ sujet: "volcan", cle: `volcan:${new Date(T0 + 120 * MIN).toISOString()}:Alerte 1:calme`, texte: "volcan : Alerte 1 (était Vigilance)", urgent: true }]);
+    expect(l).toEqual(["alertes push : volcan : Alerte 1, après Vigilance"]);
+    expect(ch).toEqual([{ sujet: "volcan", cle: `volcan:${new Date(T0 + 120 * MIN).toISOString()}:Alerte 1:calme`, texte: "volcan : Alerte 1, après Vigilance", urgent: true }]);
   });
 });

@@ -135,4 +135,37 @@ describe("the button's script", () => {
     expect(els["alertes-go"]).toMatchObject({ hidden: false, disabled: false });
     expect(lus).toEqual([]);
   });
+
+  it("says nothing when the permission prompt is closed without an answer, and says blocked only when it is refused", async () => {
+    ouvrir(true);
+    const html = await (await get(PATH)).text();
+    const code = html.split("<script>").map((x) => x.split("</script>")[0]).find((x) => x.includes("pushManager"))!;
+    const essai = async (reponse: string) => {
+      const el = (id: string) => {
+        const on: Record<string, () => Promise<void>> = {};
+        return { id, hidden: id !== "alertes-go", disabled: false, textContent: "", on, addEventListener: (t: string, f: () => Promise<void>) => (on[t] = f) };
+      };
+      const els = Object.fromEntries(["alertes-etat", "alertes-go", "alertes-stop"].map((i) => [i, el(i)]));
+      const navigator = { userAgent: "Mozilla/5.0 (Linux; Android 14)", serviceWorker: { register: async () => ({}), ready: Promise.resolve({ pushManager: { getSubscription: async () => null } }) } };
+      const Notification = { requestPermission: async () => reponse, permission: reponse };
+      new Function("document", "navigator", "window", "matchMedia", "Notification", "fetch", "setTimeout", code)(
+        { getElementById: (i: string) => els[i] },
+        navigator,
+        { PushManager: {}, Notification },
+        () => ({ matches: true }),
+        Notification,
+        async () => ({ ok: true, json: async () => ({ cle: "AAAA" }) }),
+        setTimeout,
+      );
+      await new Promise((r) => setTimeout(r, 0));
+      await els["alertes-go"].on.click();
+      return els;
+    };
+    // Vanadium closes its prompt by itself after a few seconds: the permission stays « default », nothing is blocked.
+    const ferme = await essai("default");
+    expect(ferme["alertes-etat"]).toMatchObject({ hidden: true, textContent: "" });
+    expect(ferme["alertes-go"]).toMatchObject({ hidden: false, disabled: false });
+    const refuse = await essai("denied");
+    expect(refuse["alertes-etat"]).toMatchObject({ hidden: false, textContent: ETATS.bloque });
+  });
 });

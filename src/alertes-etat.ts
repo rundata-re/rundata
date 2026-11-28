@@ -108,7 +108,7 @@ export function suivre(avant: EtatAlertes | undefined, vigilance: Cached<mf.Vigi
     const periods = v.zones[mf.ISLAND]?.[mf.CYCLONE];
     const cyclone = periods && cycloneOn(periods, now) ? cycloneNow(periods, now) : -1;
     if (!premier && etat.cyclone !== undefined && cyclone !== etat.cyclone) {
-      dire("cyclone", `${v.emise}:${cyclone}`, cyclone < 2 ? "alerte cyclonique levée" : `alerte cyclonique ${mf.cycloneName(cyclone)}`);
+      dire("cyclone", `${v.emise}:${cyclone}`, cyclone < 2 ? "alerte cyclonique levée" : cyclone === 2 ? "pré-alerte cyclonique" : cyclone === 6 ? "alerte cyclonique : phase de sauvegarde" : `alerte cyclonique ${mf.cycloneName(cyclone)}`);
     }
     etat.cyclone = cyclone;
     etat.emise = v.emise;
@@ -126,8 +126,8 @@ export function suivre(avant: EtatAlertes | undefined, vigilance: Cached<mf.Vigi
     else if (etat.volcanAttente?.niveau === vu.niveau && etat.volcanAttente.eruption === vu.eruption) {
       // Seen in two copies in a row: said.
       const cle = `${lu}:${vu.niveau}:${vu.eruption ? "eruption" : "calme"}`;
-      if (vu.eruption && !dit.eruption) dire("volcan", cle, `volcan : éruption en cours (${vu.niveau})`);
-      else if (vu.niveau !== dit.niveau) dire("volcan", cle, vu.niveau === CALME ? `volcan : fin de l'alerte (${CALME})` : `volcan : ${vu.niveau} (était ${dit.niveau})`);
+      if (vu.eruption && !dit.eruption) dire("volcan", cle, `volcan : éruption en cours, ${vu.niveau}`);
+      else if (vu.niveau !== dit.niveau) dire("volcan", cle, vu.niveau === CALME ? `volcan : fin de l'alerte, retour à la ${CALME}` : `volcan : ${vu.niveau}, après ${dit.niveau}`);
       etat.volcan = vu;
       delete etat.volcanAttente;
     } else etat.volcanAttente = vu;

@@ -984,7 +984,7 @@ describe("the clubs' and associations' space (web/associations.ts)", () => {
     const closed = plain(await (await get("/confidentialite")).text());
     expect(closed).not.toContain('href="/associations"');
     expect(closed).not.toContain('id="associations-donnees"');
-    expect(closed).toContain("<p><span class=\"ident\">rundata.re</span> ne demande ni compte, ni nom, ni adresse électronique. Le site");
+    expect(closed).toContain("<p><span class=\"ident\">rundata.re</span> ne demande ni compte, ni nom, ni adresse électronique. Si vous choisissez de recevoir les alertes sur votre téléphone");
     expect(plain(await (await get("/conditions")).text())).not.toContain('id="evenements-proposes"');
     expect(plain(await (await get("/publier")).text())).not.toContain('id="lien"');
     expect(plain(await (await get("/presse")).text())).not.toContain("Clubs et associations : comment");

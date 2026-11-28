@@ -229,6 +229,20 @@ export function nonServie(bundle: Pick<Bundle, "peek">, agenda: Agenda): { depui
 }
 
 /**
+ * When the copy of an agenda read by the scheduled event is still served but its readings failed since (its site down,
+ * not one that answered with nothing: ECHEC_VIDE), its last good reading and its last try (La Réunion's times), to be
+ * said beside its events: on 28/11/2026 the Département's site answered 503 « en maintenance » from 26/11 at 22:00,
+ * and its copy, served for 48 h, was said nowhere as not read again. Undefined otherwise, and when `nonServie` says it.
+ */
+export function echecDepuis(bundle: Pick<Bundle, "peek">, agenda: Agenda): { lu: string; essai: string } | undefined {
+  const hit = bundle.peek(`agenda:${agenda.id}`);
+  const failed = bundle.peek(echecPlanifie(agenda));
+  if (!hit || hit.ageMs > gardeMs(agenda) || !failed || failed.value === ECHEC_VIDE || failed.fetchedAt <= hit.fetchedAt) return undefined;
+  const local = (t: number) => toLocal(new Date(t).toISOString());
+  return { lu: local(hit.fetchedAt), essai: local(failed.fetchedAt) };
+}
+
+/**
  * An agenda's events as they may be shown, from its copy whatever its age: without their sentence (`faits`) nor their
  * price (`sans_prix`), linking to the home page (`accueil`), and none whose link would lead to a site that submits any link to its agreement
  * (src/liens.ts, Saint-Benoît's), since an event is shown with its link. Applied where a copy is served, not where it is

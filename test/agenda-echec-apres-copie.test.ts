@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { AGENDAS, echecPlanifie, gardeMs, nonServie } from "../src/providers/agenda.js";
-import { silentOf } from "../src/tools/agenda.js";
+import { AGENDAS, echecDepuis, echecPlanifie, gardeMs, nonServie } from "../src/providers/agenda.js";
+import { echecLu, silentOf } from "../src/tools/agenda.js";
 import { derniereLecture } from "../src/tools/sport.js";
 
 // 24/11/2026: saintjoseph.re answered the scheduled event once on 23/11 at 18:26, then no more (522). Its copy, older than
@@ -35,8 +35,22 @@ describe("an agenda of the scheduled event whose reads fail after its last good 
     expect(derniereLecture(nonServie(empty, SJ)!)).toBe("dernière lecture le 23/11 à 18:26");
   });
 
-  it("is served while its copy is young enough, whatever failed since", () => {
+  it("is served while its copy is young enough, whatever failed since, and said failing since without being said silent", () => {
     const young = bundleOf({ [`agenda:${SJ.id}`]: { value: [], fetchedAt: NOW - 3600_000 }, [echecPlanifie(SJ)]: { value: true, fetchedAt: NOW - 600_000 } });
     expect(nonServie(young, SJ)).toBeUndefined();
+    const r = echecDepuis(young, SJ)!;
+    expect(echecLu(r)).toBe("lue le 24/11 à 02:40, sans succès depuis (dernier essai le 24/11 à 03:30)");
+    // Its events are still served: its commune's tile does not say its site silent.
+    expect(silentOf(undefined, "Saint-Joseph", "24/11 03:40", new Date(NOW), [`${SJ.nom} : ${echecLu(r)}`])).toEqual([]);
+  });
+
+  it("is not said failing when its site answered with nothing, nor when read after the failure", () => {
+    const empty = bundleOf({ [`agenda:${SJ.id}`]: { value: [], fetchedAt: NOW - 3600_000 }, [echecPlanifie(SJ)]: { value: "vide", fetchedAt: NOW - 600_000 } });
+    expect(echecDepuis(empty, SJ)).toBeUndefined();
+    const read = bundleOf({ [`agenda:${SJ.id}`]: { value: [], fetchedAt: NOW - 600_000 }, [echecPlanifie(SJ)]: { value: true, fetchedAt: NOW - 3600_000 } });
+    expect(echecDepuis(read, SJ)).toBeUndefined();
+    // Too old to be served: nonServie says it.
+    const old = bundleOf({ [`agenda:${SJ.id}`]: { value: [], fetchedAt: COPY }, [echecPlanifie(SJ)]: { value: true, fetchedAt: TRY } });
+    expect(echecDepuis(old, SJ)).toBeUndefined();
   });
 });

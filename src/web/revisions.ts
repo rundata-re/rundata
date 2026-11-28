@@ -53,7 +53,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Tales, magic and puppets each their own genre, no longer « cirque » (« Contes avec Aïdée », 24/11/2026).
   // An event's start time alone (« à partir de 8h »), the whole text's hour for a cut excerpt, OpenAgenda's links in /fr/ (25/11/2026).
   // A feed's hour said after a later mention of its day (Le Tampon's « Journée de l'environnement », 25/11/2026).
-  agenda: 52,
+  // An agenda of the scheduled event still served but whose readings fail since, in non_lus (« lue le …, sans succès depuis », 28/11/2026).
+  agenda: 53,
   // The sensors of sensors.social besides Sensor.Community's: each value with its network, and its credit (09/11/2026).
   // Tomorrow's index by commune, when Atmo Réunion diffused it, under the day's (21/11/2026).
   // The communes at the worst « pour Le Port et Saint-Pierre », counted beyond 3; tomorrow « Pas une mesure : … » (21/11/2026).

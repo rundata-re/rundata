@@ -376,6 +376,30 @@ describe("agenda", () => {
       expect(b.non_lus).toEqual([`Ligue réunionnaise de volley-ball : dernière lecture sans succès (${leLocal(toLocal(NOW.toISOString()))})`]);
     });
 
+    // 28/11/2026: the Département's site answered 503 « en maintenance » from 26/11 at 22:00; its copy, served 48 hours,
+    // was in neither non_lus nor the page's notes, as if read again.
+    it("says its readings fail since, while its copy is still served, in the tool and on /evenements", async () => {
+      let t = NOW.getTime();
+      const store = new MemoryStore();
+      const at = () => new Cache(store, () => t);
+      await refreshPlanned(at(), NOW);
+      t += 2 * 3600_000;
+      league = () => new Response("", { status: 503 });
+      expect((await refreshPlanned(at(), new Date(t))).gardes).toEqual(["lrvb"]);
+      const said = `Ligue réunionnaise de volley-ball : lue ${leLocal(toLocal(NOW.toISOString()))}, sans succès depuis (dernier essai ${leLocal(toLocal(new Date(t).toISOString()))})`;
+      expect(said).toContain("lue le 24/10 à 08:00, sans succès depuis (dernier essai le 24/10 à 10:00)");
+      const b = body(await agenda(at(), undefined, undefined, "King", new Date(t)));
+      expect(titles(b)).toContain(KING);
+      expect(b.non_lus).toEqual([said]);
+      const html = agendaPage("https://rundata.re", { value: await buildAgenda(at(), new Date(t)), fetchedAt: new Date(t), stale: false }, new Date(t));
+      expect(html).toContain("Agendas sans lecture récente : Ligue réunionnaise de volley-ball, lue le 24/10 à 08:00, sans succès depuis (dernier essai le 24/10 à 10:00). Leurs événements peuvent manquer ici.");
+      // Read again: no longer said.
+      t += 3600_000;
+      league = () => new Response(bytes("tribe_lrvb.json"));
+      expect((await refreshPlanned(at(), new Date(t))).lus).toContain("lrvb");
+      expect(body(await agenda(at(), undefined, undefined, undefined, new Date(t))).non_lus).toBeUndefined();
+    });
+
     it("keeps its copy and its time when the reading fails or finds nothing", async () => {
       let t = NOW.getTime();
       const store = new MemoryStore();

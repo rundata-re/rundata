@@ -83,6 +83,12 @@ SHAPES = []
 COS = math.cos(math.radians(21.1))
 
 
+
+def du_web(u):
+    """`u` when it is a link of the web (http or https), else None: a page writes it in a link."""
+    return u if u and re.match(r"^https?://[^/\s]", u, re.I) else None
+
+
 def km(lon0, lat0, lon1, lat1):
     return math.hypot((lon1 - lon0) * COS, lat1 - lat0) * 111.2
 
@@ -176,7 +182,7 @@ def osm_places(elements):
             p["age"] = a
         if t.get("opening_hours"):
             p["horaires_osm"] = t["opening_hours"]
-        site = SITES.get(p["lien"], t.get("website") or t.get("contact:website"))
+        site = du_web(SITES.get(p["lien"], t.get("website") or t.get("contact:website")))
         if site:
             p["site"] = MOVED.get(site.removeprefix("https://"), site)
         street = tidy(" ".join(x for x in [t.get("addr:housenumber"), t.get("addr:street")] if x))

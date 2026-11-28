@@ -245,11 +245,14 @@ export function echecDepuis(bundle: Pick<Bundle, "peek">, agenda: Agenda): { lu:
 /**
  * An agenda's events as they may be shown, from its copy whatever its age: without their sentence (`faits`) nor their
  * price (`sans_prix`), linking to the home page (`accueil`), and none whose link would lead to a site that submits any link to its agreement
- * (src/liens.ts, Saint-Benoît's), since an event is shown with its link. Applied where a copy is served, not where it is
- * read, so that a copy read before its site's terms were known is served as they ask too.
+ * (src/liens.ts, Saint-Benoît's), since an event is shown with its link; a link that is not the web's (http or https)
+ * taken off, as where it is read (`duWeb`). Applied where a copy is served, not where it is read, so that a copy read
+ * before its site's terms were known, or before its links were checked, is served as they ask too.
  */
 export function servis(agenda: Agenda, events: Evenement[]): Evenement[] {
-  const linked = events.filter((e) => !sansLien(agenda.accueil ?? e.lien));
+  const linked = events
+    .filter((e) => !sansLien(agenda.accueil ?? e.lien))
+    .map((e) => (e.lien && !httpUrl(e.lien) ? { ...e, lien: "" } : e));
   if (!agenda.faits && !agenda.sans_prix && !agenda.accueil) return linked;
   return linked.map((e) => {
     const out = { ...e };
@@ -441,7 +444,7 @@ export function parseTribe(body: { events: TribeEvent[] }, nom: string, commune:
       categories: e.categories.map((c) => clean(c.name)),
       ...extrait(description),
       ...(matchs.length ? { matchs } : {}),
-      lien: e.url,
+      lien: duWeb(e.url),
       publie_par: nom,
     };
   });
@@ -526,6 +529,13 @@ const OA_STATUS: Record<number, Statut> = { 4: "reporté", 5: "complet", 6: "ann
  * to /fr/<agenda>/events/<id> (the sitemap's outgoing links, 24/11/2026). A page in a language already
  * is left as it is.
  */
+/**
+ * An event's link as a source gives it, only when it is the web's (http or https), resolved against `base` when given;
+ * "" otherwise (« javascript: », « data: »): the event is then shown without a link, as one a club proposes without
+ * one. The pages check it again (web/html.ts `href`).
+ */
+const duWeb = (lien: string | undefined, base?: string): string => httpUrl(lien, base) ?? "";
+
 const oaLien = (u: string) => u.replace(/^https:\/\/openagenda\.com\/(?![a-z]{2}\/)/, "https://openagenda.com/fr/");
 
 export function parseOpenAgenda(body: { events: OaEvent[] }, nom: string): Evenement[] {
@@ -544,7 +554,7 @@ export function parseOpenAgenda(body: { events: OaEvent[] }, nom: string): Evene
       prix: PRICE.test(fr(e.conditions) ?? "") ? clean(fr(e.conditions)!) : undefined,
       categories: (e.keywords?.fr ?? []).slice(0, 5),
       ...extrait(clean(fr(e.description) ?? "")),
-      lien: oaLien(e.canonicalUrl),
+      lien: duWeb(oaLien(e.canonicalUrl)),
       publie_par: nom,
       ...oaImage(e),
     };
@@ -679,7 +689,7 @@ export function parseRss(xml: string, nom: string, commune: string, first = fals
         }
       }
     }
-    const lien = clean(tag(item, "link"));
+    const lien = duWeb(clean(tag(item, "link")));
     const statut = statusOf(titre, texte);
     return [{
       ...(statut ? { statut } : {}),
@@ -732,7 +742,7 @@ export function parseWpNews(posts: WpPost[], nom: string, commune: string, now: 
   return posts.flatMap((p) => {
     const titre = clean(p.title.rendered);
     // WordPress dates a post in the site's time (La Réunion's here), without an offset.
-    return newsEvent(titre, clean(p.excerpt?.rendered ?? "").replace(/\s*\[(?:…|&hellip;)\]\s*$/u, ""), titre, p.link, new Date(`${p.date}+04:00`), now, nom, commune);
+    return newsEvent(titre, clean(p.excerpt?.rendered ?? "").replace(/\s*\[(?:…|&hellip;)\]\s*$/u, ""), titre, duWeb(p.link), new Date(`${p.date}+04:00`), now, nom, commune);
   });
 }
 
@@ -758,7 +768,7 @@ export function parseDrupalNews(xml: string, nom: string, commune: string, now: 
       .replace(/<span class="field field--name-(?:title|uid|created)\b[\s\S]*?<\/span>\s*(?:<\/span>)?/g, "");
     // The text without the node's dates, said as data below.
     const texte = clean(html.replace(/<div class="field field--name-field-(?:start|end)-date\b[\s\S]*?<\/div>/g, ""));
-    const lien = clean(tag(item, "link"));
+    const lien = duWeb(clean(tag(item, "link")));
     // An event's node gives its start, local (« 2026-11-06T18:00:00 »), and its end, in UTC in its <time>: as data.
     const start = /field--name-field-start-date[^>]*>\s*(?:<time datetime=")?(\d{4}-\d\d-\d\dT\d\d:\d\d)/.exec(html)?.[1];
     const endUtc = /field--name-field-end-date[\s\S]*?<time datetime="(\d{4}-\d\d-\d\dT\d\d:\d\d):\d\dZ"/.exec(html)?.[1];
@@ -919,7 +929,7 @@ export function parseIntraMuros(xml: string, nom: string, commune: string): Even
     const where = clean(tag(item, "ev:location"));
     const [lat, lon] = tag(item, "georss:point").split(/\s+/).map(Number);
     const category = clean(tag(item, "category"));
-    const lien = clean(tag(item, "link"));
+    const lien = duWeb(clean(tag(item, "link")));
     const statut = statusOf(titre);
     return [{
       ...(statut ? { statut } : {}),
@@ -1490,7 +1500,7 @@ export function parseSaintBenoit(html: string, now: Date, nom = "Ville de Saint-
       commune: "Saint-Benoît",
       categories: at > 0 && rest[0].length < 40 ? [clean(rest[0])] : [],
       ...extrait(texte ? clean(texte) : ""),
-      lien: x.href,
+      lien: duWeb(x.href, SAINT_BENOIT_AGENDA),
       publie_par: nom,
     });
   }
@@ -1627,7 +1637,7 @@ export function parseSportsregions(pages: string[]): { evenements: Evenement[]; 
       commune: (saisi ? commune : undefined) ?? communeDuTitre(titre),
       categories: ["Sport", ...(sport ? [sport] : [])],
       description: `Organisé par ${nom}${duClub ? ` (${duClub})` : ""}`,
-      lien: e.url!,
+      lien: duWeb(e.url),
       publie_par: nom,
       organisateur: { nom, ...(duClub ? { commune: duClub } : {}), sport, ...(site ? { site } : {}) },
     };
@@ -1746,7 +1756,7 @@ export function parseCirest(posts: CirestPost[], now: Date): Evenement[] {
         categories: [],
         ...(description && description.replace(/[.…]$/u, "") !== titreEv ? { description } : {}),
         ...reste,
-        lien: p.link,
+        lien: duWeb(p.link),
         publie_par: "CIREST",
       });
     };
@@ -1805,7 +1815,7 @@ export function parseCirestEvenements(posts: WpPost[], now: Date): Evenement[] {
     const dated = `${titre} ${premiere(texte)}`;
     const commune = communesIn(dated).find((c) => CIREST_COMMUNES.includes(c));
     if (!commune) return [];
-    return newsEvent(titre, texte, dated, p.link, new Date(`${p.date}+04:00`), now, "CIREST", commune);
+    return newsEvent(titre, texte, dated, duWeb(p.link), new Date(`${p.date}+04:00`), now, "CIREST", commune);
   });
 }
 
@@ -1853,7 +1863,7 @@ export function parseTco(html: string, now: Date): Evenement[] {
   return [...html.matchAll(/<article class="feature[^"]*">([\s\S]*?)<\/article>/g)].flatMap(([, card]) => {
     const a = /<a class="h5[^"]*" href="([^"]+)">([\s\S]*?)<\/a>/.exec(card);
     if (!a) return [];
-    const lien = a[1].replace(/&amp;/g, "&");
+    const lien = duWeb(a[1].replace(/&amp;/g, "&"), TCO_SOURCE.url);
     const titre = clean(a[2]);
     const jours = clean(/<em[^>]*>([\s\S]*?)<\/em>/.exec(card)?.[1] ?? "");
     const texte = clean(/<\/em>\s*<br\s*\/?>([\s\S]*?)<\/p>/.exec(card)?.[1] ?? "").replace(/\s*(?:\.\.\.|…)$/u, "");

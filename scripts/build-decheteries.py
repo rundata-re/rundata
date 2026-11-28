@@ -10,6 +10,7 @@ Usage: python3 -I scripts/build-decheteries.py
 import html
 import json
 import re
+import sys
 import urllib.request
 from datetime import date
 from pathlib import Path
@@ -19,6 +20,14 @@ URL = "https://data.tco.re/api/explore/v2.1/catalog/datasets/meteo-des-decheteri
 UA = {"User-Agent": (Path(__file__).parent / "user-agent.txt").read_text(encoding="ascii").strip()}
 # « Commune de Trois-Bassins » → the commune as the server spells it (src/places/insee.ts).
 NAMES = {code: nom for nom, code in re.findall(r'"([^"]+)": "(974\d\d)"', (ROOT / "src/places/insee.ts").read_text())}
+
+
+
+def du_web(u):
+    """`u` when it is a link of the web (http or https), else a stop: each site is linked by its name."""
+    if not (u and re.match(r"^https?://[^/\s]", u, re.I)):
+        sys.exit(f"déchèteries : lien hors du web ({u!r})")
+    return u
 
 
 def commune(s):
@@ -36,7 +45,7 @@ def main():
         "commune": commune(r["commune"]),
         "lon": round(float(r["lng"]), 5),
         "lat": round(float(r["lat"]), 5),
-        "lien": r["lien"],
+        "lien": du_web(r["lien"]),
     } for r in rows]
     out.sort(key=lambda d: (d["commune"], d["nom"]))
     dest = ROOT / "src/vie/decheteries.json"

@@ -1,3 +1,4 @@
+import { enLigne as alertesEnLigne } from "../src/web/alertes-drapeau.js";
 import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
 import { coastwatch } from "./sst.js";
@@ -571,8 +572,9 @@ describe("what crawlers and previews fetch", () => {
     const map = await (await handle(new Request("https://rundata.re/sitemap.xml"), isolate())).text();
     // Only the pages of the validated list of 24/11/2026 (web/sitemap-gardees.ts, counted in test/sitemap-liste.test.ts):
     // the head pages, the 24 communes, their water where the page is indexable, and the trails, hikes and places people
-    // look for. Less /feux, with no FIRMS key here. No weather station's page, no stop's.
-    expect(map.match(/<loc>/g)).toHaveLength(SITEMAP_NOMBRE - 1);
+    // look for. Less /feux, with no FIRMS key here, and /alertes while the alerts are closed. No weather station's page,
+    // no stop's.
+    expect(map.match(/<loc>/g)).toHaveLength(SITEMAP_NOMBRE - 1 - (alertesEnLigne() ? 0 : 1));
     expect(map).not.toContain("<loc>https://rundata.re/meteo/station/97418110</loc>");
     expect(map).not.toContain("<loc>https://rundata.re/bus/arret/");
     expect(map).toContain("<loc>https://rundata.re/enfants</loc>");

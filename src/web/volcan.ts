@@ -2,6 +2,7 @@
  * The volcano's page (/volcan): the Piton de la Fournaise's alert, the OVPF's bulletins, the earthquakes and the Enclos'
  * access. Moved out of domains.ts as it was; the helpers common to every domain's page stay there.
  */
+import { lienAlertes } from "./alertes-drapeau.js";
 import { OVPF, OVPF_FACEBOOK, PREFECTURE } from "../providers/volcan.js";
 import { BULLETIN_QUOTIDIEN, CAMERAS_OVPF, depthText, enImages, enImagesApres, IMAGE_APRES, IMAGE_LUE_APRES, givenAt, JOURS_SUIVANTS, type Jour, jusquALecture, LOCALISES, LOCALISES_LIEN, LU_DANS_L_IMAGE, NIVEAU_ILLISIBLE, NON_ANNONCEE, NON_LU, ORSEC_BAN, ovpfNiveau, pitonLines, VIGILANCE_ENCLOS } from "../tools/volcan.js";
 import { type Ligne, NIVEAUX, TITRE, VERSION } from "../tools/volcan-acces.js";
@@ -233,6 +234,7 @@ export function volcanPage(origin: string, data: Cached<VolcanAnswer> | null, no
     <p class="pill"><span class="dot"></span>Volcan en direct</p>
     <h1>${heading ? esc(heading) : `Piton de la Fournaise <span class="n974">974</span>`}</h1>
     ${status}
+    ${lienAlertes()}
     ${a ? "" : question}
   </div>
   <figure class="card mapcard nophone">${islandMap({ pin: FOURNAISE, label: "Carte de La Réunion (974) avec le Piton de la Fournaise" })}</figure>

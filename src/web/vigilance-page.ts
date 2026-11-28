@@ -3,6 +3,7 @@
  * and the colours by their names only. The banner of every page, its line and the colours' helpers (vg, officielHtml,
  * LAND) are in pages.ts.
  */
+import { lienAlertes } from "./alertes-drapeau.js";
 import type { Cached } from "../cache.js";
 import { localTime } from "../geo.js";
 import * as mf from "../providers/vigilance.js";
@@ -117,6 +118,7 @@ export function vigilancePage(origin: string, data: Cached<mf.Vigilance> | null,
     <p class="pill"><span class="dot"></span>Vigilance Météo-France en direct</p>
     <h1>Vigilance météo <span class="n974">974</span></h1>
     ${status}
+    ${brut(lienAlertes())}
   </div>
   ${brut(hero)}
 </div>`;

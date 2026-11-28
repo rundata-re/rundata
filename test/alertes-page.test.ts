@@ -21,11 +21,15 @@ describe("the page /alertes", () => {
     expect((await get(PATH)).status).toBe(404);
   });
 
-  it("once open: the button, what sets off an alert, the link to what is kept, never indexed, its script allowed", async () => {
+  it("once open: the button, what sets off an alert, the link to what is kept, indexed and in the sitemap, its script allowed", async () => {
+    ouvrir(false);
+    expect(await (await get("/sitemap.xml")).text()).not.toContain(`https://rundata.re${PATH}<`);
     ouvrir(true);
+    expect(await (await get("/sitemap.xml")).text()).toContain(`<loc>https://rundata.re${PATH}</loc>`);
     const r = await get(PATH);
     expect(r.status).toBe(200);
-    expect(r.headers.get("x-robots-tag")).toBe("noindex");
+    expect(r.headers.get("x-robots-tag")).toBeNull();
+    expect(await r.clone().text()).not.toContain('name="robots"');
     const html = await r.text();
     for (const t of [BOUTON, ARRETER, "Ce qui déclenche une alerte", "de l'orange au rouge", "à partir de l'Alerte 1", "plus de 6 heures", 'href="/confidentialite#alertes"']) expect(html).toContain(t);
     const s = html.split("<script>").map((x) => x.split("</script>")[0]).find((x) => x.includes("pushManager"))!;

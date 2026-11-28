@@ -13,7 +13,7 @@
 
 /** The home page and the head pages. */
 const TETE = [
-  "/", "/a-propos", "/actualites", "/air", "/alerte-cyclone", "/antennes", "/application", "/associations",
+  "/", "/a-propos", "/actualites", "/air", "/alerte-cyclone", "/alertes", "/antennes", "/application", "/associations",
   "/baignade", "/bornes", "/bus", "/calendrier", "/carburants", "/carte", "/chiffres", "/collecte", "/communes",
   "/conditions", "/confidentialite", "/coupures-eau", "/crues", "/cyclones", "/decheteries", "/defibrillateurs",
   "/eau", "/ecoles", "/ecoles-cyclone", "/electricite", "/emploi", "/en", "/enfants", "/evenements", "/feux",

@@ -5,6 +5,7 @@ import * as ffck from "../src/providers/ffck.js";
 import { sportTool } from "../src/tools/sport.js";
 import type { SportAnswer } from "../src/web/data.js";
 import { sportPage } from "../src/web/sport.js";
+import { dansLeWorker, horsWorker } from "./contexte.js";
 
 // The FFCK's calendar on 05/11/2026: the list of the 2026 season cut to 69 of its 651 rows (the first ones, and those
 // whose place is named like one of the island), and the pages of two events of the island, the people's rows taken out.
@@ -239,7 +240,7 @@ describe("the island's events", () => {
 
   it("are said by the sport tool, from the state the scheduled event keeps, with the FFCK's credit", async () => {
     site({});
-    ffck.configure(async () => etatLu());
+    dansLeWorker({ [ffck.KEY]: () => etatLu() });
     try {
       const cache = new Cache(new MemoryStore(), () => NOW.getTime());
       // On the 16th, the fortnight to come holds the 28th: the regional championship of Saint-Pierre, and not the race of a
@@ -258,7 +259,7 @@ describe("the island's events", () => {
       expect(page).toContain("(canoë-kayak et va&#39;a)");
       expect(page).not.toContain("(canoë-kayak)");
     } finally {
-      ffck.configure(undefined);
+      horsWorker();
     }
   });
 
@@ -270,11 +271,11 @@ describe("the island's events", () => {
     // The morning after the first list: no page read yet.
     const first = { ...read, fiches: {} };
     const ask = async (etat: ffck.Etat) => {
-      ffck.configure(async () => etat);
+      dansLeWorker({ [ffck.KEY]: () => etat });
       try {
         return JSON.parse((await sportTool(new Cache(new MemoryStore(), () => day.getTime()), "canoe_kayak", undefined, "a_venir", day)).content[0].text).resume as string;
       } finally {
-        ffck.configure(undefined);
+        horsWorker();
       }
     };
     const n = ffck.aLire(first, today).length;

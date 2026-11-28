@@ -13,6 +13,7 @@ import { count } from "../budget.js";
 import type { Cache, Cached } from "../cache.js";
 import { getLines } from "../http.js";
 import { UpstreamError, type SourceInfo } from "../types.js";
+import { contexte } from "../contexte.js";
 
 export const SOURCE: SourceInfo = {
   id: "lcsqa_mesures",
@@ -193,26 +194,19 @@ export async function collect(before: Copie | null, write: (copie: Copie) => Pro
   return `${said}${before?.derniere_heure === derniere_heure ? ", inchangée" : ""}, écrites`;
 }
 
-let reader: (() => Promise<Copie | null>) | undefined;
-
-/** In the Worker: read the measures from the KV store, where the scheduled event writes them, and the files never. */
-export function configure(read: (() => Promise<Copie | null>) | undefined) {
-  reader = read;
-}
-
 // The scheduled event writes once an hour at most, at hh:45, but not at a time this isolate knows: the copy is asked of
 // the store every 10 minutes, so a new hour is served within 10 minutes of its writing, not up to an hour later (04/11).
 const FRESH_SECONDS = 10 * 60;
 
 /**
- * The stored measures, their time the collector's read; null where nothing is configured (a local server, the
- * tests), as the Worker alone has them.
+ * The stored measures, their time the collector's read; null outside the Worker (a local server, the tests), as the
+ * Worker alone has them. In the Worker the files are never read: the store only (contexte.ts).
  */
 export async function mesures(cache: Cache): Promise<Cached<Copie> | null> {
-  if (!reader) return null;
-  const read = reader;
+  const { worker, kv } = contexte();
+  if (!worker) return null;
   const c = await cache.getCopy("air:mesures", FRESH_SECONDS, async () => {
-    const v = await read();
+    const v = kv ? await kv.json<Copie>(KV_KEY) : null;
     if (!v?.mesures.length) throw new Error("mesures des stations absentes du stockage");
     return v;
   }, (v) => v.lu, SOURCE.id);

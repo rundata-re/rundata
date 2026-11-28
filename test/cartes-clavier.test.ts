@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
-import { configure, IDS, parseLive } from "../src/providers/irve.js";
+import { IDS, KV_KEY as IRVE_KEY, parseLive } from "../src/providers/irve.js";
 import { type AgendaAnswer, buildBornes, buildCrues, buildDae, type HomeData, type StationNow } from "../src/web/data.js";
 import { bornesPage, daePage } from "../src/web/domains.js";
 import { cruesPage } from "../src/web/crues.js";
@@ -9,6 +9,7 @@ import { agendaPage } from "../src/web/agenda.js";
 import { islandMap } from "../src/web/map.js";
 import { meteoPage } from "../src/web/meteo-page.js";
 import { deadAnchors, mapLinks, mapPoints, tabStops } from "./cartes.js";
+import { dansLeWorker, horsWorker } from "./contexte.js";
 
 // The maps of the pages that list the same places under them: their points out of the Tab order, as /ecoles' and
 // /carte's, still links for the mouse and a finger. Before, 3 stops of Tab per point: 72 on /defibrillateurs, 63 on
@@ -18,7 +19,7 @@ const NOW = new Date("2026-10-27T06:00:00Z");
 const cached = <T>(value: T) => ({ value, fetchedAt: NOW, stale: false });
 
 afterEach(() => {
-  configure(undefined);
+  horsWorker();
   vi.unstubAllGlobals();
 });
 
@@ -38,7 +39,7 @@ describe("the maps whose page lists the same places", () => {
 
   it("/bornes: no commune's count is a stop of Tab", async () => {
     const live = parseLive(readFileSync(new URL("./fixtures/irve_dynamique.csv", import.meta.url), "utf8"), IDS, new Date("2026-10-24T00:37:00Z"));
-    configure(async () => live);
+    dansLeWorker({ [IRVE_KEY]: () => live });
     const at = new Date("2026-10-24T00:40:00Z");
     const data = await buildBornes(new Cache(new MemoryStore(), () => at.getTime()), at);
     keyboardSkips(bornesPage(ORIGIN, { value: data, fetchedAt: at, stale: false }, at), 19);

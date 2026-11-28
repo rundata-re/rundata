@@ -18,6 +18,7 @@ import { communeDuContour } from "../places/contours.js";
 import { distanceKm } from "../geo.js";
 import type { SourceInfo } from "../types.js";
 import { autorisee } from "./autorisations.js";
+import { contexte, type Contexte } from "../contexte.js";
 
 export const SOURCE: SourceInfo = {
   id: "sensor_community",
@@ -294,14 +295,8 @@ export async function collect(before: Stocke | null, write: (s: Stocke) => Promi
   return `${said}, écrits`;
 }
 
-let reader: (() => Promise<Stocke | null>) | undefined;
-let memo: { at: number; copie: Stocke } | undefined;
-
-/** In the Worker: read the sensors from the KV store, where the scheduled event writes them, and the network never. */
-export function configure(read: (() => Promise<Stocke | null>) | undefined) {
-  reader = read;
-  memo = undefined;
-}
+// Kept for the context it was read from (contexte.ts): another one (a test's) reads again.
+let memo: { at: number; copie: Stocke; de: Contexte } | undefined;
 
 // The scheduled event writes every 15 minutes at most: the copy is asked of KV once in that time by an isolate.
 const FRESH_MS = 15 * 60_000;
@@ -311,7 +306,8 @@ const RECENT_MS = REWRITE_MS + 2 * REFRESH_EVERY * 60_000;
 
 /**
  * The stored sensors of the last 2 hours, their time the scheduled event's last write, or the failure to read them and
- * since when; null where nothing is configured (a local server, the tests), as the Worker alone has them. Fails while
+ * since when; null outside the Worker (a local server, the tests), as the Worker alone has them: there, the store
+ * only, the network never (contexte.ts). Fails while
  * the store has neither. A copy not written lately is `stale`, its sensors as last read: never dropped to none by
  * their age, which would say that no sensor measured when the network was not read (a silent site is neither dead nor
  * empty).
@@ -319,11 +315,12 @@ const RECENT_MS = REWRITE_MS + 2 * REFRESH_EVERY * 60_000;
  * build of /air's copy, which the scheduled event's budget counts (BUDGET.md).
  */
 export async function capteurs(now = new Date()): Promise<Cached<Stocke> | null> {
-  if (!reader) return null;
-  if (!memo || now.getTime() - memo.at >= FRESH_MS) {
-    const v = await reader();
+  const ctx = contexte();
+  if (!ctx.worker) return null;
+  if (!memo || memo.de !== ctx || now.getTime() - memo.at >= FRESH_MS) {
+    const v = ctx.kv ? await ctx.kv.json<Stocke>(KV_KEY) : null;
     if (!v) throw new Error("capteurs amateurs absents du stockage");
-    memo = { at: now.getTime(), copie: v };
+    memo = { at: now.getTime(), copie: v, de: ctx };
   }
   const v = memo.copie;
   if ("echec" in v) return { value: v, fetchedAt: new Date(v.echec), stale: false };

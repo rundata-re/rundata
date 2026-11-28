@@ -6,6 +6,7 @@ import { annuaireTool } from "../src/tools/annuaire.js";
 import { FUEL, keep } from "../src/tools/carburants.js";
 import { handle } from "../src/app.js";
 import { carburantsPage, descriptionOf, titleOf } from "../src/web/carburants.js";
+import { dansLeWorker, horsWorker } from "./contexte.js";
 
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url), "utf8");
 const LIEN = "https://www.reunion.gouv.fr/Actualites/Communiques-de-presse/Prix-des-carburants-en-octobre";
@@ -18,7 +19,7 @@ const jm = (s: string) => s.replace(/(\d{1,2}|1er) (janvier|février|mars|avril|
 const render = (...a: Parameters<typeof carburantsPage>) => flat(carburantsPage(...a));
 
 afterEach(() => {
-  carburants.configure(undefined);
+  horsWorker();
   vi.useRealTimers();
 });
 
@@ -152,7 +153,7 @@ describe("the prefect's fuel prices", () => {
     const asked: string[] = [];
     vi.stubGlobal("fetch", async (url: string) => (asked.push(String(url)), new Response("", { status: 500 })));
     try {
-      carburants.configure(async () => null);
+      dansLeWorker({ [carburants.KV_KEY]: () => null });
       await expect(carburants.prix(new Cache(), NOW)).rejects.toThrow(/absents du stockage/);
       vi.spyOn(console, "error").mockImplementation(() => {});
       const r = await annuaireTool(new Cache(), "prix de l'essence", undefined, NOW);
@@ -166,7 +167,7 @@ describe("the prefect's fuel prices", () => {
 
   it("are what the public services tool answers about fuel, from the stored copy", async () => {
     const prix = carburants.parseRelease(fixture("carburants_octobre.html"), LIEN, NOW)!;
-    carburants.configure(async () => prix);
+    dansLeWorker({ [carburants.KV_KEY]: () => prix });
     const r = body(await annuaireTool(new Cache(), "prix de l'essence", undefined, NOW));
     expect(r.resume).toBe("Prix maximum à La Réunion depuis le 1er octobre 2026 (arrêté du préfet) : sans plomb (« supercarburant » dans l'arrêté) 2,00 €/litre (+0,17 €)\u00a0; gazole 1,80 €/litre (+0,12 €)\u00a0; gaz 20,81 € la bouteille de 12,5 kg (+0,21 €), 18 € avec aides locales. Les mêmes dans toute l'île.");
     expect(r.prix_maximums).toHaveLength(7);
@@ -214,7 +215,7 @@ describe("the prefect's fuel prices", () => {
 
   it("are served at /carburants and dated in the sitemap by the prefect's order", async () => {
     const prix = carburants.parseRelease(fixture("carburants_octobre.html"), LIEN, NOW)!;
-    carburants.configure(async () => prix);
+    dansLeWorker({ [carburants.KV_KEY]: () => prix });
     const cache = new Cache();
     const r = await handle(new Request("https://rundata.re/carburants", { headers: { accept: "text/html" } }), cache);
     expect(r.status).toBe(200);
@@ -276,7 +277,7 @@ describe("a new order read before its 1st", () => {
   });
 
   it("is told by the tool in two sentences, today's prices first", async () => {
-    carburants.configure(async () => nov());
+    dansLeWorker({ [carburants.KV_KEY]: () => nov() });
     const r = body(await annuaireTool(new Cache(), "prix de l'essence", undefined, READ));
     expect(r.resume).toBe(
       "Prix maximum en vigueur aujourd'hui à La Réunion, jusqu'au 31 octobre (arrêté du préfet) : sans plomb (« supercarburant » dans l'arrêté) 1,56 €/litre\u00a0; gazole 1,24 €/litre\u00a0; gaz 19,09 € la bouteille de 12,5 kg. " +
@@ -304,7 +305,7 @@ describe("a new order read before its 1st", () => {
   it("is asked for again every quarter of an hour while the copy is a past month's", async () => {
     const oct = carburants.parseRelease(fixture("carburants_octobre.html"), LIEN, NOW)!;
     let copy = oct;
-    carburants.configure(async () => copy);
+    dansLeWorker({ [carburants.KV_KEY]: () => copy });
     let clock = Date.parse("2026-11-01T02:00:00Z");
     const cache = new Cache(new MemoryStore(), () => clock);
     expect((await carburants.prix(cache, new Date(clock))).value.depuis).toBe("2026-10-01");
@@ -327,7 +328,7 @@ describe("a new order read before its 1st", () => {
   it("is asked for again every quarter of an hour from the 28th, until the new order is in the copy", async () => {
     const oct = carburants.parseRelease(fixture("carburants_octobre.html"), LIEN, NOW)!;
     let copy = oct;
-    carburants.configure(async () => copy);
+    dansLeWorker({ [carburants.KV_KEY]: () => copy });
     let clock = Date.parse("2026-10-27T10:00:00Z");
     const cache = new Cache(new MemoryStore(), () => clock);
     await carburants.prix(cache, new Date(clock));
@@ -349,7 +350,7 @@ describe("a new order read before its 1st", () => {
   it("dates the page in the sitemap the day it is read, never ahead", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(READ);
-    carburants.configure(async () => nov());
+    dansLeWorker({ [carburants.KV_KEY]: () => nov() });
     const cache = new Cache();
     // Before any copy is stored, no day is known: no date.
     const before = await (await handle(new Request("https://rundata.re/sitemap.xml"), cache)).text();

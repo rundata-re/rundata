@@ -18,6 +18,7 @@ import { communeAdresse, communeExacte } from "../places/codes-postaux.js";
 import { type SourceInfo, UpstreamError } from "../types.js";
 import { decodeText, textOf } from "./avis-eau.js";
 import type { Epreuve } from "./sport.js";
+import { contexte } from "../contexte.js";
 
 export const SOURCE: SourceInfo = {
   id: "ffck",
@@ -243,20 +244,14 @@ export function epreuvesDe(etat: Etat): Epreuve[] {
     .sort((a, b) => a.debut.localeCompare(b.debut) || a.nom.localeCompare(b.nom));
 }
 
-let reader: (() => Promise<Etat | null>) | undefined;
-
-/** In the Worker: read the state from the KV store, where the scheduled event writes it. */
-export function configure(read: (() => Promise<Etat | null>) | undefined) {
-  reader = read;
-}
-
 /**
  * The island's events, from the state the scheduled event keeps, dated by its last read: none outside the Worker. With
  * `a_lire`, how many rows that may be on the island still have their page to read (one a pass, `refreshDue`).
  */
 export async function epreuves(cache: Cache, now = new Date()): Promise<Cached<Epreuve[]> & { a_lire: number }> {
   const got = await cache.get(KEY, READ_SECONDS, async () => {
-    const v = reader ? await reader() : null;
+    // The state the scheduled event keeps in the store (contexte.ts): none without it.
+    const v = (await contexte().kv?.json<Etat>(KEY)) ?? null;
     if (!v?.candidates || !v.lu) throw new UpstreamError(SOURCE.id, "calendrier de la FFCK absent du stockage");
     return v;
   });

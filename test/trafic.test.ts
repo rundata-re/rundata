@@ -8,6 +8,7 @@ import { buildTrafic, roadNewsNow, withRoadNews } from "../src/web/data.js";
 import { traficPage } from "../src/web/trafic.js";
 import { islandMap, ownIds } from "../src/web/map.js";
 import { doubleIds } from "./cartes.js";
+import { dansLeWorker, horsWorker } from "./contexte.js";
 
 // The ONF's map of 24/10/2026 (test/fixtures/onf): 4 forest roads closed. The buses' timetables live in D1, absent here.
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/onf/${f}`, import.meta.url), "utf8");
@@ -25,7 +26,7 @@ describe("circulation", () => {
     asked = [];
     // The month's fuel prices, as the workflow stores them.
     const prix = carburants.parseRelease(readFileSync(new URL("./fixtures/carburants_octobre.html", import.meta.url), "utf8"), "https://www.reunion.gouv.fr/Actualites/Communiques-de-presse/Prix-des-carburants-en-octobre");
-    carburants.configure(async () => prix ?? null);
+    dansLeWorker({ [carburants.KV_KEY]: () => prix ?? null });
     vi.stubGlobal("fetch", async (url: string) => {
       asked.push(url);
       if (down?.test(url)) return new Response("", { status: 503 });
@@ -37,7 +38,7 @@ describe("circulation", () => {
   });
   afterEach(() => {
     vi.unstubAllGlobals();
-    carburants.configure(undefined);
+    horsWorker();
   });
 
   it("says plainly it has no traffic data, and points to the Région's official map first, Waze's only below it", async () => {

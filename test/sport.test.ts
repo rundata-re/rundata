@@ -14,6 +14,7 @@ import { ouvrir } from "../src/web/associations-drapeau.js";
 import { libelleProchain, sportLive, sportPage } from "../src/web/sport.js";
 import type { SportAnswer } from "../src/web/data.js";
 import { withVide } from "../src/vide.js";
+import { dansLeWorker, horsWorker } from "./contexte.js";
 
 // « 2026-10-24T12:05 » → « le 24/10 à 12:05 », the form of the reads.
 const leLocal = (l: string) => `le ${l.slice(8, 10)}/${l.slice(5, 7)} à ${l.slice(11, 16)}`;
@@ -82,7 +83,7 @@ describe("sport", () => {
     down = undefined;
     // The FFCK's calendar comes from the state the Worker's scheduled event keeps (test/ffck.test.ts): read, with no
     // event of the island this fortnight.
-    ffck.configure(async () => ({ listes: {}, candidates: [], fiches: {}, essai: NOW.getTime(), lu: NOW.getTime() - 3_600_000 }));
+    dansLeWorker({ [ffck.KEY]: () => ({ listes: {}, candidates: [], fiches: {}, essai: NOW.getTime(), lu: NOW.getTime() - 3_600_000 }) });
     vi.stubGlobal("fetch", async (url: string) => {
       const f = file(url);
       return f && !down?.test(url) ? new Response(fixture(f)) : new Response("", { status: 503 });
@@ -90,7 +91,7 @@ describe("sport", () => {
   });
   afterEach(() => {
     vi.unstubAllGlobals();
-    ffck.configure(undefined);
+    horsWorker();
   });
 
   it("reads the dates of each source in local time", () => {

@@ -467,6 +467,22 @@ export async function completer(before: Serie | null, write: (s: Serie) => Promi
   return `${Object.keys(serie.bouees).length} bouées en série, ${ajoutes} mesures ajoutées, ${asked} requêtes`;
 }
 
+/**
+ * The series with the state's last measurements added: the series is completed 5 minutes after the state, so without
+ * them the curves would stop one measurement before the figures said at the top of /mer.
+ */
+export function avecDernieres(s: Serie, e: Etat | null | undefined): Serie {
+  const ms = Object.values(e?.mesures ?? {});
+  if (!ms.length) return s;
+  const bouees = { ...s.bouees };
+  for (const m of ms) {
+    const b = bouees[m.code];
+    if (!b?.points.length || b.points.some((p) => p[0] === m.t)) continue;
+    bouees[m.code] = { ...b, points: fusion(b.points, [pointOf(m)], -Infinity) };
+  }
+  return { ...s, bouees };
+}
+
 /** The series the scheduled event keeps: read from KV in the Worker; nothing elsewhere. */
 export async function serie(cache: Cache) {
   return cache.get(SERIE_KEY, READ_SECONDS, async () => {

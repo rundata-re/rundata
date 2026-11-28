@@ -180,7 +180,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // The commune of a station or a place given by a point, from its outline, no longer the nearest place's (24/11/2026).
   // The buoy off Sainte-Marie in the sea's answer, its coverage and its figures near it (28/11/2026).
   // The sea's 30 days by satellite alone linked to their own block of /mer (#h-satellite-courbes, 28/11/2026).
-  lieu: 38,
+  // The buoys' figures up to their last measurement, and their highest since their first when they measure for less than 7 days (28/11/2026).
+  lieu: 39,
   "marches-publics": 5,
   // The waves of the west and the south from Météo-France's MFWAM, with the main swell; WAM north and east.
   // The satellite's last pass first, its time and distance (« passage de cette nuit à 01:39 »), else « moyenne du 06/11 ».
@@ -190,7 +191,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // « En courbes »: the buoys' 30 days, the forecast at the buoy and the satellite's 30 days off four beaches, with their figures (24/11/2026).
   // « En courbes »: every buoy that measured, each with the forecast at its own place (28/11/2026).
   // Each beach's forecast with its wave model's name (28/11/2026).
-  mer: 13,
+  // « En courbes »: a buoy's temperature from its first day, its figures up to the last measurement said at the top (28/11/2026).
+  mer: 14,
   // The sea's history: the summary of the archive in D1 (tools/mer-historique.ts), first listed 24/11/2026.
   "mer-historique": 1,
   // The stations of MétéoR Océan Indien besides the others, each with its credit (09/11/2026).

@@ -7,7 +7,7 @@
 import * as candhis from "../providers/candhis.js";
 import * as crwSerie from "../providers/crw-serie.js";
 import * as houle from "../providers/houle.js";
-import { type Chiffres, type CourbeBouee, type Courbes, APRES, AVANT, boueesDites, degres, ecartDit, leQuand, metres, secondes } from "../tools/mer-courbes.js";
+import { type Chiffres, type CourbeBouee, type Courbes, APRES, AVANT, boueesDites, degres, ecartDit, jourMois, leQuand, metres, secondes } from "../tools/mer-courbes.js";
 import { chart, known } from "./graphe.js";
 import { esc } from "./map.js";
 
@@ -32,7 +32,8 @@ type Mot = (v: number) => string;
  */
 function couvre(pts: (number | null)[], debut: number, jours: number): string {
   const i = pts.findIndex((v) => v != null);
-  if (i < 0 || i < 24) return `sur ${jours} jours`;
+  // A chart cut to the day of its first measurement (the temperature's) is shorter than its days: « depuis » too.
+  if (i < 0 || (i < 24 && pts.length >= jours * 24)) return `sur ${jours} jours`;
   const d = new Date(debut + i * HOUR + 4 * HOUR);
   return `depuis le ${String(d.getUTCDate()).padStart(2, "0")}/${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
 }
@@ -54,7 +55,7 @@ function chiffresDits(nom: string, c: Chiffres | undefined, mot: Mot, unite: "m"
   const parts = [
     `<b>${esc(thin(mot(c.derniere)))}</b> ${esc(leQuand(c.le))}`,
     ...(c.sur_24h != null ? [`en 24\u00a0h\u00a0: ${esc(thin(ecartDit(c.sur_24h, unite)))}`] : []),
-    ...(c.max_7j ? [`maximum sur 7 jours\u00a0: ${esc(thin(mot(c.max_7j.valeur)))} ${esc(leQuand(c.max_7j.le))}`] : []),
+    ...(c.max_7j ? [`maximum ${c.max_7j.depuis != null ? `depuis le ${jourMois(c.max_7j.depuis)}` : "sur 7 jours"}\u00a0: ${esc(thin(mot(c.max_7j.valeur)))} ${esc(leQuand(c.max_7j.le))}`] : []),
     ...(c.periode ? [`sur ${c.periode.jours} jours\u00a0: moyenne ${esc(thin(mot(c.periode.moyenne)))}, de ${esc(thin(mot(c.periode.min)))} à ${esc(thin(mot(c.periode.max)))}`] : []),
   ];
   return `<li><span>${esc(nom)}</span> ${parts.join(" · ")}</li>`;
@@ -112,7 +113,7 @@ function temperatureCarte(b: CourbeBouee, now: Date): string {
   const vs = known(b.temperature);
   const said = `Température de la mer mesurée à la bouée de ${b.nom} ${couvreTemperature(b)}, ${degres(t.derniere)} ${leQuand(t.le)}.`;
   const svg = chart({
-    label: said, labels: jours(b.debut_t, b.temperature.length), every: 24 * 7, h: H,
+    label: said, labels: jours(b.debut_t, b.temperature.length), every: b.temperature.length > 10 * 24 ? 24 * 7 : 24, h: H,
     min: Math.floor(Math.min(...vs) - 0.5), max: Math.ceil(Math.max(...vs) + 0.5),
     lines: [{ pts: b.temperature, cls: "ln-t" }],
   });

@@ -358,6 +358,37 @@ describe("« En courbes » says only what it draws", () => {
     expect(html).toContain('<p class="eyebrow">Mesures et prévision</p>');
   });
 
+  it("starts a young buoy's temperature chart on its first day, and says its highest since then, never over 7 days", () => {
+    const s = serie();
+    const since = NOW.getTime() - 3 * DAY;
+    s.bouees["97410"] = { ...s.bouees["97410"], points: s.bouees["97410"].points.filter((p) => p[0] >= since) };
+    const c = courbes(s, crw, undefined, NOW);
+    const b = c.bouees[0];
+    // From the day of its first measurement (21/11) to the end of today: 4 days, not 30.
+    expect(b.debut_t).toBe(minuitLocal(since));
+    expect(b.temperature).toHaveLength(4 * 24);
+    expect(b.temperature.slice(0, 24).some((v) => v != null)).toBe(true);
+    // The buoy's block only: the satellite's 30 days keep their week.
+    const html = buoysSection(c, NOW);
+    expect(html).toContain("maximum depuis le 21/11");
+    expect(html).not.toContain("maximum sur 7 jours");
+    expect(html).toContain("Température de la mer mesurée à la bouée de Saint-Pierre (large) depuis le 21/11");
+    // One label a day on a short chart.
+    const svg = html.slice(html.indexOf("Température de la mer à la bouée"));
+    for (const j of ["21/11", "22/11", "23/11", "24/11"]) expect(svg).toContain(`>${j}<`);
+    // The tool says the same.
+    const t = historiqueBlock(c)!.bouees![0].temperature_eau!;
+    expect(t).not.toHaveProperty("maximum_sur_7_jours");
+    expect(t.maximum_depuis_la_premiere_mesure).toMatch(/, mesures depuis le 21\/11$/);
+  });
+
+  it("keeps the 30 days and « maximum sur 7 jours » for a buoy measuring for a month", () => {
+    const c = courbes(serie(), crw, undefined, NOW);
+    expect(c.bouees[0].temperature).toHaveLength(30 * 24);
+    expect(buoysSection(c, NOW)).toContain("maximum sur 7 jours");
+    expect(historiqueBlock(c)!.bouees![0].temperature_eau).toHaveProperty("maximum_sur_7_jours");
+  });
+
   it("gives each buoy its own span when they differ", () => {
     const s = serie();
     const since = NOW.getTime() - 3 * DAY;
@@ -446,6 +477,24 @@ describe("/mer as a whole: the buoys first, each subject once, every word from w
     expect(blocs).not.toMatch(/Sainte-Marie sur (7|30) jours/);
     expect(blocs).toContain("Température de la mer mesurée à la bouée de Sainte-Marie depuis le 21/11");
     expect(blocs).toContain("Hauteur des vagues mesurée à la bouée de Saint-Pierre (large) sur 7 jours");
+  });
+});
+
+describe("the curves and the top of /mer", () => {
+  it("end on the same last measurement: the state's, added to a series completed after it", () => {
+    const s = serie();
+    const last = s.bouees["97410"].points.at(-1)!;
+    const m: candhis.Mesure = { code: "97410", t: last[0] + 30 * 60_000, hauteur: 1.4, hauteur_selon: "H1/3", hmax: 2.4, periode: 10, periode_selon: "TH1/3", direction: 225, temperature: 27.3 } as candhis.Mesure;
+    const etat = { essai: NOW.getTime(), mesures: { "97410": m } } as candhis.Etat;
+    const plus = candhis.avecDernieres(s, etat);
+    expect(plus.bouees["97410"].points.at(-1)).toEqual([m.t, 1.4, 2.4, 10, 225, 27.3]);
+    expect(plus.bouees["97410"].points).toHaveLength(s.bouees["97410"].points.length + 1);
+    // Already in the series: kept once; the series itself untouched.
+    expect(candhis.avecDernieres(plus, etat).bouees["97410"].points).toHaveLength(plus.bouees["97410"].points.length);
+    expect(s.bouees["97410"].points.at(-1)).toBe(last);
+    const c = courbes(plus, crw, undefined, NOW);
+    expect(c.bouees[0].chiffres.hauteur!.derniere).toBe(1.4);
+    expect(c.bouees[0].chiffres.temperature!.derniere).toBe(27.3);
   });
 });
 

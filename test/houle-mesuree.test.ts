@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { MAX_BYTES } from "../src/bin/check-sources.js";
 import * as candhis from "../src/providers/candhis.js";
@@ -81,6 +81,7 @@ describe("the waves measured by the Candhis buoys", () => {
     expect(ile.resume).toMatch(/Vagues PRÉVUES maintenant \(.*pas une mesure\)/);
     expect(ile.couverture).toBe(coverage());
     expect(ile.couverture).toContain("Houle MESURÉE : les bouées du réseau Candhis du Cerema qui publient");
+    expect(ile.couverture).toContain("(au large de Sainte-Marie et de Saint-Pierre depuis novembre 2026)");
     expect(ile.sources.map((s: { source: string }) => s.source)).toContain(candhis.SOURCE.nom);
     // The beach of Saint-Pierre: the buoy at 2,6 km, in its résumé after the water and before the forecast.
     const sp = body(await temperatureMer(cache, "Plage de Saint-Pierre", NOW));
@@ -108,6 +109,12 @@ describe("the waves measured by the Candhis buoys", () => {
   });
 
   it("leave out a measurement past 6 hours and a buoy with no place, and take Sainte-Marie's place once it is read", async () => {
+    // Sainte-Marie's place is in the list since 28/11/2026: taken out here, as for a buoy that starts measuring.
+    const sm = candhis.BOUEES.find((b) => b.code === "97409")!;
+    const { lat, lon } = sm;
+    delete sm.lat;
+    delete sm.lon;
+    onTestFinished(() => Object.assign(sm, { lat, lon }));
     const old = { ...KEPT, mesures: { "97410": mesure("97410", NOW.getTime() - 6 * 3600_000 - 60_000), "97409": mesure("97409") } };
     expect(candhis.releves(old, NOW)).toEqual([]);
     const placed = { ...old, positions: { "97409": { lat: -20.85, lon: 55.56 } } };

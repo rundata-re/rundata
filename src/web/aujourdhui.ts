@@ -17,8 +17,8 @@ import { notePosition, porte, SHEET as ALLER } from "./aller.js";
 import { type Alerte, credit, sansPeriode } from "./data.js";
 import { connectorCta, courantItem, lienNom, silentItem, silentText, webPage } from "./domains.js";
 import { adresseTexte, cheminTexte, telephoneTexte } from "./adresse.js";
-import { esc, fenetre, islandMap } from "./map.js";
-import { href as lienSur } from "./html.js";
+import { fenetre, islandMap } from "./map.js";
+import { brut, href as lienSur, html, type Html } from "./html.js";
 import { a, communeDite, de, fourchette } from "../tools/format.js";
 import { compteAvis, NE_PAS_BOIRE, periodeCoupure } from "../tools/coupures.js";
 import { ask, credits, icon, layout, officielHtml, SITE, thin, leJour } from "./pages.js";
@@ -30,12 +30,12 @@ const leA = (lu_le: string) => { const [d, h] = lu_le.split(" "); return `le ${d
  *  read more than a day ago: « ; le site … n'a pas pu être relu depuis le 24/10 à 08:00 » (23/11/2026). `court` drops the
  *  commune's name, which the card says before it. */
 function sitesDits(sites: SiteLu[] | undefined, commune: string, court = false) {
-  const name = (x: SiteLu) => esc(court ? x.site.replace(` ${de(commune)}`, "") : x.site);
+  const name = (x: SiteLu) => (court ? x.site.replace(` ${de(commune)}`, "") : x.site);
   const fresh = sites?.filter((x) => x.a_jour) ?? [];
   const old = sites?.filter((x) => !x.a_jour) ?? [];
   return {
-    dont: fresh.length ? `, dont ${fresh.map((x) => `le ${name(x)}, lu ${leA(x.lu_le)}`).join(" et ")}` : "",
-    ancien: old.map((x) => `le ${name(x)} n'a pas pu être relu depuis ${leA(x.lu_le)}`).join(" et "),
+    dont: fresh.length ? html`, dont ${fresh.map((x, i) => html`${i ? " et " : ""}le ${name(x)}, lu ${leA(x.lu_le)}`)}` : "",
+    ancien: old.length ? html`${old.map((x, i) => html`${i ? " et " : ""}le ${name(x)} n'a pas pu être relu depuis ${leA(x.lu_le)}`)}` : "",
   };
 }
 
@@ -86,18 +86,21 @@ export const levelClass = (s: string) => (/\b(rouge|violette?)\b/.test(s) ? ' cl
  * Nothing when there is nothing; orange and red in their own colours (levelClass).
  */
 export function urgent(p: PlacePage, r: Resume): string {
-  const items: string[] = [];
+  return urgence(p, r).texte;
+}
+function urgence(p: PlacePage, r: Resume): Html {
+  const items: Html[] = [];
   const dry = r.coupures_eau?.avis.filter((n) => n.ne_pas_boire).length ?? 0;
   if (dry) {
     const s = dry > 1;
-    items.push(`<li>Eau à ne pas boire\u00a0: ${dry} avis en cours ${esc(aCommune(p.nom))}, dans les secteurs nommés par ${s ? "les avis" : "l'avis"}. <a href="/coupures-eau/${p.slug}">Voir ${s ? "les avis" : "l'avis"}</a></li>`);
+    items.push(html`<li>Eau à ne pas boire\u00a0: ${dry} avis en cours ${aCommune(p.nom)}, dans les secteurs nommés par ${s ? "les avis" : html`l'avis`}. <a href="/coupures-eau/${p.slug}">Voir ${s ? "les avis" : html`l'avis`}</a></li>`);
   }
   const v = r.vigilance;
   const level = v?.au_dessus_du_vert ? vigilanceLevel(v.maintenant) : "";
-  if (level) items.push(`<li${levelClass(level)}>Vigilance ${esc(level)} (Météo-France). <a href="/vigilance">Voir les consignes</a></li>`);
-  if (v?.alerte_cyclonique) items.push(`<li${levelClass(v.alerte_cyclonique)}>${esc(v.alerte_cyclonique.replace(/\.$/, ""))} (Météo-France). <a href="/vigilance">Voir les consignes</a></li>`);
-  if (v?.ecoles) items.push(`<li><a href="/ecoles-cyclone">${esc(v.ecoles)}</a></li>`);
-  return items.length ? `<ul class="urgence" aria-label="À savoir d'abord">${items.join("")}</ul>` : "";
+  if (level) items.push(html`<li${brut(levelClass(level))}>Vigilance ${level} (Météo-France). <a href="/vigilance">Voir les consignes</a></li>`);
+  if (v?.alerte_cyclonique) items.push(html`<li${brut(levelClass(v.alerte_cyclonique))}>${v.alerte_cyclonique.replace(/\.$/, "")} (Météo-France). <a href="/vigilance">Voir les consignes</a></li>`);
+  if (v?.ecoles) items.push(html`<li><a href="/ecoles-cyclone">${v.ecoles}</a></li>`);
+  return items.length ? html`<ul class="urgence" aria-label="À savoir d'abord">${items}</ul>` : html``;
 }
 
 /** The commune of a Météo-France station, from its number (its first five digits are the commune's INSEE code). */
@@ -108,28 +111,31 @@ export function stationCommune(nom: string): string | undefined {
 
 /** Then a short line by subject, its label in bold, absent when its data is missing (wording validated on 04/11/2026). */
 export function dayLines(p: PlacePage, r: Resume): string {
-  const line = (label: string, text: string) => `<li><b>${label}\u00a0:</b> ${text}</li>`;
+  return lignesDuJour(p, r).texte;
+}
+function lignesDuJour(p: PlacePage, r: Resume): Html {
+  const line = (label: string, text: Html) => html`<li><b>${label}\u00a0:</b> ${text}</li>`;
   const m = r.meteo;
   const s = m?.mesure;
   const f = m?.prevision?.aujourd_hui;
   const where = s ? [stationCommune(s.station), s.distance_km != null ? `à ${String(s.distance_km).replace(".", ",")}\u00a0km` : ""].filter(Boolean).join(", ") : "";
   const measured = s?.mesures.temperature
-    ? `${esc(thin(s.mesures.temperature))} mesurés ${esc(leJour(s.heure_mesure))} à la station ${esc(s.station)}${where ? ` (${esc(where)})` : ""}.`
+    ? html`${thin(s.mesures.temperature)} mesurés ${leJour(s.heure_mesure)} à la station ${s.station}${where ? html` (${where})` : ""}.`
     : "";
-  const forecast = f?.temperature_min && f.temperature_max ? `Prévision ${esc(f.periode ?? "du jour")}\u00a0: ${esc(thin(fourchette(f.temperature_min, f.temperature_max)))}${f.ciel_en_journee ? `, ${esc(f.ciel_en_journee)}` : ""}.` : "";
+  const forecast = f?.temperature_min && f.temperature_max ? html`Prévision ${f.periode ?? "du jour"}\u00a0: ${thin(fourchette(f.temperature_min, f.temperature_max))}${f.ciel_en_journee ? html`, ${f.ciel_en_journee}` : ""}.` : "";
   const v = r.vigilance;
   const level = v && !v.au_dessus_du_vert && !v.alerte_cyclonique ? vigilanceLevel(v.maintenant) : "";
   const ev = r.evenements_du_jour;
   const n = ev ? ev.liste.length + (ev.autres ?? 0) : 0;
   const lus = sitesDits(ev?.sites_lus, p.nom);
   const lines = [
-    measured || forecast ? line("Météo", [measured, forecast].filter(Boolean).join(" ")) : "",
-    level ? line("Vigilance", `${esc(level)} (Météo-France).`) : "",
-    ev ? line("Sorties", `${n ? `${plural(n, "événement")} aujourd'hui` : `aucun événement trouvé aujourd'hui dans les agendas lus${lus.dont}${lus.ancien ? `\u00a0; ${lus.ancien}` : ""}`}${ev.injoignable ? `, ${esc(ev.injoignable.court)}` : ""}.`) : "",
-    r.carburants?.prix_maximum ? line("Carburants", `prix maximum du mois\u00a0: ${esc(r.carburants.prix_maximum)}.`) : "",
-    line("Pharmacie de garde", `${lienNom(r.pharmacie_de_garde.site, "3237.fr", ' rel="noopener"')}`),
-  ].filter(Boolean);
-  return `<ul class="jour">${lines.join("")}</ul>`;
+    measured || forecast ? line("Météo", html`${measured}${measured && forecast ? " " : ""}${forecast}`) : "",
+    level ? line("Vigilance", html`${level} (Météo-France).`) : "",
+    ev ? line("Sorties", html`${n ? html`${plural(n, "événement")} aujourd'hui` : html`aucun événement trouvé aujourd'hui dans les agendas lus${lus.dont}${lus.ancien ? html`\u00a0; ${lus.ancien}` : ""}`}${ev.injoignable ? html`, ${ev.injoignable.court}` : ""}.`) : "",
+    r.carburants?.prix_maximum ? line("Carburants", html`prix maximum du mois\u00a0: ${r.carburants.prix_maximum}.`) : "",
+    line("Pharmacie de garde", brut(lienNom(r.pharmacie_de_garde.site, "3237.fr", ' rel="noopener"'))),
+  ];
+  return html`<ul class="jour">${lines}</ul>`;
 }
 
 /**
@@ -137,28 +143,28 @@ export function dayLines(p: PlacePage, r: Resume): string {
  * then those whose days no source gives, by name, with the town hall's page; never « no market ».
  * A town hall's market says its page and, when old, its date.
  */
-function marketItems(mk: Markets | undefined, commune: string, aller: Aller): string[] {
+function marketItems(mk: Markets | undefined, commune: string, aller: Aller): Html[] {
   if (!mk) return [];
   // Its position from the bundled list, by its OpenStreetMap object: the summary does not give it. None for a market
   // only a town hall gives: no button then.
   const go = (x: { nom: string; adresse?: string; carte?: string }) => {
     const m = x.carte ? MARCHES().find((y) => y.osm === x.carte) : undefined;
     const button = m?.lat != null && m.lon != null ? aller({ nom: x.nom, lat: m.lat, lon: m.lon, adresse: x.adresse ? `${x.adresse}, ${commune}` : undefined }) : "";
-    return button ? ` ${button}` : "";
+    return brut(button ? ` ${button}` : "");
   };
   const by = (x: { d_apres?: string }) => (x.d_apres ? `, d'après le ${x.d_apres}` : "");
-  const name = (x: { nom: string; lien: string }) => `<a href="${esc(x.lien)}" rel="noopener"${fenetre(x.lien)}><b>${esc(x.nom)}</b></a>`;
+  const name = (x: { nom: string; lien: string }) => html`<a href="${lienSur(x.lien)}" rel="noopener"${brut(fenetre(x.lien))}><b>${x.nom}</b></a>`;
   // « Jours et horaires des marchés : site de la mairie de Saint-Pierre → », its words outside the link but the site's.
   const [label, site] = mk.mairie ? mk.mairie.texte.split(" : ") : [];
   return [
-    ...mk.liste.map((x) => `<li>Marché aujourd'hui : ${name(x)} <span class="note">${esc(x.horaires_aujourd_hui)}${x.adresse ? `, ${esc(x.adresse)}` : ""}${esc(by(x))}</span>${go(x)}</li>`),
-    ...(mk.permanents ?? []).map((x) => `<li>Marché permanent : ${name(x)} <span class="note">${esc(x.horaires ?? "")}${x.horaires_aujourd_hui === "fermé aujourd'hui" ? ", fermé aujourd'hui" : ""}${x.adresse ? `, ${esc(x.adresse)}` : ""}${esc(by(x))}</span>${go(x)}</li>`),
+    ...mk.liste.map((x) => html`<li>Marché aujourd'hui : ${name(x)} <span class="note">${x.horaires_aujourd_hui}${x.adresse ? html`, ${x.adresse}` : ""}${by(x)}</span>${go(x)}</li>`),
+    ...(mk.permanents ?? []).map((x) => html`<li>Marché permanent : ${name(x)} <span class="note">${x.horaires ?? ""}${x.horaires_aujourd_hui === "fermé aujourd'hui" ? html`, fermé aujourd'hui` : ""}${x.adresse ? html`, ${x.adresse}` : ""}${by(x)}</span>${go(x)}</li>`),
     // Held today by their source, without an hour: never « Marché aujourd'hui ».
-    ...(mk.heures_non_trouvees ?? []).map((x) => `<li>Marché sans heures : ${name(x)} <span class="note">${esc(x.manque)}${x.adresse ? `, ${esc(x.adresse)}` : ""}</span>${go(x)}</li>`),
+    ...(mk.heures_non_trouvees ?? []).map((x) => html`<li>Marché sans heures : ${name(x)} <span class="note">${x.manque}${x.adresse ? html`, ${x.adresse}` : ""}</span>${go(x)}</li>`),
     // Those whose days no source gives, grouped by where they were looked for.
     ...[...new Set((mk.jours_non_trouves ?? []).map((x) => x.manque))].map((manque) => [manque, mk.jours_non_trouves!.filter((x) => x.manque === manque)] as const).map(([manque, xs], i) =>
-      `<li>${i || mk.liste.length || mk.permanents || mk.heures_non_trouvees ? "Autres marchés" : "Marchés"} : ${xs.map(name).join(", ")}, <span class="note">${esc(manque)}</span></li>`),
-    mk.mairie ? `<li>${esc(label)} : <a href="${lienSur(mk.mairie.site)}" rel="noopener"${fenetre(mk.mairie.site)}>${esc(site)} →</a></li>` : "",
+      html`<li>${i || mk.liste.length || mk.permanents || mk.heures_non_trouvees ? "Autres marchés" : "Marchés"} : ${xs.map((x, j) => html`${j ? ", " : ""}${name(x)}`)}, <span class="note">${manque}</span></li>`),
+    mk.mairie ? html`<li>${label} : <a href="${lienSur(mk.mairie.site)}" rel="noopener"${brut(fenetre(mk.mairie.site))}>${site} →</a></li>` : html``,
   ];
 }
 
@@ -194,7 +200,7 @@ const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n > 1 ? man
  * A link to a page of the site written as its address (« rundata.re/collecte/saint-paul »): it may go to the next line
  * after each « / » (cheminTexte()), and keeps its whole text as its name, as lienNom() does.
  */
-const cheminLien = (path: string) => `<a href="${esc(path)}" aria-label="${esc(`rundata.re${path}`)}">rundata.re${cheminTexte(path)}</a>`;
+const cheminLien = (path: string) => html`<a href="${lienSur(path)}" aria-label="${`rundata.re${path}`}">rundata.re${brut(cheminTexte(path))}</a>`;
 
 /** « 29/10/2026 ». */
 const jma = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
@@ -204,24 +210,28 @@ const jma = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice
  * platform. Folded, but for a few: Saint-Denis has more than 60. A commune with none says so, after the base.
  */
 export function monumentsCard(nom: string): string {
+  return carteMonuments(nom).texte;
+}
+function carteMonuments(nom: string): Html {
   const list = monuments.ofCommune(nom);
   const base = "la base Mérimée du ministère de la Culture";
-  if (!list.length) return `<div class="card"><h3>Monuments historiques</h3><p>Aucun monument historique ${esc(aCommune(nom))} dans ${base}.</p></div>`;
+  if (!list.length) return html`<div class="card"><h3>Monuments historiques</h3><p>Aucun monument historique ${aCommune(nom)} dans ${base}.</p></div>`;
   const item = (m: monuments.Monument) => {
     // A monument on two communes says the other one.
     const aussi = monuments.autres(m, nom);
     const note = [monuments.protege(m), m.adresse, aussi.length ? `aussi ${aussi.map(aCommune).join(", ")}` : ""].filter(Boolean).join(" · ");
-    return `<li><a href="${esc(monuments.notice(m))}" rel="noopener"${fenetre(monuments.notice(m))}>${esc(m.nom)}</a> <span class="note">${esc(note)}</span></li>`;
+    return html`<li><a href="${lienSur(monuments.notice(m))}" rel="noopener"${brut(fenetre(monuments.notice(m)))}>${m.nom}</a> <span class="note">${note}</span></li>`;
   };
-  return `<div class="card"><details${list.length <= 5 ? " open" : ""}><summary><h3>Monuments historiques</h3> <span class="note">${plural(list.length, "classé ou inscrit", "classés ou inscrits")}</span></summary>` +
-    `<ul class="plain">${list.map(item).join("")}</ul><p class="note">D'après ${base}, liste du ${jma(monuments.FICHIER_DU)}\u00a0: chaque nom mène à sa notice.</p></details></div>`;
+  return html`<div class="card"><details${list.length <= 5 ? " open" : ""}><summary><h3>Monuments historiques</h3> <span class="note">${plural(list.length, "classé ou inscrit", "classés ou inscrits")}</span></summary><ul class="plain">${list.map(item)}</ul><p class="note">D'après ${base}, liste du ${jma(monuments.FICHIER_DU)}\u00a0: chaque nom mène à sa notice.</p></details></div>`;
 }
 
 // `sr`: words after the title's link for screen readers only (« à Saint-Paul »), when the page links the same title elsewhere.
-const card = (ic: string, title: string, body: string, href?: string, cls = "", sr = "") =>
-  `<div class="card${cls}">${icon(ic)}<h3>${href ? `<a href="${href}">${esc(title)}${sr ? `<span class="sr"> ${esc(sr)}</span>` : ""}</a>` : esc(title)}</h3>${body}</div>`;
-const li = (x: { titre: string; lien?: string; quand?: string; media?: string }) =>
-  `<li>${x.lien ? `<a href="${esc(x.lien)}" rel="noopener"${fenetre(x.lien)}>${esc(x.titre)}</a>` : esc(x.titre)}${x.quand || x.media ? ` <span class="note">${esc([x.quand, x.media].filter(Boolean).join(" · "))}</span>` : ""}</li>`;
+const card = (ic: string, title: string, body: Html, href?: string, cls = "", sr = "") =>
+  html`<div class="card${cls}">${brut(icon(ic))}<h3>${href ? html`<a href="${href}">${title}${sr ? html`<span class="sr"> ${sr}</span>` : ""}</a>` : title}</h3>${body}</div>`;
+// The item's content, without its <li>: a cut notice and an event put their own words before it.
+const entree = (x: { titre: string; lien?: string; quand?: string; media?: string }) =>
+  html`${x.lien ? html`<a href="${lienSur(x.lien)}" rel="noopener"${brut(fenetre(x.lien))}>${x.titre}</a>` : x.titre}${x.quand || x.media ? html` <span class="note">${[x.quand, x.media].filter(Boolean).join(" · ")}</span>` : ""}`;
+const li = (x: { titre: string; lien?: string; quand?: string; media?: string }) => html`<li>${entree(x)}</li>`;
 
 /**
  * `mairie`: the office as the commune's copy has it, for its position (« Y aller »), which the summary, also the tool's
@@ -230,7 +240,7 @@ const li = (x: { titre: string; lien?: string; quand?: string; media?: string })
 /** « ouvre à 8\u00a0h (jusqu'à 16\u00a0h) » as « <b>ouvre à 8\u00a0h</b> <span class="note">(jusqu'à 16\u00a0h)</span> ». */
 const mairieEtat = (etat: string) => {
   const [verbe, suite] = etat.split(/ (?=\()/);
-  return `<b>${esc(verbe)}</b>${suite ? ` <span class="note">${esc(suite)}</span>` : ""}`;
+  return html`<b>${verbe}</b>${suite ? html` <span class="note">${suite}</span>` : ""}`;
 };
 
 export function aujourdhuiPage(origin: string, p: PlacePage, r: Resume, at: Cached<unknown> | null, alerte?: Alerte, mairie?: annuaire.Office | null): string {
@@ -241,44 +251,40 @@ export function aujourdhuiPage(origin: string, p: PlacePage, r: Resume, at: Cach
   const f = m?.prevision?.aujourd_hui;
   // The rain says itself (« 1,6 mm de pluie », « pas de pluie prévue »): no « pluie » before it. Today's hours (« de 15\u00a0h
   // à minuit ») are said once after the day, not again after the rain.
-  const dayForecast = (j?: typeof f) => (j ? `${esc(j.jour)}${j.periode ? ` ${esc(j.periode)}` : ""} : ${j.temperature_min && j.temperature_max ? esc(thin(fourchette(j.temperature_min, j.temperature_max))) : ""}${j.ciel_en_journee ? `, ${esc(j.ciel_en_journee)}` : ""}${j.pluie ? `, ${esc(thin(sansPeriode(j.pluie, j.periode)))}` : ""}` : "");
+  const dayForecast = (j?: typeof f) => (j ? html`${j.jour}${j.periode ? html` ${j.periode}` : ""} : ${j.temperature_min && j.temperature_max ? thin(fourchette(j.temperature_min, j.temperature_max)) : ""}${j.ciel_en_journee ? html`, ${j.ciel_en_journee}` : ""}${j.pluie ? html`, ${thin(sansPeriode(j.pluie, j.periode))}` : ""}` : "");
 
   const weather = m
     ? card("thermo", `Météo ${p.nom}`,
-        (m.mesure ? `<p><b>${esc(thin(m.mesure.mesures.temperature ?? ""))}</b> mesurés ${esc(leJour(m.mesure.heure_mesure))} par la station ${esc(m.mesure.station)}${communeDite(m.mesure, p.nom) ? ` ${esc(a(communeDite(m.mesure, p.nom)!))}` : ""} (${m.mesure.altitude_m.toLocaleString("fr-FR")} m${m.mesure.distance_km != null ? `, à ${String(m.mesure.distance_km).replace(".", ",")} km` : ""}).</p>` : "") +
-        (f ? `<p>Prévision, pas une mesure : ${dayForecast(f)}${m.prevision?.demain ? ` ; ${dayForecast(m.prevision.demain)}` : ""}.</p>` : ""),
+        html`${m.mesure ? html`<p><b>${thin(m.mesure.mesures.temperature ?? "")}</b> mesurés ${leJour(m.mesure.heure_mesure)} par la station ${m.mesure.station}${communeDite(m.mesure, p.nom) ? html` ${a(communeDite(m.mesure, p.nom)!)}` : ""} (${m.mesure.altitude_m.toLocaleString("fr-FR")} m${m.mesure.distance_km != null ? html`, à ${String(m.mesure.distance_km).replace(".", ",")} km` : ""}).</p>` : ""}${f ? html`<p>Prévision, pas une mesure : ${dayForecast(f)}${m.prevision?.demain ? html` ; ${dayForecast(m.prevision.demain)}` : ""}.</p>` : ""}`,
         `/meteo/${p.slug}`)
     : "";
   const v = r.vigilance;
   const vigil = v
-    ? card("alert", "Vigilance", `<p>${esc(v.maintenant)}${v.vagues_submersion ? ` ${esc(v.vagues_submersion)}.` : ""}</p>${v.alerte_cyclonique ? `<p><b>${esc(v.alerte_cyclonique)}</b></p>` : ""}${v.ecoles ? `<p><a href="/ecoles-cyclone">${esc(v.ecoles)}</a></p>` : ""}<p>${officielHtml(v.alerte_cyclonique ? mf.OFFICIEL_CYCLONE : mf.OFFICIEL_VIGILANCE)}</p>`, "/vigilance", v.alerte_cyclonique || v.au_dessus_du_vert ? " warn" : "")
+    ? card("alert", "Vigilance", html`<p>${v.maintenant}${v.vagues_submersion ? html` ${v.vagues_submersion}.` : ""}</p>${v.alerte_cyclonique ? html`<p><b>${v.alerte_cyclonique}</b></p>` : ""}${v.ecoles ? html`<p><a href="/ecoles-cyclone">${v.ecoles}</a></p>` : ""}<p>${brut(officielHtml(v.alerte_cyclonique ? mf.OFFICIEL_CYCLONE : mf.OFFICIEL_VIGILANCE))}</p>`, "/vigilance", v.alerte_cyclonique || v.au_dessus_du_vert ? " warn" : "")
     : "";
   const small = [
     // The buoy first when one measures near the commune, then the satellite (tools/resume.ts, sea).
-    r.mer ? `<li>Mer : <b>${esc(thin(r.mer.temperature_eau))}</b> <span class="note">${esc(r.mer.mesure)}</span>${"satellite" in r.mer && r.mer.satellite ? `, satellite : <b>${esc(thin(r.mer.satellite.temperature_eau))}</b>` : ""} · <a href="/mer">la mer →</a></li>` : "",
-    r.air ? `<li>Air : <b>${esc(r.air.qualite)}</b> <span class="note">indice ATMO prévu ${r.air.indice_atmo}${r.air.polluants ? `, ${esc(r.air.polluants.join(", "))}` : ""}</span> · <a href="/air">l'air →</a></li>` : "",
+    r.mer ? html`<li>Mer : <b>${thin(r.mer.temperature_eau)}</b> <span class="note">${r.mer.mesure}</span>${"satellite" in r.mer && r.mer.satellite ? html`, satellite : <b>${thin(r.mer.satellite.temperature_eau)}</b>` : ""} · <a href="/mer">la mer →</a></li>` : "",
+    r.air ? html`<li>Air : <b>${r.air.qualite}</b> <span class="note">indice ATMO prévu ${r.air.indice_atmo}${r.air.polluants ? html`, ${r.air.polluants.join(", ")}` : ""}</span> · <a href="/air">l'air →</a></li>` : "",
     // A line past its hour: in electricite's words, never its value as the day's (audit of the AI tools, 23/11/2026).
-    r.electricite?.avertissement ? `<li>Électricité : <span class="note">${esc(r.electricite.avertissement)}</span> · <a href="/electricite">l'électricité →</a></li>`
-    : r.electricite ? `<li>Électricité : <b>${String(r.electricite.renouvelable_pct).replace(".", ",")} % renouvelable</b> <span class="note">à ${esc(r.electricite.heure)}</span> · <a href="/electricite">l'électricité →</a></li>` : "",
-    r.calendrier?.jour_ferie ? `<li>Jour férié : <b>${esc(r.calendrier.jour_ferie)}</b></li>` : "",
-    r.calendrier?.vacances_scolaires ? `<li>${esc(r.calendrier.vacances_scolaires)} en cours · <a href="/calendrier">le calendrier →</a></li>` : "",
-    `<li>Soleil : lever ${esc(r.soleil.lever)}, coucher ${esc(r.soleil.coucher)}</li>`,
+    r.electricite?.avertissement ? html`<li>Électricité : <span class="note">${r.electricite.avertissement}</span> · <a href="/electricite">l'électricité →</a></li>`
+    : r.electricite ? html`<li>Électricité : <b>${String(r.electricite.renouvelable_pct).replace(".", ",")} % renouvelable</b> <span class="note">à ${r.electricite.heure}</span> · <a href="/electricite">l'électricité →</a></li>` : "",
+    r.calendrier?.jour_ferie ? html`<li>Jour férié : <b>${r.calendrier.jour_ferie}</b></li>` : "",
+    r.calendrier?.vacances_scolaires ? html`<li>${r.calendrier.vacances_scolaires} en cours · <a href="/calendrier">le calendrier →</a></li>` : "",
+    html`<li>Soleil : lever ${r.soleil.lever}, coucher ${r.soleil.coucher}</li>`,
     // Closed all day: said once, « fermée aujourd'hui », never « fermée » then its hours « fermée aujourd'hui ».
     // Closed at this hour on a day it opens: the tool's sentence, its verb in bold and its hours after it (24/11/2026).
-    r.mairie?.etat ? `<li>Mairie : ${mairieEtat(r.mairie.etat)}${r.mairie.telephone ? ` · ${telephoneTexte(r.mairie.telephone)}` : ""}${mairie ? ` ${g.aller({ nom: mairie.nom, lat: mairie.lat ?? NaN, lon: mairie.lon ?? NaN, adresse: mairie.adresse }, "mairie")}${notePosition(mairie)}` : ""}</li>`
-    : r.mairie ? `<li>Mairie : <b>${r.mairie.jour_ferie ? "sans doute fermée, jour férié" : r.mairie.ouverte === null ? "horaires absents de l'annuaire" : r.mairie.horaires_aujourd_hui === MAIRIE_FERMEE ? MAIRIE_FERMEE : r.mairie.ouverte ? "ouverte" : "fermée"}</b>${r.mairie.horaires_aujourd_hui && r.mairie.horaires_aujourd_hui !== MAIRIE_FERMEE ? ` <span class="note">${esc(r.mairie.horaires_aujourd_hui)}</span>` : ""}${r.mairie.telephone ? ` · ${telephoneTexte(r.mairie.telephone)}` : ""}${mairie ? ` ${g.aller({ nom: mairie.nom, lat: mairie.lat ?? NaN, lon: mairie.lon ?? NaN, adresse: mairie.adresse }, "mairie")}${notePosition(mairie)}` : ""}</li>` : "",
-  ].filter(Boolean).join("");
+    r.mairie?.etat ? html`<li>Mairie : ${mairieEtat(r.mairie.etat)}${r.mairie.telephone ? html` · ${brut(telephoneTexte(r.mairie.telephone))}` : ""}${mairie ? html` ${brut(g.aller({ nom: mairie.nom, lat: mairie.lat ?? NaN, lon: mairie.lon ?? NaN, adresse: mairie.adresse }, "mairie"))}${brut(notePosition(mairie))}` : ""}</li>`
+    : r.mairie ? html`<li>Mairie : <b>${brut(r.mairie.jour_ferie ? "sans doute fermée, jour férié" : r.mairie.ouverte === null ? "horaires absents de l'annuaire" : r.mairie.horaires_aujourd_hui === MAIRIE_FERMEE ? MAIRIE_FERMEE : r.mairie.ouverte ? "ouverte" : "fermée")}</b>${r.mairie.horaires_aujourd_hui && r.mairie.horaires_aujourd_hui !== MAIRIE_FERMEE ? html` <span class="note">${r.mairie.horaires_aujourd_hui}</span>` : ""}${r.mairie.telephone ? html` · ${brut(telephoneTexte(r.mairie.telephone))}` : ""}${mairie ? html` ${brut(g.aller({ nom: mairie.nom, lat: mairie.lat ?? NaN, lon: mairie.lon ?? NaN, adresse: mairie.adresse }, "mairie"))}${brut(notePosition(mairie))}` : ""}</li>` : "",
+  ];
 
   const c = r.circulation;
   const roads = card("car", "Routes et circulation",
-    (c.infos_routes?.length ? `<ul class="plain">${c.infos_routes.map(li).join("")}</ul>` : c.infos_routes ? `<p>Aucune information des médias sur les routes ou des blocages ${esc(aCommune(p.nom))} ces dernières heures.</p>` : "") +
-    (c.routes_ile?.length ? `<p class="note">Ailleurs sur l'île :</p><ul class="plain">${c.routes_ile.map((x) => li({ titre: x.titre, lien: x.lien, media: x.source, quand: x.heure })).join("")}</ul>` : "") +
-    (c.bus?.length ? `<p class="note">Info trafic des bus : ${c.bus.map((x) => esc(`${x.reseau} : ${x.titre}`)).join(" ; ")}</p>` : "") +
-    `<p class="note">rundata.re ne mesure pas les bouchons : ${lienNom(c.carte_officielle, "la carte officielle sur infotrafic.re ↗", ' rel="noopener"')}, et <a href="/trafic">la page circulation</a>.</p>`,
+    html`${c.infos_routes?.length ? html`<ul class="plain">${c.infos_routes.map(li)}</ul>` : c.infos_routes ? html`<p>Aucune information des médias sur les routes ou des blocages ${aCommune(p.nom)} ces dernières heures.</p>` : ""}${c.routes_ile?.length ? html`<p class="note">Ailleurs sur l'île :</p><ul class="plain">${c.routes_ile.map((x) => li({ titre: x.titre, lien: x.lien, media: x.source, quand: x.heure }))}</ul>` : ""}${c.bus?.length ? html`<p class="note">Info trafic des bus : ${c.bus.map((x, i) => html`${i ? " ; " : ""}${`${x.reseau} : ${x.titre}`}`)}</p>` : ""}<p class="note">rundata.re ne mesure pas les bouchons : ${brut(lienNom(c.carte_officielle, "la carte officielle sur infotrafic.re ↗", ' rel="noopener"'))}, et <a href="/trafic">la page circulation</a>.</p>`,
     "/trafic");
 
   const news = r.actualites
-    ? card("news", `Actualités ${deCommune(p.nom)}`, r.actualites.length ? `<ul class="plain">${r.actualites.map(li).join("")}</ul>` : `<p>Rien de nouveau qui nomme ${esc(p.nom)} ces dernières heures dans les médias lus.</p>`, "/actualites")
+    ? card("news", `Actualités ${deCommune(p.nom)}`, r.actualites.length ? html`<ul class="plain">${r.actualites.map(li)}</ul>` : html`<p>Rien de nouveau qui nomme ${p.nom} ces dernières heures dans les médias lus.</p>`, "/actualites")
     : "";
   // No notice read: « pas d'avis », never « aucune coupure », with who publishes the notices read (the mairie, the
   // CIREST, else the distributor) and when, as on /coupures-eau/<commune> (wording validated on 22/11/2026). The mairie is not that
@@ -290,48 +296,47 @@ export function aujourdhuiPage(origin: string, p: PlacePage, r: Resume, at: Cach
   };
   const cuts = r.coupures_eau
     ? card("drop", "Coupures d'eau",
-        (r.coupures_eau.injoignable ? `<p class="note">${silentText(r.coupures_eau.injoignable)}</p>` : "") +
-        (r.coupures_eau.avis.length
-          ? `<ul class="plain">${r.coupures_eau.avis.map((n) => `<li>${n.ne_pas_boire ? "<b>Eau à ne pas boire</b> · " : ""}${li({ titre: n.titre, lien: n.lien }).slice(4, -5)}${n.coupure && periodeCoupure(n.coupure) ? ` <span class="note">${esc(periodeCoupure(n.coupure))}${n.coupure.etat ? `, ${esc(n.coupure.etat)}` : ""}</span>` : ""}</li>`).join("")}</ul>`
+        html`${r.coupures_eau.injoignable ? html`<p class="note">${brut(silentText(r.coupures_eau.injoignable))}</p>` : ""}${r.coupures_eau.avis.length
+          ? html`<ul class="plain">${r.coupures_eau.avis.map((n) => html`<li>${n.ne_pas_boire ? html`<b>Eau à ne pas boire</b> · ` : ""}${entree({ titre: n.titre, lien: n.lien })}${n.coupure && periodeCoupure(n.coupure) ? html` <span class="note">${periodeCoupure(n.coupure)}${n.coupure.etat ? html`, ${n.coupure.etat}` : ""}</span>` : ""}</li>`)}</ul>`
           : r.coupures_eau.injoignable ? ""
-          : `<p>${esc(r.coupures_eau.note ?? noCut(r.coupures_eau))}${r.coupures_eau.site_distributeur && r.coupures_eau.distributeur ? ` ${lienNom(r.coupures_eau.site_distributeur, `Le site de ${r.coupures_eau.distributeur} ↗`, ' rel="noopener"')}` : ""}</p>`) +
+          : html`<p>${r.coupures_eau.note ?? noCut(r.coupures_eau)}${r.coupures_eau.site_distributeur && r.coupures_eau.distributeur ? html` ${brut(lienNom(r.coupures_eau.site_distributeur, `Le site de ${r.coupures_eau.distributeur} ↗`, ' rel="noopener"'))}` : ""}</p>`}${
         // Shared: who distributes which networks, and the mairie's site for the one whose notices are not read.
-        (r.coupures_eau.partage ? `<p class="note">${esc(r.coupures_eau.partage.texte)}${r.coupures_eau.partage.mairie ? ` ${lienNom(r.coupures_eau.partage.mairie.lien, `${r.coupures_eau.partage.mairie.libelle} ↗`, ' rel="noopener"')}` : ""}</p>` : ""),
+        r.coupures_eau.partage ? html`<p class="note">${r.coupures_eau.partage.texte}${r.coupures_eau.partage.mairie ? html` ${brut(lienNom(r.coupures_eau.partage.mairie.lien, `${r.coupures_eau.partage.mairie.libelle} ↗`, ' rel="noopener"'))}` : ""}</p>` : ""}`,
         `/coupures-eau/${p.slug}`, r.coupures_eau.avis.some((n) => n.ne_pas_boire) ? " warn" : "", aCommune(p.nom))
     : "";
   const ev = r.evenements_du_jour;
   const events = ev
     ? card("music", "Sortir aujourd'hui",
-        (ev.liste.length
-          ? `<ul class="plain" data-sortie>${ev.liste.map((e) => `<li>${e.statut ? `<b>${esc(e.statut)}</b> · ` : ""}${e.lien && ACCUEILS.has(e.lien) ? `<a href="${esc(e.lien)}" rel="noopener" target="_blank">${esc(e.titre)}</a>` : li({ titre: e.titre, lien: e.lien }).slice(4, -5)} <span class="note">${[e.quand, e.lieu, e.prix].filter(Boolean).map((x) => esc(x!)).concat(e.source ? [adresseTexte(`Source\u00a0: ${e.source}`)] : []).join(" · ")}</span></li>`).join("")}</ul>${ev.autres ? `<p class="note">Et ${plural(ev.autres, "autre")}.</p>` : ""}`
+        html`${ev.liste.length
+          ? html`<ul class="plain" data-sortie>${ev.liste.map((e) => html`<li>${e.statut ? html`<b>${e.statut}</b> · ` : ""}${e.lien && ACCUEILS.has(e.lien) ? html`<a href="${lienSur(e.lien)}" rel="noopener" target="_blank">${e.titre}</a>` : entree({ titre: e.titre, lien: e.lien })} <span class="note">${[...[e.quand, e.lieu, e.prix].filter(Boolean).map((x) => html`${x!}`), ...(e.source ? [brut(adresseTexte(`Source\u00a0: ${e.source}`))] : [])].map((x, i) => html`${i ? " · " : ""}${x}`)}</span></li>`)}</ul>${ev.autres ? html`<p class="note">Et ${plural(ev.autres, "autre")}.</p>` : ""}`
           : ((lus) => lus.ancien
-            ? `<p>Rien trouvé aujourd'hui ${esc(aCommune(p.nom))} dans les agendas lus${lus.dont}. ${lus.ancien.charAt(0).toUpperCase()}${lus.ancien.slice(1)}\u00a0: à vérifier sur son agenda.</p>`
-            : `<p>Rien d'annoncé aujourd'hui ${esc(aCommune(p.nom))} dans les agendas lus${lus.dont}.</p>`)(sitesDits(ev.sites_lus, p.nom, true))) +
+            ? html`<p>Rien trouvé aujourd'hui ${aCommune(p.nom)} dans les agendas lus${lus.dont}. ${brut(String(lus.ancien).charAt(0).toUpperCase())}${brut(String(lus.ancien).slice(1))}\u00a0: à vérifier sur son agenda.</p>`
+            : html`<p>Rien d'annoncé aujourd'hui ${aCommune(p.nom)} dans les agendas lus${lus.dont}.</p>`)(sitesDits(ev.sites_lus, p.nom, true))}${
         // Its own site that did not answer at our last read, with its hour (tools/injoignable.ts).
-        (ev.injoignable ? `<p class="note">${silentText(ev.injoignable)}</p>` : ""),
+        ev.injoignable ? html`<p class="note">${brut(silentText(ev.injoignable))}</p>` : ""}`,
         "/evenements")
     : "";
   const d = r.decheteries;
   const dFresh = d?.sites.filter((x) => x.accepte) ?? [];
   const dGreen = dFresh.filter((x) => x.accepte!.includes("déchets verts")).length;
   const practical = [
-    ...(r.coupures_electricite?.injoignable ? [silentItem(r.coupures_electricite.injoignable)] : []),
-    ...(r.coupures_electricite?.avis ?? []).map(courantItem),
+    ...(r.coupures_electricite?.injoignable ? [brut(silentItem(r.coupures_electricite.injoignable))] : []),
+    ...(r.coupures_electricite?.avis ?? []).map((x) => brut(courantItem(x))),
     ...marketItems(r.marches_du_jour, p.nom, g.aller),
     d
-      ? `<li>Déchèteries : <b>${dFresh.length ? `déchets verts acceptés dans ${dGreen} sur ${dFresh.length}` : "état des bennes à vérifier sur place"}</b>${((h) => (h ? ` (${esc(h)})` : ""))(horsCompte(d?.sites.map((x) => ({ nom: x.nom, a_jour: !!x.accepte })) ?? []))} <span class="note">d'après les agents ${((e) => (e ? `de ${esc(e.nom)}` : "du TCO"))(epciOf(p.nom))}</span> · <a href="${esc(d.page.replace(/^https:\/\/rundata\.re/, ""))}">les bennes →</a></li>`
+      ? html`<li>Déchèteries : <b>${dFresh.length ? `déchets verts acceptés dans ${dGreen} sur ${dFresh.length}` : "état des bennes à vérifier sur place"}</b>${((h) => (h ? html` (${h})` : ""))(horsCompte(d?.sites.map((x) => ({ nom: x.nom, a_jour: !!x.accepte })) ?? []))} <span class="note">d'après les agents ${((e) => (e ? `de ${e.nom}` : "du TCO"))(epciOf(p.nom))}</span> · <a href="${lienSur(d.page.replace(/^https:\/\/rundata\.re/, ""))}">les bennes →</a></li>`
       : "",
-    r.carburants?.prix_maximum ? `<li>Carburants (prix maximum du mois) : <b>${esc(r.carburants.prix_maximum)}</b> · <a href="/carburants">les prix →</a></li>` : "",
-    r.collecte_dechets ? `<li>Collecte des déchets : le jour de votre rue sur ${cheminLien(r.collecte_dechets.page.replace(/^https:\/\/rundata\.re/, ""))}.</li>` : "",
-    `<li>Pharmacie de garde (nuits, dimanches, jours fériés) : <b>${lienNom(r.pharmacie_de_garde.site, "3237.fr", ' rel="noopener"')}</b>, ou le 32 37 (payant)</li>`,
-  ].filter(Boolean).join("");
+    r.carburants?.prix_maximum ? html`<li>Carburants (prix maximum du mois) : <b>${r.carburants.prix_maximum}</b> · <a href="/carburants">les prix →</a></li>` : "",
+    r.collecte_dechets ? html`<li>Collecte des déchets : le jour de votre rue sur ${cheminLien(r.collecte_dechets.page.replace(/^https:\/\/rundata\.re/, ""))}.</li>` : "",
+    html`<li>Pharmacie de garde (nuits, dimanches, jours fériés) : <b>${brut(lienNom(r.pharmacie_de_garde.site, "3237.fr", ' rel="noopener"'))}</b>, ou le 32 37 (payant)</li>`,
+  ];
   // A part whose copy is being built again (tools/resume.ts, `UPDATING`) says so, as the other tiles.
-  const link = (x: { partie: string; page: string }) => `<a href="${esc(x.page.replace(/^https:\/\/rundata\.re/, ""))}">${esc(x.partie)}</a>`;
+  const link = (x: { partie: string; page: string }) => html`<a href="${lienSur(x.page.replace(/^https:\/\/rundata\.re/, ""))}">${x.partie}</a>`;
+  const links = (xs: { partie: string; page: string }[]) => xs.map((x, i) => html`${i ? ", " : ""}${link(x)}`);
   const updating = r.non_inclus?.filter((x) => x.raison === UPDATING) ?? [];
   const old = r.non_inclus?.filter((x) => x.raison !== UPDATING) ?? [];
   const missing =
-    (old.length ? `<p class="note">Pas de copie récente pour : ${old.map(link).join(", ")}. Ces pages les donnent à jour.</p>` : "") +
-    (updating.length ? `<p class="note">${updating.map(link).join(", ")}. Se met à jour : rechargez la page dans quelques minutes.</p>` : "");
+    html`${old.length ? html`<p class="note">Pas de copie récente pour : ${links(old)}. Ces pages les donnent à jour.</p>` : ""}${updating.length ? html`<p class="note">${links(updating)}. Se met à jour : rechargez la page dans quelques minutes.</p>` : ""}`;
 
   const title = titleOf(p);
   const description = descriptionOf(p, r);
@@ -343,38 +348,38 @@ export function aujourdhuiPage(origin: string, p: PlacePage, r: Resume, at: Cach
   // The island situating the commune, as on its page (commune.ts). Not on a phone (nophone), where it would come under
   // the text, out of sight: drawing it there delayed the text's first paint by about 340 ms on slow 4G at 390 px, and by
   // 250 ms still with content-visibility (median of 9, 31/10/2026); hidden, nothing moved.
-  const band = `<div class="wrap"><nav class="crumbs" aria-label="Fil d'Ariane"><ol><li><a href="/">${SITE}</a></li><li><a href="/communes">Communes</a></li><li><a href="/communes/${p.slug}">${esc(p.nom)}</a></li><li aria-current="page">La journée</li></ol></nav></div>
+  const band = html`<div class="wrap"><nav class="crumbs" aria-label="Fil d'Ariane"><ol><li><a href="/">${SITE}</a></li><li><a href="/communes">Communes</a></li><li><a href="/communes/${p.slug}">${p.nom}</a></li><li aria-current="page">La journée</li></ol></nav></div>
 <div class="wrap intro">
   <div class="pitch">
-    <p class="pill"><span class="dot"></span>${esc(r.resume.split("\u00a0; ")[0])}</p>
-    <h1>${esc(H1(p))}</h1>
-    ${urgent(p, r)}
-    <p class="hook">${esc(HOOK(p))}</p>
-    ${dayLines(p, r)}
-    ${ask(`Kosa i spas ${p.nom} zordi ? Gèt si ${url} é di amwin.`, `Que se passe-t-il ${aCommune(p.nom)} aujourd'hui ? Lis ${url} et résume-moi la journée.`)}
+    <p class="pill"><span class="dot"></span>${r.resume.split("\u00a0; ")[0]}</p>
+    <h1>${H1(p)}</h1>
+    ${urgence(p, r)}
+    <p class="hook">${HOOK(p)}</p>
+    ${lignesDuJour(p, r)}
+    ${brut(ask(`Kosa i spas ${p.nom} zordi ? Gèt si ${url} é di amwin.`, `Que se passe-t-il ${aCommune(p.nom)} aujourd'hui ? Lis ${url} et résume-moi la journée.`))}
   </div>
-  <figure class="card mapcard nophone">${islandMap({ highlight: p.nom, label: `Carte de La Réunion (974) situant ${p.nom}` })}</figure>
+  <figure class="card mapcard nophone">${brut(islandMap({ highlight: p.nom, label: `Carte de La Réunion (974) situant ${p.nom}` }))}</figure>
 </div>`;
-  const body = `<section aria-labelledby="h-temps"><div class="sec-h"><h2 id="h-temps">Le temps</h2></div>
+  const body = html`<section aria-labelledby="h-temps"><div class="sec-h"><h2 id="h-temps">Le temps</h2></div>
   <div class="two">${weather}${vigil}</div>
   <div class="card"><ul class="plain">${small}</ul></div>
 </section>
 <section aria-labelledby="h-routes"><div class="sec-h"><h2 id="h-routes">Routes et nouvelles</h2></div>
   <div class="two">${roads}${news}</div>
 </section>
-${cuts || events ? `<section aria-labelledby="h-eau-sorties"><div class="sec-h"><h2 id="h-eau-sorties">L'eau et les sorties</h2></div>
+${cuts || events ? html`<section aria-labelledby="h-eau-sorties"><div class="sec-h"><h2 id="h-eau-sorties">L'eau et les sorties</h2></div>
   <div class="two">${cuts}${events}</div>
 </section>` : ""}
 <section aria-labelledby="h-pratique"><div class="sec-h"><h2 id="h-pratique">Vie pratique</h2></div>
   <div class="card"><ul class="plain">${practical}</ul></div>
 </section>
 <section aria-labelledby="h-patrimoine"><div class="sec-h"><h2 id="h-patrimoine">Patrimoine</h2></div>
-  ${monumentsCard(p.nom)}
+  ${carteMonuments(p.nom)}
 </section>
 <section>${missing}
-  <p class="note"><a href="/communes/${p.slug}">${esc(FICHE(p))}</a></p>
-  <p class="sources">Sources : ${credits([...r.sources, credit(monuments.SOURCE)])}.</p>
+  <p class="note"><a href="/communes/${p.slug}">${FICHE(p)}</a></p>
+  <p class="sources">Sources : ${brut(credits([...r.sources, credit(monuments.SOURCE)]))}.</p>
 </section>
-${connectorCta("resume_du_jour", `la journée ${deCommune(p.nom)}`)}`;
-  return layout(origin, { title, description, path, jsonld: [trail, webPage(origin, path, title, description, at)], alerte, iaAside: true }, band, g.ligne + (body.includes('class="aller"') ? body + ALLER : body));
+${brut(connectorCta("resume_du_jour", `la journée ${deCommune(p.nom)}`))}`.texte;
+  return layout(origin, { title, description, path, jsonld: [trail, webPage(origin, path, title, description, at)], alerte, iaAside: true }, band.texte, g.ligne + (body.includes('class="aller"') ? body + ALLER : body));
 }

@@ -10,7 +10,7 @@
  * The feed weighs about 60 KB: read at most every two hours, only when a page or a question asks.
  */
 import type { Cache, Cached } from "../cache.js";
-import { getText, UA_RUNDATA } from "../http.js";
+import { getText, httpUrl, UA_RUNDATA } from "../http.js";
 import type { SourceInfo } from "../types.js";
 import { placesIn, plain } from "./actualites.js";
 
@@ -86,13 +86,16 @@ export function parse(xml: string): Communique[] {
     if (!sujet || !CHANGE.test(text)) continue;
     const published = new Date(plain(tag(it, "pubDate")));
     if (Number.isNaN(published.getTime())) continue;
+    // Its link, only the web's (http or https): a release without one is not kept, since the page sends to it.
+    const lien = httpUrl(plain(tag(it, "link")));
+    if (!lien) continue;
     // The communes of its title when it names some: its text names quarters (« Rivière des Galets » at La Possession)
     // that the gazetteer also puts in a neighbour.
     const ours = (t: string) => placesIn(t).communes.filter((c) => (TCO_COMMUNES as readonly string[]).includes(c));
     const named = ours(titre).length ? ours(titre) : ours(text);
     out.push({
       titre,
-      lien: plain(tag(it, "link")),
+      lien,
       publie: published.toISOString(),
       jusqu_au: lastDay(text, published).toISOString(),
       sujet,

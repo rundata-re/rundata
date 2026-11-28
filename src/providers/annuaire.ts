@@ -6,7 +6,7 @@
  */
 import type { Cache, Cached } from "../cache.js";
 import { distanceKm } from "../geo.js";
-import { getJson, postFile } from "../http.js";
+import { getJson, httpUrl, postFile } from "../http.js";
 import { INSEE } from "../places/insee.js";
 import hotels from "../places/mairies-osm.json" with { type: "json" };
 import type { SourceInfo } from "../types.js";
@@ -87,8 +87,9 @@ export function office(r: Row): Office {
     note_horaires: (r.commentaire_plage_ouverture as string) || undefined,
     telephone: phone(json<{ valeur: string }[]>(r.telephone, [])[0]?.valeur),
     courriel: (r.adresse_courriel as string) || undefined,
-    site: json<{ valeur: string }[]>(r.site_internet, [])[0]?.valeur,
-    fiche: String(r.url_service_public ?? ""),
+    // Their links only when they are the web's (http or https): the pages link to them.
+    site: httpUrl(json<{ valeur: string }[]>(r.site_internet, [])[0]?.valeur),
+    fiche: httpUrl(String(r.url_service_public ?? "")) ?? "",
     ...(r.pivot !== undefined ? { types: json<{ type_service_local: string }[]>(r.pivot, []).map((p) => p.type_service_local) } : {}),
   };
 }

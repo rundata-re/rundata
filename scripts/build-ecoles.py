@@ -12,6 +12,7 @@ Usage: python3 -I scripts/build-ecoles.py [--json FILE] [--verifier ECART]   (FI
 import argparse
 import importlib.util
 import json
+import re
 import sys
 import urllib.request
 from datetime import date
@@ -68,7 +69,12 @@ def web(src):
         u = "https://" + u[len("http://"):]
     if host == "etab.ac-reunion.fr" and bare.count("/") == 1 and not u.endswith("/"):
         u += "/"
-    return u
+    return du_web(u)
+
+
+def du_web(u):
+    """`u` when it is a link of the web (http or https), else None: a page writes it in a link."""
+    return u if u and re.match(r"^https?://[^/\s]", u, re.I) else None
 
 
 def row(x):
@@ -87,7 +93,7 @@ def row(x):
     street = " ".join((x["adresse_1"] or x["adresse_2"] or "").split())
     e["adresse"] = f"{street}, {x['code_postal']} {e['commune']}" if street else f"{x['code_postal']} {e['commune']}"
     e["lon"], e["lat"] = round(x["longitude"], 5), round(x["latitude"], 5)
-    for key, src in (("tel", phone(x["telephone"])), ("web", web(x["web"])), ("onisep", x["fiche_onisep"])):
+    for key, src in (("tel", phone(x["telephone"])), ("web", web(x["web"])), ("onisep", du_web((x["fiche_onisep"] or "").strip()))):
         if src:
             e[key] = src
     # 1 or 0 in the directory; a missing one (null) is left out, never read as « non ».

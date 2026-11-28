@@ -293,6 +293,41 @@ describe("a text typed or read for the clubs' space, trapped, never comes out as
   });
 });
 
+/**
+ * A commune's day whose every text read elsewhere is `t` and every link read elsewhere `lien`: the measure and its station,
+ * the vigilance, the sea, the air, the power, the calendar, the town hall's hours, the roads, the news, the water's
+ * notices, the events, the markets and the fuel.
+ */
+function journeePiegee(r: Resume, t: string, lien: string): Resume {
+  const item = { titre: t, lien, quand: t, media: t };
+  return {
+    ...r,
+    resume: t,
+    meteo: { mesure: { station: t, heure_mesure: "2026-10-24 15:10", distance_km: 1, altitude_m: 10, mesures: { temperature: t } }, prevision: { aujourd_hui: { jour: t, periode: t, temperature_min: "20 °C", temperature_max: "28 °C", ciel_en_journee: t, pluie: t }, demain: { jour: t, temperature_min: "20 °C", temperature_max: "28 °C" } } },
+    vigilance: { maintenant: t, au_dessus_du_vert: false, vagues_submersion: t, alerte_cyclonique: t, ecoles: t },
+    mer: { temperature_eau: t, mesure: t },
+    air: { qualite: t, indice_atmo: 2, polluants: [t] },
+    electricite: { avertissement: t },
+    calendrier: { jour_ferie: t, vacances_scolaires: t },
+    mairie: { etat: `${t} (${t})`, telephone: "0262 00 00 00" },
+    circulation: { ...r.circulation, infos_routes: [item], routes_ile: [{ titre: t, lien, source: t, heure: t }], bus: [{ reseau: t, titre: t }] },
+    actualites: [item],
+    coupures_eau: { avis: [{ titre: t, lien, ne_pas_boire: true }], partage: { texte: t } },
+    evenements_du_jour: { liste: [{ titre: t, lien, statut: t, quand: t, lieu: t, prix: t, source: t }], sites_lus: [] },
+    marches_du_jour: { liste: [{ nom: t, lien, horaires_aujourd_hui: t, adresse: t, d_apres: t }], permanents: [{ nom: t, lien, horaires: t, adresse: t }], heures_non_trouvees: [{ nom: t, lien, manque: t }], jours_non_trouves: [{ nom: t, lien, manque: t }] },
+    carburants: { prix_maximum: t },
+    non_inclus: [{ partie: t, raison: "pas de copie récente", outil: "x", page: "https://rundata.re/x" }],
+  } as unknown as Resume;
+}
+
+describe("on a commune's day, a text read elsewhere, trapped, never comes out as a tag", () => {
+  it("in each of its blocks", () => {
+    const now = new Date("2026-10-24T11:10:00Z");
+    const p = pageOf("saint-paul")!;
+    sansInjection(aujourdhuiPage(O, p, journeePiegee(resume(p, {} as never, now) as Resume, PIEGE, "https://example.org/a"), null));
+  });
+});
+
 describe("a link read elsewhere never runs a script", () => {
   // Escaped, « javascript:… » would still run on a tap: a link of another site goes through href() (web/html.ts), which
   // writes « # » for a scheme that is not the web's, a mail or a phone. Elsewhere (a filter's key in data-k) the link
@@ -347,6 +382,12 @@ describe("a link read elsewhere never runs a script", () => {
     sansScript(collectePage(O, now, undefined, undefined, [c("collecte")]));
     const dechets = { sites: [], avis: [c("decheterie")], sources: [] };
     sansScript(decheteriesPage(O, { value: dechets, fetchedAt: now, stale: false } as never, now));
+  });
+
+  it("on a commune's day: the roads, the news, the cut notices, the events and the markets", () => {
+    const now = new Date("2026-10-24T11:10:00Z");
+    const p = pageOf("saint-paul")!;
+    sansScript(aujourdhuiPage(O, p, journeePiegee(resume(p, {} as never, now) as Resume, "x", J), null));
   });
 
   it("in a town hall's site under the markets (a commune's day) and its page on service-public.fr (a commune's page)", () => {

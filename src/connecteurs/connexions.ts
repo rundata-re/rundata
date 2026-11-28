@@ -16,8 +16,8 @@
  * Without the database, the e-mail or the encryption key, nothing is verified nor kept: « indisponible ».
  */
 import { empreinte, type Run } from "../avis.js";
-import { portesAvis } from "../contexte.js";
-import { empreinteJeton, jetonNeuf, type All, type Envoi, type Issue } from "../propositions.js";
+import { contexte, portesAvis } from "../contexte.js";
+import { empreinteJeton, jetonNeuf, type All, type Issue } from "../propositions.js";
 import * as chiffre from "./chiffre.js";
 import { HELLOASSO } from "./helloasso.js";
 import { AccesRefuse, reunionnais, type Organisation, type Plateforme } from "./plateforme.js";
@@ -34,17 +34,10 @@ export const ATTENTE_SECONDES = 30 * 60;
 /** Statements run together, all or none (D1's batch): the rows each one changed. */
 export type Batch = (statements: [sql: string, ...params: unknown[]][]) => Promise<number[]>;
 
-let envoi: Envoi | undefined;
-
-/** How the e-mails go; the table is in the feedback's database (contexte.ts `portesAvis`). */
-export function configure(send?: Envoi) {
-  envoi = send;
-}
-
 /** Whether a link can be made: the table, the e-mail and the encryption key. */
 export function enabled(): boolean {
   const { run, all } = portesAvis();
-  return !!run && !!all && !!envoi && chiffre.enabled();
+  return !!run && !!all && !!contexte().courriel && chiffre.enabled();
 }
 
 /** The table's doors, for the scheduled reading (connecteurs/lecture.ts) and the agenda (providers/agenda-connecteurs.ts). */
@@ -174,9 +167,10 @@ export async function enregistrer(a: Ouverte, adresse: string, base: string, now
 export const RETRAIT = "/retirer";
 
 export async function envoyer(to: string, m: { subject: string; text: string }): Promise<boolean> {
+  const envoi = contexte().courriel;
   if (!envoi) return false;
   try {
-    return await envoi!({ to, ...m });
+    return await envoi({ to, ...m });
   } catch {
     // Never the error's text: it may hold the address.
     console.error("connecteurs : e-mail impossible");

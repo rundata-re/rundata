@@ -8,6 +8,10 @@ import * as connexions from "../src/connecteurs/connexions.js";
 import * as connecteurs from "../src/web/connecteurs.js";
 import * as formulaires from "../src/web/propositions.js";
 import { donnerConnexions } from "./portes-avis.js";
+import { cles } from "./contexte.js";
+
+/** The encryption key, as the secret CONNECTEURS_CLE (contexte.ts `secret`). */
+const cle = (k?: string) => cles({ connecteurs: k });
 
 const KEY = Buffer.alloc(32, 7).toString("base64");
 const ACCESS = "eyJhbGciOiJIUzI1NiJ9.acces.signature";
@@ -34,7 +38,7 @@ beforeEach(() => {
   // The proposals' tables too, in the same database as in the Worker (the pages read them).
   db.exec(readFileSync(new URL("../scripts/propositions.sql", import.meta.url), "utf8"));
   db.exec(readFileSync(new URL("../scripts/propositions-b.sql", import.meta.url), "utf8"));
-  chiffre.configure(KEY);
+  cle(KEY);
   donnerConnexions(
     async (sql, ...params) => Number(db.prepare(sql).run(...(params as (string | number | null)[])).changes),
     async <T>(sql: string, ...params: unknown[]) => db.prepare(sql).all(...(params as (string | number | null)[])) as T[],
@@ -67,7 +71,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
-  chiffre.configure(undefined);
+  cle(undefined);
   donnerConnexions(undefined);
   formulaires.verifierAvec();
   formulaires.ouvrir(formulaires.ASSOCIATIONS_EN_LIGNE);
@@ -391,7 +395,7 @@ describe("the link, once « C'est bien nous » is clicked", () => {
   });
 
   it("refuses everything without the encryption key: nothing kept in clear instead", async () => {
-    chiffre.configure(undefined);
+    cle(undefined);
     const r = await post(connecteurs.RELIER_PATH, CLES);
     expect(r.status).toBe(503);
     expect(rows("SELECT * FROM connexions")).toEqual([]);

@@ -12,11 +12,11 @@
  * Against a flood: the same fingerprint as the feedback (a salted hash of the address and the day), at most
  * PROPOSITIONS_PAR_JOUR proposals and LIENS_PAR_JOUR links a day from one sender, PROPOSITIONS_PAR_ADRESSE_JOUR to one
  * e-mail address, and a cap for everyone together; Turnstile in front (web/propositions.ts). The confirmation e-mail
- * holds nothing the sender wrote, only the day, the commune and the link: it cannot carry a stranger's message. The e-mail goes through `Envoi`, plugged by worker.ts once a way to send
- * is chosen: without one, a proposal is refused as « indisponible », never kept unconfirmable.
+ * holds nothing the sender wrote, only the day, the commune and the link: it cannot carry a stranger's message. The e-mail goes through the context's `courriel` (contexte.ts), the Worker's binding EMAIL;
+ * without it, a proposal is refused as « indisponible », never kept unconfirmable.
  */
 import { a } from "./articles.js";
-import { contexte, portesAvis, type Bases } from "./contexte.js";
+import { contexte, portesAvis, type Bases, type Envoi } from "./contexte.js";
 import { empreinte, nettoie } from "./avis.js";
 import { garde } from "./lecture-gardee.js";
 
@@ -75,9 +75,8 @@ export interface Proposition {
   contact_public?: string;
 }
 
-/** The send of one e-mail; true once accepted. */
-export type Envoi = (m: { to: string; subject: string; text: string }) => Promise<boolean>;
-let envoi: Envoi | undefined;
+/** The send of one e-mail (contexte.ts `courriel`). */
+export type { Envoi };
 
 /** Who the confirmations come from; an answer goes to the address people already write to. */
 export const EXPEDITEUR = { email: "evenements@rundata.re", name: "rundata.re" };
@@ -113,11 +112,6 @@ function lesInconnus() {
   const de = contexte().bases;
   if (INCONNUS.de !== de) INCONNUS = { de, garde: inconnus() };
   return INCONNUS.garde;
-}
-
-/** `send`: how the confirmation is sent; the rows are in the feedback's database (contexte.ts `portesAvis`). */
-export function configure(send?: Envoi) {
-  envoi = send;
 }
 
 export const enabled = () => !!portesAvis().run;
@@ -311,6 +305,7 @@ export function messageConfirmation(p: Proposition, lien: string): { subject: st
  */
 export async function enregistrerProposition(p: Proposition, adresse: string, base: string, now = new Date()): Promise<Issue> {
   const { run } = portesAvis();
+  const envoi = contexte().courriel;
   if (!run || !envoi) return "indisponible";
   const t = Math.floor(now.getTime() / 1000);
   const source = await empreinte(adresse, now);

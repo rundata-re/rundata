@@ -33,7 +33,6 @@ import * as cmrsCarte from "./providers/cmrs-carte.js";
 import * as cmrsTrace from "./providers/cmrs-trace.js";
 import * as limite from "./limite.js";
 import { refusRobot } from "./robots.js";
-import * as chiffre from "./connecteurs/chiffre.js";
 import * as espaceClubs from "./clubs/espace.js";
 import * as connexions from "./connecteurs/connexions.js";
 import * as lecture from "./connecteurs/lecture.js";
@@ -44,19 +43,15 @@ import { whenFailed, whenRead } from "./http.js";
 import { rafraichirConnecteurs, refreshPlanned } from "./tools/agenda.js";
 import { prefetchForecasts } from "./tools/prevision.js";
 import { listShared, SHARED, SHARED_AFTER, SharedFallback, warmShared } from "./web/partagees.js";
-import { configurerVideo } from "./web/partage-video.js";
 import * as pluieRetro from "./web/pluie-retro.js";
 import * as radarSemaine from "./web/radar-semaine.js";
 import { why } from "./types.js";
 import { COLLECTEURS, dit, passage } from "./collecteurs.js";
-import { configure as metaWebhookSecrets } from "./meta-webhook.js";
 import { cheminMasque } from "./chemin-secret.js";
 import { plage } from "./web/plage.js";
 import { sansIndex } from "./web/noindex.js";
-import * as abonnements from "./push/abonnements.js";
 import * as envoiAlertes from "./push/envoi.js";
-import * as alertesPush from "./web/alertes.js";
-import { configurer as configurerAlertes, enLigne as alertesEnLigne } from "./web/alertes-drapeau.js";
+import { enLigne as alertesEnLigne } from "./web/alertes-drapeau.js";
 import { GARDE_TAPEE, gardeTapee } from "./providers/terrain.js";
 
 // How long the edge keeps an entry. Much longer than any freshness window: an old copy is what gets served,
@@ -245,6 +240,10 @@ function secretsDe(env: Env): Secrets {
     equipe: env.EQUIPE_JETON,
     uvMoufia: env.UV_MOUFIA_JETON,
     defiOpenai: env.OPENAI_APPS_CHALLENGE,
+    metaVerification: env.META_VERIFY_TOKEN,
+    metaApplication: env.META_APP_SECRET,
+    connecteurs: env.CONNECTEURS_CLE,
+    vapid: env.VAPID_PRIVE,
   };
 }
 
@@ -252,7 +251,7 @@ function setup(env: Env): Cache {
   // What the modules read at the time they need it (contexte.ts), built once per isolate (the bindings do not change,
   // as for `cache` below): a module's copy kept in memory stays valid from one request to the next.
   const secrets = secretsDe(env);
-  const de = [env.STORE, env.TRANSIT, env.CLIMAT, env.CLIMAT_H, env.AVIS, env.BROWSER, env.ASSETS, ...Object.values(secrets)];
+  const de = [env.STORE, env.TRANSIT, env.CLIMAT, env.CLIMAT_H, env.AVIS, env.BROWSER, env.ASSETS, env.EMAIL, env.ALERTES_ESSAI, ...Object.values(secrets)];
   if (!contexte().worker || de.length !== contexteDe.length || de.some((v, i) => v !== contexteDe[i])) {
     installer({
       worker: true,
@@ -278,27 +277,14 @@ function setup(env: Env): Cache {
       // assets (vie/carte-scolaire.ts).
       ...(env.BROWSER && { navigateur: env.BROWSER }),
       ...(env.ASSETS && { fichiers: fichiersStatiques(env.ASSETS) }),
+      // The links of the clubs' proposals, of the associations' connectors and of the clubs' space, e-mailed through
+      // Cloudflare: without the binding, a proposal is refused rather than kept unconfirmable, and nothing is linked.
+      ...(env.EMAIL && { courriel: propositions.envoiCloudflare(env.EMAIL) }),
+      // The trial Worker opens the alerts on the phone (web/alertes-drapeau.ts).
+      ...(env.ALERTES_ESSAI === "1" && { essai: true }),
     });
     contexteDe = de;
   }
-  // The links and events the clubs send, in the same database: a proposal's link is e-mailed through Cloudflare, and
-  // without the binding a proposal is refused rather than kept unconfirmable.
-  propositions.configure(env.EMAIL && propositions.envoiCloudflare(env.EMAIL));
-  // The alerts on the phone (web/alertes.ts): open on the trial Worker only until the flag; the subscriptions in the
-  // same database, the VAPID key read once an isolate.
-  configurerAlertes(env.ALERTES_ESSAI);
-  const vapid = alertesPush.cleDuSecret(env.VAPID_PRIVE, alertesEnLigne());
-  abonnements.configure(vapid);
-  alertesPush.configure(vapid);
-  // The videos handed to Threads, written into KV by the team for a day (web/partage-video.ts).
-  configurerVideo(env.STORE);
-  metaWebhookSecrets(env.META_VERIFY_TOKEN, env.META_APP_SECRET);
-  // The associations' links to their platform, in the same database: the platform's secret encrypted with
-  // CONNECTEURS_CLE, the link e-mailed like a proposal's. Without the key, nothing is linked.
-  chiffre.configure(env.CONNECTEURS_CLE);
-  connexions.configure(env.EMAIL && propositions.envoiCloudflare(env.EMAIL));
-  // The clubs' own space, in the same database: its link e-mailed like a proposal's, to the club's official address only.
-  espaceClubs.configure(env.EMAIL && propositions.envoiCloudflare(env.EMAIL));
   // The public sites that do not answer, in the same database: a failed read is written after the response, and only
   // when it changes the host's state (sans-reponse.ts counts its own calls).
   sansReponse.inscrire(toutesLesSources(), themesDesSources(), HOTES_MEDIAS, HOTES_EAU, HOTES_COURANT, HOTES_AGENDAS);

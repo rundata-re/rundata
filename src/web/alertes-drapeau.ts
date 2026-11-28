@@ -1,3 +1,5 @@
+import { contexte } from "../contexte.js";
+
 /**
  * Whether the alerts on the phone answer (web/alertes.ts). Open in production since the words of the page, of the
  * notifications and of the privacy page were agreed (25/11/2026, the notifications' lines reworded 27/11), the sends
@@ -10,15 +12,12 @@
  * scheduled event) opens them with its variable ALERTES_ESSAI too.
  */
 export const ALERTES_EN_LIGNE = true;
-let ouvert = ALERTES_EN_LIGNE;
-export const enLigne = () => ouvert;
-/** The Worker's variable ALERTES_ESSAI (« 1 » on the trial Worker only), read at each setup. */
-export function configurer(essai: string | undefined) {
-  ouvert = ALERTES_EN_LIGNE || essai === "1";
-}
-/** For the tests: the addresses opened or closed whatever the flag. */
-export function ouvrir(v: boolean) {
-  ouvert = v;
+let force: boolean | undefined;
+/** Open by the flag, or on the trial Worker (contexte.ts `essai`, its variable ALERTES_ESSAI « 1 »). */
+export const enLigne = () => force ?? (ALERTES_EN_LIGNE || contexte().essai === true);
+/** For the tests: the addresses opened or closed whatever the flag; undefined gives the flag back. */
+export function ouvrir(v: boolean | undefined) {
+  force = v;
 }
 
 /** The page of the alerts (web/alertes-page.ts) and its button's words, here so that any page can link to it. */

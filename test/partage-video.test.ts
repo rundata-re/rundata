@@ -3,7 +3,13 @@ import { handle } from "../src/app.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { cheminMasque } from "../src/chemin-secret.js";
 import { INTERDITS } from "../src/robots.js";
-import { configurerVideo, PARTIE_OCTETS, plage, VIDEO_KV_PREFIX, VIDEO_PATH } from "../src/web/partage-video.js";
+import type { KvBinding } from "../src/kv.js";
+import { PARTIE_OCTETS, plage, VIDEO_KV_PREFIX, VIDEO_PATH } from "../src/web/partage-video.js";
+import { brutEnPlace } from "./contexte.js";
+
+/** The store that holds the videos (contexte.ts `brut`), read only: nothing is written by the Worker. */
+const configurerVideo = (kv?: { get(key: string): Promise<unknown> }) =>
+  brutEnPlace(kv && { get: ((key: string) => kv.get(key)) as KvBinding["get"], put: async () => { throw new Error("écriture"); } });
 
 const O = "https://rundata.re";
 const ID = "0123456789abcdef0123456789abcdef";

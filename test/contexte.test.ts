@@ -1,3 +1,4 @@
+import { createECDH, createHmac } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { counted, OutOfBudget } from "../src/budget.js";
@@ -39,7 +40,13 @@ import * as feux from "../src/providers/feux.js";
 import * as formulaires from "../src/web/propositions.js";
 import { equipe, JETON_EQUIPE } from "../src/app.js";
 import { PROPOSITION_PATH } from "../src/web/propositions.js";
-import { baseAvis, bases, cartes, dansLeWorker, fichiers, horsWorker } from "./contexte.js";
+import { enteteVapid, unb64u } from "../src/push/webpush.js";
+import { ALERTES_EN_LIGNE, enLigne as alertesEnLigne } from "../src/web/alertes-drapeau.js";
+import { CLE_PATH } from "../src/web/alertes.js";
+import { baseAvis, bases, cartes, cles, courriel, dansLeWorker, fichiers, horsWorker } from "./contexte.js";
+
+/** The encryption key, as the secret CONNECTEURS_CLE (contexte.ts `secret`). */
+const cle = (k?: string) => cles({ connecteurs: k });
 
 // The Worker builds its modules' context in its own modules, dropped after (test/modules-neufs.ts).
 await vi.hoisted(async () => (await import("./modules-neufs.js")).modulesNeufs());
@@ -180,8 +187,8 @@ describe("the modules' context (src/contexte.ts)", () => {
 
   it("asks each door it needs: the writes alone make no link nor space, and a secret unknown in one database is asked again in the next", async () => {
     horsWorker();
-    chiffre.configure(Buffer.alloc(32, 7).toString("base64"));
-    connexions.configure(async () => true);
+    cle(Buffer.alloc(32, 7).toString("base64"));
+    courriel(async () => true);
     baseAvis({ run: async () => 1, all: async <T>() => [] as T[] });
     expect([connexions.enabled(), espace.enabled(), !!abonnements.d1()]).toEqual([true, true, true]);
     baseAvis({ run: async () => 1 });
@@ -191,8 +198,8 @@ describe("the modules' context (src/contexte.ts)", () => {
     expect(await propositions.parJeton(jeton)).toBeUndefined();
     baseAvis({ all: async <T>() => [{ jeton: "x" }] as T[] });
     expect(await propositions.parJeton(jeton)).toEqual({ jeton: "x" });
-    connexions.configure(undefined);
-    chiffre.configure(undefined);
+    courriel(undefined);
+    cle(undefined);
     horsWorker();
   });
 
@@ -514,9 +521,32 @@ describe("the Worker's secrets (src/contexte.ts `secret`)", () => {
     ["EQUIPE_JETON", "equipe"],
     ["UV_MOUFIA_JETON", "uvMoufia"],
     ["OPENAI_APPS_CHALLENGE", "defiOpenai"],
+    ["META_VERIFY_TOKEN", "metaVerification"],
+    ["META_APP_SECRET", "metaApplication"],
+    ["CONNECTEURS_CLE", "connecteurs"],
+    ["VAPID_PRIVE", "vapid"],
   ];
-  const valeur = (env: string) => `valeur-${env.toLowerCase().replace(/_/g, "-")}-0123456789`;
+  // A VAPID key drawn from a fixed private number (a P-256 JWK, as scripts/vapid-cles.mjs writes it), never a real one.
+  const ecdh = createECDH("prime256v1");
+  ecdh.setPrivateKey(Buffer.alloc(32, 7));
+  const publique = ecdh.getPublicKey();
+  const D = Buffer.alloc(32, 7).toString("base64url");
+  const JWK = JSON.stringify({ kty: "EC", crv: "P-256", d: D, x: publique.subarray(1, 33).toString("base64url"), y: publique.subarray(33).toString("base64url") });
+  // The encryption key: 32 bytes in base64, as CONNECTEURS_CLE is.
+  const CLE_CONNECTEURS = Buffer.alloc(32, 5).toString("base64");
+  const valeur = (env: string) =>
+    env === "VAPID_PRIVE" ? JWK : env === "CONNECTEURS_CLE" ? CLE_CONNECTEURS : `valeur-${env.toLowerCase().replace(/_/g, "-")}-0123456789`;
+  // What must never be written of a secret: the JWK's private part, or the whole value.
+  const trace = (env: string) => (env === "VAPID_PRIVE" ? D : valeur(env));
   const tous = Object.fromEntries(NOMS.map(([env]) => [env, valeur(env)]));
+  /** Cloudflare's e-mail binding: each message kept, or refused with an error that says it. */
+  const courrielCf = (envoyes: unknown[], echec = false) => ({
+    send: async (m: unknown) => {
+      if (echec) throw Object.assign(new Error(`refusé : ${JSON.stringify(m)}`), { code: "E_REFUS" });
+      envoyes.push(m);
+      return { messageId: "1" };
+    },
+  });
 
   it("gives each secret by its name, without its spaces, with the store or without it, and is built again when one changes", async () => {
     for (const [env, nom] of NOMS) {
@@ -534,6 +564,13 @@ describe("the Worker's secrets (src/contexte.ts `secret`)", () => {
     await requete({ STORE: premier.brut, ...tous, FIRMS_MAP_KEY: "autre" });
     expect(contexte()).not.toBe(premier);
     expect(secret("firms")).toBe("autre");
+    // The e-mail's binding and the trial Worker's variable: given, or changed, alone, the context is built again too.
+    const sansCourriel = contexte();
+    const EMAIL = courrielCf([]);
+    await requete({ STORE: premier.brut, ...tous, FIRMS_MAP_KEY: "autre", EMAIL });
+    expect([contexte() !== sansCourriel, !!contexte().courriel]).toEqual([true, true]);
+    await requete({ STORE: premier.brut, ...tous, FIRMS_MAP_KEY: "autre", EMAIL, ALERTES_ESSAI: "1" });
+    expect(contexte().essai).toBe(true);
     horsWorker();
     for (const [, nom] of NOMS) expect(secret(nom)).toBeUndefined();
   });
@@ -564,11 +601,45 @@ describe("the Worker's secrets (src/contexte.ts `secret`)", () => {
       // The internal trial's page and OpenAI's challenge: not found, as any other address.
       expect((await requete({}, "/essais/uv-moufia/x")).status).toBe(404);
       expect((await requete({}, "/.well-known/openai-apps-challenge")).status).toBe(404);
+      // Meta's webhook: not found, as any other address, to its check and its events.
+      expect((await requete({}, "/meta/webhook?hub.mode=subscribe&hub.verify_token=x&hub.challenge=1")).status).toBe(404);
+      expect((await requete({}, "/meta/webhook", { method: "POST", body: "{}" })).status).toBe(404);
+      // And with one of its two secrets only: an empty token is never taken for the one not given.
+      for (const seul of ["META_VERIFY_TOKEN", "META_APP_SECRET"]) {
+        expect((await requete({ [seul]: valeur(seul) }, "/meta/webhook?hub.mode=subscribe&hub.verify_token=&hub.challenge=1")).status).toBe(404);
+      }
+      await requete({});
+      // The connectors: nothing encrypted, nothing linked, the encryption refused rather than done in clear.
+      expect([chiffre.enabled(), connexions.enabled()]).toEqual([false, false]);
+      await expect(chiffre.chiffrer("x", chiffre.lien("helloasso", "o", "j"))).rejects.toThrow("pas de clé");
+      // The alerts: open by the flag, their key unavailable, no subscription signed for.
+      expect(alertesEnLigne()).toBe(ALERTES_EN_LIGNE);
+      expect(abonnements.cleDuSite()).toBeUndefined();
+      expect((await requete({}, CLE_PATH)).status).toBe(503);
+      // The e-mails: none sent, so no link made (propositions, connectors, the clubs' space read the same).
+      expect(contexte().courriel).toBeUndefined();
+      expect(await connexions.envoyer("club@example.org", { subject: "s", text: "t" })).toBe(false);
+      // The connectors with their table and their key but no e-mail: still closed.
+      await requete({ CONNECTEURS_CLE: CLE_CONNECTEURS });
+      baseAvis({ run: async () => 0, all: async () => [] });
+      expect([chiffre.enabled(), connexions.enabled()]).toEqual([true, false]);
+      courriel(async () => true);
+      expect(connexions.enabled()).toBe(true);
+      await requete({});
+      // The videos handed to Threads: not found without the store.
+      expect((await requete({}, `/partage/video/${"a".repeat(32)}.mp4`)).status).toBe(404);
       expect(fetches).toEqual([]);
       expect(erreurs).not.toHaveBeenCalled();
       // With them, each is on.
-      await requete(tous);
+      const envoyes: unknown[] = [];
+      await requete({ ...tous, EMAIL: courrielCf(envoyes), ALERTES_ESSAI: "1" });
       expect([meteofrance.enabled(), feux.enabled()]).toEqual([true, true]);
+      expect([chiffre.enabled(), contexte().essai]).toEqual([true, true]);
+      expect(await connexions.envoyer("club@example.org", { subject: "s", text: "t" })).toBe(true);
+      expect(envoyes).toMatchObject([{ to: "club@example.org", subject: "s" }]);
+      const verif = await requete({ ...tous, EMAIL: courrielCf(envoyes), ALERTES_ESSAI: "1" }, `/meta/webhook?hub.mode=subscribe&hub.verify_token=${valeur("META_VERIFY_TOKEN")}&hub.challenge=42`);
+      expect([verif.status, await verif.text()]).toEqual([200, "42"]);
+      expect((await requete(tous, CLE_PATH)).status).toBe(200);
       expect(equipe(new Headers({ [JETON_EQUIPE]: valeur("EQUIPE_JETON") }))).toBe(true);
       const defi = await requete(tous, "/.well-known/openai-apps-challenge");
       expect([defi.status, await defi.text()]).toEqual([200, valeur("OPENAI_APPS_CHALLENGE")]);
@@ -601,16 +672,82 @@ describe("the Worker's secrets (src/contexte.ts `secret`)", () => {
       await feux.feuxNow(new Cache(new MemoryStore()), new Date()).catch((err) => console.error("feux", String(err)));
       await formulaires.human(new URLSearchParams({ "cf-turnstile-response": "jeton" }), "203.0.113.7", { hostname: "rundata.re", action: "lien" });
       await avis.empreinte("203.0.113.7", new Date());
+      // Meta's webhook asked with a wrong token, and sent an event wrongly signed.
+      await lire(await requete(env, "/meta/webhook?hub.mode=subscribe&hub.verify_token=mauvais&hub.challenge=1"));
+      await lire(await requete(env, "/meta/webhook", { method: "POST", headers: { "x-hub-signature-256": "sha256=00" }, body: "{}" }));
+      // A connector's secret opened for another row; an e-mail refused by Cloudflare.
+      const chiffreAvant = await chiffre.chiffrer("x", chiffre.lien("helloasso", "o", "j"));
+      await chiffre.dechiffrer(chiffreAvant, chiffre.lien("helloasso", "o", "autre")).catch((err) => console.error("connecteurs", String(err)));
+      await requete({ ...env, EMAIL: courrielCf([], true) });
+      await connexions.envoyer("club@example.org", { subject: "s", text: "t" });
+      // The VAPID key's public half given, and a subscription's send signed and refused by its push service.
+      await lire(await requete(env, CLE_PATH));
+      await abonnements.envoyer({ endpoint: "https://fcm.googleapis.com/fcm/send/abc", p256dh: Buffer.from(publique).toString("base64url"), auth: Buffer.alloc(16, 1).toString("base64url") }, { titre: "t", corps: "c", lien: "/" }, false).catch((err) => console.error("alertes", String(err)));
+      // Keys that cannot be read: a VAPID secret that is not JSON, an encryption key that is not 32 bytes.
+      const illisibles = { VAPID_PRIVE: "valeur-vapid-illisible-0123456789", CONNECTEURS_CLE: "valeur-cle-illisible-0123456789" };
+      await lire(await requete({ ...env, ...illisibles }, CLE_PATH));
+      await abonnements.cleDuSite()?.catch(() => {});
+      await new Promise((r) => setTimeout(r, 0));
+      chiffre.enabled();
       const ecrit = JSON.stringify(espions.flatMap((e) => e.mock.calls.map((c) => c.map(String))));
       // Something was logged: the failures are said; and the secrets were sent, so their absence above is no accident.
       expect(ecrit).toContain("refusé");
       for (const env of ["METEOFRANCE_APPLICATION_ID", "FIRMS_MAP_KEY", "TURNSTILE_SECRET"]) expect(envoyes.join(" ")).toContain(valeur(env));
+      expect(envoyes.join(" ")).toContain("fcm.googleapis.com");
+      expect(ecrit).toContain("clé VAPID illisible");
+      expect(ecrit).toContain("connecteurs fermés");
       for (const [env] of NOMS) {
-        expect(ecrit).not.toContain(valeur(env));
-        for (const r of reponses) expect(r).not.toContain(valeur(env));
+        expect(ecrit).not.toContain(trace(env));
+        for (const r of reponses) expect(r).not.toContain(trace(env));
+      }
+      // Not even their first letters, which a parser's error quotes.
+      for (const v of Object.values(illisibles)) {
+        expect(ecrit).not.toContain(v.slice(0, 8));
+        for (const r of reponses) expect(r).not.toContain(v.slice(0, 8));
       }
     } finally {
       vi.unstubAllGlobals();
+      vi.restoreAllMocks();
+      horsWorker();
+    }
+  });
+
+  it("opens what was encrypted, signed and subscribed with before: the same key drawn from each secret, byte for byte", async () => {
+    // Each value below was made by the code before the secrets were read by `secret` (its `configure`, given the same
+    // secret): a connector's secret kept in D1, an event's signature from Meta, the public key the browsers subscribed with.
+    const CHIFFRE_AVANT = "v1.c6F0PPmYb+FGwoKg.1TwbKxbpY7VrbU7vym8ugkNV14A5UIseC13B5r+ChipNMF3T6PLmE0Ye";
+    const SIGNATURE_AVANT = "sha256=7d73ffac3b75ca9bcd050c9bc07a9e12206bd60662146a11879efc9d703ba311";
+    const PUBLIQUE_AVANT = "BB4YUy_UdUwC8wQdnHXOszuD_9gax85P6ILMscmLxYlupGwxHE4v9A3ZajZT5uRURdMt_khuztdcepDGoYiBwKM";
+    const corps = JSON.stringify({ object: "page", entry: [{ id: "1", time: 1, changes: [{ field: "feed" }] }] });
+    const env = { CONNECTEURS_CLE: CLE_CONNECTEURS, META_VERIFY_TOKEN: "verif-d-essai", META_APP_SECRET: "secret-d-essai", VAPID_PRIVE: JWK };
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      await requete(env);
+      expect(await chiffre.dechiffrer(CHIFFRE_AVANT, chiffre.lien("helloasso", "club-de-petanque", "abc"))).toBe("jeton de rafraîchissement");
+      // The signature is the HMAC of the body with the app's secret, accepted now as then.
+      expect(`sha256=${createHmac("sha256", "secret-d-essai").update(corps).digest("hex")}`).toBe(SIGNATURE_AVANT);
+      const r = await requete(env, "/meta/webhook", { method: "POST", headers: { "x-hub-signature-256": SIGNATURE_AVANT }, body: corps });
+      expect([r.status, await r.text()]).toEqual([200, "EVENT_RECEIVED"]);
+      const c = await requete(env, CLE_PATH);
+      expect(await c.json()).toEqual({ cle: PUBLIQUE_AVANT });
+      expect(Buffer.from((await abonnements.cleDuSite()!).publique)).toEqual(Buffer.from(unb64u(PUBLIQUE_AVANT)));
+      // And what is signed now checks with the key the browsers already hold.
+      const entete = await enteteVapid("https://fcm.googleapis.com/fcm/send/abc", (await abonnements.cleDuSite())!, abonnements.CONTACT);
+      const [, jwt, k] = /^vapid t=([^,]+), k=(.+)$/.exec(entete)!;
+      expect(k).toBe(PUBLIQUE_AVANT);
+      const [h, b, sig] = jwt.split(".");
+      const verifie = await crypto.subtle.importKey("raw", unb64u(PUBLIQUE_AVANT), { name: "ECDSA", namedCurve: "P-256" }, false, ["verify"]);
+      expect(await crypto.subtle.verify({ name: "ECDSA", hash: "SHA-256" }, verifie, unb64u(sig), new TextEncoder().encode(`${h}.${b}`))).toBe(true);
+      // Rebuilt for another request with the same secrets: the same key, not imported again.
+      const importe = vi.spyOn(crypto.subtle, "importKey");
+      const premier = contexte();
+      await requete({ ...env, FIRMS_MAP_KEY: "autre" });
+      expect(contexte()).not.toBe(premier);
+      expect(await chiffre.dechiffrer(CHIFFRE_AVANT, chiffre.lien("helloasso", "club-de-petanque", "abc"))).toBe("jeton de rafraîchissement");
+      await requete(env, "/meta/webhook", { method: "POST", headers: { "x-hub-signature-256": SIGNATURE_AVANT }, body: corps });
+      await requete(env, CLE_PATH);
+      expect(importe).not.toHaveBeenCalled();
+    } finally {
       vi.restoreAllMocks();
       horsWorker();
     }

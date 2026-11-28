@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { detecter, type Changement } from "../src/alertes-etat.js";
 import * as abonnements from "../src/push/abonnements.js";
 import { message, passage, PAUSE_KEY } from "../src/push/envoi.js";
-import { b64u, cleVapid } from "../src/push/webpush.js";
+import { b64u } from "../src/push/webpush.js";
 import { donnerAbonnements } from "./portes-avis.js";
 
 // The alerts sent to the phones by the scheduled event once open: once each, by batches from a cursor two events never
@@ -38,7 +38,7 @@ beforeEach(async () => {
   donnerAbonnements(
     async (sql, ...params) => Number(db.prepare(sql).run(...(params as never[])).changes),
     async <T,>(sql: string, ...params: unknown[]) => db.prepare(sql).all(...(params as never[])) as T[],
-    cleVapid(JSON.stringify(await subtle.exportKey("jwk", paire.privateKey))),
+    JSON.stringify(await subtle.exportKey("jwk", paire.privateKey)),
   );
   recus = [];
   partis = new Set();

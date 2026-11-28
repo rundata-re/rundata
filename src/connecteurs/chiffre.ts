@@ -8,42 +8,40 @@
  * Without the key (Node, the tests, a Worker not given it), nothing is encrypted and the connectors stay closed: a
  * secret is never kept in clear instead.
  */
+import { secret } from "../contexte.js";
+
 const VERSION = "v1";
 const IV_BYTES = 12;
-
-let cle: Promise<CryptoKey | undefined> | undefined;
 
 const bytes = (b64: string): Uint8Array<ArrayBuffer> => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
 const b64 = (data: Uint8Array) => btoa(String.fromCharCode(...data));
 
-/** `secret`: CONNECTEURS_CLE. A value that is not 32 bytes of base64 leaves the connectors closed, said once. */
-export function configure(secret: string | undefined) {
-  const raw = secret?.trim();
-  if (!raw) {
-    cle = undefined;
-    return;
-  }
+// The key, imported once for the secret it was made from: undefined for a secret that is not 32 bytes of base64.
+let importee: { de: string; cle: Promise<CryptoKey> | undefined } | undefined;
+
+/** The key of CONNECTEURS_CLE (contexte.ts `secret`). A value that is not 32 bytes of base64 leaves the connectors closed, said once. */
+function cle(): Promise<CryptoKey> | undefined {
+  const raw = secret("connecteurs");
+  if (!raw) return undefined;
+  if (importee?.de === raw) return importee.cle;
   let key: Uint8Array<ArrayBuffer>;
   try {
     key = bytes(raw);
   } catch {
     key = new Uint8Array();
   }
-  if (key.length !== 32) {
-    console.error("connecteurs : CONNECTEURS_CLE n'est pas une clé de 32 octets en base64, connecteurs fermés");
-    cle = undefined;
-    return;
-  }
-  cle = crypto.subtle.importKey("raw", key, "AES-GCM", false, ["encrypt", "decrypt"]);
+  if (key.length !== 32) console.error("connecteurs : CONNECTEURS_CLE n'est pas une clé de 32 octets en base64, connecteurs fermés");
+  importee = { de: raw, cle: key.length === 32 ? crypto.subtle.importKey("raw", key, "AES-GCM", false, ["encrypt", "decrypt"]) : undefined };
+  return importee.cle;
 }
 
-export const enabled = () => !!cle;
+export const enabled = () => !!cle();
 
 /** What binds a value to its row: the columns plateforme, organisation and jeton (scripts/connecteurs.sql). */
 export const lien = (plateforme: string, organisation: string, jeton: string) => new TextEncoder().encode(`${plateforme}|${organisation}|${jeton}`);
 
 async function key(): Promise<CryptoKey> {
-  const k = await cle;
+  const k = await cle();
   if (!k) throw new Error("connecteurs : pas de clé de chiffrement");
   return k;
 }

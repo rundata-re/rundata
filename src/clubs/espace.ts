@@ -25,9 +25,9 @@ import { empreinte, reseau } from "../avis.js";
 // The connection's part of an address, kept here too for the club space's callers.
 export { reseau };
 import type { Cache } from "../cache.js";
-import { portesAvis } from "../contexte.js";
+import { contexte, portesAvis } from "../contexte.js";
 import { normalize } from "../places/resolve.js";
-import { empreinteJeton, jetonNeuf, type Envoi } from "../propositions.js";
+import { empreinteJeton, jetonNeuf } from "../propositions.js";
 import { enLigne } from "../web/club-drapeau.js";
 import * as monclub from "./monclub.js";
 
@@ -49,13 +49,6 @@ export const ANNUAIRE_SECONDES = 6 * 86400 + 12 * 3600;
 export const ANNUAIRE_MIN = 10;
 /** Letters typed before the list proposes anything. */
 export const RECHERCHE_MIN = 3;
-
-let envoi: Envoi | undefined;
-
-/** How the e-mails go; the tables are in the feedback's database (contexte.ts `portesAvis`). */
-export function configure(send?: Envoi) {
-  envoi = send;
-}
 
 export function enabled(): boolean {
   const { run, all } = portesAvis();
@@ -224,6 +217,7 @@ export type Demande = { issue: "ok"; masque: string } | { issue: Limite | "absen
  */
 export async function demander(c: Club, base: string, ip: string, now = new Date()): Promise<Demande> {
   const { run, all } = portesAvis();
+  const envoi = contexte().courriel;
   if (!run || !all || !envoi) return { issue: "indisponible" };
   const t = seconds(now);
   const jour = t - 86400;

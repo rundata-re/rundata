@@ -2,7 +2,10 @@ import { createHmac } from "node:crypto";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { handle } from "../src/app.js";
 import { Cache } from "../src/cache.js";
-import { configure, memes, resume } from "../src/meta-webhook.js";
+import { memes, resume } from "../src/meta-webhook.js";
+import { cles } from "./contexte.js";
+
+const configure = (verif?: string, secret?: string) => cles({ metaVerification: verif, metaApplication: secret });
 
 const URL_ = "https://rundata.re/meta/webhook";
 const VERIFY = "jeton-de-verification-de-test";

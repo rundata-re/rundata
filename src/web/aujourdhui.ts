@@ -18,6 +18,7 @@ import { type Alerte, credit, sansPeriode } from "./data.js";
 import { connectorCta, courantItem, lienNom, silentItem, silentText, webPage } from "./domains.js";
 import { adresseTexte, cheminTexte, telephoneTexte } from "./adresse.js";
 import { esc, fenetre, islandMap } from "./map.js";
+import { href as lienSur } from "./html.js";
 import { a, communeDite, de, fourchette } from "../tools/format.js";
 import { compteAvis, NE_PAS_BOIRE, periodeCoupure } from "../tools/coupures.js";
 import { ask, credits, icon, layout, officielHtml, SITE, thin, leJour } from "./pages.js";
@@ -157,7 +158,7 @@ function marketItems(mk: Markets | undefined, commune: string, aller: Aller): st
     // Those whose days no source gives, grouped by where they were looked for.
     ...[...new Set((mk.jours_non_trouves ?? []).map((x) => x.manque))].map((manque) => [manque, mk.jours_non_trouves!.filter((x) => x.manque === manque)] as const).map(([manque, xs], i) =>
       `<li>${i || mk.liste.length || mk.permanents || mk.heures_non_trouvees ? "Autres marchés" : "Marchés"} : ${xs.map(name).join(", ")}, <span class="note">${esc(manque)}</span></li>`),
-    mk.mairie ? `<li>${esc(label)} : <a href="${esc(mk.mairie.site)}" rel="noopener"${fenetre(mk.mairie.site)}>${esc(site)} →</a></li>` : "",
+    mk.mairie ? `<li>${esc(label)} : <a href="${lienSur(mk.mairie.site)}" rel="noopener"${fenetre(mk.mairie.site)}>${esc(site)} →</a></li>` : "",
   ];
 }
 

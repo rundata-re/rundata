@@ -11,6 +11,7 @@ import { insecables } from "../typographie.js";
 import type { Alerte } from "./data.js";
 import { connectorCta, crumbBar, crumbs, lienNom, webPage } from "./domains.js";
 import { esc } from "./map.js";
+import { href as lienSur } from "./html.js";
 import { cityLd, folded, layout } from "./pages.js";
 import { PAGES } from "./places.js";
 import { script } from "./scripts-declares.js";
@@ -180,7 +181,7 @@ function tcoNotices(avis: readonly tco.Communique[] | null | undefined, now: Dat
   if (avis === undefined || (commune && !(tco.TCO_COMMUNES as readonly string[]).includes(commune))) return "";
   if (avis === null) return commune ? `<p class="note">${esc(TCO_UNREAD)}</p>` : "";
   return tco.running(avis, now, "collecte", commune).map((c) =>
-    `<p class="card" role="note">${esc(tco.line(c))}${commune ? "" : ` (${esc(c.communes.join(", "))})`}. <a href="${esc(c.lien)}" rel="noopener">Lire le communiqué</a></p>`).join("");
+    `<p class="card" role="note">${esc(tco.line(c))}${commune ? "" : ` (${esc(c.communes.join(", "))})`}. <a href="${lienSur(c.lien)}" rel="noopener">Lire le communiqué</a></p>`).join("");
 }
 
 export function collectePage(origin: string, now: Date, commune?: string, alerte?: Alerte, avis?: readonly tco.Communique[] | null): string {

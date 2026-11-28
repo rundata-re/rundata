@@ -9,6 +9,7 @@ import type { Cached } from "../cache.js";
 import { enumeration } from "../tools/format.js";
 import { type Alerte, type SportAnswer } from "./data.js";
 import { esc } from "./map.js";
+import { href as lienSur } from "./html.js";
 import { reprise } from "./ouvrir-donnees.js";
 import { ask, FOLD_ROWS, folded, layout, type Live } from "./pages.js";
 import { mentionSports, noteLa1ere } from "../tools/non-repris.js";
@@ -41,7 +42,7 @@ function sportRow(r: SportAnswer["resultats"] extends (infer T)[] | undefined ? 
     ? `<span class="score">${esc(r.score ?? "")}</span>`
     : r.etat === "annulée" || r.etat === "reportée" ? `<span class="q-mauvaise">${esc(r.etat)}</span>` : `<span class="q-none">${esc(shortWhen(r.quand))}</span>`;
   // A match links nowhere of its own: its championship's page is linked once, under the standings.
-  const name = r.lien && !r.competition ? `<a href="${esc(r.lien)}" rel="noopener">${esc(r.epreuve)}</a>` : esc(r.epreuve);
+  const name = r.lien && !r.competition ? `<a href="${lienSur(r.lien)}" rel="noopener">${esc(r.epreuve)}</a>` : esc(r.epreuve);
   return `<li><span>${name} <small>${small}${withScore && r.detail ? ` · ${esc(r.detail)}` : ""}</small></span>${right}</li>`;
 }
 
@@ -138,7 +139,7 @@ ${d?.programmes_communes?.length ? `<section aria-labelledby="h-prog">
   <div class="sec-h"><p class="eyebrow">Publiés par les mairies</p><h2 id="h-prog">Programmes sportifs des communes</h2>
   ${d.programmes_communes?.length ? `<p>${esc(d.programmes_a_savoir ?? "")}</p>` : ""}</div>
   ${d.programmes_communes?.length ? `<ul class="zones"><li class="card"><ul class="rows eau">${d.programmes_communes.map((p) =>
-    `<li><span><a href="${esc(p.lien)}" rel="noopener"${ACCUEILS.has(p.lien) ? ' target="_blank"' : ""}>${esc(p.titre)}</a> <small>${[p.commune && esc(p.commune), adresseTexte(`Source\u00a0: ${p.source}`)].filter(Boolean).join(" · ")}</small></span> <span class="q-none">${esc(shortWhen(p.dates))}</span></li>`).join("")}</ul></li></ul>` : ""}
+    `<li><span><a href="${lienSur(p.lien)}" rel="noopener"${ACCUEILS.has(p.lien) ? ' target="_blank"' : ""}>${esc(p.titre)}</a> <small>${[p.commune && esc(p.commune), adresseTexte(`Source\u00a0: ${p.source}`)].filter(Boolean).join(" · ")}</small></span> <span class="q-none">${esc(shortWhen(p.dates))}</span></li>`).join("")}</ul></li></ul>` : ""}
 </section>` : ""}
 ${d?.resultats?.length ? `<section aria-labelledby="h-res">
   <div class="sec-h"><p class="eyebrow">Sept derniers jours</p><h2 id="h-res">Derniers résultats</h2>

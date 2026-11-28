@@ -4,6 +4,8 @@
  * assistants reading a page see it, and points to the connector for the rest. Each also says it in a few words for
  * its tile on the home page.
  */
+// First: lienNom() below uses it while the modules that import this one call it as they load (eau-cyclone.ts).
+import { brut, echappe, href as lienSur, html, type Html } from "./html.js";
 import * as transit from "../providers/transit.js";
 import { LINE_NETWORKS, LINE_PATH, linePages } from "./ligne.js";
 import { enLigne } from "./associations-drapeau.js";
@@ -54,7 +56,6 @@ import { aller, MOTS as ALLER_MOTS, permis, porte, type Porte, retire, SHEET as 
 import { noteLa1ere } from "../tools/non-repris.js";
 import { journeyForm, nowAsked } from "./itineraire.js";
 import { script } from "./scripts-declares.js";
-import { brut, echappe, href as lienSur, html, type Html } from "./html.js";
 
 const FOURNAISE = { lon: 55.7083, lat: -21.2444, name: "Piton de la Fournaise" };
 // What a search engine shows of a title.
@@ -188,7 +189,7 @@ export function soulignesCoupables(html: string): string {
  */
 export function lienNom(href: string, text: string, attrs = ""): string {
   const coupe = soulignesCoupables(nomsCoupables(adresseCoupable(text)));
-  return `<a href="${esc(href)}"${attrs}${coupe === esc(text) ? "" : ` aria-label="${esc(text)}"`}>${coupe}</a>`;
+  return `<a href="${lienSur(href)}"${attrs}${coupe === esc(text) ? "" : ` aria-label="${esc(text)}"`}>${coupe}</a>`;
 }
 
 /** The connector, at the end of every domain page, the tool's name coupable(). */

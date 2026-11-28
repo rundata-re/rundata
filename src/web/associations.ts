@@ -18,6 +18,7 @@ import * as connecteurs from "./connecteurs.js";
 import { crumbBar, crumbs, lienNom, webPage } from "./domains.js";
 import { ICS_PATH, JSON_PATH } from "./flux-associations.js";
 import { esc } from "./map.js";
+import { href as lienSur } from "./html.js";
 import { adressesCoupables, layout } from "./pages.js";
 import { lienForm, PROPOSER_PATH, TURNSTILE_SCRIPT } from "./propositions.js";
 import brand from "./brand.json" with { type: "json" };
@@ -150,7 +151,7 @@ function preuveSection(p: Preuve): string {
   // Dates over several days (« du mercredi 04/11 à 18:00 au samedi 07/11 à 23:00 ») go under the title on a phone
   // (.fin, as on /evenements): beside it, they left the title a column of 110 px, its words over the date.
   const list = p.prochains.length
-    ? `<ul class="rows eau">${p.prochains.map(({ e, quand }) => `<li><span>${e.lien ? `<a href="${esc(versBilletterie(e.lien))}" rel="noopener">${esc(e.titre)}</a>` : esc(e.titre)} <small>${[e.commune, e.publie_par].filter(Boolean).map((x) => esc(x!)).join(" · ")}</small></span><span${quand.startsWith("du ") ? ' class="fin"' : ""}>${esc(quand)}</span></li>`).join("")}</ul>`
+    ? `<ul class="rows eau">${p.prochains.map(({ e, quand }) => `<li><span>${e.lien ? `<a href="${lienSur(versBilletterie(e.lien))}" rel="noopener">${esc(e.titre)}</a>` : esc(e.titre)} <small>${[e.commune, e.publie_par].filter(Boolean).map((x) => esc(x!)).join(" · ")}</small></span><span${quand.startsWith("du ") ? ' class="fin"' : ""}>${esc(quand)}</span></li>`).join("")}</ul>`
     : `<p>Les premiers événements de clubs et d'associations arrivent\u00a0: <a href="${PROPOSER_PATH}">proposez le vôtre</a>.</p>`;
   return `<section aria-labelledby="h-preuve">
   <div class="sec-h"><p class="eyebrow">En direct</p><h2 id="h-preuve">Les prochains événements de clubs et d'associations</h2></div>

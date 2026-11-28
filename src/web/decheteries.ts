@@ -13,6 +13,7 @@ import { DECHETERIE_UNREAD } from "../tools/decheteries.js";
 import type { Alerte, DechetsAnswer } from "./data.js";
 import { connectorCta, crumbBar, crumbs, loading, sourcesNote, webPage } from "./domains.js";
 import { esc } from "./map.js";
+import { href as lienSur } from "./html.js";
 import { DESCRIPTION_MAX, icon, layout, leJour } from "./pages.js";
 
 // The texts of the page, worded for the site.
@@ -52,7 +53,7 @@ function siteCard(s: dech.SiteNow, g: Porte, unread = false): string {
 function closures(data: Cached<DechetsAnswer> | null, now: Date): string {
   if (data?.value.avis_non_lus) return `<p class="note">${esc(DECHETERIE_UNREAD)}</p>`;
   return tcoCommuniques.running(data?.value.avis ?? [], now, "decheterie").map((c) =>
-    `<p class="card" role="note">${esc(tcoCommuniques.line(c))} (${esc(c.communes.join(", "))}). <a href="${esc(c.lien)}" rel="noopener">Lire le communiqué</a></p>`).join("");
+    `<p class="card" role="note">${esc(tcoCommuniques.line(c))} (${esc(c.communes.join(", "))}). <a href="${lienSur(c.lien)}" rel="noopener">Lire le communiqué</a></p>`).join("");
 }
 
 function elsewhereCard(s: dech.Elsewhere, g: Porte): string {

@@ -14,7 +14,17 @@ import { layout } from "../src/web/pages.js";
 import { vigilancePage } from "../src/web/vigilance-page.js";
 import * as mf from "../src/providers/vigilance.js";
 import { coupuresCommunePage } from "../src/web/coupures.js";
-import { PAGES } from "../src/web/places.js";
+import { pageOf, PAGES } from "../src/web/places.js";
+import type { Evenement } from "../src/providers/agenda.js";
+import type { Communique } from "../src/providers/tco-communiques.js";
+import { resume, type Resume } from "../src/tools/resume.js";
+import { associationsPage } from "../src/web/associations.js";
+import { aujourdhuiPage } from "../src/web/aujourdhui.js";
+import { collectePage } from "../src/web/collecte.js";
+import { decheteriesPage } from "../src/web/decheteries.js";
+import { lienNom } from "../src/web/domains.js";
+import { sportPage } from "../src/web/sport.js";
+import type { SportAnswer } from "../src/web/data.js";
 import { bases } from "./contexte.js";
 const donnerTransit = (d?: transit.TransitDb) => bases({ transit: d });
 
@@ -271,5 +281,38 @@ describe("a link read elsewhere never runs a script", () => {
     const avisCourant = [{ texte: "…", commune: "Saint-André", nature: "programmée", lien: J, creneaux: [{ jour: "2026-11-23", de: "09:00", a: "12:30", secteurs: [] }] }];
     const copy = { value: { coupures_annoncees: { avis: avisCourant }, sources: [] }, fetchedAt: now, stale: false } as unknown as Cached<ElectriciteAnswer>;
     sansScript(electriciteCommune(copy, "Saint-André", now).foot ?? "");
+  });
+
+  it("in the clubs' next dates (/associations) and the sports' agendas, matches and towns' programmes (/sport)", () => {
+    const e = { titre: "Tournoi", commune: "Saint-Paul", publie_par: "Un club", lien: J } as unknown as Evenement;
+    sansScript(associationsPage(O, { clubs: 1, evenements: 1, prochains: [{ e, quand: "samedi 05/12" }] }));
+    const now = new Date("2026-11-28T08:00:00Z");
+    const value = {
+      resume: "", non_couvert: "", sources: [], resultats: [], classements: [],
+      a_venir: [{ epreuve: "Tournoi", quand: "samedi 05/12 à 09:00", sport: "volley-ball", etat: "à venir", lien: J }],
+      programmes_communes: [{ titre: "Programme sportif", lien: J, commune: "La Possession", source: "la mairie", dates: "samedi 05/12" }],
+    } as unknown as SportAnswer;
+    const page = sportPage(O, { value, fetchedAt: now, stale: false }, now);
+    expect(page).toContain(">Programme sportif<");
+    expect(page).toContain(">Tournoi<");
+    sansScript(page);
+  });
+
+  it("in the TCO's releases on the collection (/collecte) and the waste centres (/decheteries)", () => {
+    const now = new Date("2026-11-28T08:00:00Z");
+    const c = (sujet: Communique["sujet"]): Communique => ({ titre: "Collectes de rattrapage", lien: J, publie: "2026-11-27T06:00:00Z", jusqu_au: "2026-11-30T20:00:00Z", sujet, communes: ["Saint-Paul"] });
+    sansScript(collectePage(O, now, undefined, undefined, [c("collecte")]));
+    const dechets = { sites: [], avis: [c("decheterie")], sources: [] };
+    sansScript(decheteriesPage(O, { value: dechets, fetchedAt: now, stale: false } as never, now));
+  });
+
+  it("in a town hall's site under the markets (a commune's day) and its page on service-public.fr (a commune's page)", () => {
+    const now = new Date("2026-10-24T11:10:00Z");
+    const p = pageOf("saint-pierre")!;
+    const r = resume(p, {} as never, now) as Resume;
+    const page = aujourdhuiPage(O, p, { ...r, marches_du_jour: { liste: [], mairie: { texte: "Jours et horaires des marchés : site de la mairie", site: J } } } as Resume, null);
+    expect(page).toContain("site de la mairie →");
+    sansScript(page);
+    sansScript(lienNom(J, "Fiche service-public.fr", ' rel="noopener"'));
   });
 });

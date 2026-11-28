@@ -8,6 +8,7 @@ import { clubsDeLAccueil } from "../src/clubs/monclub.js";
 import * as club from "../src/web/club.js";
 import * as formulaires from "../src/web/propositions.js";
 import { ACCUEIL, ADRESSE, CLUBS, fiche } from "./monclub.js";
+import { donnerEspace } from "./portes-avis.js";
 
 // Thursday 29 October 2026, 10:00 at La Réunion: the directory's reading. The pages read the clock.
 const NOW = new Date("2026-10-29T06:00:00Z");
@@ -28,7 +29,10 @@ beforeEach(async () => {
   pages = { [`${CLUBS}handball-club-du-tampon/`]: fiche("101", ADRESSE), [`${CLUBS}st-pierre-hand/`]: fiche("102", "club.saint-pierre@gmail.com") };
   db = new DatabaseSync(":memory:");
   db.exec(readFileSync(new URL("../scripts/clubs.sql", import.meta.url), "utf8"));
-  espace.configure(
+  // The proposals' tables too, in the same database as in the Worker (the pages read them).
+  db.exec(readFileSync(new URL("../scripts/propositions.sql", import.meta.url), "utf8"));
+  db.exec(readFileSync(new URL("../scripts/propositions-b.sql", import.meta.url), "utf8"));
+  donnerEspace(
     async (sql, ...params) => Number(db.prepare(sql).run(...(params as (string | number | null)[])).changes),
     async <T>(sql: string, ...params: unknown[]) => db.prepare(sql).all(...(params as (string | number | null)[])) as T[],
     async (m) => (sent.push(m), true),
@@ -49,7 +53,7 @@ afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
-  espace.configure(undefined);
+  donnerEspace(undefined);
   formulaires.configure(undefined);
   formulaires.ouvrir(formulaires.ASSOCIATIONS_EN_LIGNE);
   club.ouvrir(club.CLUB_EN_LIGNE);
@@ -108,7 +112,7 @@ describe("the clubs' own space", () => {
   });
 
   it("screen 1: says so when the list of the clubs cannot be read", async () => {
-    espace.configure(async () => 0, async () => {
+    donnerEspace(async () => 0, async () => {
       throw new Error("D1 muette");
     });
     const r = await get(`${club.CLUB_PATH}?q=hand`);

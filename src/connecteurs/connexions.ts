@@ -16,6 +16,7 @@
  * Without the database, the e-mail or the encryption key, nothing is verified nor kept: « indisponible ».
  */
 import { empreinte, type Run } from "../avis.js";
+import { portesAvis } from "../contexte.js";
 import { empreinteJeton, jetonNeuf, type All, type Envoi, type Issue } from "../propositions.js";
 import * as chiffre from "./chiffre.js";
 import { HELLOASSO } from "./helloasso.js";
@@ -33,24 +34,24 @@ export const ATTENTE_SECONDES = 30 * 60;
 /** Statements run together, all or none (D1's batch): the rows each one changed. */
 export type Batch = (statements: [sql: string, ...params: unknown[]][]) => Promise<number[]>;
 
-let run: Run | undefined;
-let all: All | undefined;
 let envoi: Envoi | undefined;
-let batch: Batch | undefined;
 
-/** The table's doors, to write and to read (worker.ts, the feedback's database), how the e-mails go, and a batch. */
-export function configure(db: Run | undefined, select?: All, send?: Envoi, together?: Batch) {
-  run = db;
-  all = select;
+/** How the e-mails go; the table is in the feedback's database (contexte.ts `portesAvis`). */
+export function configure(send?: Envoi) {
   envoi = send;
-  batch = together;
 }
 
 /** Whether a link can be made: the table, the e-mail and the encryption key. */
-export const enabled = () => !!run && !!all && !!envoi && chiffre.enabled();
+export function enabled(): boolean {
+  const { run, all } = portesAvis();
+  return !!run && !!all && !!envoi && chiffre.enabled();
+}
 
 /** The table's doors, for the scheduled reading (connecteurs/lecture.ts) and the agenda (providers/agenda-connecteurs.ts). */
-export const portes = () => (run && all ? { run, all } : undefined);
+export function portes(): { run: Run; all: All } | undefined {
+  const { run, all } = portesAvis();
+  return run && all ? { run, all } : undefined;
+}
 
 // ---------------------------------------------------------------- 1. the keys verified
 
@@ -74,6 +75,7 @@ export type Verdict =
 
 /** The keys pasted for `plateforme`, asked to the platform. Nothing is written. */
 export async function verifier(plateforme: string, cles: Record<string, string>, email: string, now = new Date()): Promise<Verdict> {
+  const { all } = portesAvis();
   const p = PLATEFORMES[plateforme];
   if (!p || !enabled()) return { issue: "indisponible" };
   let v;
@@ -145,6 +147,7 @@ AND NOT EXISTS (${DEJA_ECRITE}) AND ${SCELLE_A_NOUS}`;
  * other.
  */
 export async function enregistrer(a: Ouverte, adresse: string, base: string, now = new Date()): Promise<Issue> {
+  const { all, batch } = portesAvis();
   if (!enabled() || !batch) return "indisponible";
   const t = Math.floor(now.getTime() / 1000);
   const source = await empreinte(adresse, now);
@@ -208,6 +211,7 @@ const COLONNES = "id, t, plateforme, organisation, nom, commune, lien, email, et
  * second link, sent with the reminder, opens it too: it only withdraws, a link being confirmed by the first one.
  */
 export async function trouver(secretLien: string): Promise<Connexion | undefined> {
+  const { all } = portesAvis();
   if (!all || !/^[\w-]{16,64}$/.test(secretLien)) return undefined;
   const jeton = await empreinteJeton(secretLien);
   return (await all<Connexion>(`SELECT ${COLONNES} FROM connexions WHERE jeton = ? OR jeton_retrait = ?`, jeton, jeton))[0];
@@ -218,6 +222,7 @@ export async function trouver(secretLien: string): Promise<Connexion | undefined
  * place at once (the association was checked then), and the old address is told. Confirming twice changes nothing.
  */
 export async function confirmer(secretLien: string, now = new Date()): Promise<Connexion | undefined> {
+  const { run, all } = portesAvis();
   const c = await trouver(secretLien);
   if (!c || c.etat !== "a_confirmer" || !run || !all) return c;
   const t = Math.floor(now.getTime() / 1000);
@@ -231,6 +236,7 @@ export async function confirmer(secretLien: string, now = new Date()): Promise<C
 
 /** Withdraws the link: the row and its events go at once, and an e-mail says so. The link's name, or undefined. */
 export async function retirer(secretLien: string): Promise<{ nom: string; ouvert: boolean } | undefined> {
+  const { run } = portesAvis();
   const c = await trouver(secretLien);
   if (!c || !run) return undefined;
   await run("DELETE FROM connexions WHERE id = ?", c.id);
@@ -243,6 +249,7 @@ export async function retirer(secretLien: string): Promise<{ nom: string; ouvert
  * anything. The rows changed.
  */
 export async function purger(now = new Date()): Promise<number> {
+  const { batch } = portesAvis();
   // Before the flag, no link to forget, and maybe no table yet.
   if (!batch || !enLigne()) return 0;
   const t = Math.floor(now.getTime() / 1000);

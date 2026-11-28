@@ -15,6 +15,7 @@ import { eventRow } from "../src/tools/agenda.js";
 import * as connecteurs from "../src/web/connecteurs.js";
 import { ICS_PATH, JSON_PATH } from "../src/web/flux-associations.js";
 import * as formulaires from "../src/web/propositions.js";
+import { donnerConnexions, donnerPropositions } from "./portes-avis.js";
 
 const KEY = Buffer.alloc(32, 7).toString("base64");
 const ACCESS = "eyJhbGciOiJIUzI1NiJ9.acces.signature";
@@ -75,7 +76,7 @@ beforeEach(() => {
   db.exec(readFileSync(new URL("../scripts/connecteurs.sql", import.meta.url), "utf8"));
   chiffre.configure(KEY);
   connecteurs.ouvrir(true);
-  connexions.configure(
+  donnerConnexions(
     async (sql, ...params) => Number(db.prepare(sql).run(...(params as (string | number | null)[])).changes),
     async <T>(sql: string, ...params: unknown[]) => db.prepare(sql).all(...(params as (string | number | null)[])) as T[],
     async (m) => (sent.push(m), true),
@@ -101,7 +102,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   chiffre.configure(undefined);
-  connexions.configure(undefined);
+  donnerConnexions(undefined);
   connecteurs.ouvrir(connecteurs.CONNECTEURS_EN_LIGNE);
   // Never a token, a kept secret nor an address in what is logged.
   for (const line of logged) for (const s of [ACCESS, FIRST, "rafraichissement-1", "club@example.org"]) expect(line).not.toContain(s);
@@ -275,21 +276,21 @@ describe("the linked associations' agenda", () => {
   it("is one of the agendas, whole island, and gives nothing without the database", async () => {
     expect(AGENDAS).toContain(CONNECTEURS);
     expect(CONNECTEURS.couvre).toEqual([]);
-    connexions.configure(undefined);
+    donnerConnexions(undefined);
     expect(await evenements(NOW)).toEqual([]);
   });
 });
 
 describe("the open data", () => {
   afterEach(() => {
-    propositions.configure(undefined);
+    donnerPropositions(undefined);
     formulaires.ouvrir(formulaires.ASSOCIATIONS_EN_LIGNE);
   });
 
   beforeEach(() => {
     db.exec(readFileSync(new URL("../scripts/propositions.sql", import.meta.url), "utf8"));
     db.exec(readFileSync(new URL("../scripts/propositions-b.sql", import.meta.url), "utf8"));
-    propositions.configure(
+    donnerPropositions(
       async (sql, ...params) => Number(db.prepare(sql).run(...(params as (string | number | null)[])).changes),
       undefined,
       async <T>(sql: string, ...params: unknown[]) => db.prepare(sql).all(...(params as (string | number | null)[])) as T[],

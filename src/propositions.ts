@@ -16,7 +16,8 @@
  * is chosen: without one, a proposal is refused as « indisponible », never kept unconfirmable.
  */
 import { a } from "./articles.js";
-import { empreinte, nettoie, type Run } from "./avis.js";
+import { contexte, portesAvis, type Bases } from "./contexte.js";
+import { empreinte, nettoie } from "./avis.js";
 import { garde } from "./lecture-gardee.js";
 
 export const LIENS_PAR_JOUR = 5;
@@ -74,8 +75,6 @@ export interface Proposition {
   contact_public?: string;
 }
 
-let run: Run | undefined;
-
 /** The send of one e-mail; true once accepted. */
 export type Envoi = (m: { to: string; subject: string; text: string }) => Promise<boolean>;
 let envoi: Envoi | undefined;
@@ -105,24 +104,24 @@ export const envoiCloudflare = (binding: EmailBinding): Envoi => async (m) => {
 
 /** Reads rows. */
 export type All = <T>(sql: string, ...params: unknown[]) => Promise<T[]>;
-let all: All | undefined;
 
-/**
- * `db` and `select`: the D1 tables' doors (worker.ts, the feedback's database), to write and to read; `send`: how the
- * confirmation is sent.
- */
 // The secrets that name no proposal, a minute: an existing one is read each time (its page changes with each action).
+// Kept for one database (contexte.ts), and for one sending.
 const inconnus = () => garde<Ligne>({ ttlMs: 60_000, max: 256, introuvablesParMinute: 20, garder: () => false });
-let INCONNUS = inconnus();
-
-export function configure(db: Run | undefined, send?: Envoi, select?: All) {
-  run = db;
-  envoi = send;
-  all = select;
-  INCONNUS = inconnus();
+let INCONNUS: { de: Bases | undefined; garde: ReturnType<typeof inconnus> } = { de: undefined, garde: inconnus() };
+function lesInconnus() {
+  const de = contexte().bases;
+  if (INCONNUS.de !== de) INCONNUS = { de, garde: inconnus() };
+  return INCONNUS.garde;
 }
 
-export const enabled = () => !!run;
+/** `send`: how the confirmation is sent; the rows are in the feedback's database (contexte.ts `portesAvis`). */
+export function configure(send?: Envoi) {
+  envoi = send;
+  INCONNUS = { de: contexte().bases, garde: inconnus() };
+}
+
+export const enabled = () => !!portesAvis().run;
 
 const localDay = (now: Date) => new Date(now.getTime() + 4 * 3600_000).toISOString().slice(0, 10);
 const addDays = (day: string, n: number) => new Date(Date.parse(`${day}T00:00:00Z`) + n * 86400_000).toISOString().slice(0, 10);
@@ -244,6 +243,7 @@ WHERE (SELECT COUNT(*) FROM liens WHERE source = ? AND t > ?) < ? AND (SELECT CO
 
 /** Writes one link, refused in the same statement when its sender, or everyone together, sent too many today. */
 export async function enregistrerLien(l: Lien, adresse: string, now = new Date()): Promise<Issue> {
+  const { run } = portesAvis();
   if (!run) return "indisponible";
   const t = Math.floor(now.getTime() / 1000);
   const source = await empreinte(adresse, now);
@@ -311,6 +311,7 @@ export function messageConfirmation(p: Proposition, lien: string): { subject: st
  * could not be sent stays unconfirmed, and goes after 48 hours like any other.
  */
 export async function enregistrerProposition(p: Proposition, adresse: string, base: string, now = new Date()): Promise<Issue> {
+  const { run } = portesAvis();
   if (!run || !envoi) return "indisponible";
   const t = Math.floor(now.getTime() / 1000);
   const source = await empreinte(adresse, now);
@@ -375,18 +376,20 @@ const COLONNES = "id, t, etat, titre, date, debut, fin, repete, jusqu_au, commun
 export const VISIBLES: readonly EtatProposition[] = ["publie", "annule", "reporte"];
 
 /** Whether the proposals can be read (the Worker with its database). */
-export const lisible = () => !!all;
+export const lisible = () => !!portesAvis().all;
 
 /** The proposal a secret leads to, if any. */
 
 export async function parJeton(jeton: string): Promise<Ligne | undefined> {
+  const { all } = portesAvis();
   const q = all;
   if (!q || !/^[\w-]{22}$/.test(jeton)) return undefined;
-  return (await INCONNUS.lire(jeton, async () => (await q<Ligne>(`SELECT ${COLONNES} FROM propositions WHERE jeton = ?`, await empreinteJeton(jeton)))[0] ?? null)) ?? undefined;
+  return (await lesInconnus().lire(jeton, async () => (await q<Ligne>(`SELECT ${COLONNES} FROM propositions WHERE jeton = ?`, await empreinteJeton(jeton)))[0] ?? null)) ?? undefined;
 }
 
 /** The proposals the public sees, from today on; [] without the database. */
 export async function visibles(now: Date): Promise<Ligne[]> {
+  const { all } = portesAvis();
   if (!all) return [];
   return all<Ligne>(`SELECT ${COLONNES} FROM propositions WHERE etat IN ('publie', 'annule', 'reporte') AND derniere_date >= ? ORDER BY coalesce(reporte_au, date), debut, id`, localDay(now));
 }
@@ -413,6 +416,7 @@ export const visibleAussitot = (a: Action) => a.kind !== "confirmer" && a.kind !
  * False when the state did not allow it (already confirmed, past, refused…).
  */
 export async function agir(jeton: string, a: Action, now = new Date()): Promise<boolean> {
+  const { run } = portesAvis();
   if (!run || !/^[\w-]{22}$/.test(jeton)) return false;
   const t = Math.floor(now.getTime() / 1000);
   const h = await empreinteJeton(jeton);
@@ -472,6 +476,7 @@ export async function agir(jeton: string, a: Action, now = new Date()): Promise<
  * by the scheduled event. Returns the rows changed.
  */
 export async function purger(now = new Date()): Promise<number> {
+  const { run } = portesAvis();
   if (!run) return 0;
   const t = Math.floor(now.getTime() / 1000);
   const today = localDay(now);

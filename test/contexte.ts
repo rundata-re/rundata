@@ -58,6 +58,24 @@ export function bases(donnees: Bases) {
   installer(apres);
 }
 
+/** The feedback database's doors as a test gives them, uncounted here (contexte.ts `portesAvis` counts them). */
+export interface PortesTest {
+  run?: (sql: string, ...params: unknown[]) => Promise<number>;
+  all?: <T>(sql: string, ...params: unknown[]) => Promise<T[]>;
+  batch?: (statements: [sql: string, ...params: unknown[]][]) => Promise<number[]>;
+}
+
+/**
+ * The feedback database (contexte.ts `bases.avis` and `avisEcriture`) from a test's doors: none given, no database, as
+ * the Worker without its binding. Writes given without a batch (or the reverse): the other one fails if it is called.
+ */
+export function baseAvis(p: PortesTest = {}) {
+  const refus = async (): Promise<never> => {
+    throw new Error("porte non donnée par le test");
+  };
+  bases({ avis: p.all && { all: p.all }, avisEcriture: p.run || p.batch ? { run: p.run ?? refus, batch: p.batch ?? refus } : undefined });
+}
+
 export function horsWorker() {
   installe = undefined;
   retirer();

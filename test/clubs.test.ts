@@ -7,6 +7,7 @@ import * as drapeau from "../src/web/club-drapeau.js";
 import { changements, ecrire, erreur, refDe, retirer } from "../scripts/club-verifie.js";
 import { breakerMs, Cache, MemoryStore } from "../src/cache.js";
 import { ACCUEIL, ADRESSE, CLUBS, fiche } from "./monclub.js";
+import { donnerEspace } from "./portes-avis.js";
 
 // Thursday 29 October 2026, 10:00 at La Réunion.
 const NOW = new Date("2026-10-29T06:00:00Z");
@@ -108,7 +109,7 @@ describe("the space's tables", () => {
     pages = { [`${CLUBS}handball-club-du-tampon/`]: fiche("101", ADRESSE), [`${CLUBS}st-pierre-hand/`]: fiche("102", "club.saint-pierre@gmail.com") };
     db = new DatabaseSync(":memory:");
     db.exec(readFileSync(new URL("../scripts/clubs.sql", import.meta.url), "utf8"));
-    espace.configure(
+    donnerEspace(
       async (sql, ...params) => Number(db.prepare(sql).run(...(params as (string | number | null)[])).changes),
       async <T>(sql: string, ...params: unknown[]) => db.prepare(sql).all(...(params as (string | number | null)[])) as T[],
       async (m) => (sent.push(m), true),
@@ -123,7 +124,7 @@ describe("the space's tables", () => {
   });
   afterEach(() => {
     vi.unstubAllGlobals();
-    espace.configure(undefined);
+    donnerEspace(undefined);
     drapeau.ouvrir(drapeau.CLUB_EN_LIGNE);
   });
 

@@ -7,6 +7,7 @@ import * as chiffre from "../src/connecteurs/chiffre.js";
 import * as connexions from "../src/connecteurs/connexions.js";
 import * as connecteurs from "../src/web/connecteurs.js";
 import * as formulaires from "../src/web/propositions.js";
+import { donnerConnexions } from "./portes-avis.js";
 
 const KEY = Buffer.alloc(32, 7).toString("base64");
 const ACCESS = "eyJhbGciOiJIUzI1NiJ9.acces.signature";
@@ -30,8 +31,11 @@ beforeEach(() => {
   token = { status: 200, body: { access_token: ACCESS, refresh_token: REFRESH, token_type: "bearer", expires_in: 1799 } };
   db = new DatabaseSync(":memory:");
   db.exec(readFileSync(new URL("../scripts/connecteurs.sql", import.meta.url), "utf8"));
+  // The proposals' tables too, in the same database as in the Worker (the pages read them).
+  db.exec(readFileSync(new URL("../scripts/propositions.sql", import.meta.url), "utf8"));
+  db.exec(readFileSync(new URL("../scripts/propositions-b.sql", import.meta.url), "utf8"));
   chiffre.configure(KEY);
-  connexions.configure(
+  donnerConnexions(
     async (sql, ...params) => Number(db.prepare(sql).run(...(params as (string | number | null)[])).changes),
     async <T>(sql: string, ...params: unknown[]) => db.prepare(sql).all(...(params as (string | number | null)[])) as T[],
     async (m) => (sent.push(m), true),
@@ -64,7 +68,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   chiffre.configure(undefined);
-  connexions.configure(undefined);
+  donnerConnexions(undefined);
   formulaires.configure(undefined);
   formulaires.ouvrir(formulaires.ASSOCIATIONS_EN_LIGNE);
   connecteurs.ouvrir(connecteurs.CONNECTEURS_EN_LIGNE);
@@ -293,7 +297,7 @@ describe("the link, once « C'est bien nous » is clicked", () => {
     let calls = 0;
     let batches = 0;
     const one = async (sql: string, ...params: unknown[]) => (calls++, Number(db.prepare(sql).run(...(params as (string | number | null)[])).changes));
-    connexions.configure(
+    donnerConnexions(
       one,
       async <T>(sql: string, ...params: unknown[]) => (calls++, db.prepare(sql).all(...(params as (string | number | null)[])) as T[]),
       async () => true,

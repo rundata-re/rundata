@@ -13,6 +13,7 @@
  *
  * In the Worker the rows go to D1; in Node, without a database, nothing is kept and the tool says where to write.
  */
+import { portesAvis } from "./contexte.js";
 import { visitor } from "./metrics.js";
 
 export const TYPES = ["manque", "erreur", "suggestion", "bravo"] as const;
@@ -41,16 +42,14 @@ export interface Avis {
 /** Runs one statement, returns the number of rows it changed. */
 export type Run = (sql: string, ...params: unknown[]) => Promise<number>;
 
-let run: Run | undefined;
 let sel: string | undefined;
 
-/** `db`: the D1 table's door (worker.ts); `secret`: the salt of the fingerprints, if the Worker has one. */
-export function configure(db: Run | undefined, secret?: string) {
-  run = db;
+/** `secret`: the salt of the fingerprints, if the Worker has one (AVIS_SEL); the rows go to the feedback's database (contexte.ts `portesAvis`). */
+export function configure(secret?: string) {
   sel = secret || undefined;
 }
 
-export const enabled = () => !!run;
+export const enabled = () => !!portesAvis().run;
 
 // Without a secret, a salt drawn once per instance: the fingerprints can never be traced back to an address. Drawn at
 // first use, since a Worker may not draw random values while its module loads.
@@ -126,6 +125,7 @@ WHERE (SELECT COUNT(*) FROM avis WHERE source = ? AND t > ?) < ? AND (SELECT COU
  * many in the last hour. The message must already be checked (nettoie).
  */
 export async function enregistrer(avis: Avis, adresse: string, now = new Date()): Promise<Issue> {
+  const { run } = portesAvis();
   if (!run) return "indisponible";
   const t = Math.floor(now.getTime() / 1000);
   const source = await empreinte(adresse, now);

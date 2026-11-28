@@ -249,6 +249,7 @@ background:repeating-conic-gradient(from -90deg at 78% 115%,rgb(255 207 31/.09) 
 .intro{display:grid;gap:2.2rem;align-items:center;padding-block:clamp(2rem,6vw,4.5rem) 2rem}
 @media (min-width:58rem){.intro{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr)}.intro.haut{align-items:start}}
 .intro.solo{grid-template-columns:minmax(0,1fr)}.intro.solo h1{max-width:52rem}.intro.solo .pitch>p{max-width:40rem}
+.intro.solo .now p{max-width:40rem}
 .pitch{display:grid;gap:1.1rem;justify-items:start;min-width:0}
 .pill{display:inline-flex;align-items:center;gap:.45rem;font-size:.82rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
 padding:.3rem .8rem;border-radius:999px;background:rgb(255 255 255/.1);border:1px solid rgb(255 255 255/.18);color:var(--on-night)}

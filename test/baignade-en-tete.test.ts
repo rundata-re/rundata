@@ -46,11 +46,14 @@ describe("the swimming rule where one asks about the sea", () => {
     expect(seaPage("https://rundata.re", null, AFTER)).not.toContain(esc(REGLE_COURTE).slice(0, 60));
   });
 
-  it("opens /mer, under the temperature, linked to the zones further down", () => {
+  it("opens /mer in one line, after the tide and before the satellite, linked to its block where the detail is", () => {
     const html = seaPage("https://rundata.re", null, NOW);
     const top = html.indexOf("interdits dans la bande des 300");
     expect(top).toBeGreaterThan(html.indexOf("<h1"));
-    expect(top).toBeLessThan(html.indexOf('id="h-plages"'));
+    expect(top).toBeLessThan(html.indexOf('id="h-courbes"') > 0 ? html.indexOf('id="h-courbes"') : html.indexOf('id="h-maree"'));
     expect(html.slice(top, html.indexOf("</p>", top))).toContain('<a href="#h-requin">Toutes les zones et la règle →</a>');
+    // One line at the top, the detail in its block.
+    expect(html.match(/<a href="#h-requin">/g)).toHaveLength(1);
+    expect(html.indexOf('id="h-requin"')).toBeGreaterThan(top);
   });
 });

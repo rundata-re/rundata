@@ -3,8 +3,13 @@ import * as candhis from "../src/providers/candhis.js";
 import * as crwSerie from "../src/providers/crw-serie.js";
 import { chiffresBouee, chiffresBlock, chiffresJours, courbes, degres, heures, historiqueBlock, metres, minuitLocal } from "../src/tools/mer-courbes.js";
 import { chart } from "../src/web/graphe.js";
-import { courbesSection } from "../src/web/mer-courbes.js";
+import { courbesSection as buoysSection, satelliteSection } from "../src/web/mer-courbes.js";
+
+/** Block 1 (the buoys) and the satellite's days of block 4, as /mer shows them. */
+const courbesSection = (c: ReturnType<typeof courbes>, now: Date) => buoysSection(c, now) + satelliteSection(c);
 import { distanceKm } from "../src/geo.js";
+import { seaPage } from "../src/web/mer-page.js";
+import type { SeaData } from "../src/web/data.js";
 
 // getCampTR as it answered for 97410 on 24/11/2026 (dates in UTC, oldest first), here newest first to check the sort,
 // with a temperature the buoy did not measure (999.9999).
@@ -237,12 +242,12 @@ describe("« En courbes » on /mer", () => {
     expect(html.match(/<svg class="ch"/g)).toHaveLength(7);
     expect(html).toContain('class="ln-no"');
     expect(html).toContain('<line class="now"');
-    expect(html).toContain("hauteur prévue, pas une mesure");
+    expect(html).toContain("hauteur prévue par le modèle MFWAM de Météo-France à la place de la bouée de Saint-Pierre (large), pas une mesure");
     for (const p of crwSerie.POINTS) expect(html).toContain(`Au large de ${p.nom}`);
     expect(html).toContain("Une seule bouée, au large de Saint-Pierre");
     expect(html).toContain("Écart à la référence de NOAA");
     expect(html).toContain("qui n&#39;est pas la normale climatique 1991-2020");
-    expect(html).toContain("Houle et température de la mer en courbes");
+    expect(html).toContain("Les bouées en courbes");
     expect(html).toContain("maximum sur 7 jours");
     expect(html).not.toContain("normale de NOAA");
     // Each source with its licence.
@@ -301,11 +306,11 @@ describe("« En courbes » with the two buoys of Météo-France", () => {
     expect(c.bouees.map((b) => b.prevision?.modele)).toEqual(["MFWAM de Météo-France", "MFWAM de Météo-France"]);
     expect(html.match(/<svg class="ch"/g)).toHaveLength(10);
     for (const nom of ["Sainte-Marie", "Saint-Pierre (large)"]) {
-      expect(html).toContain(`Hauteur des vagues à la bouée ${nom} <small>`);
-      expect(html).toContain(`Période des vagues à la bouée ${nom} <small>`);
-      expect(html).toContain(`Température de la mer à la bouée ${nom} <small>`);
+      expect(html).toContain(`Hauteur des vagues à la bouée de ${nom} <small>`);
+      expect(html).toContain(`Période des vagues à la bouée de ${nom} <small>`);
+      expect(html).toContain(`Température de la mer à la bouée de ${nom} <small>`);
     }
-    expect(html).toContain("La houle mesurée aux bouées Sainte-Marie et Saint-Pierre (large) sur 7 jours, puis la prévision");
+    expect(html).toContain("La houle mesurée aux bouées de Sainte-Marie et de Saint-Pierre (large) sur 7 jours, puis la prévision");
   });
 
   it("says which buoys measure, never one alone", () => {
@@ -319,7 +324,7 @@ describe("« En courbes » with the two buoys of Météo-France", () => {
     const one = courbesSection(courbes(s, crw, forecast, NOW), NOW);
     expect(one).toContain("Une seule bouée, au large de Sainte-Marie\u00a0: sa mesure ne vaut pas pour toute l&#39;île.");
     expect(one).not.toContain("Saint-Pierre\u00a0: sa mesure");
-    expect(one).toContain("La houle mesurée à la bouée Sainte-Marie sur 7 jours");
+    expect(one).toContain("La houle mesurée à la bouée de Sainte-Marie sur 7 jours");
   });
 
   it("gives temperature_mer Sainte-Marie's figures near it, and Saint-Pierre's near Saint-Pierre", () => {
@@ -328,6 +333,119 @@ describe("« En courbes » with the two buoys of Météo-France", () => {
     expect(nord.bouees![0].hauteur_significative).toEqual(chiffresBlock(c.bouees[0].chiffres.hauteur!, metres, "m"));
     expect(historiqueBlock(c, { lon: 55.47, lat: -21.34 }, 25, distanceKm)!.bouees!.map((b) => b.bouee)).toEqual(["Saint-Pierre (large)"]);
     expect(historiqueBlock(c)!.bouees!.map((b) => b.bouee)).toEqual(["Sainte-Marie", "Saint-Pierre (large)"]);
+  });
+});
+
+describe("« En courbes » says only what it draws", () => {
+  it("never speaks of a forecast when none is drawn", () => {
+    const html = courbesSection(courbes(serie(), crw, undefined, NOW), NOW);
+    expect(html).toContain('<p class="eyebrow">Mesures</p>');
+    expect(html).not.toMatch(/prévi|prévue/i);
+    expect(html).not.toContain('class="ln-no"');
+    expect(html).toContain("La houle mesurée à la bouée de Saint-Pierre (large) sur 7 jours. ");
+  });
+
+  it("says since when a buoy measures when it covers fewer days than the chart", () => {
+    const s = serie();
+    const since = NOW.getTime() - 3 * DAY;
+    s.bouees["97410"] = { ...s.bouees["97410"], points: s.bouees["97410"].points.filter((p) => p[0] >= since) };
+    const html = courbesSection(courbes(s, crw, forecast, NOW), NOW);
+    expect(html).toContain("La houle mesurée à la bouée de Saint-Pierre (large) depuis le 21/11, puis la prévision des 4 jours à venir en pointillé.");
+    expect(html).toContain("Hauteur des vagues mesurée à la bouée de Saint-Pierre (large) depuis le 21/11");
+    expect(html).toContain("Température de la mer mesurée à la bouée de Saint-Pierre (large) depuis le 21/11");
+    expect(html).toContain("La température de la mer à la bouée de Saint-Pierre (large) depuis le 21/11.");
+    expect(html).not.toContain("Saint-Pierre (large) sur 7 jours");
+    expect(html).toContain('<p class="eyebrow">Mesures et prévision</p>');
+  });
+
+  it("gives each buoy its own span when they differ", () => {
+    const s = serie();
+    const since = NOW.getTime() - 3 * DAY;
+    s.bouees["97409"] = { ...s.bouees["97410"], points: s.bouees["97410"].points.filter((p) => p[0] >= since) };
+    const html = courbesSection(courbes(s, crw, undefined, NOW), NOW);
+    expect(html).toContain("La houle mesurée à la bouée de Sainte-Marie depuis le 21/11 et à la bouée de Saint-Pierre (large) sur 7 jours.");
+  });
+});
+
+describe("/mer as a whole: the buoys first, each subject once, every word from what is drawn", () => {
+  const beach = (nom: string, lon: number, lat: number, valeur: number) => ({ nom, commune: "Saint-Paul", lon, lat, valeur, jour: "2026-11-23", heure: "2026-11-23T22:04:00Z", distance_km: 3, houle: { hauteur_m: 1.2, maintenant: "1,2 m de l'ouest, période 10 s", heure: "9 h", max: "1,6 m", max_jour: "mardi", modele: "MFWAM de Météo-France" } });
+  const s = serie();
+  s.bouees["97409"] = { ...s.bouees["97410"], points: s.bouees["97410"].points.filter((p) => p[0] >= NOW.getTime() - 3 * DAY) };
+  const c = courbes(s, crw, forecast, NOW);
+  // Saint-Pierre (large) measured 20 minutes ago; Sainte-Marie has been silent for 8 hours.
+  const sea = {
+    plages: [beach("Plage de Boucan-Canot", 55.22, -21.03, 26.9), beach("Plage de la Saline les Bains", 55.24, -21.1, 27.4)],
+    bouees: [{ t: NOW.getTime() - 20 * 60_000, nature: "mesure", bouee: "Saint-Pierre (large)", reseau: "Candhis (Cerema)", mesuree_a: "24/11 10:00", hauteur_significative: "1,1\u00a0m", hauteur_selon: "H1/3", vague_max: "1,9\u00a0m", periode: "8 s", periode_selon: "TH1/3", temperature_eau: "26,8\u00a0°C" }],
+    courbes: { ...c, bouees: c.bouees.map((b) => (b.code === "97409" ? { ...b, chiffres: Object.fromEntries(Object.entries(b.chiffres).map(([k, v]) => [k, { ...v!, le: NOW.getTime() - 8 * HOUR }])) } : b)) },
+    maree: [{ maregraphe: "Sainte-Marie", hauteur_m: 0.45, reference: "au-dessus du zéro hydrographique (zéro des cartes marines)", tendance: "montante", heure_mesure: "24/11 10:10", age_texte: "il y a 10 min", derniers_extremes: [] }],
+    sources: [],
+  } as unknown as SeaData;
+  const page = seaPage("https://rundata.re", { value: sea, fetchedAt: NOW, stale: false } as never, NOW);
+  const band = page.slice(page.indexOf("<h1>"), page.indexOf('id="h-courbes"'));
+
+  it("says each buoy at the top, the time first and the buoy named, then the satellite as a pass", () => {
+    expect(page).toContain('<p class="pill">Mesure des bouées · 24/11 à 10:00</p>');
+    expect(band).toMatch(/<b>Mesurée le 24\/11 à 10:00<\/b> à la bouée de Saint-Pierre \(large\)\u00a0: houle de <b>1,1\s?m<\/b>, vagues jusqu'à 1,9\s?m, période 8\s?s, mer à <b>26,8\s?°C<\/b>\./u);
+    // No direction measured: none said.
+    expect(band).not.toMatch(/houle de <b>1,1\u202fm<\/b> de l/);
+    // Silent for more than 6 hours: said, never dropped without a word.
+    expect(band).toContain("Bouée de Sainte-Marie\u00a0: <b>dernière mesure le 24/11 à 02:20</b>, plus rien depuis.");
+    expect(band.indexOf("à la bouée de")).toBeLessThan(band.indexOf("vue par satellite"));
+    expect(band).toContain("un instant et pas la moyenne de la journée");
+  });
+
+  it("says the tide right after the buoys: measured at its gauge, its time first, then the next ones computed, with a link", () => {
+    const line = /<b>Marée mesurée le 24\/11 à 10:10<\/b> au marégraphe Sainte-Marie\u00a0: marée montante, 0,45\s?m\. Prochaines marées, un calcul, pas la prédiction du SHOM\u00a0: (pleine|basse) mer [^,]+, (pleine|basse) mer [^.]+\./u;
+    expect(band).toMatch(line);
+    expect(band).toContain('<a href="#h-maree">La marée en ce moment, et les prochaines →</a>');
+    // The other gauge, without a reading: its computed tides, named.
+    expect(band).toMatch(/Au marégraphe Pointe des Galets \(Le Port\), prochaines marées, un calcul, pas la prédiction du SHOM/);
+    expect(band.indexOf("à la bouée de")).toBeLessThan(band.indexOf("Marée mesurée"));
+    expect(band.indexOf("Marée mesurée")).toBeLessThan(band.indexOf("vue par satellite"));
+  });
+
+  it("puts each subject in one block, in the order of use", () => {
+    // The beaches' map and the question to the assistant: once each, below.
+    expect(page.match(/class="card mapcard"/g)).toHaveLength(1);
+    expect(page.indexOf('class="card mapcard"')).toBeGreaterThan(page.indexOf('id="h-plages"'));
+    // The 300 m rule: one line at the top, after the tide and before the satellite (a safety rule is said first).
+    expect(band.match(/href="#h-requin"/g)).toHaveLength(1);
+    expect(band.indexOf("Marée mesurée")).toBeLessThan(band.indexOf('href="#h-requin"'));
+    expect(band.indexOf('href="#h-requin"')).toBeLessThan(band.indexOf("vue par satellite"));
+    expect(band).not.toContain("Lis https://rundata.re/mer");
+    expect(page).not.toContain("h-houle-mesuree");
+    const order = ["h-courbes", "h-maree", "h-houle", "h-plages", "h-satellite-courbes", "h-requin", "h-lire-mer", "h-ia"].map((id) => page.indexOf(`id="${id}"`));
+    for (const i of order) expect(i).toBeGreaterThan(0);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+  });
+
+  it("names the model of each beach's forecast, and says where the swell is measured", () => {
+    expect(page).toContain("<span>modèle MFWAM de Météo-France</span>");
+    expect(page).toContain("La houle est mesurée aux bouées de Saint-Pierre (large) et de Sainte-Marie, et prévue près des plages");
+    expect(page).not.toContain("La houle, elle, est une prévision");
+    expect(page).not.toContain("Au mieux, la mesure d&#39;hier");
+  });
+
+  it("links temperature_mer's 30 days to an anchor /mer draws: the buoys' block, else the satellite's when no buoy is shown", () => {
+    const anchor = (url: string) => url.slice(url.indexOf("#") + 1);
+    const avec = historiqueBlock(c)!.page;
+    expect(avec).toBe("https://rundata.re/mer#h-courbes");
+    expect(page).toContain(`id="${anchor(avec)}"`);
+    // No buoy read (no key, or KV holds none): the satellite's days alone.
+    const seul = courbes(null, crw, undefined, NOW);
+    const sans = historiqueBlock(seul)!.page;
+    expect(sans).toBe("https://rundata.re/mer#h-satellite-courbes");
+    const pageSans = seaPage("https://rundata.re", { value: { ...sea, bouees: [], courbes: seul }, fetchedAt: NOW, stale: false } as never, NOW);
+    expect(pageSans).toContain(`id="${anchor(sans)}"`);
+    expect(pageSans).not.toContain('id="h-courbes"');
+  });
+
+  it("never announces a span the series does not draw", () => {
+    const blocs = page.slice(page.indexOf('id="h-courbes"'), page.indexOf('id="h-houle"'));
+    expect(blocs).toContain("à la bouée de Sainte-Marie depuis le 21/11");
+    expect(blocs).not.toMatch(/Sainte-Marie sur (7|30) jours/);
+    expect(blocs).toContain("Température de la mer mesurée à la bouée de Sainte-Marie depuis le 21/11");
+    expect(blocs).toContain("Hauteur des vagues mesurée à la bouée de Saint-Pierre (large) sur 7 jours");
   });
 });
 

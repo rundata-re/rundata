@@ -230,7 +230,9 @@ describe("« Y aller » beyond /enfants: stations, bathing, beaches, recycling c
   it("leads to a beach of /mer, never to the centre of a town listed for its coast", () => {
     const beach = (nom: string, lon: number, lat: number) => ({ nom, commune: "Saint-Paul", lon, lat, valeur: 25, jour: "2026-10-28", distance_km: 3 });
     const page = seaPage(O, cached({ plages: [beach("Saint-Denis", 55.45, -20.88), beach("Plage de Boucan-Canot", 55.22, -21.03), beach("Plage de la Saline les Bains", 55.24, -21.1), beach("Plage de l'Ermitage-les-Bains", 55.23, -21.07)], sources: [] } as unknown as SeaData), NOW);
-    const seas = page.slice(page.indexOf('<ul class="seas">'), page.indexOf("</ul>", page.indexOf('<ul class="seas">')));
+    // The beaches' list, in their block (the tides' list comes before it on the page).
+    const at = page.indexOf('<ul class="seas">', page.indexOf('id="h-plages"'));
+    const seas = page.slice(at, page.indexOf("</ul>", at));
     // A name at the head of a tile starts with a capital.
     expect(labels(seas)).toEqual(["Boucan-Canot", "La Saline les Bains", "L&#39;Ermitage-les-Bains"]);
     expect(seas).toContain("<span>L&#39;Ermitage-les-Bains</span>");

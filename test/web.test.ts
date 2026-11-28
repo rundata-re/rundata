@@ -905,7 +905,7 @@ describe("vigilance and sea pages", () => {
 
   it("never says « 2 jours de retard »: a measure appears the next day at the earliest, later on cloudy days", async () => {
     const sea = (await serve(isolate(), "/mer")).text;
-    expect(sea).toContain("<h3>Au mieux, la mesure d'hier</h3>");
+    expect(sea).toContain("<h3>Un passage, pas la journée</h3>");
     expect(sea).toContain("publiée au plus tôt le lendemain");
     const place = (await serve(isolate(), "/meteo/saint-leu")).text;
     expect(place).toContain("du jour indiqué (une mesure paraît au plus tôt le lendemain)");

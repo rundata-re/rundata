@@ -124,21 +124,23 @@ describe("the waves measured by the Candhis buoys", () => {
     expect(ile.houle_mesuree.map((b: { bouee: string }) => b.bouee)).toEqual(["Sainte-Marie"]);
   });
 
-  it("show on /mer while recent at the view, in a section of their own before the forecast, with their source", async () => {
+  it("show at the top of /mer while recent at the view, the time first, the buoy named, with their source, before the satellite", async () => {
     candhis.configure(KEY, async () => KEPT);
     const sea = await buildSea(await withSea(), NOW);
     expect(sea.bouees).toMatchObject([{ bouee: "Saint-Pierre (large)", t: AT, mesuree_a: "22/10 09:20" }]);
     expect(sea.sources.map((s) => s.source)).toContain(candhis.SOURCE.nom);
     const copy = { value: sea, fetchedAt: NOW };
     const page = seaPage("https://rundata.re", copy, NOW);
-    expect(page).toContain(`<p class="eyebrow">Mesure, pas une prévision</p><h2 id="h-houle-mesuree">La houle mesurée au large</h2>`);
-    expect(page).toContain("<li><span>Saint-Pierre (large)</span> <b>1,1 m</b>");
-    expect(page).toContain("mesurée le 22/10 à 09:20, mer à 26,8");
-    // Its producer under the measurement, in the section itself, not only in the page's sources at its end.
-    const section = page.slice(page.indexOf(`id="h-houle-mesuree"`), page.indexOf(`id="h-houle"`));
-    expect(section).toMatch(/<p class="note">Source\s:\sCerema \/ Candhis \(Licence Ouverte Etalab 2\.0\)\.<\/p>/);
-    expect(page.indexOf("h-houle-mesuree")).toBeLessThan(page.indexOf(`id="h-houle"`));
+    const band = page.slice(page.indexOf("<h1>"), page.indexOf('class="wrap intro solo"') > 0 ? page.indexOf("</div>\n</div>", page.indexOf("<h1>")) : undefined);
+    expect(page).toContain('<p class="pill">Mesure des bouées · 22/10 à 09:20</p>');
+    expect(band).toContain("<b>Mesurée le 22/10 à 09:20</b> à la bouée de Saint-Pierre (large)\u00a0: houle de <b>1,1\u202fm</b>");
+    expect(band).toMatch(/Source\u00a0: Cerema \/ Candhis \(Licence Ouverte Etalab 2\.0\), relevée toutes les 30 minutes\./);
+    // The buoy before the satellite, and the old block of the measured swell gone: one subject, one block.
+    if (band.includes("vue par satellite")) expect(band.indexOf("à la bouée de")).toBeLessThan(band.indexOf("vue par satellite"));
+    expect(page).not.toContain("h-houle-mesuree");
     // The same copy viewed 6 hours later: the measurement is no longer the sea of now.
-    expect(seaPage("https://rundata.re", copy, new Date(AT + 6 * 3600_000 + 60_000))).not.toContain("h-houle-mesuree");
+    const later = seaPage("https://rundata.re", copy, new Date(AT + 6 * 3600_000 + 60_000));
+    expect(later).not.toContain("Mesurée le 22/10 à 09:20");
+    expect(later).not.toContain("Mesure des bouées ·");
   });
 });

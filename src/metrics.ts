@@ -84,6 +84,9 @@ const AGENTS: [RegExp, string][] = [
   [/Claude-User/i, "Claude"],
   [/Claude-SearchBot/i, "Anthropic recherche"],
   [/ClaudeBot/i, "Anthropic robot"],
+  // PerplexityBot is Perplexity's crawler, which builds its index: a robot. Perplexity-User fetches a page for a person
+  // (on 28/11/2026, 22 PerplexityBot page views in 7 days were counted « assistant »).
+  [/PerplexityBot/i, "Perplexity robot"],
   [/Perplexity/i, "Perplexity"],
   [/MistralAI/i, "Mistral"],
   [/meta-external|facebookexternalhit/i, "Meta"],

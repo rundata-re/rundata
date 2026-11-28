@@ -221,6 +221,13 @@ describe("Page views and the data point", () => {
     expect(category("/vigilance/")).toBe("vigilance");
   });
 
+  it("counts Perplexity's crawler as a robot, and its fetch for a person as an assistant", () => {
+    const bot = "Mozilla/5.0 (compatible; PerplexityBot/1.0; +https://perplexity.ai/perplexitybot)";
+    const user = "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Perplexity-User/1.0; +https://perplexity.ai/perplexity-user)";
+    expect([visitor(bot), audience(new Headers({ "user-agent": bot }))]).toEqual(["Perplexity robot", "robot"]);
+    expect([visitor(user), audience(new Headers({ "user-agent": user }))]).toEqual(["Perplexity", "assistant"]);
+  });
+
   it("counts Meta checking a shared link as a robot: a browser from Meta's network, not a person", () => {
     // As on 28/10/2026, in the same seconds as facebookexternalhit: Chrome's User-Agent, English, from facebook.com.
     const desktop = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.8976.12 Safari/537.36";

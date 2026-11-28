@@ -872,13 +872,13 @@ export const CINEMAS = [
  * silently, nor said to publish nothing.
  */
 /**
- * A copy still served whose readings failed since, in words: « lue le 26/11 à 22:00, sans succès depuis (dernier essai le
+ * A copy still served whose readings failed since, in words: « lu le 26/11 à 22:00, sans succès depuis (dernier essai le
  * 28/11 à 10:05) ». Not « dernière lecture sans succès (le …) », which says a site silent on its commune's tile
  * (`silentOf`): its events are still there.
  */
 export function echecLu(r: NonNullable<ReturnType<typeof src.echecDepuis>>): string {
   const le = (local: string) => `le ${local.slice(8, 10)}/${local.slice(5, 7)} à ${local.slice(11, 16)}`;
-  return `lue ${le(r.lu)}, sans succès depuis (dernier essai ${le(r.essai)})`;
+  return `lu ${le(r.lu)}, sans succès depuis (dernier essai ${le(r.essai)})`;
 }
 function nonLus(got: Got[], commune: string | undefined): { nom: string; etat: string; propre: boolean }[] {
   const named = new Map<string, { nom: string; etat: string; propre: boolean }>();

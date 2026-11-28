@@ -386,13 +386,13 @@ describe("agenda", () => {
       t += 2 * 3600_000;
       league = () => new Response("", { status: 503 });
       expect((await refreshPlanned(at(), new Date(t))).gardes).toEqual(["lrvb"]);
-      const said = `Ligue réunionnaise de volley-ball : lue ${leLocal(toLocal(NOW.toISOString()))}, sans succès depuis (dernier essai ${leLocal(toLocal(new Date(t).toISOString()))})`;
-      expect(said).toContain("lue le 24/10 à 08:00, sans succès depuis (dernier essai le 24/10 à 10:00)");
+      const said = `Ligue réunionnaise de volley-ball : lu ${leLocal(toLocal(NOW.toISOString()))}, sans succès depuis (dernier essai ${leLocal(toLocal(new Date(t).toISOString()))})`;
+      expect(said).toContain("lu le 24/10 à 08:00, sans succès depuis (dernier essai le 24/10 à 10:00)");
       const b = body(await agenda(at(), undefined, undefined, "King", new Date(t)));
       expect(titles(b)).toContain(KING);
       expect(b.non_lus).toEqual([said]);
       const html = agendaPage("https://rundata.re", { value: await buildAgenda(at(), new Date(t)), fetchedAt: new Date(t), stale: false }, new Date(t));
-      expect(html).toContain("Agendas sans lecture récente : Ligue réunionnaise de volley-ball, lue le 24/10 à 08:00, sans succès depuis (dernier essai le 24/10 à 10:00). Leurs événements peuvent manquer ici.");
+      expect(html).toContain("Agendas sans lecture récente : Ligue réunionnaise de volley-ball, lu le 24/10 à 08:00, sans succès depuis (dernier essai le 24/10 à 10:00). Leurs événements peuvent manquer ici.");
       // Read again: no longer said.
       t += 3600_000;
       league = () => new Response(bytes("tribe_lrvb.json"));

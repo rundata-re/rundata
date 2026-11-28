@@ -39,7 +39,7 @@ describe("an agenda of the scheduled event whose reads fail after its last good 
     const young = bundleOf({ [`agenda:${SJ.id}`]: { value: [], fetchedAt: NOW - 3600_000 }, [echecPlanifie(SJ)]: { value: true, fetchedAt: NOW - 600_000 } });
     expect(nonServie(young, SJ)).toBeUndefined();
     const r = echecDepuis(young, SJ)!;
-    expect(echecLu(r)).toBe("lue le 24/11 à 02:40, sans succès depuis (dernier essai le 24/11 à 03:30)");
+    expect(echecLu(r)).toBe("lu le 24/11 à 02:40, sans succès depuis (dernier essai le 24/11 à 03:30)");
     // Its events are still served: its commune's tile does not say its site silent.
     expect(silentOf(undefined, "Saint-Joseph", "24/11 03:40", new Date(NOW), [`${SJ.nom} : ${echecLu(r)}`])).toEqual([]);
   });

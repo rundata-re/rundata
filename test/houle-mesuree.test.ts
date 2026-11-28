@@ -124,6 +124,19 @@ describe("the waves measured by the Candhis buoys", () => {
     expect(ile.houle_mesuree.map((b: { bouee: string }) => b.bouee)).toEqual(["Sainte-Marie"]);
   });
 
+  it("end the curves on the measurement said at the top, though the series was completed before it", async () => {
+    candhis.configure(KEY, async () => KEPT);
+    // The series as the scheduled event last kept it: up to the measurement before, 30 minutes earlier.
+    const before: candhis.Point = [AT - 30 * 60_000, 1.3, 2.2, 7, 180, 26.7];
+    candhis.configureSerie(async () => ({ essai: AT, bouees: { "97410": { hauteur_selon: "H1/3", periode_selon: "TH1/3", points: [before] } } }));
+    onTestFinished(() => candhis.configureSerie(undefined));
+    const sea = await buildSea(await withSea(), NOW);
+    const b = sea.courbes!.bouees[0];
+    expect(b.chiffres.hauteur).toMatchObject({ derniere: 1.1, le: AT });
+    expect(b.chiffres.temperature).toMatchObject({ derniere: 26.8, le: AT });
+    expect(sea.bouees![0]).toMatchObject({ t: AT });
+  });
+
   it("show at the top of /mer while recent at the view, the time first, the buoy named, with their source, before the satellite", async () => {
     candhis.configure(KEY, async () => KEPT);
     const sea = await buildSea(await withSea(), NOW);

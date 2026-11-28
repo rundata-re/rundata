@@ -82,11 +82,12 @@ export async function boueesLues(cache: Cache, now: Date, near?: { lon: number; 
   }
 }
 
-/** The buoys' series of 30 days the scheduled event keeps; null without the key, or when KV holds none. */
+/** The buoys' series of 30 days the scheduled event keeps, up to their last measurement; null without the key, or when KV holds none. */
 export async function serieLue(cache: Cache): Promise<candhis.Serie | null> {
   if (!candhis.configured()) return null;
   try {
-    return (await candhis.serie(cache)).value;
+    const [s, e] = await Promise.all([candhis.serie(cache), candhis.etat(cache).catch(() => null)]);
+    return candhis.avecDernieres(s.value, e?.value);
   } catch (err) {
     console.error(`source ${candhis.SOURCE.id} : série indisponible:`, why(err));
     return null;

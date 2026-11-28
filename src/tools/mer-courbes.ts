@@ -29,8 +29,8 @@ export interface Chiffres {
   le: number | string;
   /** The last value minus that of 24 hours before (the day before, for a daily series); missing without one. */
   sur_24h?: number;
-  /** The highest of the last 7 days, and when. */
-  max_7j?: { valeur: number; le: number | string };
+  /** The highest of the last 7 days, and when; `depuis` is the first measurement when the series is younger than 7 days. */
+  max_7j?: { valeur: number; le: number | string; depuis?: number };
   /** Over the whole period shown. */
   periode?: { moyenne: number; min: number; max: number; jours: number };
 }
@@ -50,7 +50,7 @@ export function chiffresBouee(points: candhis.Point[], champ: Champ, now: Date, 
     derniere: last[k]!,
     le: last[0],
     ...(before ? { sur_24h: r2(last[k]! - before[k]!) } : {}),
-    ...(top ? { max_7j: { valeur: top[k]!, le: top[0] } } : {}),
+    ...(top ? { max_7j: { valeur: top[k]!, le: top[0], ...(has[0][0] > now.getTime() - 7 * DAY ? { depuis: has[0][0] } : {}) } } : {}),
     ...(periode ? { periode: { moyenne: r2(vs.reduce((a, b) => a + b, 0) / vs.length), min: Math.min(...vs), max: Math.max(...vs), jours: Math.max(1, Math.round((last[0] - has[0][0]) / DAY)) } } : {}),
   };
 }
@@ -111,7 +111,7 @@ export interface CourbeBouee {
   hauteur: (number | null)[];
   hmax: (number | null)[];
   periode: (number | null)[];
-  /** The hours of the temperature's chart: the last 30 days, from local midnight. */
+  /** The hours of the temperature's chart: the last 30 days from local midnight, or from the day of its first measurement when later. */
   debut_t: number;
   temperature: (number | null)[];
   chiffres: Partial<Record<"hauteur" | "hmax" | "periode" | "temperature", Chiffres>>;
@@ -167,6 +167,9 @@ export function courbes(
       temperature: chiffresBouee(pts, "temperature", now, true),
     };
     const prevision = previsionAu(b, forecast, now, debut, n);
+    // The temperature's chart starts on the day of its first measurement: a buoy measuring for 3 days is not drawn on 30.
+    const premierT = pts.find((p) => p[CHAMPS.temperature] != null)?.[0];
+    const debutB = premierT != null ? Math.max(debutT, minuitLocal(premierT)) : debutT;
     return [{
       code: b.code,
       nom: b.nom,
@@ -176,8 +179,8 @@ export function courbes(
       hauteur: heures(pts, "hauteur", debut, n),
       hmax: heures(pts, "hmax", debut, n),
       periode: heures(pts, "periode", debut, n),
-      debut_t: debutT,
-      temperature: heures(pts, "temperature", debutT, nT),
+      debut_t: debutB,
+      temperature: heures(pts, "temperature", debutB, nT - Math.round((debutB - debutT) / HOUR)),
       chiffres: Object.fromEntries(Object.entries(chiffres).filter(([, v]) => v)) as CourbeBouee["chiffres"],
       ...(prevision ? { prevision } : {}),
     }];
@@ -234,6 +237,8 @@ export function ecartDit(v: number, unite: "m" | "°C" | "s"): string {
   return `${x > 0 ? "+" : "\u2212"}${fr(Math.abs(x))}\u00a0${unite}`;
 }
 /** « le 24/11 à 09:50 », « le 22/11 » for a day. */
+/** « 25/11 », the day of an instant in La Réunion. */
+export const jourMois = (t: number) => localTime(new Date(t)).slice(0, 5);
 export const leQuand = (le: number | string) => (typeof le === "number" ? `le ${localTime(new Date(le)).replace(" ", " à ")}` : `le ${le.slice(8, 10)}/${le.slice(5, 7)}`);
 
 /** The figures as an answer says them, with the same words as the page. */
@@ -242,7 +247,8 @@ export function chiffresBlock(c: Chiffres, mot: (v: number) => string, unite: "m
     derniere: mot(c.derniere),
     mesuree: leQuand(c.le).replace(/^le /, ""),
     ...(c.sur_24h != null ? { evolution_24h: ecartDit(c.sur_24h, unite) } : {}),
-    ...(c.max_7j ? { maximum_sur_7_jours: `${mot(c.max_7j.valeur)} ${leQuand(c.max_7j.le)}` } : {}),
+    ...(c.max_7j && c.max_7j.depuis == null ? { maximum_sur_7_jours: `${mot(c.max_7j.valeur)} ${leQuand(c.max_7j.le)}` } : {}),
+    ...(c.max_7j?.depuis != null ? { maximum_depuis_la_premiere_mesure: `${mot(c.max_7j.valeur)} ${leQuand(c.max_7j.le)}, mesures depuis le ${jourMois(c.max_7j.depuis)}` } : {}),
     ...(c.periode ? { sur_la_periode: { jours: c.periode.jours, moyenne: mot(c.periode.moyenne), min: mot(c.periode.min), max: mot(c.periode.max) } } : {}),
   };
 }

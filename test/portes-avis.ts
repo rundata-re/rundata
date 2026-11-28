@@ -3,11 +3,8 @@
  * `configure` (test/contexte.ts `baseAvis`): the database is one, so the last call's doors are every module's.
  */
 import * as avis from "../src/avis.js";
-import * as espace from "../src/clubs/espace.js";
-import * as connexions from "../src/connecteurs/connexions.js";
-import * as propositions from "../src/propositions.js";
-import * as abonnements from "../src/push/abonnements.js";
-import { baseAvis, cles, type PortesTest } from "./contexte.js";
+import type { Envoi } from "../src/contexte.js";
+import { baseAvis, cles, courriel, type PortesTest } from "./contexte.js";
 
 type Run = NonNullable<PortesTest["run"]>;
 type All = NonNullable<PortesTest["all"]>;
@@ -18,24 +15,25 @@ export function donnerAvis(run?: Run, sel?: string) {
   cles({ selAvis: sel });
 }
 
-export function donnerPropositions(run?: Run, envoi?: propositions.Envoi, all?: All) {
+export function donnerPropositions(run?: Run, envoi?: Envoi, all?: All) {
   baseAvis({ run, all });
-  propositions.configure(envoi);
+  courriel(envoi);
 }
 
-export function donnerAbonnements(run?: Run, all?: All, vapid?: Parameters<typeof abonnements.configure>[0]) {
+/** `vapid`: the secret VAPID_PRIVE, a P-256 JWK. */
+export function donnerAbonnements(run?: Run, all?: All, vapid?: string) {
   baseAvis({ run, all });
-  abonnements.configure(vapid);
+  cles({ vapid });
 }
 
-export function donnerConnexions(run?: Run, all?: All, envoi?: propositions.Envoi, batch?: Batch) {
+export function donnerConnexions(run?: Run, all?: All, envoi?: Envoi, batch?: Batch) {
   baseAvis({ run, all, batch });
-  connexions.configure(envoi);
+  courriel(envoi);
 }
 
-export function donnerEspace(run?: Run, all?: All, envoi?: propositions.Envoi) {
+export function donnerEspace(run?: Run, all?: All, envoi?: Envoi) {
   baseAvis({ run, all });
-  espace.configure(envoi);
+  courriel(envoi);
 }
 
 /** sans-reponse.ts's batch takes its statements as { sql, params }, and says nothing back. */

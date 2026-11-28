@@ -10,6 +10,7 @@
  *
  * Without its two secrets (META_VERIFY_TOKEN, META_APP_SECRET), the address does not exist: a 404, as any other.
  */
+import { secret } from "./contexte.js";
 import { bodyText } from "./http.js";
 
 export const PATH = "/meta/webhook";
@@ -18,15 +19,8 @@ const MAX_BODY = 256 * 1024;
 /** A challenge is a number Meta draws; anything else is not given back. */
 const CHALLENGE = /^[\w.-]{1,128}$/;
 
-let verifyToken: string | undefined;
-let appSecret: string | undefined;
-let key: Promise<CryptoKey> | undefined;
-
-export function configure(verify?: string, secret?: string) {
-  verifyToken = verify || undefined;
-  appSecret = secret || undefined;
-  key = undefined;
-}
+// The key of the signatures, imported once for the app's secret it was made from (contexte.ts `secret`).
+let key: { de: string; cle: Promise<CryptoKey> } | undefined;
 
 /** Equal strings, in a time that does not tell how much of them matched. */
 export function memes(a: string, b: string): boolean {
@@ -36,9 +30,9 @@ export function memes(a: string, b: string): boolean {
   return diff === 0;
 }
 
-async function signature(body: string): Promise<string> {
-  key ??= crypto.subtle.importKey("raw", new TextEncoder().encode(appSecret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-  const mac = new Uint8Array(await crypto.subtle.sign("HMAC", await key, new TextEncoder().encode(body)));
+async function signature(body: string, appSecret: string): Promise<string> {
+  if (key?.de !== appSecret) key = { de: appSecret, cle: crypto.subtle.importKey("raw", new TextEncoder().encode(appSecret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]) };
+  const mac = new Uint8Array(await crypto.subtle.sign("HMAC", await key.cle, new TextEncoder().encode(body)));
   return `sha256=${[...mac].map((b) => b.toString(16).padStart(2, "0")).join("")}`;
 }
 
@@ -70,6 +64,8 @@ const TEXTE = { "content-type": "text/plain; charset=utf-8", "cache-control": "n
 
 /** The answer for /meta/webhook, or undefined while its secrets are not set (the site's 404 then). */
 export async function metaWebhook(request: Request): Promise<Response | undefined> {
+  const verifyToken = secret("metaVerification");
+  const appSecret = secret("metaApplication");
   if (!verifyToken || !appSecret) return undefined;
   if (request.method === "GET") {
     const q = new URL(request.url).searchParams;
@@ -82,7 +78,7 @@ export async function metaWebhook(request: Request): Promise<Response | undefine
   if (request.method !== "POST") return new Response("Method not allowed", { status: 405, headers: { ...TEXTE, allow: "GET, POST" } });
   const body = await bodyText(request, MAX_BODY);
   if (body === undefined) return new Response("Payload too large", { status: 413, headers: TEXTE });
-  if (!memes(request.headers.get("x-hub-signature-256") ?? "", await signature(body))) {
+  if (!memes(request.headers.get("x-hub-signature-256") ?? "", await signature(body, appSecret))) {
     console.warn("meta webhook : signature refusée");
     return new Response("Forbidden", { status: 403, headers: TEXTE });
   }

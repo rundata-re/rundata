@@ -32,7 +32,14 @@ export interface Contexte {
   navigateur?: Navigateur;
   /** The site's static files (public/): the Worker's assets, counted here, or the files on disk under Node (src/bin/http.ts). */
   fichiers?: Fichiers;
+  /** How an e-mail goes (binding EMAIL): the links of the proposals, of the associations' connectors and of the clubs' space. */
+  courriel?: Envoi;
+  /** Whether this is the trial Worker (its variable ALERTES_ESSAI « 1 »): it opens the alerts on the phone (web/alertes-drapeau.ts). */
+  essai?: boolean;
 }
+
+/** The send of one e-mail; true once accepted. */
+export type Envoi = (m: { to: string; subject: string; text: string }) => Promise<boolean>;
 
 /** The part of the binding of Cloudflare's Browser Rendering used here. */
 export interface Navigateur {
@@ -132,6 +139,14 @@ export interface Secrets {
   uvMoufia?: string;
   /** OpenAI's plugin portal token (OPENAI_APPS_CHALLENGE, web/site.ts). */
   defiOpenai?: string;
+  /** The token Meta gives back when a webhook subscription is made (META_VERIFY_TOKEN, meta-webhook.ts). */
+  metaVerification?: string;
+  /** The Meta app's secret, the key of the events' signature (META_APP_SECRET, meta-webhook.ts). */
+  metaApplication?: string;
+  /** The key the platform connectors' secrets are encrypted with (CONNECTEURS_CLE, connecteurs/chiffre.ts). */
+  connecteurs?: string;
+  /** The alerts' VAPID key, a P-256 JWK (VAPID_PRIVE, push/abonnements.ts). */
+  vapid?: string;
 }
 
 /** A secret of the context, without its spaces; undefined when it is not given or empty. */

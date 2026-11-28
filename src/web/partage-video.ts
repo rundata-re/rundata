@@ -14,6 +14,7 @@
  * - Any other address under it, an id whose description is gone or unreadable, is the site's 404.
  */
 import { count } from "../budget.js";
+import { contexte, selonLeStockage } from "../contexte.js";
 import { garde } from "../lecture-gardee.js";
 
 export const VIDEO_PATH = "/partage/video/";
@@ -31,17 +32,9 @@ export interface KvVideo {
 /** What the team's script writes under VIDEO_KV_PREFIX + id: the size in bytes and the number of parts. */
 export interface Description { taille: number; parties: number }
 
-let kv: KvVideo | undefined;
-
-// The descriptions read, found or not, a minute; a video's parts are read at each request (a range of its bytes).
-const descriptions = () => garde<unknown>({ ttlMs: 60_000, max: 64, introuvablesParMinute: 20 });
-let DESCRIPTIONS = descriptions();
-
-/** The KV that holds the videos; without it, every address under VIDEO_PATH is not found. */
-export function configurerVideo(store: KvVideo | undefined) {
-  kv = store;
-  DESCRIPTIONS = descriptions();
-}
+// The descriptions read, found or not, a minute, kept for one store from one request to the next (contexte.ts); a
+// video's parts are read at each request (a range of its bytes).
+const DESCRIPTIONS = selonLeStockage(() => garde<unknown>({ ttlMs: 60_000, max: 64, introuvablesParMinute: 20 }));
 
 const HEADERS = {
   "content-type": "video/mp4",
@@ -94,12 +87,14 @@ export async function partageVideo(request: Request): Promise<Response | null> {
   const url = new URL(request.url);
   if (!url.pathname.startsWith(VIDEO_PATH)) return null;
   const id = ID.exec(url.pathname.slice(VIDEO_PATH.length))?.[1];
+  // The store that holds the videos (contexte.ts `brut`, read uncounted: counted here); without it, every address under VIDEO_PATH is not found.
+  const kv: KvVideo | undefined = contexte().brut;
   if (!id || !kv || (request.method !== "GET" && request.method !== "HEAD")) return null;
   let d: unknown;
   try {
-    d = await DESCRIPTIONS.lire(id, () => {
+    d = await DESCRIPTIONS().lire(id, () => {
       count(1, "read");
-      return kv!.get(`${VIDEO_KV_PREFIX}${id}`, "json");
+      return kv.get(`${VIDEO_KV_PREFIX}${id}`, "json");
     });
   } catch {
     return null;

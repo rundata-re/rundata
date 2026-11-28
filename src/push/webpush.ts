@@ -54,7 +54,13 @@ export interface CleVapid {
  * and `y`. Its public key is `x` and `y` after the byte 4 (uncompressed point), so that only one secret is kept.
  */
 export async function cleVapid(jwk: string): Promise<CleVapid> {
-  const j = JSON.parse(jwk) as JsonWebKey;
+  let j: JsonWebKey;
+  try {
+    j = JSON.parse(jwk) as JsonWebKey;
+  } catch {
+    // Never the parser's error: it quotes the beginning of the secret.
+    throw new Error("clé VAPID : JWK P-256 attendue, pas du JSON");
+  }
   if (j.kty !== "EC" || j.crv !== "P-256" || !j.d || !j.x || !j.y) throw new Error("clé VAPID : JWK P-256 attendue");
   const privee = await subtle.importKey("jwk", { kty: "EC", crv: "P-256", d: j.d, x: j.x, y: j.y }, { name: "ECDSA", namedCurve: "P-256" }, false, ["sign"]);
   return { privee, publique: concat(new Uint8Array([4]), unb64u(j.x), unb64u(j.y)) };

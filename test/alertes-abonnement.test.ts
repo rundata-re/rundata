@@ -5,11 +5,11 @@ import { handle } from "../src/app.js";
 import { Cache } from "../src/cache.js";
 import { sorteDe } from "../src/limite.js";
 import * as abonnements from "../src/push/abonnements.js";
-import { b64u, cleVapid } from "../src/push/webpush.js";
+import { b64u } from "../src/push/webpush.js";
 import * as alertes from "../src/web/alertes.js";
-import { ALERTES_EN_LIGNE, configurer, ouvrir } from "../src/web/alertes-drapeau.js";
+import { ALERTES_EN_LIGNE, ouvrir } from "../src/web/alertes-drapeau.js";
 import { donnerAbonnements } from "./portes-avis.js";
-import { cles } from "./contexte.js";
+import { cles, essai } from "./contexte.js";
 
 const subtle = crypto.subtle;
 let db: DatabaseSync;
@@ -27,20 +27,19 @@ beforeEach(async () => {
   db = new DatabaseSync(":memory:");
   db.exec(readFileSync("scripts/alertes.sql", "utf8"));
   const paire = (await subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"])) as CryptoKeyPair;
-  const vapid = cleVapid(JSON.stringify(await subtle.exportKey("jwk", paire.privateKey)));
+  const vapid = JSON.stringify(await subtle.exportKey("jwk", paire.privateKey));
   donnerAbonnements(
     async (sql, ...params) => Number(db.prepare(sql).run(...(params as never[])).changes),
     async <T,>(sql: string, ...params: unknown[]) => db.prepare(sql).all(...(params as never[])) as T[],
     vapid,
   );
-  alertes.configure(vapid);
   ouvrir(true);
 });
 
 afterEach(() => {
   ouvrir(ALERTES_EN_LIGNE);
   donnerAbonnements(undefined, undefined, undefined);
-  alertes.configure(undefined);
+  essai();
   cles({ equipe: undefined });
   vi.unstubAllGlobals();
 });
@@ -48,9 +47,10 @@ afterEach(() => {
 describe("the alerts' addresses", () => {
   it("answer in production now that the flag is open, with or without the trial Worker's variable", async () => {
     expect(ALERTES_EN_LIGNE).toBe(true);
-    configurer(undefined);
+    essai();
+    ouvrir(undefined);
     expect((await send("GET", alertes.CLE_PATH)).status).toBe(200);
-    configurer("1");
+    essai(true);
     expect((await send("GET", alertes.CLE_PATH)).status).toBe(200);
     ouvrir(false);
     expect((await send("GET", alertes.CLE_PATH)).status).toBe(404);

@@ -8,18 +8,31 @@
  * address of their choice. A service that answers 404 or 410 says the subscription is gone: its row is deleted.
  */
 import { count } from "../budget.js";
-import { portesAvis } from "../contexte.js";
-import { chiffrer, enteteVapid, type CleVapid, unb64u } from "./webpush.js";
+import { portesAvis, secret } from "../contexte.js";
+import { enLigne } from "../web/alertes-drapeau.js";
+import { chiffrer, cleVapid, enteteVapid, type CleVapid, unb64u } from "./webpush.js";
 
 export type Run = (sql: string, ...params: unknown[]) => Promise<number>;
 export type All = <T>(sql: string, ...params: unknown[]) => Promise<T[]>;
 
-let cle: Promise<CleVapid> | undefined;
-
-/** The VAPID key's promise (secret VAPID_PRIVE); none in Node. The subscriptions are in the AVIS database (contexte.ts `portesAvis`). */
-export function configure(vapid: Promise<CleVapid> | undefined) {
-  cle = vapid;
+/**
+ * The VAPID key of `jwk`, imported once for that value: only while the alerts' addresses are open (`ouvert`). Closed,
+ * or without the secret, nothing is read and nothing is logged, so that production's logs never carry an error of a
+ * feature that is off. A key that cannot be read is said once for that secret.
+ */
+let lue: { jwk: string; cle: Promise<CleVapid> } | undefined;
+export function cleDuSecret(jwk: string | undefined, ouvert: boolean): Promise<CleVapid> | undefined {
+  if (!ouvert || !jwk) return undefined;
+  if (lue?.jwk !== jwk) {
+    const k = cleVapid(jwk);
+    k.catch((err) => console.error("alertes : clé VAPID illisible", err instanceof Error ? err.message : err));
+    lue = { jwk, cle: k };
+  }
+  return lue.cle;
 }
+
+/** The site's VAPID key (secret VAPID_PRIVE, contexte.ts `secret`); none in Node. The subscriptions are in the AVIS database (contexte.ts `portesAvis`). */
+export const cleDuSite = () => cleDuSecret(secret("vapid"), enLigne());
 
 /** The D1 calls, for the scheduled sends (push/envoi.ts); undefined without the binding. */
 export function d1(): { run: Run; all: All } | undefined {
@@ -128,6 +141,7 @@ export type Issue = "envoye" | "efface" | "echec";
  * batch, push/envoi.ts). `urgent`: « Urgency: high » (red, the cyclone, the volcano). Counted as a subrequest.
  */
 export async function envoyer(a: Abonnement, m: Message, urgent: boolean, jwts = new Map<string, Promise<string>>(), now = Date.now(), parti?: (endpoint: string) => void): Promise<Issue> {
+  const cle = cleDuSite();
   if (!cle) return "echec";
   count(1, true);
   const k = await cle;

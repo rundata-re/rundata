@@ -1,4 +1,4 @@
-import { contexte, installer, retirer, type Bases, type Contexte, type Fichiers, type Navigateur, type Secrets } from "../src/contexte.js";
+import { contexte, installer, retirer, type Bases, type Contexte, type Envoi, type Fichiers, type Navigateur, type Secrets } from "../src/contexte.js";
 import type { KvBinding } from "../src/kv.js";
 import type { Credentials } from "../src/providers/mf-auth.js";
 import type { Store } from "../src/providers/vigilance-carte.js";
@@ -110,6 +110,16 @@ export function brutEnPlace(brut?: KvBinding) {
 /** The site's static files as a test gives them (contexte.ts `fichiers`); none given, taken back. */
 export function fichiers(f?: Fichiers) {
   enPlace({ fichiers: f });
+}
+
+/** How the e-mails go (contexte.ts `courriel`), as a test gives it; none given, taken back. */
+export function courriel(e?: Envoi) {
+  enPlace({ courriel: e });
+}
+
+/** The trial Worker (contexte.ts `essai`, its variable ALERTES_ESSAI); not given, taken back. */
+export function essai(v?: boolean) {
+  enPlace({ essai: v });
 }
 
 /** The feedback database's doors as a test gives them, uncounted here (contexte.ts `portesAvis` counts them). */

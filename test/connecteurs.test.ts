@@ -2,18 +2,22 @@ import { readdirSync, readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as chiffre from "../src/connecteurs/chiffre.js";
+import { cles } from "./contexte.js";
 import { CHEMINS, DETAILS_MAX, evenement, HELLOASSO, heureLocale, lireLe, NOM_MAX, nomBorne, prix } from "../src/connecteurs/helloasso.js";
 import { AccesRefuse, CheminInterdit, garde, reunionnais, type EvenementPublic } from "../src/connecteurs/plateforme.js";
+
+/** The encryption key, as the secret CONNECTEURS_CLE (contexte.ts `secret`). */
+const cle = (k?: string) => cles({ connecteurs: k });
 
 // Thursday 29 October 2026, 10:00 at La Réunion.
 const NOW = new Date("2026-10-29T06:00:00Z");
 const KEY = Buffer.alloc(32, 7).toString("base64");
 
 describe("the encryption of the kept secrets", () => {
-  afterEach(() => chiffre.configure(undefined));
+  afterEach(() => cle(undefined));
 
   it("gives back what it encrypted, for the same row only", async () => {
-    chiffre.configure(KEY);
+    cle(KEY);
     expect(chiffre.enabled()).toBe(true);
     const ad = chiffre.lien("helloasso", "club-de-petanque", "abc");
     const value = await chiffre.chiffrer("le-jeton-de-rafraichissement", ad);
@@ -30,7 +34,7 @@ describe("the encryption of the kept secrets", () => {
     expect(chiffre.enabled()).toBe(false);
     await expect(chiffre.chiffrer("x", chiffre.lien("helloasso", "a", "b"))).rejects.toThrow(/pas de clé/);
     const errors = vi.spyOn(console, "error").mockImplementation(() => {});
-    chiffre.configure(Buffer.alloc(16, 1).toString("base64"));
+    cle(Buffer.alloc(16, 1).toString("base64"));
     expect(chiffre.enabled()).toBe(false);
     // The log names the secret, never its value.
     expect(errors.mock.calls.flat().join(" ")).not.toContain(Buffer.alloc(16, 1).toString("base64"));
@@ -38,10 +42,10 @@ describe("the encryption of the kept secrets", () => {
   });
 
   it("does not open a value of another key", async () => {
-    chiffre.configure(KEY);
+    cle(KEY);
     const ad = chiffre.lien("helloasso", "club", "abc");
     const value = await chiffre.chiffrer("secret", ad);
-    chiffre.configure(Buffer.alloc(32, 9).toString("base64"));
+    cle(Buffer.alloc(32, 9).toString("base64"));
     await expect(chiffre.dechiffrer(value, ad)).rejects.toThrow();
   });
 });

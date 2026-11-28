@@ -10,34 +10,13 @@
  */
 import { equipe } from "../app.js";
 import * as abonnements from "../push/abonnements.js";
-import { b64u, cleVapid, type CleVapid } from "../push/webpush.js";
+import { b64u } from "../push/webpush.js";
 
 export const CLE_PATH = "/alertes/cle";
 export const ABONNEMENT_PATH = "/alertes/abonnement";
 export const ESSAI_PATH = "/alertes/essai";
 
-/**
- * The VAPID key of the secret VAPID_PRIVE, imported once an isolate: only while the alerts' addresses are open (the
- * trial Worker, or production once the flag is on). Closed, or without the secret, nothing is read and nothing is
- * logged, so that production's logs never carry an error of a feature that is off. A key that cannot be read is said
- * once for that secret.
- */
-let lue: { jwk: string; cle: Promise<CleVapid> } | undefined;
-export function cleDuSecret(jwk: string | undefined, ouvert: boolean): Promise<CleVapid> | undefined {
-  if (!ouvert || !jwk) return undefined;
-  if (lue?.jwk !== jwk) {
-    const k = cleVapid(jwk);
-    k.catch((err) => console.error("alertes : clé VAPID illisible", err instanceof Error ? err.message : err));
-    lue = { jwk, cle: k };
-  }
-  return lue.cle;
-}
-
-let cle: Promise<CleVapid> | undefined;
-/** The VAPID key's promise (worker.ts, from the secret VAPID_PRIVE). */
-export function configure(vapid: Promise<CleVapid> | undefined) {
-  cle = vapid;
-}
+export { cleDuSecret } from "../push/abonnements.js";
 
 const JSON_HEADERS = { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", "x-content-type-options": "nosniff" };
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: JSON_HEADERS });
@@ -59,6 +38,7 @@ async function corps(request: Request): Promise<unknown> {
 export async function route(request: Request, path: string): Promise<Response | undefined> {
   if (path === CLE_PATH) {
     if (request.method !== "GET" && request.method !== "HEAD") return json({ erreur: "méthode" }, 405);
+    const cle = abonnements.cleDuSite();
     if (!cle) return json({ erreur: "indisponible" }, 503);
     return json({ cle: b64u((await cle).publique) });
   }

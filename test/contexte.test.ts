@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
-import { counted } from "../src/budget.js";
+import { counted, OutOfBudget } from "../src/budget.js";
 import { Cache, MemoryStore } from "../src/cache.js";
-import { installer } from "../src/contexte.js";
+import { installer, portesAvis } from "../src/contexte.js";
 import * as airMesures from "../src/providers/air-mesures.js";
 import * as carburants from "../src/providers/carburants.js";
 import * as cpf from "../src/providers/cpf.js";
@@ -23,7 +23,14 @@ import * as transit from "../src/providers/transit.js";
 import * as climat from "../src/providers/climat.js";
 import * as merHistorique from "../src/providers/mer-historique.js";
 import * as rna from "../src/vie/associations.js";
-import { bases, dansLeWorker, horsWorker } from "./contexte.js";
+import * as avis from "../src/avis.js";
+import * as espace from "../src/clubs/espace.js";
+import * as chiffre from "../src/connecteurs/chiffre.js";
+import * as connexions from "../src/connecteurs/connexions.js";
+import * as propositions from "../src/propositions.js";
+import * as abonnements from "../src/push/abonnements.js";
+import * as sansReponse from "../src/sans-reponse.js";
+import { baseAvis, bases, dansLeWorker, horsWorker } from "./contexte.js";
 
 // The Worker builds its modules' context in its own modules, dropped after (test/modules-neufs.ts).
 await vi.hoisted(async () => (await import("./modules-neufs.js")).modulesNeufs());
@@ -102,6 +109,81 @@ describe("the modules' context (src/contexte.ts)", () => {
     expect([transit.enabled(), climat.enabled(), climat.hourlyEnabled(), merHistorique.enabled(), rna.lisible()]).toEqual([true, true, false, true, true]);
     horsWorker();
     expect(transit.enabled()).toBe(false);
+  });
+
+  it("gives the feedback database's writes, the same statements on the same binding, and nothing to write in the others", async () => {
+    const env = (e: Record<string, unknown>) => worker.fetch(new Request("https://rundata.re/robots.txt"), e as never, { waitUntil: () => {} });
+    const appels: string[] = [];
+    const d1 = (nom: string) => ({
+      prepare: (sql: string) => ({
+        bind: (...v: unknown[]) => ({
+          all: async () => (appels.push(`${nom} all ${sql} ${JSON.stringify(v)}`), { results: [] }),
+          run: async () => (appels.push(`${nom} run ${sql} ${JSON.stringify(v)}`), { meta: { changes: 2 } }),
+          sql,
+          v,
+        }),
+      }),
+      batch: async (st: { sql: string; v: unknown[] }[]) => (appels.push(`${nom} batch ${JSON.stringify(st.map((x) => [x.sql, ...x.v]))}`), st.map(() => ({ meta: { changes: 1 } }))),
+    });
+    await env({ TRANSIT: d1("transit"), CLIMAT: d1("climat"), CLIMAT_H: d1("horaire"), AVIS: d1("avis") });
+    expect(Object.keys(contexte().bases!).sort()).toEqual(["avis", "avisEcriture", "climat", "climatHoraire", "transit"]);
+    const e = contexte().bases!.avisEcriture!;
+    expect(await e.run("UPDATE t SET a = ?", 1)).toBe(2);
+    expect(await e.batch([["DELETE FROM t WHERE a = ?", 1], ["DELETE FROM u"]])).toEqual([1, 1]);
+    expect(appels).toEqual(['avis run UPDATE t SET a = ? [1]', 'avis batch [["DELETE FROM t WHERE a = ?",1],["DELETE FROM u"]]']);
+    expect([avis.enabled(), propositions.enabled(), propositions.lisible(), !!abonnements.d1(), !!connexions.portes(), espace.enabled()]).toEqual([true, true, true, true, true, true]);
+    // Without the binding, none of them writes nor reads, and no other database is given to write.
+    await env({ TRANSIT: d1("transit"), CLIMAT: d1("climat"), CLIMAT_H: d1("horaire") });
+    expect(Object.keys(contexte().bases!).sort()).toEqual(["climat", "climatHoraire", "transit"]);
+    expect([avis.enabled(), propositions.enabled(), propositions.lisible(), !!abonnements.d1(), !!connexions.portes(), espace.enabled()]).toEqual([false, false, false, false, false, false]);
+    expect(portesAvis()).toEqual({ run: undefined, all: undefined, batch: undefined });
+    horsWorker();
+  });
+
+  it("counts each call to the feedback database when it is made: a write in the room kept for writes, a read in the common one", async () => {
+    horsWorker();
+    const faits: string[] = [];
+    baseAvis({ run: async (sql) => (faits.push(sql), 1), all: async <T>(sql: string) => (faits.push(sql), [] as T[]), batch: async (st) => (faits.push(st.map(([q]) => q).join(";")), st.map(() => 1)) });
+    const { run, all, batch } = portesAvis();
+    const { used } = await counted(10, async () => {
+      await run!("W1");
+      await all!("R1");
+      await batch!([["B1"], ["B2"]]);
+    });
+    expect(used).toBe(3);
+    // A tenth of the budget is kept for writes (budget.ts): the reads stop at 9 of 10, the writes go on.
+    const fin = await counted(10, async () => {
+      for (let i = 0; i < 9; i++) await all!("R");
+      const lu = await all!("R10").then(() => "lu", (err) => (err instanceof OutOfBudget ? "refusé" : "autre"));
+      await run!("W10");
+      return lu;
+    });
+    expect(fin.value).toBe("refusé");
+    expect(fin.used).toBe(10);
+    expect(faits.slice(0, 3)).toEqual(["W1", "R1", "B1;B2"]);
+    expect(faits).not.toContain("R10");
+    // The sites that do not answer count their own calls, through the same database: once, not twice.
+    const sr = await counted(10, () => sansReponse.dernierPassage());
+    expect(sr.used).toBe(1);
+    horsWorker();
+  });
+
+  it("asks each door it needs: the writes alone make no link nor space, and a secret unknown in one database is asked again in the next", async () => {
+    horsWorker();
+    chiffre.configure(Buffer.alloc(32, 7).toString("base64"));
+    connexions.configure(async () => true);
+    baseAvis({ run: async () => 1, all: async <T>() => [] as T[] });
+    expect([connexions.enabled(), espace.enabled(), !!abonnements.d1()]).toEqual([true, true, true]);
+    baseAvis({ run: async () => 1 });
+    expect([connexions.enabled(), !!connexions.portes(), espace.enabled(), !!abonnements.d1(), propositions.enabled(), propositions.lisible()]).toEqual([false, false, false, false, true, false]);
+    const jeton = "a".repeat(22);
+    baseAvis({ all: async <T>() => [] as T[] });
+    expect(await propositions.parJeton(jeton)).toBeUndefined();
+    baseAvis({ all: async <T>() => [{ jeton: "x" }] as T[] });
+    expect(await propositions.parJeton(jeton)).toEqual({ jeton: "x" });
+    connexions.configure(undefined);
+    chiffre.configure(undefined);
+    horsWorker();
   });
 
   it("gives a test's databases in place, without putting the other modules in the Worker (test/contexte.ts)", async () => {

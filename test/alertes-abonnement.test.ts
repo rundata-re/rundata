@@ -8,6 +8,7 @@ import * as abonnements from "../src/push/abonnements.js";
 import { b64u, cleVapid } from "../src/push/webpush.js";
 import * as alertes from "../src/web/alertes.js";
 import { ALERTES_EN_LIGNE, configurer, ouvrir } from "../src/web/alertes-drapeau.js";
+import { donnerAbonnements } from "./portes-avis.js";
 
 const subtle = crypto.subtle;
 let db: DatabaseSync;
@@ -26,7 +27,7 @@ beforeEach(async () => {
   db.exec(readFileSync("scripts/alertes.sql", "utf8"));
   const paire = (await subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"])) as CryptoKeyPair;
   const vapid = cleVapid(JSON.stringify(await subtle.exportKey("jwk", paire.privateKey)));
-  abonnements.configure(
+  donnerAbonnements(
     async (sql, ...params) => Number(db.prepare(sql).run(...(params as never[])).changes),
     async <T,>(sql: string, ...params: unknown[]) => db.prepare(sql).all(...(params as never[])) as T[],
     vapid,
@@ -37,7 +38,7 @@ beforeEach(async () => {
 
 afterEach(() => {
   ouvrir(ALERTES_EN_LIGNE);
-  abonnements.configure(undefined, undefined, undefined);
+  donnerAbonnements(undefined, undefined, undefined);
   alertes.configure(undefined);
   configurerEquipe(undefined);
   vi.unstubAllGlobals();

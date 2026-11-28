@@ -12,6 +12,7 @@ import * as irve from "../src/providers/irve.js";
 import { meteoActuelle } from "../src/tools/meteo.js";
 import { SATELLITES, temperatureMer } from "../src/tools/mer.js";
 import { insecables } from "../src/typographie.js";
+import { donnerAvis } from "./portes-avis.js";
 
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url), "utf8");
 const NOW = new Date("2026-10-18T19:20:00Z");
@@ -153,12 +154,12 @@ describe("donner_avis", () => {
   let rows: unknown[][];
   beforeEach(() => {
     rows = [];
-    avis.configure(async (_sql, ...params) => {
+    donnerAvis(async (_sql, ...params) => {
       rows.push(params);
       return rows.length <= 2 ? 1 : 0; // the third is over the hourly cap
     });
   });
-  afterEach(() => avis.configure(undefined));
+  afterEach(() => donnerAvis(undefined));
 
   it("keeps the feedback with the assistant's name, without phone numbers or e-mail addresses", async () => {
     const r = await call(
@@ -227,7 +228,7 @@ describe("donner_avis", () => {
   });
 
   it("says where to write when the server keeps no feedback", async () => {
-    avis.configure(undefined);
+    donnerAvis(undefined);
     const r = await call("donner_avis", { type: "bravo", message: "Merci pour le site" });
     expect(r.isError).toBe(true);
     expect(r.text).toMatch(/https:\/\/rundata\.re/);
@@ -238,10 +239,10 @@ describe("the site's feedback form", () => {
   let rows: unknown[][];
   beforeEach(() => {
     rows = [];
-    avis.configure(async (_sql, ...params) => (rows.push(params), 1));
+    donnerAvis(async (_sql, ...params) => (rows.push(params), 1));
   });
   afterEach(() => {
-    avis.configure(undefined);
+    donnerAvis(undefined);
     vi.unstubAllGlobals();
   });
 
@@ -302,7 +303,7 @@ describe("the site's feedback form", () => {
   });
 
   it("gives the form back with what was typed, on a page of its own, past the hour's cap", async () => {
-    avis.configure(async () => 0);
+    donnerAvis(async () => 0);
     const r = await post({ message: "Il manque <la station> du Maïdo.", type: "manque", page: "/meteo/maido" });
     expect(r.status).toBe(429);
     expect(r.headers.get("cache-control")).toBe("no-store");
@@ -317,7 +318,7 @@ describe("the site's feedback form", () => {
     // One feedback form on the page: the one given back.
     expect(html.match(/action="\/avis"/g)).toHaveLength(1);
     // The storage down: the same, with the error's words.
-    avis.configure(undefined);
+    donnerAvis(undefined);
     const down = (await (await post({ message: "Une idée", page: "/" })).text()).replaceAll("&#39;", "'");
     expect(down).toContain(`L'avis n'a pas pu être enregistré (vide ou trop long\u00a0?). Votre saisie est gardée ci-dessous. Réessayez, ou écrivez à <span class="adrweb">contact@<wbr class="adr">rundata.<wbr class="adr">re</span>.`);
   });

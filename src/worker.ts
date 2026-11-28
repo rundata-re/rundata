@@ -7,7 +7,7 @@
  * live in KV instead: the event runs in some data center, the questions in all the others.
  */
 import { configurerEquipe, failed, handle } from "./app.js";
-import { contexte, installer, stockageKv, type Lecture } from "./contexte.js";
+import { contexte, installer, stockageKv, type Ecriture, type Lecture } from "./contexte.js";
 import { lenteSaid, withAttentes } from "./attentes.js";
 import { minuit, minuitDu, minuitSaid, MINUIT_BUDGET } from "./web/minuit.js";
 import { BUILD_BUDGET, PAGE_BUDGET, SCHEDULED_BUDGET, copiesSaid, copyRead, count, counted, later, readsSaid, reponseSaid, scheduled, spent } from "./budget.js";
@@ -164,6 +164,14 @@ function lectureD1(d1: D1Database): Lecture {
   return { all: async <T>(sql: string, ...params: unknown[]) => (await d1.prepare(sql).bind(...params).all<T>()).results };
 }
 
+/** A D1 binding's writes (contexte.ts `Ecriture`), for the modules that write there; counted by `portesAvis` or by the module. */
+function ecritureD1(d1: D1Database): Ecriture {
+  return {
+    run: async (sql: string, ...params: unknown[]) => (await d1.prepare(sql).bind(...params).run()).meta.changes,
+    batch: async (statements) => (await d1.batch(statements.map(([sql, ...params]) => d1.prepare(sql).bind(...params)))).map((r) => r.meta.changes),
+  };
+}
+
 /** The part of a D1 binding used here. */
 interface D1Statement {
   all<T>(): Promise<{ results: T[] }>;
@@ -242,12 +250,15 @@ function setup(env: Env): Cache {
       // scripts/build-climat.py and scripts/build-climat-h.py, the current year and month by .github/workflows/climat.yml;
       // in the first, the sea's history: the Candhis buoys since 1996 and the satellite since 2003 (scripts/mer.sql, the
       // current year by .github/workflows/mer.yml), an empty archive until its tables are imported; the declared
-      // associations (RNA) in the feedback's database (scripts/associations.sql, .github/workflows/associations.yml).
+      // associations (RNA) in the feedback's database (scripts/associations.sql, .github/workflows/associations.yml),
+      // where the feedback, the clubs' proposals and space, the alerts' subscriptions, the associations' links and the
+      // sites that do not answer are written (scripts/avis.sql, propositions.sql, clubs.sql, alertes.sql, connecteurs.sql,
+      // sans-reponse.sql).
       bases: {
         ...(env.TRANSIT && { transit: lectureD1(env.TRANSIT) }),
         ...(env.CLIMAT && { climat: lectureD1(env.CLIMAT) }),
         ...(env.CLIMAT_H && { climatHoraire: lectureD1(env.CLIMAT_H) }),
-        ...(env.AVIS && { avis: lectureD1(env.AVIS) }),
+        ...(env.AVIS && { avis: lectureD1(env.AVIS), avisEcriture: ecritureD1(env.AVIS) }),
       },
     });
     contexteDe = de;
@@ -276,29 +287,18 @@ function setup(env: Env): Cache {
   cmrsCarte.configure(cartes);
   // The path travelled by a system, from the RSMC's bulletins, once Météo-France agrees (providers/cmrs-trace.ts).
   cmrsTrace.configure(cartes);
-  // The feedback of the tool donner_avis and of the site's form: one row each (scripts/avis.sql).
-  const avisDb = env.AVIS;
-  // Counted as every D1 call: an invocation's calls to the bound services are limited together (budget.ts).
-  const avisRun = avisDb && (async (sql: string, ...params: unknown[]) => (count(1, true), (await avisDb.prepare(sql).bind(...params).run()).meta.changes));
-  avis.configure(avisRun, env.AVIS_SEL);
-  // The links and events the clubs send, in the same database (scripts/propositions.sql); a proposal's link is e-mailed
-  // through Cloudflare, and without the binding a proposal is refused rather than kept unconfirmable.
-  propositions.configure(
-    avisRun,
-    env.EMAIL && propositions.envoiCloudflare(env.EMAIL),
-    avisDb && (async <T>(sql: string, ...params: unknown[]) => (count(), (await avisDb.prepare(sql).bind(...params).all<T>()).results)),
-  );
+  // The feedback of the tool donner_avis and of the site's form: one row each, in the feedback's database (contexte.ts).
+  avis.configure(env.AVIS_SEL);
+  // The links and events the clubs send, in the same database: a proposal's link is e-mailed through Cloudflare, and
+  // without the binding a proposal is refused rather than kept unconfirmable.
+  propositions.configure(env.EMAIL && propositions.envoiCloudflare(env.EMAIL));
   formulaires.configure(env.TURNSTILE_SECRET);
   configurerEquipe(env.EQUIPE_JETON);
   // The alerts on the phone (web/alertes.ts): open on the trial Worker only until the flag; the subscriptions in the
-  // same database (scripts/alertes.sql), the VAPID key read once an isolate.
+  // same database, the VAPID key read once an isolate.
   configurerAlertes(env.ALERTES_ESSAI);
   const vapid = alertesPush.cleDuSecret(env.VAPID_PRIVE, alertesEnLigne());
-  abonnements.configure(
-    avisRun,
-    avisDb && (async <T>(sql: string, ...params: unknown[]) => (count(), (await avisDb.prepare(sql).bind(...params).all<T>()).results)),
-    vapid,
-  );
+  abonnements.configure(vapid);
   alertesPush.configure(vapid);
   // Its data in KV, written once by the team: the page's secret link reads it (web/uv-moufia.ts).
   configurerUv(env.UV_MOUFIA_JETON, env.STORE);
@@ -306,29 +306,14 @@ function setup(env: Env): Cache {
   configurerVideo(env.STORE);
   configurerDefiOpenai(env.OPENAI_APPS_CHALLENGE);
   metaWebhookSecrets(env.META_VERIFY_TOKEN, env.META_APP_SECRET);
-  // The associations' links to their platform, in the same database (scripts/connecteurs.sql): the platform's secret
-  // encrypted with CONNECTEURS_CLE, the link e-mailed like a proposal's. Without the key, nothing is linked.
+  // The associations' links to their platform, in the same database: the platform's secret encrypted with
+  // CONNECTEURS_CLE, the link e-mailed like a proposal's. Without the key, nothing is linked.
   chiffre.configure(env.CONNECTEURS_CLE);
-  connexions.configure(
-    avisRun,
-    avisDb && (async <T>(sql: string, ...params: unknown[]) => (count(), (await avisDb.prepare(sql).bind(...params).all<T>()).results)),
-    env.EMAIL && propositions.envoiCloudflare(env.EMAIL),
-    avisDb && (async (statements) => (count(1, true), (await avisDb.batch(statements.map(([sql, ...params]) => avisDb.prepare(sql).bind(...params)))).map((r) => r.meta.changes))),
-  );
-  // The clubs' own space, in the same database (scripts/clubs.sql): its link e-mailed like a proposal's, to the club's
-  // official address only.
-  espaceClubs.configure(
-    avisRun,
-    avisDb && (async <T>(sql: string, ...params: unknown[]) => (count(), (await avisDb.prepare(sql).bind(...params).all<T>()).results)),
-    env.EMAIL && propositions.envoiCloudflare(env.EMAIL),
-  );
-  // The public sites that do not answer, in the same database (scripts/sans-reponse.sql): a failed read is written
-  // after the response, and only when it changes the host's state (sans-reponse.ts counts its own calls).
-  sansReponse.configure(
-    avisDb && (async (sql: string, ...params: unknown[]) => (await avisDb.prepare(sql).bind(...params).run()).meta.changes),
-    avisDb && (async <T>(sql: string, ...params: unknown[]) => (await avisDb.prepare(sql).bind(...params).all<T>()).results),
-    avisDb && (async (statements) => void (await avisDb.batch(statements.map((x) => avisDb.prepare(x.sql).bind(...x.params))))),
-  );
+  connexions.configure(env.EMAIL && propositions.envoiCloudflare(env.EMAIL));
+  // The clubs' own space, in the same database: its link e-mailed like a proposal's, to the club's official address only.
+  espaceClubs.configure(env.EMAIL && propositions.envoiCloudflare(env.EMAIL));
+  // The public sites that do not answer, in the same database: a failed read is written after the response, and only
+  // when it changes the host's state (sans-reponse.ts counts its own calls).
   sansReponse.inscrire(toutesLesSources(), themesDesSources(), HOTES_MEDIAS, HOTES_EAU, HOTES_COURANT, HOTES_AGENDAS);
   whenFailed((source, url, err) => {
     const constat = sansReponse.constatDe(err);

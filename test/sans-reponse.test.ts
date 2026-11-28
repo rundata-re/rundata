@@ -7,6 +7,7 @@ import * as sr from "../src/sans-reponse.js";
 import { matches, sitesSansReponse } from "../src/tools/sans-reponse.js";
 import { sansReponsePage } from "../src/web/sans-reponse.js";
 import { typo } from "../src/web/typo.js";
+import { donnerSansReponse } from "./portes-avis.js";
 
 const SQL = readFileSync(new URL("../scripts/sans-reponse.sql", import.meta.url), "utf8");
 // 26/10/2026 06:01 in La Réunion: the morning's recheck.
@@ -20,7 +21,7 @@ function database(withTable = true) {
   // A database of its own: the states and the reads an earlier test left in the module's memory are not its.
   sr.oublierIsolat();
   const writes: string[] = [];
-  sr.configure(
+  donnerSansReponse(
     async (sql, ...params) => (writes.push(sql), Number(db.prepare(sql).run(...(params as never[])).changes)),
     async <R>(sql: string, ...params: unknown[]) => db.prepare(sql).all(...(params as never[])) as R[],
     async (statements) => {
@@ -48,7 +49,7 @@ const timeout = () => {
   throw new DOMException("The operation was aborted due to timeout", "TimeoutError");
 };
 
-afterEach(() => sr.configure());
+afterEach(() => donnerSansReponse());
 
 describe("what a failed read says", () => {
   it("is the site's silence only for a server error, a timeout, a refused connection or an unknown address", () => {
@@ -129,7 +130,7 @@ describe("a failed read", () => {
     await expect(sr.noter("x", "https://exemple.re/", "delai", MORNING)).resolves.toBeUndefined();
     expect(await sr.lignes()).toEqual([]);
     expect(await sr.reverifier(MORNING, answers({}))).toBeNull();
-    sr.configure();
+    donnerSansReponse();
     await expect(sr.noter("x", "https://exemple.re/", "delai", MORNING)).resolves.toBeUndefined();
   });
 });
@@ -486,7 +487,7 @@ describe("the list's copy around the recheck, and a copy not read again (22/11/2
   });
 
   it("is kept by the browsers no longer than its copy is good, and a minute at most for its banner of the vigilance", async () => {
-    sr.configure(undefined, async () => [] as never[]);
+    donnerSansReponse(undefined, async () => [] as never[]);
     const ask = async (iso: string) => {
       vi.useFakeTimers({ toFake: ["Date"] });
       vi.setSystemTime(new Date(iso));

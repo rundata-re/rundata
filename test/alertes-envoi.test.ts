@@ -5,6 +5,7 @@ import { detecter, type Changement } from "../src/alertes-etat.js";
 import * as abonnements from "../src/push/abonnements.js";
 import { message, passage, PAUSE_KEY } from "../src/push/envoi.js";
 import { b64u, cleVapid } from "../src/push/webpush.js";
+import { donnerAbonnements } from "./portes-avis.js";
 
 // The alerts sent to the phones by the scheduled event once open: once each, by batches from a cursor two events never
 // share, the gone subscriptions deleted, a pause without a deploy, nothing past 6 h.
@@ -34,7 +35,7 @@ beforeEach(async () => {
   db = new DatabaseSync(":memory:");
   db.exec(readFileSync("scripts/alertes.sql", "utf8"));
   const paire = (await subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"])) as CryptoKeyPair;
-  abonnements.configure(
+  donnerAbonnements(
     async (sql, ...params) => Number(db.prepare(sql).run(...(params as never[])).changes),
     async <T,>(sql: string, ...params: unknown[]) => db.prepare(sql).all(...(params as never[])) as T[],
     cleVapid(JSON.stringify(await subtle.exportKey("jwk", paire.privateKey))),
@@ -48,7 +49,7 @@ beforeEach(async () => {
 });
 
 afterEach(() => {
-  abonnements.configure(undefined, undefined, undefined);
+  donnerAbonnements(undefined, undefined, undefined);
   vi.unstubAllGlobals();
 });
 
@@ -124,7 +125,7 @@ describe("the sends of the scheduled event", () => {
   });
 
   it("does nothing without the database", async () => {
-    abonnements.configure(undefined, undefined, undefined);
+    donnerAbonnements(undefined, undefined, undefined);
     expect(await passage([pluie], kv(), new Date(T0))).toBeUndefined();
   });
 });

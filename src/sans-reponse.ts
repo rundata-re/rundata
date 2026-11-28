@@ -23,6 +23,7 @@
 import { de } from "./articles.js";
 import { UA_RUNDATA } from "./http.js";
 import { count } from "./budget.js";
+import { contexte } from "./contexte.js";
 import { ACTUS_MAIRIES, LISIBLES } from "./providers/agenda.js";
 import { AUTORISATIONS, LISIBLE } from "./providers/autorisations.js";
 import type { Cache } from "./cache.js";
@@ -59,9 +60,19 @@ type Run = (sql: string, ...params: unknown[]) => Promise<number>;
 type All = <T>(sql: string, ...params: unknown[]) => Promise<T[]>;
 type Batch = (statements: { sql: string; params: unknown[] }[]) => Promise<void>;
 
-let run: Run | undefined;
-let all: All | undefined;
-let batch: Batch | undefined;
+/**
+ * The database's calls, from the feedback's database (contexte.ts `bases`), or none: nothing is written nor read. Not
+ * counted there: this module counts its own calls.
+ */
+function portes(): { run?: Run; all?: All; batch?: Batch } {
+  const lecture = contexte().bases?.avis;
+  const ecriture = contexte().bases?.avisEcriture;
+  return {
+    run: ecriture && ((sql, ...params) => ecriture.run(sql, ...params)),
+    all: lecture && (<T>(sql: string, ...params: unknown[]) => lecture.all<T>(sql, ...params)),
+    batch: ecriture && (async (statements) => void (await ecriture.batch(statements.map((x): [string, ...unknown[]] => [x.sql, ...x.params])))),
+  };
+}
 const registre = new Map<string, SourceInfo>();
 const themes = new Map<string, string>();
 const hotes = new Map<string, Hote[]>();
@@ -80,13 +91,6 @@ export interface Hote {
   manque: string;
   url?: string;
   source?: string;
-}
-
-/** The database's calls (worker.ts), or none: nothing is written nor read. */
-export function configure(r?: Run, a?: All, b?: Batch) {
-  run = r;
-  all = a;
-  batch = b;
 }
 
 /**
@@ -173,6 +177,7 @@ export function oublierIsolat() {
 }
 
 async function lireEtats(now: number) {
+  const { all } = portes();
   if (etats && now - lusLe < RELIRE_MS) return;
   lecture ??= (async () => {
     try {
@@ -211,6 +216,7 @@ const essais = new Map<string, number>();
  * keeps the recheck's state: only the recheck, asked alone, changes those. Never throws.
  */
 export async function noter(source: string, url: string, constat: string, now = new Date()): Promise<void> {
+  const { run, all } = portes();
   const hote = hoteDe(url);
   if (!run || !all || !hote) return;
   try {
@@ -317,6 +323,7 @@ export async function lignes(): Promise<Ligne[]> {
 
 /** Every row; a missing table throws. */
 async function toutes(): Promise<Ligne[]> {
+  const { all } = portes();
   if (!all) return [];
   count(1, "read");
   return (await all<Row>("SELECT * FROM sans_reponse")).map(ligne);
@@ -324,6 +331,7 @@ async function toutes(): Promise<Ligne[]> {
 
 /** When the last recheck ran (Unix seconds), or undefined. */
 export async function dernierPassage(): Promise<number | undefined> {
+  const { all } = portes();
   if (!all) return undefined;
   try {
     count(1, "read");
@@ -352,6 +360,7 @@ async function seul(l: Ligne, now: Date, fetcher: typeof fetch, attendre: (ms: n
  * Worker's log.
  */
 export async function reverifier(now = new Date(), fetcher: typeof fetch = fetch, attendre = pause): Promise<{ essayes: number; changes: string[] } | null> {
+  const { all, batch } = portes();
   if (!all || !batch) return null;
   const rows = await lignes();
   const t = Math.floor(now.getTime() / 1000);

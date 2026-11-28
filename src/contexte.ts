@@ -45,6 +45,39 @@ export interface Bases {
   climatHoraire?: Lecture;
   /** The feedback, the clubs' proposals and the declared associations (binding AVIS). */
   avis?: Lecture;
+  /**
+   * The same database's writes: only for the modules that write there (the feedback, the proposals, the alerts'
+   * subscriptions, the associations' links, the clubs' space, the sites that do not answer), through `portesAvis` or
+   * counting their own calls. Not counted here.
+   */
+  avisEcriture?: Ecriture;
+}
+
+/** A D1 database's writes: a statement's rows changed, or several statements in one call, in one transaction. */
+export interface Ecriture {
+  run(sql: string, ...params: unknown[]): Promise<number>;
+  batch(statements: [sql: string, ...params: unknown[]][]): Promise<number[]>;
+}
+
+/** The feedback database's doors as the modules that write there use them, each absent without its binding. */
+export interface PortesAvis {
+  run?: (sql: string, ...params: unknown[]) => Promise<number>;
+  all?: <T>(sql: string, ...params: unknown[]) => Promise<T[]>;
+  batch?: (statements: [sql: string, ...params: unknown[]][]) => Promise<number[]>;
+}
+
+/**
+ * The feedback database (AVIS), each call counted when it is made, as every call to a bound service (an invocation's
+ * calls to them are limited together, budget.ts): a write in the room kept for them, a read in the common one.
+ */
+export function portesAvis(): PortesAvis {
+  const lecture = courant.bases?.avis;
+  const ecriture = courant.bases?.avisEcriture;
+  return {
+    run: ecriture && (async (sql, ...params) => (count(1, true), await ecriture.run(sql, ...params))),
+    all: lecture && (async <T>(sql: string, ...params: unknown[]) => (count(), await lecture.all<T>(sql, ...params))),
+    batch: ecriture && (async (statements) => (count(1, true), await ecriture.batch(statements))),
+  };
 }
 
 /** A source's key as the Worker's secret holds it; never written in a log or an answer. */

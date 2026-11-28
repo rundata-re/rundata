@@ -20,13 +20,14 @@
  * Each link carries a secret drawn here, of which the table keeps only the hash. Without the database nothing answers
  * but « indisponible ».
  */
-import { empreinte, reseau, type Run } from "../avis.js";
+import { empreinte, reseau } from "../avis.js";
 
 // The connection's part of an address, kept here too for the club space's callers.
 export { reseau };
 import type { Cache } from "../cache.js";
+import { portesAvis } from "../contexte.js";
 import { normalize } from "../places/resolve.js";
-import { empreinteJeton, jetonNeuf, type All, type Envoi } from "../propositions.js";
+import { empreinteJeton, jetonNeuf, type Envoi } from "../propositions.js";
 import { enLigne } from "../web/club-drapeau.js";
 import * as monclub from "./monclub.js";
 
@@ -49,18 +50,17 @@ export const ANNUAIRE_MIN = 10;
 /** Letters typed before the list proposes anything. */
 export const RECHERCHE_MIN = 3;
 
-let run: Run | undefined;
-let all: All | undefined;
 let envoi: Envoi | undefined;
 
-/** The table's doors, to write and to read (worker.ts, the feedback's database), and how the e-mails go. */
-export function configure(db: Run | undefined, select?: All, send?: Envoi) {
-  run = db;
-  all = select;
+/** How the e-mails go; the tables are in the feedback's database (contexte.ts `portesAvis`). */
+export function configure(send?: Envoi) {
   envoi = send;
 }
 
-export const enabled = () => !!run && !!all;
+export function enabled(): boolean {
+  const { run, all } = portesAvis();
+  return !!run && !!all;
+}
 const seconds = (now: Date) => Math.floor(now.getTime() / 1000);
 
 // ---------------------------------------------------------------- the directory
@@ -97,6 +97,7 @@ ON CONFLICT (source, ref) DO UPDATE SET nom = excluded.nom, commune = excluded.c
  * cannot be read or looks cut: nothing is changed then.
  */
 export async function relireAnnuaire(now = new Date(), lire = monclub.annuaire): Promise<{ lus: number; retires: number } | undefined> {
+  const { run, all } = portesAvis();
   if (!run || !all || !enLigne()) return undefined;
   const t = seconds(now);
   const last = (await all<{ v: number | null }>("SELECT MAX(vu_le) AS v FROM clubs WHERE source = 'monclub'"))[0]?.v;
@@ -113,6 +114,7 @@ export type ClubVu = Pick<Club, "id" | "nom" | "commune" | "activite">;
 
 /** Every club proposed on screen 1, by name. */
 export async function proposes(): Promise<ClubVu[]> {
+  const { all } = portesAvis();
   if (!all) return [];
   return all<ClubVu>(`SELECT id, nom, commune, activite FROM clubs WHERE ${PROPOSES} ORDER BY nom`);
 }
@@ -136,6 +138,7 @@ export function chercher(clubs: readonly ClubVu[], q: string): ClubVu[] {
 
 /** A club proposed on screen 1, by its id; undefined otherwise. */
 export async function club(id: number): Promise<Club | undefined> {
+  const { all } = portesAvis();
   if (!all || !Number.isSafeInteger(id) || id <= 0) return undefined;
   return (await all<Club>(`SELECT ${COLONNES} FROM clubs WHERE id = ? AND ${PROPOSES}`, id))[0];
 }
@@ -152,6 +155,7 @@ export const FEDERATIONS: Record<Source, string | undefined> = { monclub: monclu
  * « absente »: the source gives none, or one that is not the federation's; « indisponible »: the source did not answer.
  */
 export async function adresseOfficielle(c: Club): Promise<Adresse> {
+  const { all } = portesAvis();
   if (c.source === "monclub") {
     try {
       const a = await monclub.adresse(c.fiche ?? "", c.ref);
@@ -219,6 +223,7 @@ export type Demande = { issue: "ok"; masque: string } | { issue: Limite | "absen
  * the source gives no address. Each link asked counts, sent or not. The address is used for this e-mail only.
  */
 export async function demander(c: Club, base: string, ip: string, now = new Date()): Promise<Demande> {
+  const { run, all } = portesAvis();
   if (!run || !all || !envoi) return { issue: "indisponible" };
   const t = seconds(now);
   const jour = t - 86400;
@@ -251,6 +256,7 @@ export async function demander(c: Club, base: string, ip: string, now = new Date
 
 /** The cap a refused link went past, the club's first. */
 async function quelleLimite(c: Club, source: string | null, jour: number): Promise<Limite> {
+  const { all } = portesAvis();
   const n = (await all!<{ club: number; connexion: number }>(
     "SELECT (SELECT COUNT(*) FROM envois WHERE club = ? AND type = 'lien' AND t > ?) AS club, (SELECT COUNT(*) FROM envois WHERE source = ? AND type = 'lien' AND t > ?) AS connexion",
     c.id, jour, source, jour,
@@ -263,6 +269,7 @@ const valide = (s: string) => /^[\w-]{16,64}$/.test(s);
 
 /** The club an e-mailed link opens, and whether it is its first opening; undefined when used, expired or unknown. Changes nothing. */
 export async function lien(secret: string, now = new Date()): Promise<{ club: Club; premiere: boolean } | undefined> {
+  const { all } = portesAvis();
   if (!all || !valide(secret)) return undefined;
   const c = (await all<Club>(`SELECT ${COLONNES.split(", ").map((k) => `c.${k}`).join(", ")} FROM acces a JOIN clubs c ON c.id = a.club WHERE a.jeton = ? AND a.type = 'lien' AND a.t > ? AND c.retire_le IS NULL`, await empreinteJeton(secret), seconds(now) - LIEN_SECONDES))[0];
   return c && { club: c, premiere: !c.accord_le };
@@ -275,6 +282,7 @@ export async function lien(secret: string, now = new Date()): Promise<{ club: Cl
  * others go: a step that fails halfway leaves the club a link that opens, never none.
  */
 export async function ouvrir(secret: string, now = new Date()): Promise<string | undefined> {
+  const { run } = portesAvis();
   const l = await lien(secret, now);
   if (!l || !run) return undefined;
   const t = seconds(now);
@@ -293,6 +301,7 @@ export async function ouvrir(secret: string, now = new Date()): Promise<string |
  * for 12 months, or never was. Its use is dated once a day at most.
  */
 export async function espace(secret: string, now = new Date()): Promise<{ club: Club; nouveau: boolean } | undefined> {
+  const { run, all } = portesAvis();
   if (!all || !run || !valide(secret)) return undefined;
   const t = seconds(now);
   const jeton = await empreinteJeton(secret);
@@ -312,6 +321,7 @@ export async function espace(secret: string, now = new Date()): Promise<{ club: 
  * check). The e-mailed links older than 48 hours go with each new one (scripts/clubs.sql), and here too. The rows changed.
  */
 export async function purger(now = new Date()): Promise<number> {
+  const { run } = portesAvis();
   // Before the flag, maybe no table yet.
   if (!run || !enLigne()) return 0;
   const t = seconds(now);

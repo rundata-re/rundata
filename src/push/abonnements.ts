@@ -8,24 +8,24 @@
  * address of their choice. A service that answers 404 or 410 says the subscription is gone: its row is deleted.
  */
 import { count } from "../budget.js";
+import { portesAvis } from "../contexte.js";
 import { chiffrer, enteteVapid, type CleVapid, unb64u } from "./webpush.js";
 
 export type Run = (sql: string, ...params: unknown[]) => Promise<number>;
 export type All = <T>(sql: string, ...params: unknown[]) => Promise<T[]>;
 
-let run: Run | undefined;
-let all: All | undefined;
 let cle: Promise<CleVapid> | undefined;
 
-/** The D1 calls (worker.ts, the AVIS binding) and the VAPID key's promise (secret VAPID_PRIVE); none in Node. */
-export function configure(r: Run | undefined, a: All | undefined, vapid: Promise<CleVapid> | undefined) {
-  run = r;
-  all = a;
+/** The VAPID key's promise (secret VAPID_PRIVE); none in Node. The subscriptions are in the AVIS database (contexte.ts `portesAvis`). */
+export function configure(vapid: Promise<CleVapid> | undefined) {
   cle = vapid;
 }
 
-/** The D1 calls configured, for the scheduled sends (push/envoi.ts); undefined without the binding. */
-export const d1 = () => (run && all ? { run, all } : undefined);
+/** The D1 calls, for the scheduled sends (push/envoi.ts); undefined without the binding. */
+export function d1(): { run: Run; all: All } | undefined {
+  const { run, all } = portesAvis();
+  return run && all ? { run, all } : undefined;
+}
 
 /** The address the push services may write to about our sends (RFC 8292 § 2.1), public already. */
 export const CONTACT = "mailto:contact@rundata.re";
@@ -81,6 +81,7 @@ export function lire(corps: unknown): Abonnement | "invalide" {
 
 /** Keeps the subscription (its keys replaced when the browser subscribes again). */
 export async function abonner(a: Abonnement): Promise<"ok" | Refus> {
+  const { run, all } = portesAvis();
   if (!run || !all) return "indisponible";
   try {
     const [n] = await all<{ n: number }>("SELECT COUNT(*) AS n FROM abonnements");
@@ -98,6 +99,7 @@ export async function abonner(a: Abonnement): Promise<"ok" | Refus> {
 
 /** Forgets the subscription (« Ne plus recevoir »); an address not kept is no error. */
 export async function desabonner(endpoint: string): Promise<"ok" | "indisponible"> {
+  const { run } = portesAvis();
   if (!run) return "indisponible";
   try {
     await run("DELETE FROM abonnements WHERE endpoint = ?", endpoint);
@@ -155,5 +157,6 @@ export async function envoyer(a: Abonnement, m: Message, urgent: boolean, jwts =
 
 /** Every subscription, for the team's test send (web/alertes.ts); the scheduled sends read them by batches (push/envoi.ts). */
 export async function tous(): Promise<Abonnement[]> {
+  const { all } = portesAvis();
   return all ? all<Abonnement>("SELECT endpoint, p256dh, auth FROM abonnements") : [];
 }

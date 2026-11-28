@@ -7,6 +7,7 @@ import * as propositions from "../src/propositions.js";
 import { FORMS_CSS } from "../src/web/formulaires-style.js";
 import { CSS } from "../src/web/style.js";
 import * as formulaires from "../src/web/propositions.js";
+import { donnerPropositions } from "./portes-avis.js";
 
 // Thursday 29 October 2026, 10:00 at La Réunion.
 const NOW = new Date("2026-10-29T06:00:00Z");
@@ -19,7 +20,7 @@ function plug(send: propositions.Envoi | null = async (m) => (sent.push(m), true
   db = new DatabaseSync(":memory:");
   db.exec(readFileSync(new URL("../scripts/propositions.sql", import.meta.url), "utf8"));
   db.exec(readFileSync(new URL("../scripts/propositions-b.sql", import.meta.url), "utf8"));
-  propositions.configure(
+  donnerPropositions(
     async (sql, ...params) => Number(db.prepare(sql).run(...(params as (string | number | null)[])).changes),
     send ?? undefined,
     async <T>(sql: string, ...params: unknown[]) => db.prepare(sql).all(...(params as (string | number | null)[])) as T[],
@@ -41,7 +42,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   vi.useRealTimers();
-  propositions.configure(undefined);
+  donnerPropositions(undefined);
   formulaires.configure(undefined);
   formulaires.ouvrir(formulaires.ASSOCIATIONS_EN_LIGNE);
 });
@@ -731,7 +732,7 @@ describe("the open feed (web/flux-associations.ts)", () => {
     await published();
     formulaires.ouvrir(true);
     let reads = 0;
-    propositions.configure(
+    donnerPropositions(
       async (sql, ...params) => Number(db.prepare(sql).run(...(params as (string | number | null)[])).changes),
       undefined,
       async <T>(sql: string, ...params: unknown[]) => (reads++, db.prepare(sql).all(...(params as (string | number | null)[])) as T[]),

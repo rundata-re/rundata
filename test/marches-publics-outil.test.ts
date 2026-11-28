@@ -9,6 +9,7 @@ import { MARKET } from "../src/tools/marches.js";
 import { communePage } from "../src/web/commune.js";
 import type { MarchesAnswer } from "../src/web/marches-publics.js";
 import { pageOf } from "../src/web/places.js";
+import { dansLeWorker, horsWorker } from "./contexte.js";
 
 // annuaire_services_publics and the public procurement notices: a commune's count as its page's tile says it, and the
 // link to the list on the commune; « marché » alone stays the markets (23/11/2026).
@@ -19,7 +20,7 @@ const COPIE: MarchesAnswer = { nombre: LISTE.length, avis: LISTE, sources: [], l
 
 /** The notices' stored copy (providers/marches-publics.ts), read as the Worker reads it from KV; `null`: none yet. */
 function withCopy(v: boamp.Copie | null = { lu: NOW.toISOString(), avis: LISTE, ecartes: [] }) {
-  boamp.configure(async () => v);
+  dansLeWorker({ [boamp.KV_KEY]: () => v });
   return new Cache(new MemoryStore(), () => NOW.getTime());
 }
 /** The keys of a JSON object's text at its top level, as written, twice if written twice (JSON.parse keeps the last). */
@@ -41,7 +42,7 @@ function topKeys(t: string): string[] {
 const ask = async (quoi: string, lieu?: string, cache = withCopy()) => JSON.parse((await annuaireTool(cache, quoi, lieu, NOW)).content[0]!.text);
 
 describe("annuaire_services_publics and the public procurement notices", () => {
-  afterEach(() => boamp.configure(undefined));
+  afterEach(() => horsWorker());
 
   it("tells the notices from the markets", () => {
     for (const q of ["marchés publics", "marché public", "appels d'offres", "appel d’offre", "avis BOAMP", "avis de marché", "commande publique"]) expect(PROCUREMENT.test(q), q).toBe(true);

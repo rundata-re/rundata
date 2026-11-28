@@ -7,6 +7,7 @@ import * as boamp from "../src/providers/marches-publics.js";
 import { REGISTRY } from "../src/registre.js";
 import { buildMarches, marchesPage } from "../src/web/marches-publics.js";
 import { doubleIds } from "./cartes.js";
+import { dansLeWorker, horsWorker } from "./contexte.js";
 
 // Ten notices of the BOAMP's list for La Réunion read on 29/10/2026 at 14:51, and their full texts read at 13:49, cut
 // to their places (no name of a person in them).
@@ -20,7 +21,7 @@ const TEXTES_AT = new Date("2026-10-29T10:40:00Z");
 const O = "https://rundata.re";
 
 afterEach(() => {
-  boamp.configure(undefined);
+  horsWorker();
   vi.unstubAllGlobals();
 });
 
@@ -193,7 +194,7 @@ describe("the page /marches-publics", () => {
     api();
     const c = await rempli();
     vi.unstubAllGlobals();
-    boamp.configure(async () => c);
+    dansLeWorker({ [boamp.KV_KEY]: () => c });
     const now = new Date("2026-10-29T11:00:00Z");
     const d = await buildMarches(new Cache(new MemoryStore(), () => now.getTime()), now);
     expect(d.nombre).toBe(7);
@@ -217,7 +218,7 @@ describe("the page /marches-publics", () => {
     let c: boamp.Copie | null = null;
     await boamp.collect(null, async (x) => void (c = x), LISTE_AT);
     vi.unstubAllGlobals();
-    boamp.configure(async () => c);
+    dansLeWorker({ [boamp.KV_KEY]: () => c });
     const now = new Date("2026-10-29T10:37:00Z");
     const d = await buildMarches(new Cache(new MemoryStore(), () => now.getTime()), now);
     expect(d.enLecture).toBe(10);
@@ -239,7 +240,7 @@ describe("the page /marches-publics", () => {
     await boamp.collect(c, async (x) => void (c = x), TEXTES_AT);
     vi.unstubAllGlobals();
     let stored = sorting;
-    boamp.configure(async () => stored);
+    dansLeWorker({ [boamp.KV_KEY]: () => stored });
     let t = new Date("2026-10-29T12:40:14Z");
     const cache = new Cache(new MemoryStore(), () => t.getTime());
     expect((await boamp.avis(cache, t))!.value.avis).toHaveLength(0);
@@ -269,7 +270,7 @@ describe("the page /marches-publics", () => {
     // The store empty: the next read, 35 past.
     const d = await buildMarches(new Cache(new MemoryStore(), () => now.getTime()), now);
     expect(d.prochaine).toBe("2026-10-29T09:35:00.000Z");
-    boamp.configure(async () => null);
+    dansLeWorker({ [boamp.KV_KEY]: () => null });
     const empty = await buildMarches(new Cache(new MemoryStore(), () => now.getTime()), now);
     expect(marchesPage(O, { value: empty, fetchedAt: now, stale: false }, now)).toContain("Les avis ne sont pas encore lus : prochaine lecture prévue à 13:35.");
     expect(marchesPage(O, null, now)).toContain("Les avis se chargent : rechargez la page dans quelques secondes.");

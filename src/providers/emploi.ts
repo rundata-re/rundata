@@ -14,6 +14,7 @@ import type { Cache, Cached } from "../cache.js";
 import { getMatch, getText, httpUrl } from "../http.js";
 import { communeDe } from "../places/codes-postaux.js";
 import type { SourceInfo } from "../types.js";
+import { contexte } from "../contexte.js";
 
 export const SOURCE: SourceInfo = {
   id: "csp_offres",
@@ -347,13 +348,6 @@ export async function collect(before: Copie | null, write: (copie: Copie) => Pro
   return `${said} : écrites`;
 }
 
-let reader: (() => Promise<Copie | null>) | undefined;
-
-/** In the Worker: read the offers from the KV store, where the scheduled event writes them, and the feed never. */
-export function configure(read: (() => Promise<Copie | null>) | undefined) {
-  reader = read;
-}
-
 /**
  * How long a copy read from the store may be served: since the last time the scheduled event may have written it, two
  * minutes after each event (every 5 minutes, an offer's page read each time). A copy read before is asked again, once:
@@ -367,14 +361,15 @@ export function fraicheur(now: Date): number {
 }
 
 /**
- * The stored offers still open, their time the feed's last answer; null where nothing is configured (a local server,
+ * The stored offers still open, their time the feed's last answer; null outside the Worker (a local server,
  * the tests), as the Worker alone has them.
  */
 export async function offres(cache: Cache, now = new Date()): Promise<Cached<Copie> | null> {
-  if (!reader) return null;
-  const read = reader;
+  // In the Worker only, from its store (contexte.ts), the feed never.
+  const { worker, kv } = contexte();
+  if (!worker) return null;
   const c = await cache.getCopy("emploi:offres", fraicheur(now), async () => {
-    const v = await read();
+    const v = kv ? await kv.json<Copie>(KV_KEY) : null;
     if (!v) throw new Error("offres d'emploi absentes du stockage");
     return v;
   }, (v) => v.lu, SOURCE.id);

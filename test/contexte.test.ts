@@ -5,6 +5,10 @@ import { Cache, MemoryStore } from "../src/cache.js";
 import { installer } from "../src/contexte.js";
 import * as airMesures from "../src/providers/air-mesures.js";
 import * as carburants from "../src/providers/carburants.js";
+import * as cpf from "../src/providers/cpf.js";
+import * as emploi from "../src/providers/emploi.js";
+import * as marches from "../src/providers/marches-publics.js";
+import * as sitesHs from "../src/providers/sites-hs.js";
 import { contexte } from "../src/contexte.js";
 import * as irve from "../src/providers/irve.js";
 import worker from "../src/worker.js";
@@ -66,6 +70,12 @@ describe("the modules' context (src/contexte.ts)", () => {
     expect(await contexte().kv!.json("a")).toEqual({ x: 1 });
     expect([await contexte().kv!.json("b"), await contexte().kv!.json("b")]).toEqual([1, 2]);
     expect(await contexte().kv!.json("c")).toBeNull();
+    // A second call adds its keys, as a module configured after another left the other's reader.
+    dansLeWorker({ c: 3 });
+    expect([await contexte().kv!.json("a"), await contexte().kv!.json("c")]).toEqual([{ x: 1 }, 3]);
+    horsWorker();
+    dansLeWorker({ c: 4 });
+    expect(await contexte().kv!.json("a")).toBeNull();
     horsWorker();
   });
 
@@ -94,6 +104,30 @@ describe("the modules' context (src/contexte.ts)", () => {
       lus.length = 0;
       installer({ worker: true });
       await expect(carburants.prix(cache())).rejects.toThrow("prix des carburants absents du stockage");
+      expect(lus).toEqual([]);
+      horsWorker();
+      vi.unstubAllGlobals();
+    });
+
+    it("emploi, CPF, antennes hors service, marchés publics: nothing outside the Worker, no error", async () => {
+      horsWorker();
+      expect(await emploi.offres(cache())).toBeNull();
+      expect(await cpf.formations(cache())).toBeNull();
+      expect(cpf.configured()).toBe(false);
+      expect(await sitesHs.sites(cache())).toBeNull();
+      expect(await marches.avis(cache())).toBeNull();
+    });
+
+    it("emploi, CPF, antennes hors service, marchés publics: in the Worker, the store only", async () => {
+      reseau();
+      lus.length = 0;
+      installer({ worker: true });
+      expect(cpf.configured()).toBe(true);
+      await expect(emploi.offres(cache())).rejects.toThrow("offres d'emploi absentes du stockage");
+      await expect(marches.avis(cache())).rejects.toThrow("avis de marchés absents du stockage");
+      // These two say « not available » rather than fail.
+      expect(await cpf.formations(cache())).toBeNull();
+      expect(await sitesHs.sites(cache())).toBeNull();
       expect(lus).toEqual([]);
       horsWorker();
       vi.unstubAllGlobals();

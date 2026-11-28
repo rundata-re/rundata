@@ -26,10 +26,6 @@ import { HOTES_COURANT } from "./providers/coupures-courant.js";
 import * as raa from "./providers/raa.js";
 import * as meteorOi from "./providers/meteor-oi.js";
 import { autorisee } from "./providers/autorisations.js";
-import * as cpf from "./providers/cpf.js";
-import * as emploi from "./providers/emploi.js";
-import * as sitesHs from "./providers/sites-hs.js";
-import * as marchesPublics from "./providers/marches-publics.js";
 import * as ovpfOcr from "./providers/ovpf-ocr.js";
 import * as meteofrance from "./providers/meteofrance.js";
 import * as candhis from "./providers/candhis.js";
@@ -321,32 +317,6 @@ function setup(env: Env): Cache {
     count();
     return (await kv.get(meteorOi.KV_KEY, "json")) as meteorOi.Copie | null;
   } : undefined);
-  // Read by the scheduled event below (one offer's page every 5 minutes, the feed every hour), and kept in KV
-  // (src/providers/emploi.ts).
-  emploi.configure(async () => {
-    if (!kv) return null;
-    count();
-    return (await kv.get(emploi.KV_KEY, "json")) as emploi.Copie | null;
-  });
-  // Read once a day from the Caisse des Dépôts' catalogue by the scheduled event below, and kept in KV
-  // (src/providers/cpf.ts).
-  cpf.configure(async () => {
-    if (!kv) return null;
-    count();
-    return (await kv.get(cpf.KV_KEY, "json")) as cpf.Copie | null;
-  });
-  // Read once a day from the Arcep's file by the scheduled event below, and kept in KV (src/providers/sites-hs.ts).
-  sitesHs.configure(async () => {
-    if (!kv) return null;
-    count();
-    return (await kv.get(sitesHs.KV_KEY, "json")) as sitesHs.Copie | null;
-  });
-  // Read every hour from the BOAMP by the scheduled event below, and kept in KV (src/providers/marches-publics.ts).
-  marchesPublics.configure(async () => {
-    if (!kv) return null;
-    count();
-    return (await kv.get(marchesPublics.KV_KEY, "json")) as marchesPublics.Copie | null;
-  });
   // Météo-France's official map of the vigilance: its bulletin and its picture kept by the scheduled event.
   const cartes: vigilanceCarte.Store | undefined = kv && {
     json: (key) => kv.get(key, "json"),

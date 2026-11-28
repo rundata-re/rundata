@@ -12,6 +12,7 @@
 import { getText } from "../http.js";
 import type { Cache, Cached } from "../cache.js";
 import { UpstreamError, type SourceInfo } from "../types.js";
+import { contexte } from "../contexte.js";
 
 export const SOURCE: SourceInfo = {
   id: "arcep_sites_indisponibles",
@@ -129,25 +130,19 @@ export async function collect(before: Copie | null, write: (copie: Copie) => Pro
   return `fichier du ${d} : ${features.length} sites en France, ${sites.length} à La Réunion, écrits`;
 }
 
-let reader: (() => Promise<Copie | null>) | undefined;
-
-/** In the Worker: read the sites from the KV store, where the scheduled event writes them, and the file never. */
-export function configure(read: (() => Promise<Copie | null>) | undefined) {
-  reader = read;
-}
-
 const FRESH_SECONDS = 60 * 60;
 
 /**
- * The stored copy, its time the collector's read; null where nothing is configured (a local server, the tests) or
+ * The stored copy, its time the collector's read; null outside the Worker (a local server, the tests) or
  * nothing is stored yet.
  */
 export async function sites(cache: Cache): Promise<Cached<Copie> | null> {
-  if (!reader) return null;
-  const read = reader;
+  // In the Worker only, from its store (contexte.ts), the file never.
+  const { worker, kv } = contexte();
+  if (!worker) return null;
   try {
     const c = await cache.getCopy("antennes:hors-service", FRESH_SECONDS, async () => {
-      const v = await read();
+      const v = kv ? await kv.json<Copie>(KV_KEY) : null;
       if (!v) throw new Error("sites hors service absents du stockage");
       return v;
     }, (v) => v.lu, SOURCE.id);

@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
-import { configure, IDS, parseLive, refresh, refreshDue, STATIONS, timeOf, type Live } from "../src/providers/irve.js";
+import { IDS, KV_KEY as IRVE_KEY, parseLive, refresh, refreshDue, STATIONS, timeOf, type Live } from "../src/providers/irve.js";
 import { bornesRecharge, etatDe, lastChange, pointState, since } from "../src/tools/bornes.js";
 import { dataDate } from "../src/tools/fraicheur.js";
 import { localTime } from "../src/geo.js";
@@ -9,6 +9,7 @@ import { bornesLive, bornesPage } from "../src/web/domains.js";
 import { buildBornes } from "../src/web/data.js";
 import { DESCRIPTION_MAX } from "../src/web/pages.js";
 import { deadAnchors, doubleIds, mapLinks } from "./cartes.js";
+import { dansLeWorker, horsWorker } from "./contexte.js";
 
 // The 407 rows of La Réunion in the national live file of 24/10/2026 at 00:37 UTC, and four rows of mainland France.
 const CSV = readFileSync(new URL("./fixtures/irve_dynamique.csv", import.meta.url), "utf8");
@@ -25,11 +26,11 @@ const LIBRES = POINTS.filter((p) => libre(p.id)).length;
 const ETAT = localTime(new Date(lastChange(LIVE)!)).slice(6);
 
 function cache(live: Live | null) {
-  configure(async () => live);
+  dansLeWorker({ [IRVE_KEY]: () => live });
   return new Cache(new MemoryStore(), () => NOW.getTime());
 }
 
-afterEach(() => (configure(undefined), vi.unstubAllGlobals()));
+afterEach(() => (horsWorker(), vi.unstubAllGlobals()));
 
 describe("bornes de recharge", () => {
   it("says when a point last changed: its hour today, its day this year, its whole date before", () => {

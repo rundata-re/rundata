@@ -11,6 +11,7 @@ import { CAPTEURS_AUCUN, CAPTEURS_AVERTISSEMENT, CAPTEURS_EXPLICATION, capteursA
 import { airPage } from "../src/web/air.js";
 import { esc } from "../src/web/map.js";
 import { SHARED } from "../src/web/partagees.js";
+import { dansLeWorker, horsWorker } from "./contexte.js";
 
 // Invented sensors: their identifiers are made up, their points are the centres of two communes of the gazetteer, and
 // the others are off the island (Stuttgart) or indoors. None is a sensor of La Réunion.
@@ -40,8 +41,8 @@ function cache() {
 }
 
 afterEach(() => {
-  capteurs.configure(undefined);
-  airMesures.configure(undefined);
+  horsWorker();
+  horsWorker();
   vi.unstubAllGlobals();
 });
 
@@ -98,7 +99,11 @@ describe("the sensors of private people (Sensor.Community)", () => {
 
   it("says the failure and since when, on /air and in qualite_air, without logging it at each view", async () => {
     const errors = vi.spyOn(console, "error").mockImplementation(() => {});
-    capteurs.configure(async () => ({ echec: "2026-10-29T04:56:00Z", source: "sensor.community", ecrit: "2026-10-29T04:56:00Z" }));
+    // In the Worker with the sensors' failure only in its store: the stations' measures, absent, are logged as such;
+    // the sensors' failure is not.
+    dansLeWorker({
+      [capteurs.KV_KEY]: { echec: "2026-10-29T04:56:00Z", source: "sensor.community", ecrit: "2026-10-29T04:56:00Z" },
+    });
     const answer = body(await qualiteAir(cache(), undefined, NOW));
     const c = answer.capteurs_amateurs;
     expect(c.echec).toBe("Lecture des capteurs amateurs impossible depuis 08:56.");
@@ -109,7 +114,7 @@ describe("the sensors of private people (Sensor.Community)", () => {
     const page = airPage("https://rundata.re", { value: answer, fetchedAt: NOW, stale: false }, NOW);
     expect(page).toContain(`<p>${esc(c.echec)}</p>`);
     expect(page).not.toContain(esc(CAPTEURS_AUCUN));
-    expect(errors).not.toHaveBeenCalled();
+    expect(errors.mock.calls.flat().map(String).filter((m) => /capteurs/i.test(m))).toEqual([]);
     errors.mockRestore();
   });
 
@@ -127,7 +132,7 @@ describe("the sensors of private people (Sensor.Community)", () => {
   it("gives them apart from the index, by commune, never an identifier nor a place, with the warning", async () => {
     // As the scheduled event stores them.
     const copie = { lu: "2026-10-29T06:10:00Z", capteurs: capteurs.merge([], capteurs.parse(ANSWER), NOW) };
-    capteurs.configure(async () => copie);
+    dansLeWorker({ [capteurs.KV_KEY]: () => copie });
     const r = body(await qualiteAir(cache(), undefined, NOW));
     const c = r.capteurs_amateurs;
     expect(c.avertissement).toBe(CAPTEURS_AVERTISSEMENT);
@@ -156,7 +161,7 @@ describe("the sensors of private people (Sensor.Community)", () => {
   });
 
   it("drops a sensor older than 2 hours, and says none in one sentence", async () => {
-    capteurs.configure(async () => ({ lu: "2026-10-29T06:10:00Z", capteurs: [{ cle: "900001", commune: "Saint-Denis", pm10: 20, mesure_a: "2026-10-29T04:20:00Z" }] }));
+    dansLeWorker({ [capteurs.KV_KEY]: () => ({ lu: "2026-10-29T06:10:00Z", capteurs: [{ cle: "900001", commune: "Saint-Denis", pm10: 20, mesure_a: "2026-10-29T04:20:00Z" }] }) });
     const c = body(await qualiteAir(cache(), undefined, NOW)).capteurs_amateurs;
     expect(c).not.toHaveProperty("valeurs");
     expect(c.aucun).toBe(CAPTEURS_AUCUN);
@@ -185,14 +190,14 @@ describe("the sensors of private people (Sensor.Community)", () => {
 
   it("never says none on a copy not written lately: its values as last read and when, or no recent reading", async () => {
     // Last written at 06:10 in La Réunion, more than an hour and a half before 10:25: the network not read since.
-    capteurs.configure(async () => ({ lu: "2026-10-29T02:10:00Z", capteurs: [{ cle: "900001", commune: "Saint-Denis", pm10: 20, mesure_a: "2026-10-29T02:05:00Z" }] }));
+    dansLeWorker({ [capteurs.KV_KEY]: () => ({ lu: "2026-10-29T02:10:00Z", capteurs: [{ cle: "900001", commune: "Saint-Denis", pm10: 20, mesure_a: "2026-10-29T02:05:00Z" }] }) });
     const c = body(await qualiteAir(cache(), undefined, NOW)).capteurs_amateurs;
     expect(c.lecture_ancienne).toBe("Dernière lecture des capteurs à 06:10.");
     expect(c.valeurs).toEqual([{ commune: "Saint-Denis", pm10: 20, unite: "µg/m³", mesurees: "à 06:05", reseau: "Sensor.Community" }]);
     expect(c).not.toHaveProperty("aucun");
     expect(capteursAncienne("2026-10-28T19:10:00Z", NOW, true)).toBe("Dernière lecture des capteurs hier à 23:10.");
     // Its last reading found none: no recent reading, never « aucun ».
-    capteurs.configure(async () => ({ lu: "2026-10-29T02:10:00Z", capteurs: [] }));
+    dansLeWorker({ [capteurs.KV_KEY]: () => ({ lu: "2026-10-29T02:10:00Z", capteurs: [] }) });
     const answer = body(await qualiteAir(cache(), undefined, NOW));
     expect(answer.capteurs_amateurs.lecture_ancienne).toBe("Pas de lecture récente des capteurs (dernière lecture à 06:10).");
     expect(answer.capteurs_amateurs).not.toHaveProperty("aucun");
@@ -201,7 +206,7 @@ describe("the sensors of private people (Sensor.Community)", () => {
     expect(page).toContain(`<p>${esc(answer.capteurs_amateurs.lecture_ancienne)}</p>`);
     expect(page).not.toContain(esc(CAPTEURS_AUCUN));
     // Written an hour and a quarter ago, as a read an hour after the last one: recent, said as usual.
-    capteurs.configure(async () => ({ lu: "2026-10-29T05:10:00Z", capteurs: [] }));
+    dansLeWorker({ [capteurs.KV_KEY]: () => ({ lu: "2026-10-29T05:10:00Z", capteurs: [] }) });
     const recent = body(await qualiteAir(cache(), undefined, NOW)).capteurs_amateurs;
     expect(recent.aucun).toBe(CAPTEURS_AUCUN);
     expect(recent).not.toHaveProperty("lecture_ancienne");
@@ -209,12 +214,12 @@ describe("the sensors of private people (Sensor.Community)", () => {
 
   it("has none where the store is not configured, nor while it has no copy", async () => {
     expect(body(await qualiteAir(cache(), undefined, NOW))).not.toHaveProperty("capteurs_amateurs");
-    capteurs.configure(async () => null);
+    dansLeWorker({ [capteurs.KV_KEY]: () => null });
     expect(body(await qualiteAir(cache(), undefined, NOW))).not.toHaveProperty("capteurs_amateurs");
   });
 
   it("shows them on /air under the index, raw, without a colour, and the guide folded", async () => {
-    capteurs.configure(async () => ({ lu: "2026-10-29T06:10:00Z", capteurs: capteurs.parse(ANSWER) }));
+    dansLeWorker({ [capteurs.KV_KEY]: () => ({ lu: "2026-10-29T06:10:00Z", capteurs: capteurs.parse(ANSWER) }) });
     // As buildAir reads it.
     const answer = body(await qualiteAir(cache(), undefined, NOW, true));
     const page = airPage("https://rundata.re", { value: answer, fetchedAt: NOW, stale: false }, NOW);
@@ -234,7 +239,7 @@ describe("the sensors of private people (Sensor.Community)", () => {
     expect(section.match(/<a\b[^>]*>(?:(?!<\/a>).)*<\/a>/gs)!.filter((x) => x.includes("<wbr>") && !x.includes('aria-label="'))).toEqual([]);
     expect(JSON.stringify(answer)).not.toContain("<wbr>");
     // Empty: one sentence and the link to the guide; the name may go to the next line there too, not in the tool's answer.
-    capteurs.configure(async () => ({ lu: "2026-10-29T06:10:00Z", capteurs: [] }));
+    dansLeWorker({ [capteurs.KV_KEY]: () => ({ lu: "2026-10-29T06:10:00Z", capteurs: [] }) });
     const none = body(await qualiteAir(cache(), undefined, NOW, true));
     expect(airPage("https://rundata.re", { value: none, fetchedAt: NOW, stale: false }, NOW)).toContain(
       `<p>${esc(CAPTEURS_AUCUN).replace("Sensor.Community", "Sensor.<wbr>Community")} <a href="#brancher">Brancher un capteur</a></p>`,
@@ -246,8 +251,10 @@ describe("the sensors of private people (Sensor.Community)", () => {
     vi.stubGlobal("fetch", async () => new Response(readFileSync(new URL("./fixtures/atmo_974.json", import.meta.url))));
     // As worker.ts: one KV read each, counted.
     const mesure = { station: "FR38001", nom_fichier: "STATION", type: "fond", polluant: "O3", debut: "2026-10-29T07:00:00+04:00", fin: "2026-10-29T08:00:00+04:00", valeur: 30, unite: "µg-m3" };
-    airMesures.configure(async () => (count(), { lu: "2026-10-29T05:40:00Z", derniere_heure: mesure.fin, mesures: [mesure] }));
-    capteurs.configure(async () => (count(), { lu: "2026-10-29T06:10:00Z", capteurs: [] }));
+    dansLeWorker({
+      [airMesures.KV_KEY]: () => (count(), { lu: "2026-10-29T05:40:00Z", derniere_heure: mesure.fin, mesures: [mesure] }),
+      [capteurs.KV_KEY]: () => (count(), { lu: "2026-10-29T06:10:00Z", capteurs: [] }),
+    });
     class EdgeLike extends MemoryStore {
       async get(key: string, since?: number) {
         count(1, "read");
@@ -371,13 +378,13 @@ describe("the sensors of private people on sensors.social (ODbL 1.0, its written
     await capteurs.collect(written[0], async (s) => void written.push(s as capteurs.Copie), new Date(NOW.getTime() + 3600_000), true);
     expect(written.at(-1)).not.toHaveProperty("echecs");
     // Said by the tool and on /air; no sensor at all: never « aucun ».
-    capteurs.configure(async () => ({ lu: "2026-10-29T06:10:00Z", capteurs: [], echecs: { "sensors.social": "2026-10-29T05:10:00Z" } }));
+    dansLeWorker({ [capteurs.KV_KEY]: () => ({ lu: "2026-10-29T06:10:00Z", capteurs: [], echecs: { "sensors.social": "2026-10-29T05:10:00Z" } }) });
     const answer = body(await qualiteAir(cache(), undefined, NOW, true));
     expect(answer.capteurs_amateurs.lectures_impossibles).toEqual(["Lecture de sensors.social impossible depuis 09:10."]);
     expect(answer.capteurs_amateurs).not.toHaveProperty("aucun");
     expect(airPage("https://rundata.re", { value: answer, fetchedAt: NOW, stale: false }, NOW)).toContain("<p>Lecture de sensors.social impossible depuis 09:10.</p>");
     // A place with none in its commune, one network not read: never « aucun capteur n'a émis à Cilaos ».
-    capteurs.configure(async () => ({ lu: "2026-10-29T06:10:00Z", capteurs: [{ cle: "900001", commune: "Saint-Denis", pm10: 20, mesure_a: "2026-10-29T06:00:00Z" }], echecs: { "sensors.social": "2026-10-29T05:10:00Z" } }));
+    dansLeWorker({ [capteurs.KV_KEY]: () => ({ lu: "2026-10-29T06:10:00Z", capteurs: [{ cle: "900001", commune: "Saint-Denis", pm10: 20, mesure_a: "2026-10-29T06:00:00Z" }], echecs: { "sensors.social": "2026-10-29T05:10:00Z" } }) });
     const lieu = body(await qualiteAir(cache(), "Cilaos", NOW)).capteurs_amateurs;
     expect(lieu).not.toHaveProperty("aucun");
     expect(lieu).not.toHaveProperty("valeurs");
@@ -389,7 +396,7 @@ describe("the sensors of private people on sensors.social (ODbL 1.0, its written
     vi.stubGlobal("fetch", networks([]));
     const written: capteurs.Copie[] = [];
     await capteurs.collect(null, async (s) => void written.push(s as capteurs.Copie), NOW, true);
-    capteurs.configure(async () => written[0]);
+    dansLeWorker({ [capteurs.KV_KEY]: () => written[0] });
     const r = body(await qualiteAir(cache(), undefined, NOW, true));
     expect(r.capteurs_amateurs.valeurs.filter((v: { reseau: string }) => v.reseau === "sensors.social")).toEqual([
       { commune: "Le Port", pm2_5: 3.25, pm10: 6, unite: "µg/m³", mesurees: "à 10:21", reseau: "sensors.social", attribution: "Sensor data © sensors.social contributors, ODbL 1.0" },

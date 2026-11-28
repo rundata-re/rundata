@@ -7,6 +7,7 @@
 import type { Cache, Cached } from "../cache.js";
 import { getText, httpUrl, permis, UA_RUNDATA } from "../http.js";
 import { type SourceInfo, UpstreamError } from "../types.js";
+import { contexte } from "../contexte.js";
 
 export const SOURCE: SourceInfo = {
   id: "prefecture_carburants",
@@ -178,12 +179,8 @@ export async function gather(now = new Date(), pages = 4, pauseMs = 0): Promise<
   return undefined;
 }
 
-let reader: (() => Promise<Prix | null>) | undefined;
-
-/** In the Worker: read the prices from the KV store, where scripts/carburants.ts writes them, and from nowhere else. */
-export function configure(read: (() => Promise<Prix | null>) | undefined) {
-  reader = read;
-}
+/** Where scripts/carburants.ts keeps the prices: the Worker reads them there only. */
+export const KV_KEY = "carburants:prix";
 
 // The order changes once a month; a few hours is plenty, and the stored copy is served while the store does not answer.
 const FRESH_SECONDS = 6 * 3600;
@@ -196,8 +193,9 @@ export async function prix(cache: Cache, now = new Date()): Promise<Cached<Prix>
     // The Worker reads the stored copy only, never the prefecture: its site bans our address on bursts, and an isolate
     // finding the store empty would read up to 22 of its pages in a row (26/10/2026). The prices are then unavailable until
     // the collector stores them. Only a local server, with no store, reads the prefecture itself.
-    const v = reader ? await reader() : await gather(now, 2);
-    if (!v?.produits?.length) throw new Error(reader ? "prix des carburants absents du stockage" : "prix des carburants absents");
+    const { worker, kv } = contexte();
+    const v = worker ? (kv ? await kv.json<Prix>(KV_KEY) : null) : await gather(now, 2);
+    if (!v?.produits?.length) throw new Error(worker ? "prix des carburants absents du stockage" : "prix des carburants absents");
     return v;
   };
   const got = await cache.getCopy("carburants:prix", FRESH_SECONDS, load, (v) => v.lu, SOURCE.id);

@@ -7,6 +7,7 @@
  * live in KV instead: the event runs in some data center, the questions in all the others.
  */
 import { configurerEquipe, failed, handle } from "./app.js";
+import { contexte, installer, stockageKv } from "./contexte.js";
 import { lenteSaid, withAttentes } from "./attentes.js";
 import { minuit, minuitDu, minuitSaid, MINUIT_BUDGET } from "./web/minuit.js";
 import { BUILD_BUDGET, PAGE_BUDGET, SCHEDULED_BUDGET, copiesSaid, copyRead, count, counted, later, readsSaid, reponseSaid, scheduled, spent } from "./budget.js";
@@ -17,15 +18,12 @@ import { appliDe } from "./appli.js";
 import { audience, device, language, origin, point, sansLieu, TEAM, teamVisit, visitor, type Hit } from "./metrics.js";
 import * as irve from "./providers/irve.js";
 import * as eauIle from "./eau/ile.js";
-import * as carburants from "./providers/carburants.js";
 import * as prefectureCopie from "./providers/prefecture-copie.js";
 import { HOTES_MEDIAS } from "./providers/actualites.js";
 import { HOTES_AGENDAS } from "./providers/agenda.js";
 import { HOTES_EAU } from "./providers/avis-eau.js";
 import { HOTES_COURANT } from "./providers/coupures-courant.js";
 import * as raa from "./providers/raa.js";
-import * as airMesures from "./providers/air-mesures.js";
-import * as capteurs from "./providers/capteurs.js";
 import * as meteorOi from "./providers/meteor-oi.js";
 import { autorisee } from "./providers/autorisations.js";
 import * as cpf from "./providers/cpf.js";
@@ -36,7 +34,6 @@ import * as ovpfOcr from "./providers/ovpf-ocr.js";
 import * as meteofrance from "./providers/meteofrance.js";
 import * as candhis from "./providers/candhis.js";
 import * as uvMesure from "./providers/uv-mesure.js";
-import * as ffck from "./providers/ffck.js";
 import * as radar from "./providers/radar.js";
 import * as vigilanceCarte from "./providers/vigilance-carte.js";
 import * as mf from "./providers/vigilance.js";
@@ -240,8 +237,16 @@ function logLine(hit: Hit, visitor: string, country: string) {
 }
 
 let cache: Cache | undefined;
+// The store binding the modules' context was built with (setup).
+let contexteDe: unknown;
 
 function setup(env: Env): Cache {
+  // What the modules read at the time they need it (contexte.ts), built once per isolate (the bindings do not change,
+  // as for `cache` below): a module's copy kept in memory stays valid from one request to the next.
+  if (!contexte().worker || contexteDe !== env.STORE) {
+    installer({ worker: true, ...(env.STORE && { kv: stockageKv(env.STORE) }) });
+    contexteDe = env.STORE;
+  }
   meteofrance.configure({ applicationId: env.METEOFRANCE_APPLICATION_ID, apiKey: env.METEOFRANCE_API_KEY });
   feux.configure(env.FIRMS_MAP_KEY);
   const d1 = env.TRANSIT;
@@ -267,11 +272,6 @@ function setup(env: Env): Cache {
     count();
     return (await kv.get(uvMesure.KEY, "json")) as uvMesure.Etat | null;
   }));
-  // The FFCK's calendar, read by the scheduled event below and kept in KV (src/providers/ffck.ts).
-  ffck.configure(kv && (async () => {
-    count();
-    return (await kv.get(ffck.KEY, "json")) as ffck.Etat | null;
-  }));
   // The replay bar's files (web/rejeu.ts): the radar's last 6 hours, its 24 hours a quarter of an hour apart, its week
   // an hour apart and its days every 5 minutes, kept by the scheduled event below (web/pluie-retro.ts,
   // web/radar-semaine.ts), and the stations' week, written only by the files that read it; the amateur stations' hours
@@ -289,11 +289,6 @@ function setup(env: Env): Cache {
   });
   // The live rain layer, when this data center holds only an old copy of the radar: the history's latest image.
   pluieRadar.configure(kv && (async () => pluieRetro.derniere((await kv.get(pluieRetro.KV_KEY, "json")) as pluieRetro.Historique | null)));
-  // Filtered from the national file by the scheduled event below (src/providers/irve.ts).
-  irve.configure(kv && (async () => {
-    count();
-    return (await kv.get(irve.KV_KEY, "json")) as irve.Live | null;
-  }));
   // Gathered site by site and commune by commune by .github/workflows/eau.yml (src/eau/ile.ts).
   eauIle.configure(kv && (async () => {
     count();
@@ -320,25 +315,12 @@ function setup(env: Env): Cache {
     count();
     return (await kv.get(raa.KV_KEY, "json")) as raa.Copie | null;
   });
-  // Read every hour from the LCSQA's files by the scheduled event below, and kept in KV (src/providers/air-mesures.ts).
-  airMesures.configure(async () => {
-    if (!kv) return null;
-    count();
-    return (await kv.get(airMesures.KV_KEY, "json")) as airMesures.Copie | null;
-  });
   // Read every 10 minutes from the association's portal by the scheduled event of its own cron below, and kept in KV
   // (src/providers/meteor-oi.ts): nothing while its agreement is not given.
   meteorOi.configure(kv && autorisee(meteorOi.AUTORISATION) ? async () => {
     count();
     return (await kv.get(meteorOi.KV_KEY, "json")) as meteorOi.Copie | null;
   } : undefined);
-  // Read every 15 minutes from Sensor.Community, and every hour from sensors.social, by the scheduled event below, and
-  // kept in KV (src/providers/capteurs.ts).
-  capteurs.configure(async () => {
-    if (!kv) return null;
-    count();
-    return (await kv.get(capteurs.KV_KEY, "json")) as capteurs.Stocke | null;
-  });
   // Read by the scheduled event below (one offer's page every 5 minutes, the feed every hour), and kept in KV
   // (src/providers/emploi.ts).
   emploi.configure(async () => {
@@ -364,13 +346,6 @@ function setup(env: Env): Cache {
     if (!kv) return null;
     count();
     return (await kv.get(marchesPublics.KV_KEY, "json")) as marchesPublics.Copie | null;
-  });
-  // Read every day from the prefecture by scripts/carburants.ts, on a machine of the project: never by the
-  // Worker, even without the store.
-  carburants.configure(async () => {
-    if (!kv) return null;
-    count();
-    return (await kv.get("carburants:prix", "json")) as carburants.Prix | null;
   });
   // Météo-France's official map of the vigilance: its bulletin and its picture kept by the scheduled event.
   const cartes: vigilanceCarte.Store | undefined = kv && {

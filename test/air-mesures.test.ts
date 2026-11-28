@@ -10,6 +10,7 @@ import { esc } from "../src/web/map.js";
 import { deadAnchors, doubleIds, mapLinks } from "./cartes.js";
 import { REGISTRY } from "../src/registre.js";
 import { SHARED } from "../src/web/partagees.js";
+import { dansLeWorker, horsWorker } from "./contexte.js";
 
 // Lines of the LCSQA's file of 29/10/2026 (FR_E2_2026-10-29.csv, read at 10:08): one of Metz, then Atmo Réunion's,
 // valid or not, among them a nitrogen monoxide (outside the index) and empty values (-1).
@@ -30,7 +31,7 @@ function cache() {
 }
 
 afterEach(() => {
-  airMesures.configure(undefined);
+  horsWorker();
   vi.unstubAllGlobals();
 });
 
@@ -82,7 +83,7 @@ describe("measures at Atmo Réunion's stations", () => {
   });
 
   it("says each value with its hour, station, type, commune, as raw, and late past 3 h, apart from the forecast", async () => {
-    airMesures.configure(async () => copie);
+    dansLeWorker({ [airMesures.KV_KEY]: () => copie });
     const r = body(await qualiteAir(cache(), undefined, NOW));
     const m = r.mesures_aux_stations;
     expect(m.nature).toBe("MESURES brutes, non validées, aux stations d'Atmo Réunion, publiées par le LCSQA : ce n'est pas l'indice ATMO, qui est une prévision.");
@@ -108,7 +109,7 @@ describe("measures at Atmo Réunion's stations", () => {
   });
 
   it("gives a place its commune's stations, else the nearest one with its distance", async () => {
-    airMesures.configure(async () => copie);
+    dansLeWorker({ [airMesures.KV_KEY]: () => copie });
     const denis = body(await qualiteAir(cache(), "Saint-Denis", NOW)).mesures_aux_stations;
     expect(new Set(denis.valeurs.flatMap((v: { stations: { commune: string }[] }) => v.stations.map((s) => s.commune)))).toEqual(new Set(["Saint-Denis"]));
     expect(denis).not.toHaveProperty("station_la_plus_proche_km");
@@ -122,7 +123,7 @@ describe("measures at Atmo Réunion's stations", () => {
   });
 
   it("shows them on /air in their own section, every value raw, not validated, with its station and hour", async () => {
-    airMesures.configure(async () => copie);
+    dansLeWorker({ [airMesures.KV_KEY]: () => copie });
     const answer = body(await qualiteAir(cache(), undefined, NOW, true));
     const page = airPage("https://rundata.re", { value: answer, fetchedAt: NOW, stale: false }, NOW);
     const at = page.indexOf('id="h-mesures-air"');
@@ -134,13 +135,13 @@ describe("measures at Atmo Réunion's stations", () => {
     expect(section.match(/mesure brute, non validée/g)).toHaveLength(7);
     expect(section).toContain(`<a href="${airMesures.SOURCE.url}" rel="noopener" aria-label="fichiers du LCSQA sur data.gouv.fr">fichiers du LCSQA sur <span class="adrweb">data.<wbr>gouv.<wbr>fr</span></a>`);
     // Without measures, no section.
-    airMesures.configure(undefined);
+    horsWorker();
     const none = body(await qualiteAir(cache(), undefined, NOW, true));
     expect(airPage("https://rundata.re", { value: none, fetchedAt: NOW, stale: false }, NOW)).not.toContain('id="h-mesures-air"');
   });
 
   it("puts them on /air's map at their stations, one pollutant at a time, PM10 first, in neutral pills", async () => {
-    airMesures.configure(async () => copie);
+    dansLeWorker({ [airMesures.KV_KEY]: () => copie });
     const answer = body(await qualiteAir(cache(), undefined, NOW, true));
     const page = airPage("https://rundata.re", { value: answer, fetchedAt: NOW, stale: false }, NOW);
     const map = page.slice(page.indexOf('<figure class="card mapcard airmap">'), page.indexOf("</figure>", page.indexOf("airmap")));
@@ -159,7 +160,7 @@ describe("measures at Atmo Réunion's stations", () => {
     expect(deadAnchors(page)).toEqual([]);
     expect(doubleIds(page)).toEqual([]);
     // Without measures, the forecast in each commune, as a dot, said a forecast.
-    airMesures.configure(undefined);
+    horsWorker();
     const none = airPage("https://rundata.re", { value: body(await qualiteAir(cache(), undefined, NOW, true)), fetchedAt: NOW, stale: false }, NOW);
     expect(none).not.toContain("airmap");
     expect(mapLinks(none).length).toBeGreaterThan(0);
@@ -168,7 +169,7 @@ describe("measures at Atmo Réunion's stations", () => {
   });
 
   it("puts the measure at the top of /air, before the forecast, and the stations before the 24 communes", async () => {
-    airMesures.configure(async () => copie);
+    dansLeWorker({ [airMesures.KV_KEY]: () => copie });
     // The fixture's index is of another day: one commune of today's, for the forecast under the measure.
     const answer = { ...body(await qualiteAir(cache(), undefined, NOW, true)), communes: [{ commune: "Saint-Denis", niveau: 2, qualite: "moyen", polluants: [] }] };
     const page = airPage("https://rundata.re", { value: answer, fetchedAt: NOW, stale: false }, NOW);
@@ -192,7 +193,7 @@ describe("measures at Atmo Réunion's stations", () => {
     expect(range).toContain(`<p class="aqindex">${esc("Indice 1 à 3 sur 6 (1 bon, 6 extrêmement mauvais), surtout l'ozone. Prévision d'Atmo Réunion, diffusée le 28/10 à 11:09.")} <span class="note">Lue par rundata.re `);
     expect(page.indexOf('id="h-mesures-air"')).toBeLessThan(page.indexOf('id="h-communes-air"'));
     // Without measures, the forecast alone, as before.
-    airMesures.configure(undefined);
+    horsWorker();
     const none = airPage("https://rundata.re", { value: body(await qualiteAir(cache(), undefined, NOW, true)), fetchedAt: NOW, stale: false }, NOW);
     expect(none).toContain('<span class="dot"></span>Prévision du jour</p>');
     expect(none).not.toContain("Mesuré aux stations");
@@ -201,7 +202,7 @@ describe("measures at Atmo Réunion's stations", () => {
   it("costs, from cold, what the budget's registry says: the index, and the measures' copy read from KV", async () => {
     vi.stubGlobal("fetch", async () => new Response(readFileSync(new URL("./fixtures/atmo_974.json", import.meta.url))));
     // As worker.ts: one KV read, counted.
-    airMesures.configure(async () => (count(), copie));
+    dansLeWorker({ [airMesures.KV_KEY]: () => (count(), copie) });
     const { used } = await counted(50, () => qualiteAir(new Cache(new EdgeLike(), () => NOW.getTime()), undefined, NOW));
     expect(used).toBeLessThanOrEqual(SHARED.find((s) => s.key === "web:air")!.cold!);
     // With the sensors' copy too: test/capteurs.test.ts.

@@ -14,6 +14,7 @@ import type { Cache } from "../cache.js";
 import { getText } from "../http.js";
 import data from "../irve/stations.json" with { type: "json" };
 import type { SourceInfo } from "../types.js";
+import { contexte } from "../contexte.js";
 
 export const SOURCE: SourceInfo = {
   id: "irve",
@@ -148,17 +149,12 @@ export async function refresh(write: (live: Live) => Promise<void>, now = new Da
   return Object.keys(live.points).length;
 }
 
-let reader: (() => Promise<Live | null>) | undefined;
-
-/** In the Worker: read La Réunion's part from the KV store, where the scheduled event writes it. */
-export function configure(read: (() => Promise<Live | null>) | undefined) {
-  reader = read;
-}
-
 export async function live(cache: Cache) {
   return cache.getCopy(KV_KEY, LIVE_SECONDS, async () => {
-    if (reader) {
-      const v = await reader();
+    // In the Worker with its store: La Réunion's part as the scheduled event wrote it; elsewhere, the national file.
+    const kv = contexte().kv;
+    if (kv) {
+      const v = await kv.json<Live>(KV_KEY);
       if (!v?.points) throw new Error("état des bornes absent du stockage");
       return v;
     }

@@ -145,7 +145,7 @@ describe("the waves measured by the Candhis buoys", () => {
     const copy = { value: sea, fetchedAt: NOW };
     const page = seaPage("https://rundata.re", copy, NOW);
     const band = page.slice(page.indexOf("<h1>"), page.indexOf('class="wrap intro solo"') > 0 ? page.indexOf("</div>\n</div>", page.indexOf("<h1>")) : undefined);
-    expect(page).toContain('<p class="pill">Mesure des bouées · 22/10 à 09:20</p>');
+    expect(page).toContain('<p class="pill">Dernière mesure des bouées · 22/10 à 09:20</p>');
     expect(band).toContain("<b>Mesurée le 22/10 à 09:20</b> à la bouée de Saint-Pierre (large)\u00a0: houle de <b>1,1\u202fm</b>");
     expect(band).toMatch(/Source\u00a0: Cerema \/ Candhis \(Licence Ouverte Etalab 2\.0\), relevée toutes les 30 minutes\./);
     // The buoy before the satellite, and the old block of the measured swell gone: one subject, one block.

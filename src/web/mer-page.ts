@@ -79,9 +79,16 @@ export function whaleSection(now: Date): string {
 export function seaMeasure(seen: { jour?: string; heure?: string }[]): string {
   const passes = [...new Set(seen.filter((b) => b.heure).map((b) => b.heure!))].sort();
   const means = seen.filter((b) => !b.heure);
-  const when = (iso: string) => localTime(new Date(iso)).replace(" ", " à ");
+  // Grouped by day: « le 27/11 à 13:11 et 14:52, et le 28/11 à 02:04 », never the same day said twice.
+  const days = new Map<string, string[]>();
+  for (const h of passes) {
+    const [day, time] = localTime(new Date(h)).split(" ");
+    days.set(day, [...(days.get(day) ?? []), time]);
+  }
+  const groups = [...days].map(([day, times]) => `le ${day} à ${times.join(" et ")}`);
+  const said = groups.length > 1 ? `${groups.slice(0, -1).join(", ")}${groups.some((g) => g.includes(" et ")) ? ", et " : " et "}${groups.at(-1)}` : groups[0];
   const parts = [
-    ...(passes.length ? [`passage du satellite ${passes.map((h) => `le ${when(h)}`).join(" et ")}, un instant et pas la moyenne de la journée${means.length ? ` (${seen.length - means.length} plage${seen.length - means.length > 1 ? "s" : ""})` : ""}`] : []),
+    ...(passes.length ? [`passage du satellite ${said}, un instant et pas la moyenne de la journée${means.length ? ` (${seen.length - means.length} plage${seen.length - means.length > 1 ? "s" : ""})` : ""}`] : []),
     ...(means.length ? [`${new Set(means.map((b) => b.jour)).size > 1 ? `moyenne de chaque jour, ${lesJours(means.map((b) => b.jour!))}` : `moyenne du ${dayMonth(means[0].jour!)}`}${passes.length ? ` (${means.length} plage${means.length > 1 ? "s" : ""})` : ""}`] : []),
   ];
   return `Mesure par satellite (NOAA CoastWatch et NASA), ${parts.join("\u00a0; ")}.`;
@@ -99,8 +106,9 @@ export function seaPage(origin: string, data: Cached<SeaData> | null, now = new 
 
   // The buoys first, while recent at the view: measured on the half hour, where the satellite's pass is of the night or
   // the day before (the user, 28/11/2026: the first two screens said only the satellite). Each line starts with its time.
-  const buoys = (d?.bouees ?? []).filter((b) => now.getTime() - b.t <= candhis.MESURE_MAX_HOURS * 3600_000);
-  const latest = buoys.length ? buoys.reduce((a, b) => (b.t > a.t ? b : a)) : undefined;
+  // The newest first, as the pill says « dernière mesure »: a line at 11:20 under a pill at 11:50 read as a mistake (28/11/2026).
+  const buoys = (d?.bouees ?? []).filter((b) => now.getTime() - b.t <= candhis.MESURE_MAX_HOURS * 3600_000).sort((a, b) => b.t - a.t);
+  const latest = buoys[0];
   const buoysTop = buoys.map((b) => {
     const [jour, h] = b.mesuree_a.split(" ");
     const what = [b.hauteur_significative && `houle de <b>${esc(thin(b.hauteur_significative))}</b>${b.venant ? ` ${esc(b.venant)}` : ""}`, b.vague_max && `vagues jusqu'à ${esc(thin(b.vague_max))}`, b.periode && `période ${esc(thin(b.periode))}`, b.temperature_eau && `mer à <b>${esc(thin(b.temperature_eau))}</b>`].filter(Boolean).join(", ");
@@ -224,7 +232,7 @@ export function seaPage(origin: string, data: Cached<SeaData> | null, now = new 
   const band = `<div class="wrap"><nav class="crumbs" aria-label="Fil d'Ariane"><ol><li><a href="/">${SITE}</a></li><li aria-current="page">Mer</li></ol></nav></div>
 <div class="wrap intro solo">
   <div class="pitch">
-    <p class="pill">${latest ? `Mesure des bouées · ${esc(latest.mesuree_a.replace(" ", " à "))}` : `Mesure satellite${day ? ` · ${esc(lesJours(seen.map((b) => b.jour!)).replace(/^(le|les|du) /, ""))}` : ""}`}</p>
+    <p class="pill">${latest ? `Dernière mesure des bouées · ${esc(latest.mesuree_a.replace(" ", " à "))}` : `Mesure satellite${day ? ` · ${esc(lesJours(seen.map((b) => b.jour!)).replace(/^(le|les|du) /, ""))}` : ""}`}</p>
     <h1>Mer à La Réunion\u00a0: température et houle <span class="n974">974</span></h1>
     ${status}
     ${tideTop ? `${tideTop}<div class="now"><p><a href="#h-maree">La marée en ce moment, et les prochaines →</a></p></div>` : ""}

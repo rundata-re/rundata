@@ -415,7 +415,7 @@ describe("/mer as a whole: the buoys first, each subject once, every word from w
   const band = page.slice(page.indexOf("<h1>"), page.indexOf('id="h-courbes"'));
 
   it("says each buoy at the top, the time first and the buoy named, then the satellite as a pass", () => {
-    expect(page).toContain('<p class="pill">Mesure des bouées · 24/11 à 10:00</p>');
+    expect(page).toContain('<p class="pill">Dernière mesure des bouées · 24/11 à 10:00</p>');
     expect(band).toMatch(/<b>Mesurée le 24\/11 à 10:00<\/b> à la bouée de Saint-Pierre \(large\)\u00a0: houle de <b>1,1\s?m<\/b>, vagues jusqu'à 1,9\s?m, période 8\s?s, mer à <b>26,8\s?°C<\/b>\./u);
     // No direction measured: none said.
     expect(band).not.toMatch(/houle de <b>1,1\u202fm<\/b> de l/);
@@ -423,6 +423,15 @@ describe("/mer as a whole: the buoys first, each subject once, every word from w
     expect(band).toContain("Bouée de Sainte-Marie\u00a0: <b>dernière mesure le 24/11 à 02:20</b>, plus rien depuis.");
     expect(band.indexOf("à la bouée de")).toBeLessThan(band.indexOf("vue par satellite"));
     expect(band).toContain("un instant et pas la moyenne de la journée");
+  });
+
+  it("lists the buoys at the top newest first, under a pill that says the last measurement", () => {
+    const later = { ...sea, bouees: [{ ...(sea.bouees as { t: number }[])[0], t: NOW.getTime() - 50 * 60_000, bouee: "Sainte-Marie", mesuree_a: "24/11 09:30" }, ...sea.bouees!] } as unknown as SeaData;
+    const p = seaPage("https://rundata.re", { value: later, fetchedAt: NOW, stale: false } as never, NOW);
+    expect(p).toContain('<p class="pill">Dernière mesure des bouées · 24/11 à 10:00</p>');
+    const top = p.slice(p.indexOf("<h1>"), p.indexOf('id="h-courbes"'));
+    expect(top.indexOf("<b>Mesurée le 24/11 à 10:00</b>")).toBeGreaterThan(0);
+    expect(top.indexOf("<b>Mesurée le 24/11 à 10:00</b>")).toBeLessThan(top.indexOf("<b>Mesurée le 24/11 à 09:30</b>"));
   });
 
   it("says the tide right after the buoys: measured at its gauge, its time first, then the next ones computed, with a link", () => {

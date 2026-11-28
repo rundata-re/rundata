@@ -203,7 +203,12 @@ describe("tide gauges", () => {
     expect(seaMeasure([{ jour: "2026-11-20", heure: "2026-11-19T21:39:00Z" }, { jour: "2026-11-20", heure: "2026-11-19T21:39:00Z" }]))
       .toBe("Mesure par satellite (NOAA CoastWatch et NASA), passage du satellite le 20/11 à 01:39, un instant et pas la moyenne de la journée.");
     expect(seaMeasure([{ jour: "2026-11-20", heure: "2026-11-19T21:39:00Z" }, { jour: "2026-11-20", heure: "2026-11-20T09:50:00Z" }]))
-      .toBe("Mesure par satellite (NOAA CoastWatch et NASA), passage du satellite le 20/11 à 01:39 et le 20/11 à 13:50, un instant et pas la moyenne de la journée.");
+      .toBe("Mesure par satellite (NOAA CoastWatch et NASA), passage du satellite le 20/11 à 01:39 et 13:50, un instant et pas la moyenne de la journée.");
+    // Grouped by day, each day said once (28/11/2026).
+    expect(seaMeasure([{ jour: "2026-11-27", heure: "2026-11-27T09:11:00Z" }, { jour: "2026-11-27", heure: "2026-11-27T10:52:00Z" }, { jour: "2026-11-28", heure: "2026-11-27T22:04:00Z" }]))
+      .toBe("Mesure par satellite (NOAA CoastWatch et NASA), passage du satellite le 27/11 à 13:11 et 14:52, et le 28/11 à 02:04, un instant et pas la moyenne de la journée.");
+    expect(seaMeasure([{ jour: "2026-11-27", heure: "2026-11-27T10:52:00Z" }, { jour: "2026-11-28", heure: "2026-11-27T22:04:00Z" }]))
+      .toBe("Mesure par satellite (NOAA CoastWatch et NASA), passage du satellite le 27/11 à 14:52 et le 28/11 à 02:04, un instant et pas la moyenne de la journée.");
     expect(seaMeasure([{ jour: "2026-11-19" }, { jour: "2026-11-19" }])).toBe("Mesure par satellite (NOAA CoastWatch et NASA), moyenne du 19/11.");
     expect(seaMeasure([{ jour: "2026-11-20", heure: "2026-11-19T21:39:00Z" }, { jour: "2026-11-19" }]).replace(/\u00a0/g, " "))
       .toBe("Mesure par satellite (NOAA CoastWatch et NASA), passage du satellite le 20/11 à 01:39, un instant et pas la moyenne de la journée (1 plage) ; moyenne du 19/11 (1 plage).");

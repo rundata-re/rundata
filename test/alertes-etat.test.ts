@@ -76,12 +76,13 @@ describe("the vigilance a push would follow", () => {
 
 describe("the cyclone alert a push would follow", () => {
   it("says each step in force, both ways, and its lifting", () => {
-    expect(rejouer([[bulletin(0, {}, 1), undefined], [bulletin(1, {}, 2), undefined], [bulletin(2, {}, 3), undefined], [bulletin(3, {}, 3), undefined], [bulletin(4, {}, 2), undefined], [bulletin(5, {}, 1), undefined]])).toEqual([
+    expect(rejouer([[bulletin(0, {}, 1), undefined], [bulletin(1, {}, 2), undefined], [bulletin(2, {}, 3), undefined], [bulletin(3, {}, 3), undefined], [bulletin(4, {}, 6), undefined], [bulletin(5, {}, 2), undefined], [bulletin(6, {}, 1), undefined]])).toEqual([
       [],
-      ["alerte cyclonique pré-alerte"],
+      ["pré-alerte cyclonique"],
       ["alerte cyclonique orange"],
       [],
-      ["alerte cyclonique pré-alerte"],
+      ["alerte cyclonique : phase de sauvegarde"],
+      ["pré-alerte cyclonique"],
       ["alerte cyclonique levée"],
     ]);
   });
@@ -114,7 +115,7 @@ describe("the volcano a push would follow", () => {
       [undefined, volcan(5, "Alerte 2-1", true)],
       [undefined, volcan(6, "Vigilance renforcée")],
       [undefined, volcan(7, "Vigilance renforcée")],
-    ])).toEqual([[], [], [], ["volcan : Alerte 1 (était Vigilance)"], [], ["volcan : éruption en cours (Alerte 2-1)"], [], ["volcan : fin de l'alerte (Vigilance)"]]);
+    ])).toEqual([[], [], [], ["volcan : Alerte 1, après Vigilance"], [], ["volcan : éruption en cours, Alerte 2-1"], [], ["volcan : fin de l'alerte, retour à la Vigilance"]]);
   });
 
   it("says nothing of a level seen once (an old release quoted, an image misread), of the same copy twice, nor of a level not read", () => {

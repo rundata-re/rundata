@@ -57,7 +57,7 @@ const cle=()=>fetch(${inScript(CLE_PATH)});
 const send=(method,body)=>fetch(${inScript(ABONNEMENT_PATH)},{method,headers:{"content-type":"application/json"},body:JSON.stringify(body)});
 reg().then((r)=>r.pushManager.getSubscription()).then((s)=>show(s?"abonne":"",!!s)).catch(()=>show("",false));
 go.addEventListener("click",async()=>{go.disabled=true;try{
-if(await Notification.requestPermission()!=="granted")return show("bloque",false);
+const p=await Notification.requestPermission();if(p!=="granted")return show(p==="denied"?"bloque":"",false);
 const r=await reg(),c=await cle();if(!c.ok)return show("indisponible",false);
 const s=await r.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key((await c.json()).cle)});
 const a=await send("POST",s.toJSON());if(!a.ok){await s.unsubscribe().catch(()=>{});return show("indisponible",false)}

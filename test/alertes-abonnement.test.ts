@@ -44,13 +44,15 @@ afterEach(() => {
 });
 
 describe("the alerts' addresses", () => {
-  it("answer nothing in production until the flag, and on the trial Worker only with its variable", async () => {
-    expect(ALERTES_EN_LIGNE).toBe(false);
+  it("answer in production now that the flag is open, with or without the trial Worker's variable", async () => {
+    expect(ALERTES_EN_LIGNE).toBe(true);
     configurer(undefined);
-    expect((await send("GET", alertes.CLE_PATH)).status).toBe(404);
-    expect((await send("POST", alertes.ABONNEMENT_PATH, await navigateur())).status).toBe(404);
+    expect((await send("GET", alertes.CLE_PATH)).status).toBe(200);
     configurer("1");
     expect((await send("GET", alertes.CLE_PATH)).status).toBe(200);
+    ouvrir(false);
+    expect((await send("GET", alertes.CLE_PATH)).status).toBe(404);
+    expect((await send("POST", alertes.ABONNEMENT_PATH, await navigateur())).status).toBe(404);
   });
 
   it("read the VAPID secret only while open: in production, flag off, nothing is imported and nothing logged", async () => {

@@ -873,7 +873,7 @@ export const CINEMAS = [
  */
 /**
  * A copy still served whose readings failed since, in words: « lue le 26/11 à 22:00, sans succès depuis (dernier essai le
- * 28/11 à 06:30) ». Not « dernière lecture sans succès (le …) », which says a site silent on its commune's tile
+ * 28/11 à 10:05) ». Not « dernière lecture sans succès (le …) », which says a site silent on its commune's tile
  * (`silentOf`): its events are still there.
  */
 export function echecLu(r: NonNullable<ReturnType<typeof src.echecDepuis>>): string {

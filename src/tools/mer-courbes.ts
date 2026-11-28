@@ -1,6 +1,6 @@
 /**
  * The sea's curves and their figures: what the buoys measured (providers/candhis.ts, the series of 30 days), the
- * waves forecast at the buoy (providers/houle.ts), and the temperature of 30 days off four beaches by satellite
+ * waves forecast at each buoy (providers/houle.ts), and the temperature of 30 days off four beaches by satellite
  * (providers/crw-serie.ts). One computation for the page /mer and the tool temperature_mer, so that both say the same
  * figures: the last value with its time, how it moved in 24 hours, the week's highest, and over the 30 days the mean,
  * the lowest and the highest. A measurement missing stays missing: a hole, never a value carried over.
@@ -115,6 +115,8 @@ export interface CourbeBouee {
   debut_t: number;
   temperature: (number | null)[];
   chiffres: Partial<Record<"hauteur" | "hmax" | "periode" | "temperature", Chiffres>>;
+  /** The waves forecast at this buoy's place, when its place is known and the model covers it. */
+  prevision?: CourbePrevision;
 }
 
 export interface CourbePrevision {
@@ -131,9 +133,8 @@ export interface CourbePrevision {
 }
 
 export interface Courbes {
+  /** Every buoy with points, in the order of candhis.BOUEES: the same order whichever measured last. */
   bouees: CourbeBouee[];
-  /** The forecast at the first buoy's place. */
-  prevision?: CourbePrevision;
   satellite?: SerieMer & { chiffres: (Chiffres | undefined)[]; ecart: (number | null)[] };
 }
 
@@ -142,13 +143,13 @@ export const AVANT = 6;
 export const APRES = 4;
 
 /**
- * Everything the curves need, from what was read: the series (null without the key), the waves forecast at the
- * first buoy, and the satellite's days. Missing parts are left out, never invented.
+ * Everything the curves need, from what was read: the series (null without the key), the waves forecast at each
+ * buoy, and the satellite's days. Missing parts are left out, never invented.
  */
 export function courbes(
   serie: candhis.Serie | null | undefined,
   crw: SerieMer | null | undefined,
-  forecast: ((lon: number, lat: number) => { steps: { time: Date; hauteur: number; periode: number | null }[]; model: houle.WaveModel; modele: houle.ModelId } | null) | undefined,
+  forecast: Forecast | undefined,
   now: Date,
 ): Courbes {
   const debut = minuitLocal(now.getTime()) - AVANT * DAY;
@@ -165,6 +166,7 @@ export function courbes(
       periode: chiffresBouee(pts, "periode", now),
       temperature: chiffresBouee(pts, "temperature", now, true),
     };
+    const prevision = previsionAu(b, forecast, now, debut, n);
     return [{
       code: b.code,
       nom: b.nom,
@@ -177,26 +179,46 @@ export function courbes(
       debut_t: debutT,
       temperature: heures(pts, "temperature", debutT, nT),
       chiffres: Object.fromEntries(Object.entries(chiffres).filter(([, v]) => v)) as CourbeBouee["chiffres"],
+      ...(prevision ? { prevision } : {}),
     }];
   });
-  const at = bouees[0] && candhis.BOUEES.find((b) => b.code === bouees[0].code);
-  const f = at?.lat != null && at.lon != null && forecast ? forecast(at.lon, at.lat) : null;
-  const steps = f?.steps.filter((s) => s.time.getTime() >= now.getTime() - 3 * HOUR && s.time.getTime() < debut + n * HOUR) ?? [];
-  const prevision: CourbePrevision | undefined = steps.length
-    ? {
-        modele: f!.model.nom,
-        source: f!.model.source.id,
-        periode_moyenne: f!.modele === "mfwam",
-        premier: Math.round((steps[0].time.getTime() - debut) / HOUR),
-        pas: steps.length > 1 ? Math.round((steps[1].time.getTime() - steps[0].time.getTime()) / HOUR) : 3,
-        hauteur: steps.map((s) => s.hauteur),
-        periode: steps.map((s) => s.periode),
-      }
-    : undefined;
   const satellite = crw?.jours.length
     ? { ...crw, chiffres: crw.points.map((p) => chiffresJours(crw.jours, p.sst)), ecart: crw.points.map((p) => [...p.ecart].reverse().find((v) => v != null) ?? null) }
     : undefined;
-  return { bouees, ...(prevision ? { prevision } : {}), ...(satellite ? { satellite } : {}) };
+  return { bouees, ...(satellite ? { satellite } : {}) };
+}
+
+type Forecast = (lon: number, lat: number) => { steps: { time: Date; hauteur: number; periode: number | null }[]; model: houle.WaveModel; modele: houle.ModelId } | null;
+
+/** The forecast steps at one buoy's place that fall on its waves' chart, or undefined without its place or the model. */
+function previsionAu(b: candhis.Bouee, forecast: Forecast | undefined, now: Date, debut: number, n: number): CourbePrevision | undefined {
+  const f = b.lat != null && b.lon != null && forecast ? forecast(b.lon, b.lat) : null;
+  const steps = f?.steps.filter((s) => s.time.getTime() >= now.getTime() - 3 * HOUR && s.time.getTime() < debut + n * HOUR) ?? [];
+  if (!f || !steps.length) return undefined;
+  return {
+    modele: f.model.nom,
+    source: f.model.source.id,
+    periode_moyenne: f.modele === "mfwam",
+    premier: Math.round((steps[0].time.getTime() - debut) / HOUR),
+    pas: steps.length > 1 ? Math.round((steps[1].time.getTime() - steps[0].time.getTime()) / HOUR) : 3,
+    hauteur: steps.map((s) => s.hauteur),
+    periode: steps.map((s) => s.periode),
+  };
+}
+
+/** « Sainte-Marie » for « Sainte-Marie », « Saint-Pierre » for « Saint-Pierre (large) »: the place a buoy is off. */
+export const auLargeDe = (nom: string) => nom.replace(/\s*\(large\)$/, "");
+
+/**
+ * The sentence that says which buoys measure, from those that do: « Une seule bouée, au large de Saint-Pierre : sa
+ * mesure ne vaut pas pour toute l'île », « Deux bouées, au large de Sainte-Marie et de Saint-Pierre : … ».
+ */
+export function boueesDites(bouees: { nom: string }[]): string {
+  const n = bouees.length;
+  const lieux = bouees.map((b) => auLargeDe(b.nom));
+  const ou = lieux.length > 1 ? `${lieux.slice(0, -1).join(", de ")} et de ${lieux.at(-1)}` : lieux[0];
+  const combien = n === 1 ? "Une seule bouée" : n === 2 ? "Deux bouées" : n === 3 ? "Trois bouées" : `${n} bouées`;
+  return `${combien}, au large de ${ou}\u00a0: ${n === 1 ? "sa mesure ne vaut" : "leurs mesures ne valent"} pas pour toute l'île.`;
 }
 
 /* Words, for the page and the tool alike. */

@@ -62,12 +62,12 @@ export const COVERAGE =
 export const BOUEE_MAX_KM = 25;
 
 /**
- * The coverage, with the Candhis buoys once the Worker has their key (providers/candhis.ts): Météo-France's buoy off
- * Saint-Pierre measures since November 2026 (veille Candhis, 23/11/2026). Without the key, as before.
+ * The coverage, with the Candhis buoys once the Worker has their key (providers/candhis.ts): Météo-France's buoys off
+ * Saint-Pierre and Sainte-Marie measure since November 2026 (veille Candhis, 23/11 and 28/11/2026). Without the key, as before.
  */
 export function coverage(): string {
   return candhis.configured()
-    ? COVERAGE.replace(/Aucune bouée de l'île[^]*$/, `Houle MESURÉE : les bouées du réseau Candhis du Cerema qui publient (au large de Saint-Pierre depuis novembre 2026), leur dernière mesure de moins de ${candhis.MESURE_MAX_HOURS} h, à moins de ${BOUEE_MAX_KM} km du lieu.`)
+    ? COVERAGE.replace(/Aucune bouée de l'île[^]*$/, `Houle MESURÉE : les bouées du réseau Candhis du Cerema qui publient (au large de Sainte-Marie et de Saint-Pierre depuis novembre 2026), leur dernière mesure de moins de ${candhis.MESURE_MAX_HOURS} h, à moins de ${BOUEE_MAX_KM} km du lieu.`)
     : COVERAGE;
 }
 

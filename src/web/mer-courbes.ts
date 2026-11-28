@@ -7,7 +7,7 @@
 import * as candhis from "../providers/candhis.js";
 import * as crwSerie from "../providers/crw-serie.js";
 import * as houle from "../providers/houle.js";
-import { type Chiffres, type CourbeBouee, type Courbes, APRES, AVANT, degres, ecartDit, leQuand, metres, secondes } from "../tools/mer-courbes.js";
+import { type Chiffres, type CourbeBouee, type Courbes, APRES, AVANT, boueesDites, degres, ecartDit, leQuand, metres, secondes } from "../tools/mer-courbes.js";
 import { chart, known } from "./graphe.js";
 import { esc } from "./map.js";
 
@@ -44,9 +44,9 @@ function silence(b: CourbeBouee, now: Date): string {
   return last && now.getTime() - last > MUET ? `<p class="note"><b>Pas de mesure depuis ${esc(leQuand(last))}</b>\u00a0: la courbe s'arrête à cette heure.</p>` : "";
 }
 
-function houleCarte(b: CourbeBouee, c: Courbes, now: Date): string {
+function houleCarte(b: CourbeBouee, now: Date): string {
   const n = (AVANT + 1 + APRES) * 24;
-  const p = c.prevision;
+  const p = b.prevision;
   const maintenant = Math.round((now.getTime() - b.debut) / HOUR);
   const h = b.chiffres.hauteur;
   const said = `Hauteur des vagues mesurée à la bouée ${b.nom} sur 7 jours${h ? `, ${metres(h.derniere)} ${leQuand(h.le)}` : ""}${p ? `, puis prévue sur 4 jours (${p.modele}, une prévision)` : ""}.`;
@@ -60,15 +60,15 @@ function houleCarte(b: CourbeBouee, c: Courbes, now: Date): string {
       ...(p ? [{ pts: p.hauteur, cls: "ln-no", debut: p.premier, pas: p.pas }] : []),
     ],
   });
-  return `<figure class="card"><h3>Hauteur des vagues <small>(m)</small></h3>${svg}
+  return `<figure class="card"><h3>Hauteur des vagues à la bouée ${esc(b.nom)} <small>(m)</small></h3>${svg}
   <p class="note hg-k"><i class="k k-n"></i>hauteur significative mesurée (${esc(b.hauteur_selon)}) <i class="k k-t"></i>vague la plus haute mesurée${p ? ` <i class="k k-no"></i>hauteur prévue, pas une mesure` : ""}. Trait pointillé vertical\u00a0: maintenant.</p>
   <ul class="crb">${chiffresDits("Hauteur significative", h, metres, "m")}${chiffresDits("Vague la plus haute", b.chiffres.hmax, metres, "m")}</ul>
   ${silence(b, now)}</figure>`;
 }
 
-function periodeCarte(b: CourbeBouee, c: Courbes, now: Date): string {
+function periodeCarte(b: CourbeBouee, now: Date): string {
   const n = (AVANT + 1 + APRES) * 24;
-  const p = c.prevision;
+  const p = b.prevision;
   const t = b.chiffres.periode;
   const said = `Période des vagues mesurée à la bouée ${b.nom} sur 7 jours${t ? `, ${secondes(t.derniere)} ${leQuand(t.le)}` : ""}${p ? `, puis prévue sur 4 jours` : ""}.`;
   const svg = chart({
@@ -78,7 +78,7 @@ function periodeCarte(b: CourbeBouee, c: Courbes, now: Date): string {
     lines: [{ pts: b.periode, cls: "ln-n" }, ...(p ? [{ pts: p.periode, cls: "ln-no", debut: p.premier, pas: p.pas }] : [])],
   });
   const quoi = b.periode_selon === "TH1/3" ? "celle du tiers des plus hautes vagues" : "la période moyenne";
-  return `<figure class="card"><h3>Période des vagues <small>(secondes)</small></h3>${svg}
+  return `<figure class="card"><h3>Période des vagues à la bouée ${esc(b.nom)} <small>(secondes)</small></h3>${svg}
   <p class="note hg-k"><i class="k k-n"></i>période mesurée (${esc(b.periode_selon)}, ${quoi})${p ? ` <i class="k k-no"></i>période ${p.periode_moyenne ? "moyenne " : ""}prévue, pas une mesure` : ""}.${p?.periode_moyenne ? " Ce ne sont pas les mêmes périodes\u00a0: la période moyenne prévue est en général plus courte que la période mesurée, et les deux courbes ne se comparent pas directement." : ""}</p>
   <ul class="crb">${chiffresDits("Période", t, secondes, "s")}</ul>
   ${silence(b, now)}</figure>`;
@@ -94,9 +94,8 @@ function temperatureCarte(b: CourbeBouee, now: Date): string {
     min: Math.floor(Math.min(...vs) - 0.5), max: Math.ceil(Math.max(...vs) + 0.5),
     lines: [{ pts: b.temperature, cls: "ln-t" }],
   });
-  return `<figure class="card"><h3>Température de la mer à la bouée <small>(°C)</small></h3>${svg}
+  return `<figure class="card"><h3>Température de la mer à la bouée ${esc(b.nom)} <small>(°C)</small></h3>${svg}
   <ul class="crb">${chiffresDits("Mer à la bouée", t, degres, "°C")}</ul>
-  <p class="note">Une seule bouée, au large de Saint-Pierre\u00a0: sa mesure ne vaut pas pour toute l'île.</p>
   ${silence(b, now)}</figure>`;
 }
 
@@ -118,19 +117,23 @@ function satelliteCartes(c: Courbes): string {
   }).join("");
 }
 
-/** The section, or nothing when neither the buoys' series nor the satellite's days are there. */
+/** The section, or nothing when neither the buoys' series nor the satellite's days are there. Every buoy that measured, in a stable order. */
 export function courbesSection(c: (Courbes & { satellite_lu?: string }) | undefined, now: Date): string {
   if (!c || (!c.bouees.length && !c.satellite)) return "";
-  const b = c.bouees[0];
-  const modele = c.prevision && [houle.SOURCE, houle.SOURCE_MF].find((x) => x.id === c.prevision!.source);
-  const houleCartes = b ? houleCarte(b, c, now) + periodeCarte(b, c, now) : "";
-  const temp = b ? temperatureCarte(b, now) : "";
+  const bs = c.bouees;
+  const sources = new Set(bs.flatMap((b) => (b.prevision ? [b.prevision.source] : [])));
+  const modeles = [houle.SOURCE, houle.SOURCE_MF].filter((x) => sources.has(x.id));
+  const houleCartes = bs.map((b) => houleCarte(b, now) + periodeCarte(b, now) + temperatureCarte(b, now)).join("");
+  const noms = bs.map((b) => esc(b.nom));
+  const aux = bs.length > 1 ? `aux bouées ${noms.slice(0, -1).join(", ")} et ${noms.at(-1)}` : bs.length ? `à la bouée ${noms[0]}` : "";
+  const temps = bs.some((b) => b.chiffres.temperature);
   const sat = satelliteCartes(c);
   return `<section aria-labelledby="h-courbes">
   <div class="sec-h"><p class="eyebrow">Mesures et prévision</p><h2 id="h-courbes">Houle et température de la mer en courbes</h2>
-  <p>${b ? `La houle mesurée à la bouée ${esc(b.nom)} sur 7 jours, puis la prévision des 4 jours à venir en pointillé. ` : ""}La température de la mer sur ${candhis.SERIE_JOURS} jours${b ? ", à la bouée" : ""}${c.satellite ? `${b ? " et" : ""} par satellite au large de quatre plages` : ""}. Un trou dans une courbe est un moment sans mesure.</p></div>
-  ${houleCartes || temp ? `<div class="hg crbs">${houleCartes}${temp}</div>
-  <p class="note">Mesure\u00a0: ${esc(candhis.SOURCE.attribution)} (${esc(candhis.SOURCE.licence)}), relevée toutes les 30 minutes, heure de La Réunion.${modele ? ` Prévision\u00a0: ${esc(modele.attribution.replace(/ <[^>]+>/g, ""))} (${esc(modele.licence)}).` : ""}</p>` : ""}
+  <p>${aux ? `La houle mesurée ${aux} sur 7 jours${modeles.length ? ", puis la prévision des 4 jours à venir en pointillé" : ""}. ` : ""}La température de la mer sur ${candhis.SERIE_JOURS} jours${temps ? `, ${bs.length > 1 ? "aux bouées" : "à la bouée"}` : ""}${c.satellite ? `${temps ? " et" : ""} par satellite au large de quatre plages` : ""}. Un trou dans une courbe est un moment sans mesure.</p></div>
+  ${houleCartes ? `<div class="hg crbs">${houleCartes}</div>
+  <p class="note">${esc(boueesDites(bs))}</p>
+  <p class="note">Mesure\u00a0: ${esc(candhis.SOURCE.attribution)} (${esc(candhis.SOURCE.licence)}), relevée toutes les 30 minutes, heure de La Réunion.${modeles.length ? ` Prévision\u00a0: ${modeles.map((m) => `${esc(m.attribution.replace(/ <[^>]+>/g, ""))} (${esc(m.licence)})`).join(", ")}.` : ""}</p>` : ""}
   ${sat ? `<h3>Température de surface vue par le satellite, au large de quatre plages</h3><div class="hg crbs">${sat}</div>
   <p class="note">Analyse quotidienne par satellite de NOAA Coral Reef Watch (CoralTemp), qui comble les trous laissés par les nuages\u00a0: une estimation au large, pas une mesure à la plage. ${esc(crwSerie.REFERENCE)}</p>
   <p class="note">Source\u00a0: ${esc(crwSerie.SOURCE.attribution)} (${esc(crwSerie.SOURCE.licence)})${c.satellite_lu ? `, lu ${esc(leQuand(Date.parse(c.satellite_lu)))}` : ""}.</p>` : ""}

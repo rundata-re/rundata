@@ -4,6 +4,10 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 <!-- Généré à partir de src/nouveautes.ts par `npm run changelog` : modifier la liste là-bas. -->
 
+## Samedi 28 novembre 2026
+
+- Mer : en courbes, la houle et la température de la mer aux deux bouées, Sainte-Marie et Saint-Pierre, chacune avec sa prévision.
+
 ## Vendredi 27 novembre 2026
 
 - Aujourd'hui, au Tampon et à Saint-Joseph : l'état des bennes est attribué aux agents de la CASUD, et non plus au TCO.

@@ -42,8 +42,9 @@ export interface Bouee {
 
 /**
  * The island's measuring campaigns, from the Cerema's list of stations on data.gouv.fr (candhis_houlographes_202412),
- * then the two buoys of Météo-France, with their codes and names from the Cerema's answer of 18/11/2026. Saint-Pierre
- * (large) measures since November 2026, its place from getCampInfos (23/11/2026); Sainte-Marie's is asked of
+ * then the two buoys of Météo-France, with their codes and names from the Cerema's answer of 18/11/2026. Both measure
+ * since November 2026, their places from getCampInfos (Saint-Pierre (large) on 23/11/2026, Sainte-Marie on 28/11/2026):
+ * the curves and the sea's answer need them here. A buoy that starts measuring without a place here gets it asked of
  * getCampInfos the day it shows active (`refresh`). Only these codes are read from the API's lists.
  */
 export const BOUEES: Bouee[] = [
@@ -55,7 +56,7 @@ export const BOUEES: Bouee[] = [
   { code: "97406", nom: "Sainte-Rose", lat: -21.12133, lon: 55.78417 },
   { code: "97407", nom: "Vincendo", lat: -21.381, lon: 55.681 },
   { code: "97408", nom: "Port Réunion Est", lat: -20.92452, lon: 55.3242 },
-  { code: "97409", nom: "Sainte-Marie" },
+  { code: "97409", nom: "Sainte-Marie", lat: -20.870188, lon: 55.589887 },
   { code: "97410", nom: "Saint-Pierre (large)", lat: -21.365, lon: 55.46525 },
 ];
 const CODES = new Set(BOUEES.map((b) => b.code));

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import * as candhis from "../src/providers/candhis.js";
 
@@ -145,6 +145,12 @@ describe("the Candhis buoys", () => {
   });
 
   it("read the two buoys to come (réponse du Cerema du 18/11/2026) the day they show active, with no place known", async () => {
+    // Sainte-Marie's place is in the list since 28/11/2026: taken out here, to ask it as a buoy that starts measuring would be.
+    const sm = candhis.BOUEES.find((b) => b.code === "97409")!;
+    const { lat, lon } = sm;
+    delete sm.lat;
+    delete sm.lon;
+    onTestFinished(() => Object.assign(sm, { lat, lon }));
     candhis.configure(KEY);
     const s = store({ essai: 0, types: { lu: NOW.getTime() - days(1), actives: {} }, mesures: {} });
     answer = (url) => {

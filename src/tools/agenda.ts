@@ -213,6 +213,8 @@ type Got = {
   agenda: src.Agenda;
   value?: Cached<src.Evenement[]>;
   nonServie?: ReturnType<typeof src.nonServie>;
+  /** Its copy served, but its readings failed since (src.echecDepuis). */
+  echec?: ReturnType<typeof src.echecDepuis>;
   /** Not read this time for want of subrequests: left to the next question, not silent. */
   remise?: true;
 };
@@ -318,7 +320,7 @@ async function read(cache: Cache, now: Date, deadlineMs: number, graceMs: number
   // (`nonServie`). Their copies are in KV (src.PLANIFIES), written by the scheduled event only.
   const age = (a: src.Agenda) => bundle.peek(key(a))?.ageMs ?? Infinity;
   const order = src.AGENDAS.filter((a) => !a.planifie).sort((x, y) => age(y) - age(x));
-  const planned = src.AGENDAS.filter((a) => a.planifie).map((agenda): Got => ({ agenda, value: src.copiePlanifiee(planifiees, agenda), nonServie: src.nonServie(planifiees, agenda) }));
+  const planned = src.AGENDAS.filter((a) => a.planifie).map((agenda): Got => ({ agenda, value: src.copiePlanifiee(planifiees, agenda), nonServie: src.nonServie(planifiees, agenda), echec: src.echecDepuis(planifiees, agenda) }));
   // The keys each agenda reads, so that one more try forgets the failures remembered under them (cache.ts).
   const keys = new Map<src.Agenda, Set<string>>();
   const store = (a: src.Agenda): src.AgendaStore => ({
@@ -865,16 +867,26 @@ export const CINEMAS = [
   { nom: "Moulin à Café (Saint-Pierre, Ravine des Cabris)", lien: "https://www.saintpierre.re/culture/arts-visuels-et-cinema/cinema-moulin-cafe" },
 ];
 /**
- * The agendas of the scheduled event whose copy is not served (src.nonServie), of the commune asked (`propre`) and of
- * the whole island, each once, with why: never left out silently, nor said to publish nothing.
+ * The agendas of the scheduled event whose copy is not served (src.nonServie), or served while its readings fail
+ * (src.echecDepuis), of the commune asked (`propre`) and of the whole island, each once, with why: never left out
+ * silently, nor said to publish nothing.
  */
+/**
+ * A copy still served whose readings failed since, in words: « lu le 26/11 à 22:00, sans succès depuis (dernier essai le
+ * 28/11 à 10:05) ». Not « dernière lecture sans succès (le …) », which says a site silent on its commune's tile
+ * (`silentOf`): its events are still there.
+ */
+export function echecLu(r: NonNullable<ReturnType<typeof src.echecDepuis>>): string {
+  const le = (local: string) => `le ${local.slice(8, 10)}/${local.slice(5, 7)} à ${local.slice(11, 16)}`;
+  return `lu ${le(r.lu)}, sans succès depuis (dernier essai ${le(r.essai)})`;
+}
 function nonLus(got: Got[], commune: string | undefined): { nom: string; etat: string; propre: boolean }[] {
   const named = new Map<string, { nom: string; etat: string; propre: boolean }>();
   for (const g of got) {
-    if (!g.nonServie || named.has(g.agenda.nom)) continue;
+    if ((!g.nonServie && !g.echec) || named.has(g.agenda.nom)) continue;
     const propre = !!commune && (g.agenda.commune === commune || !!g.agenda.couvre?.includes(commune));
     if (commune && !propre && (g.agenda.commune || g.agenda.couvre)) continue;
-    named.set(g.agenda.nom, { nom: g.agenda.nom, etat: derniereLecture(g.nonServie), propre });
+    named.set(g.agenda.nom, { nom: g.agenda.nom, etat: g.nonServie ? derniereLecture(g.nonServie) : echecLu(g.echec!), propre });
   }
   return [...named.values()];
 }
@@ -1067,7 +1079,7 @@ export function mairiesMuettes(got: Got[], now: Date): { commune: string; phrase
   for (const g of got) if (g.agenda.commune && g.agenda.site_commune) by.set(g.agenda.commune, [...(by.get(g.agenda.commune) ?? []), g]);
   const out: { commune: string; phrase: string }[] = [];
   for (const [commune, gs] of by) {
-    if (gs.some((g) => !g.value || g.nonServie || g.remise)) continue;
+    if (gs.some((g) => !g.value || g.nonServie || g.echec || g.remise)) continue;
     const toCome = gs.some((g) => g.value!.value.some((e) => e.seances.some((s) => {
       const end = s.fin ?? s.debut;
       return end.length > 10 ? end >= here : end >= here.slice(0, 10);

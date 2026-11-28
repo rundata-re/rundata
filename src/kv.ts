@@ -12,7 +12,8 @@ export const KV_KEEP_SECONDS = 3 * 24 * 3600;
 /** The part of the KV binding read and written here (worker.ts KvNamespace). */
 export interface KvBinding {
   get(key: string, type: "json"): Promise<unknown>;
-  put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
+  get(key: string, type: "arrayBuffer"): Promise<ArrayBuffer | null>;
+  put(key: string, value: string | ArrayBuffer, options?: { expirationTtl?: number }): Promise<void>;
 }
 
 export class KvStore implements CacheStore {

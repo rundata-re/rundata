@@ -6,7 +6,7 @@ import { Cache, MemoryStore } from "../src/cache.js";
 import { audience, category, device, feedReader, FROM_SITE, HEBERGEURS, language, META_ASN, origin, point, teamVisit, visitor, type Hit } from "../src/metrics.js";
 import { answer, asked, understood, withAddress } from "../src/usage.js";
 import { rienTrouve, withVide } from "../src/vide.js";
-import * as carteScolaire from "../src/vie/carte-scolaire.js";
+import { fichiers } from "./contexte.js";
 
 const post = (body: unknown, headers: Record<string, string> = {}) =>
   new Request("https://rundata.re/mcp", {
@@ -93,7 +93,7 @@ describe("MCP endpoint, as recorded", () => {
 
   it("never keeps nor logs a postal address given to a tool: the commune alone, and « adresse »", async () => {
     // The collège of the address is looked up, in the commune's file, as the Worker does.
-    carteScolaire.configure(async (path) => JSON.parse(readFileSync(`public${path}`, "utf8")));
+    fichiers({ json: async <T>(path: string) => JSON.parse(readFileSync(`public${path}`, "utf8")) as T });
     const adresse = "41 avenue de la Commune de Paris";
     const call = (id: number, lieu: string) => post({ jsonrpc: "2.0", id, method: "tools/call", params: { name: "annuaire_services_publics", arguments: { quoi: "collège", lieu, adresse } } });
     const logs = ["log", "info", "warn", "error", "debug"].map((k) => vi.spyOn(console, k as "log"));
@@ -118,7 +118,7 @@ describe("MCP endpoint, as recorded", () => {
       expect(logged).not.toContain("Commune de Paris");
     } finally {
       for (const l of logs) l.mockRestore();
-      carteScolaire.configure(undefined);
+      fichiers();
     }
   });
 

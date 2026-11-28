@@ -4,6 +4,7 @@
  * browser and read by annuaire_services_publics (`fichier`, the Worker's static assets); here, its day, its counts, the
  * file of each commune, the communes with a single sector, and the search of an address in a commune's file (`trouve`).
  */
+import { contexte } from "../contexte.js";
 import type { SourceInfo } from "../types.js";
 import data from "./carte-scolaire.json" with { type: "json" };
 
@@ -18,16 +19,13 @@ export const SOURCE: SourceInfo = {
   url: "https://data.education.gouv.fr/explore/assets/fr-en-carte-scolaire-colleges-publics/",
 };
 
-/** How a commune's file is read, from its path: the Worker's static assets (worker.ts), public/ under Node (bin/). */
-let lire: ((path: string) => Promise<CarteCommune | null>) | undefined;
-export function configure(read: typeof lire) {
-  lire = read;
-}
 
 /** The file of a commune, by its INSEE code: null when there is none, or nothing to read it with. */
 export async function fichier(insee: string): Promise<CarteCommune | null> {
   const path = CARTE.communes[insee];
-  return path && lire ? lire(path) : null;
+  // Read from its path: the Worker's static assets, public/ under Node (contexte.ts `fichiers`, src/bin/http.ts).
+  const fichiers = contexte().fichiers;
+  return path && fichiers ? fichiers.json<CarteCommune>(path) : null;
 }
 
 /** A row of a commune's file: the street, its place, its first and last numbers, both sides (0), odd (1) or even (2), its collège. */

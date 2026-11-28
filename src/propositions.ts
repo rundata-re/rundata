@@ -106,7 +106,7 @@ export const envoiCloudflare = (binding: EmailBinding): Envoi => async (m) => {
 export type All = <T>(sql: string, ...params: unknown[]) => Promise<T[]>;
 
 // The secrets that name no proposal, a minute: an existing one is read each time (its page changes with each action).
-// Kept for one database (contexte.ts), and for one sending.
+// Kept for one database (contexte.ts), from one request to the next.
 const inconnus = () => garde<Ligne>({ ttlMs: 60_000, max: 256, introuvablesParMinute: 20, garder: () => false });
 let INCONNUS: { de: Bases | undefined; garde: ReturnType<typeof inconnus> } = { de: undefined, garde: inconnus() };
 function lesInconnus() {
@@ -118,7 +118,6 @@ function lesInconnus() {
 /** `send`: how the confirmation is sent; the rows are in the feedback's database (contexte.ts `portesAvis`). */
 export function configure(send?: Envoi) {
   envoi = send;
-  INCONNUS = { de: contexte().bases, garde: inconnus() };
 }
 
 export const enabled = () => !!portesAvis().run;

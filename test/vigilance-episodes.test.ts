@@ -7,6 +7,7 @@ import * as episodes from "../src/providers/vigilance-episodes.js";
 import { vigilanceMeteo } from "../src/tools/vigilance.js";
 import { vigilancePage } from "../src/web/vigilance-page.js";
 import { unzip } from "../src/zip.js";
+import { cartes } from "./contexte.js";
 
 const NOW = new Date("2026-11-24T06:00:00Z");
 const zip = readFileSync(new URL("./fixtures/vigilance_om.zip", import.meta.url));
@@ -50,7 +51,7 @@ class Kv {
 describe("the bulletins above green kept for replaying them", () => {
   it("keeps the zip of a bulletin above green once, under its time of issue, a year and more", async () => {
     const kv = new Kv();
-    episodes.configure(kv);
+    cartes(kv);
     const v = await orange();
     expect(episodes.episode(v)).toBe(true);
     await episodes.garder(zipBytes.buffer, v, NOW.getTime());
@@ -71,7 +72,7 @@ describe("the bulletins above green kept for replaying them", () => {
     const green = mf.parse(map, texts);
     expect(episodes.episode(green)).toBe(false);
     const kv = new Kv();
-    episodes.configure(kv);
+    cartes(kv);
     await episodes.garder(zipBytes.buffer, green, NOW.getTime());
     expect(kv.writes + kv.reads).toBe(0);
     for (const c of [2, 3, 6]) {
@@ -82,9 +83,9 @@ describe("the bulletins above green kept for replaying them", () => {
   });
 
   it("does nothing without KV, and never throws", async () => {
-    episodes.configure(undefined);
+    cartes(undefined);
     await expect(episodes.garder(zipBytes.buffer, await orange(), NOW.getTime())).resolves.toBeUndefined();
-    episodes.configure({ json: async () => { throw new Error("kv"); }, bytes: async () => null, put: async () => {} });
+    cartes({ json: async () => { throw new Error("kv"); }, bytes: async () => null, put: async () => {} });
     await expect(episodes.garder(zipBytes.buffer, await orange(), NOW.getTime())).resolves.toBeUndefined();
   });
 });

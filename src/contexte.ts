@@ -28,6 +28,31 @@ export interface Contexte {
   secrets?: Secrets;
   /** The D1 databases the Worker has (on Node, the local copies src/bin/http.ts is given). */
   bases?: Bases;
+  /** Cloudflare's browser (binding BROWSER), for the picture of the vigilance's official map (providers/vigilance-carte.ts). */
+  navigateur?: Navigateur;
+  /** The site's static files (public/): the Worker's assets, counted here, or the files on disk under Node (src/bin/http.ts). */
+  fichiers?: Fichiers;
+}
+
+/** The part of the binding of Cloudflare's Browser Rendering used here. */
+export interface Navigateur {
+  quickAction(action: "screenshot", options: Record<string, unknown>): Promise<Response>;
+}
+
+/** A static file read as JSON, by its path from the site's root (« /carte-scolaire/97401.json »): null when there is none. */
+export interface Fichiers {
+  json<T>(chemin: string): Promise<T | null>;
+}
+
+/** The Worker's static assets as `Fichiers`: each read counted as a call to a bound service, which the platform's documentation neither counts nor exempts. */
+export function fichiersStatiques(assets: { fetch(request: Request): Promise<Response> }): Fichiers {
+  return {
+    json: async <T>(chemin: string) => {
+      count();
+      const r = await assets.fetch(new Request(`https://rundata.re${chemin}`));
+      return r.ok ? ((await r.json()) as T) : null;
+    },
+  };
 }
 
 /** A D1 database's reads as the modules make them: the rows of a query. Not counted here: each module counts its own. */
@@ -107,6 +132,19 @@ export function installer(c: Contexte) {
 
 export function retirer() {
   courant = HORS_WORKER;
+}
+
+/**
+ * A module's state kept from one request to the next (a cache, a guard on the keys found in nothing), made again only
+ * when the context's store changes: the Worker keeps the same one in an isolate, a test gives another.
+ */
+export function selonLeStockage<T>(creer: () => T): () => T {
+  let fait: { de: KvBinding | undefined; valeur: T } | undefined;
+  return () => {
+    const de = courant.brut;
+    if (!fait || fait.de !== de) fait = { de, valeur: creer() };
+    return fait.valeur;
+  };
 }
 
 /** The Worker's store binding as a `Stockage`, its reads counted. */

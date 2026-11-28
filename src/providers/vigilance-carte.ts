@@ -16,6 +16,7 @@
  *   is billed. A try that fails is not made again before the next event.
  */
 import { count, left } from "../budget.js";
+import { contexte, selonLeStockage, type Navigateur } from "../contexte.js";
 import { garde } from "../lecture-gardee.js";
 import { pdfLines, type Line } from "../pdf.js";
 import { why } from "../types.js";
@@ -27,26 +28,28 @@ export interface Store {
   put(key: string, value: string | ArrayBuffer, ttlSeconds?: number): Promise<void>;
 }
 
-/** The part of the binding of Cloudflare's Browser Rendering used here. */
-export interface Browser {
-  quickAction(action: "screenshot", options: Record<string, unknown>): Promise<Response>;
+/** The part of the binding of Cloudflare's Browser Rendering used here (contexte.ts). */
+export type Browser = Navigateur;
+
+/**
+ * The Worker's KV as the maps keep their files there (contexte.ts `brut`, each read and write counted by the module).
+ * Without it, nothing is kept and no map is shown.
+ */
+export function magasin(): Store | undefined {
+  const kv = contexte().brut;
+  return kv && {
+    json: (key) => kv.get(key, "json"),
+    bytes: (key) => kv.get(key, "arrayBuffer"),
+    put: (key, value, ttl) => kv.put(key, value, ttl ? { expirationTtl: ttl } : undefined),
+  };
 }
 
-let store: Store | undefined;
-let browser: Browser | undefined;
 
-/** The Worker's KV and browser (worker.ts). Without KV, nothing is kept and no map is shown; without the browser, none is made. */
-// The files asked by their address, found or not: a bulletin's file never changes, a few are kept ten minutes.
-const fichiers = () => garde<ArrayBuffer>({ ttlMs: 10 * 60_000, max: 6, introuvablesParMinute: 20, garder: (b) => b.byteLength <= 2_000_000 });
-let FICHIERS = fichiers();
+// The files asked by their address, found or not: a bulletin's file never changes, a few are kept ten minutes, from
+// one request to the next.
+const FICHIERS = selonLeStockage(() => garde<ArrayBuffer>({ ttlMs: 10 * 60_000, max: 6, introuvablesParMinute: 20, garder: (b) => b.byteLength <= 2_000_000 }));
 
-export function configure(kv?: Store, b?: Browser): void {
-  store = kv;
-  browser = kv && b;
-  FICHIERS = fichiers();
-}
-
-export const configured = () => store != null;
+export const configured = () => magasin() != null;
 
 /** The page that draws page 1 for the browser: not for the public (robots.txt, noindex, its token). */
 export const RENDU_PATH = "/vigilance/bulletin-rendu";
@@ -142,6 +145,7 @@ export function vue(etat: Etat): Carte | undefined {
 }
 
 export async function etat(): Promise<Etat | undefined> {
+  const store = magasin();
   if (!store) return undefined;
   count(1, "read");
   return ((await store.json(KEY)) as Etat | null) ?? undefined;
@@ -161,19 +165,19 @@ export async function kept(): Promise<Carte | undefined> {
 /** A kept file, as bytes: the PDF or the picture of a bulletin by its fingerprint. */
 
 export async function fichier(kind: "pdf" | "png", empreinte: string): Promise<ArrayBuffer | null> {
-  const s = store;
+  const s = magasin();
   if (!s) return null;
   const key = kind === "pdf" ? pdfKey(empreinte) : pngKey(empreinte);
-  return FICHIERS.lire(key, () => {
+  return FICHIERS().lire(key, () => {
     count(1, "read");
     return s.bytes(key);
   });
 }
 
 /** The browser photographs page 1 of `b`: its PNG, or an error. */
-async function photograph(b: NonNullable<Etat["bulletin"]>): Promise<ArrayBuffer> {
+async function photograph(browser: Browser, b: NonNullable<Etat["bulletin"]>): Promise<ArrayBuffer> {
   count(1, true);
-  const r = await browser!.quickAction("screenshot", {
+  const r = await browser.quickAction("screenshot", {
     url: `${SITE}${RENDU_PATH}?j=${b.jeton}`,
     viewport: { width: 595 * SCALE, height: 842 * SCALE },
     selector: "#page1",
@@ -195,6 +199,9 @@ async function photograph(b: NonNullable<Etat["bulletin"]>): Promise<ArrayBuffer
  * after it. Never throws.
  */
 export async function passage(pdf: Uint8Array<ArrayBuffer> | undefined, now = Date.now()): Promise<Carte | undefined> {
+  const store = magasin();
+  // Without the browser, no picture is made.
+  const browser = contexte().navigateur;
   if (!store) return undefined;
   try {
     const e = (await etat()) ?? {};
@@ -208,7 +215,7 @@ export async function passage(pdf: Uint8Array<ArrayBuffer> | undefined, now = Da
         e.jour = { date: dayOf(now), n: today + 1 };
         changed = true;
         try {
-          const png = await photograph(b);
+          const png = await photograph(browser, b);
           count(1, true);
           await store.put(pngKey(b.empreinte), png, TTL_SECONDS);
           e.image = { emis: b.emis, empreinte: b.empreinte, le: now };

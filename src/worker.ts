@@ -7,7 +7,7 @@
  * live in KV instead: the event runs in some data center, the questions in all the others.
  */
 import { configurerEquipe, failed, handle } from "./app.js";
-import { contexte, installer, stockageKv, type Ecriture, type Lecture } from "./contexte.js";
+import { contexte, fichiersStatiques, installer, stockageKv, type Ecriture, type Lecture } from "./contexte.js";
 import { lenteSaid, withAttentes } from "./attentes.js";
 import { minuit, minuitDu, minuitSaid, MINUIT_BUDGET } from "./web/minuit.js";
 import { BUILD_BUDGET, PAGE_BUDGET, SCHEDULED_BUDGET, copiesSaid, copyRead, count, counted, later, readsSaid, reponseSaid, scheduled, spent } from "./budget.js";
@@ -29,7 +29,6 @@ import * as vigilanceCarte from "./providers/vigilance-carte.js";
 import * as mf from "./providers/vigilance.js";
 import { detecter, type Changement } from "./alertes-etat.js";
 import type { VolcanAnswer } from "./web/data.js";
-import * as vigilanceEpisodes from "./providers/vigilance-episodes.js";
 import * as cmrsCarte from "./providers/cmrs-carte.js";
 import * as cmrsTrace from "./providers/cmrs-trace.js";
 import * as feux from "./providers/feux.js";
@@ -53,7 +52,6 @@ import { configurerUv } from "./web/uv-moufia.js";
 import { configurerVideo } from "./web/partage-video.js";
 import * as pluieRetro from "./web/pluie-retro.js";
 import * as radarSemaine from "./web/radar-semaine.js";
-import * as carteScolaire from "./vie/carte-scolaire.js";
 import { why } from "./types.js";
 import { COLLECTEURS, dit, passage } from "./collecteurs.js";
 import { configure as metaWebhookSecrets } from "./meta-webhook.js";
@@ -241,7 +239,7 @@ function setup(env: Env): Cache {
   // What the modules read at the time they need it (contexte.ts), built once per isolate (the bindings do not change,
   // as for `cache` below): a module's copy kept in memory stays valid from one request to the next.
   // The keys are given only with the store: the state their source's reads keep is there.
-  const de = [env.STORE, env.CANDHIS_API_KEY, env.SOLARDB_JETON, env.TRANSIT, env.CLIMAT, env.CLIMAT_H, env.AVIS];
+  const de = [env.STORE, env.CANDHIS_API_KEY, env.SOLARDB_JETON, env.TRANSIT, env.CLIMAT, env.CLIMAT_H, env.AVIS, env.BROWSER, env.ASSETS];
   if (!contexte().worker || de.some((v, i) => v !== contexteDe[i])) {
     installer({
       worker: true,
@@ -260,33 +258,17 @@ function setup(env: Env): Cache {
         ...(env.CLIMAT_H && { climatHoraire: lectureD1(env.CLIMAT_H) }),
         ...(env.AVIS && { avis: lectureD1(env.AVIS), avisEcriture: ecritureD1(env.AVIS) }),
       },
+      // Météo-France's official map of the vigilance photographed by the scheduled event, its bulletin and its picture
+      // kept in the store (providers/vigilance-carte.ts), as the RSMC's maps (cmrs-carte.ts, cmrs-trace.ts) and the
+      // bulletins above green (vigilance-episodes.ts); the collège of an address, from its commune's file in the static
+      // assets (vie/carte-scolaire.ts).
+      ...(env.BROWSER && { navigateur: env.BROWSER }),
+      ...(env.ASSETS && { fichiers: fichiersStatiques(env.ASSETS) }),
     });
     contexteDe = de;
   }
   meteofrance.configure({ applicationId: env.METEOFRANCE_APPLICATION_ID, apiKey: env.METEOFRANCE_API_KEY });
   feux.configure(env.FIRMS_MAP_KEY);
-  const kv = env.STORE;
-  // Météo-France's official map of the vigilance: its bulletin and its picture kept by the scheduled event.
-  const cartes: vigilanceCarte.Store | undefined = kv && {
-    json: (key) => kv.get(key, "json"),
-    bytes: (key) => kv.get(key, "arrayBuffer"),
-    put: (key, value, ttl) => kv.put(key, value, ttl ? { expirationTtl: ttl } : undefined),
-  };
-  vigilanceCarte.configure(cartes, env.BROWSER);
-  // The bulletins above green, kept a year to replay a real episode in the tests (src/providers/vigilance-episodes.ts).
-  vigilanceEpisodes.configure(cartes);
-  // The collège of an address (annuaire_services_publics): its commune's file, from the static assets. Counted as a
-  // call to a bound service, which the platform's documentation neither counts nor exempts.
-  const assets = env.ASSETS;
-  carteScolaire.configure(assets && (async (path: string) => {
-    count();
-    const r = await assets.fetch(new Request(`https://rundata.re${path}`));
-    return r.ok ? ((await r.json()) as carteScolaire.CarteCommune) : null;
-  }));
-  // The RSMC's forecast track map, read by the scheduled event while a system is active.
-  cmrsCarte.configure(cartes);
-  // The path travelled by a system, from the RSMC's bulletins, once Météo-France agrees (providers/cmrs-trace.ts).
-  cmrsTrace.configure(cartes);
   // The feedback of the tool donner_avis and of the site's form: one row each, in the feedback's database (contexte.ts).
   avis.configure(env.AVIS_SEL);
   // The links and events the clubs send, in the same database: a proposal's link is e-mailed through Cloudflare, and

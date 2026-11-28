@@ -21,11 +21,12 @@
 import type { Cache } from "../cache.js";
 import { count, perInvocation } from "../budget.js";
 import { getFile, getText } from "../http.js";
+import { selonLeStockage } from "../contexte.js";
 import { garde } from "../lecture-gardee.js";
 import { why } from "../types.js";
 import * as gdacs from "./cyclones.js";
 import * as cmrsTrace from "./cmrs-trace.js";
-import { fingerprint, type Store } from "./vigilance-carte.js";
+import { fingerprint, magasin } from "./vigilance-carte.js";
 
 const SOURCE_ID = "meteofrance_cmrs";
 const SITE = "http://www.meteo.fr/temps/domtom/La_Reunion/webcmrs9.0/francais";
@@ -50,16 +51,9 @@ const TIMEOUT_MS = 20_000;
 const MAX_PNG = 5_000_000;
 const HOUR = 3_600_000;
 
-let store: Store | undefined;
-// The images asked by their address, found or not: an image never changes under its fingerprint, a few are kept ten minutes.
-const fichiers = () => garde<ArrayBuffer>({ ttlMs: 10 * 60_000, max: 6, introuvablesParMinute: 20, garder: (b) => b.byteLength <= 2_000_000 });
-let FICHIERS = fichiers();
-
-/** The Worker's KV (worker.ts). Without it, nothing is read, kept or shown. */
-export function configure(kv?: Store): void {
-  store = kv;
-  FICHIERS = fichiers();
-}
+// The images asked by their address, found or not: an image never changes under its fingerprint, a few are kept ten
+// minutes, from one request to the next. Without the store (vigilance-carte.ts `magasin`), nothing is read, kept or shown.
+const FICHIERS = selonLeStockage(() => garde<ArrayBuffer>({ ttlMs: 10 * 60_000, max: 6, introuvablesParMinute: 20, garder: (b) => b.byteLength <= 2_000_000 }));
 
 /** What the scheduled event keeps in KV. Times in ISO 8601. */
 export interface Etat {
@@ -138,6 +132,7 @@ export function vue(e: Etat): Carte | undefined {
 }
 
 async function etat(): Promise<Etat | undefined> {
+  const store = magasin();
   if (!store) return undefined;
   count(1, "read");
   return ((await store.json(KEY)) as Etat | null) ?? undefined;
@@ -158,10 +153,10 @@ export function kept(): Promise<Carte | undefined> {
 
 /** A kept image, by its fingerprint. */
 export async function fichier(empreinte: string): Promise<ArrayBuffer | null> {
-  const s = store;
+  const s = magasin();
   if (!s) return null;
   const key = pngKey(empreinte);
-  return FICHIERS.lire(key, () => {
+  return FICHIERS().lire(key, () => {
     count(1, "read");
     return s.bytes(key);
   });
@@ -200,8 +195,8 @@ async function lireImage(e: Etat, now: Date): Promise<{ etat: Etat; dit: string 
   const same = e.image?.empreinte === empreinte;
   if (!same) {
     count(1, true);
-    await store!.put(pngKey(empreinte), file.bytes, TTL_SECONDS);
-    FICHIERS.oublier(pngKey(empreinte));
+    await magasin()!.put(pngKey(empreinte), file.bytes, TTL_SECONDS);
+    FICHIERS().oublier(pngKey(empreinte));
   }
   const { echec: _, ...rest } = e;
   const image = { empreinte, ...size, ...(modifiee && { modifiee }), depuis: same ? e.image!.depuis : le, lue: le };
@@ -215,6 +210,7 @@ async function lireImage(e: Etat, now: Date): Promise<{ etat: Etat; dit: string 
  */
 export async function passage(cache: Cache, now = new Date()): Promise<string> {
   const quoi = due(now);
+  const store = magasin();
   if (!store || !quoi) return "rien à lire";
   const list = (await gdacs.systemes(cache, now)).value;
   if (!list.some((s) => gdacs.isActive(s, now)) && !(await cmrsTrace.suivisKept(now)).length) return "aucun système actif";

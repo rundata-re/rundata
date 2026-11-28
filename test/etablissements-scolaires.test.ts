@@ -4,11 +4,11 @@ import { Cache, MemoryStore } from "../src/cache.js";
 import { INSEE } from "../src/places/insee.js";
 import { annuaireTool } from "../src/tools/annuaire.js";
 import { byName, communeIn, ecolesAnswer, SCHOOL } from "../src/tools/etablissements.js";
-import * as carteScolaire from "../src/vie/carte-scolaire.js";
 import * as ecoles from "../src/vie/ecoles.js";
 import * as ips from "../src/vie/ips.js";
 import { communePage } from "../src/web/commune.js";
 import { pageOf } from "../src/web/places.js";
+import { fichiers } from "./contexte.js";
 
 const body = (r: { content: { text: string }[] }) => JSON.parse(r.content[0].text);
 // Sunday 1/11/2026, 14:00 at La Réunion.
@@ -182,9 +182,9 @@ describe("a commune's page", () => {
 describe("the collège of an address's sector (annuaire_services_publics, adresse)", () => {
   const ask = async (quoi: string, lieu: string | undefined, adresse: string) => body(await annuaireTool(new Cache(), quoi, lieu, NOW, adresse));
   // Read as the Worker reads its static assets: the commune's file, by its path.
-  const lire = async (path: string) => JSON.parse(readFileSync(`public${path}`, "utf8"));
-  beforeAll(() => carteScolaire.configure(lire));
-  afterAll(() => carteScolaire.configure(undefined));
+  const lire = { json: async <T>(path: string) => JSON.parse(readFileSync(`public${path}`, "utf8")) as T };
+  beforeAll(() => fichiers(lire));
+  afterAll(() => fichiers());
 
   it("gives the collège of a street, with the note that the collège or the Département confirms it and the link to /ecoles", async () => {
     const r = await ask("quel collège", "Le Port", "12 allée Pablo Neruda");
@@ -227,8 +227,10 @@ describe("the collège of an address's sector (annuaire_services_publics, adress
   });
 
   it("says the file cannot be read, logging the commune alone, never the address", async () => {
-    carteScolaire.configure(async () => {
-      throw new TypeError("12 allée Pablo Neruda");
+    fichiers({
+      json: async () => {
+        throw new TypeError("12 allée Pablo Neruda");
+      },
     });
     const logs = ["log", "info", "warn", "error", "debug"].map((k) => vi.spyOn(console, k as "log"));
     try {
@@ -240,7 +242,7 @@ describe("the collège of an address's sector (annuaire_services_publics, adress
       expect(logged).not.toMatch(/Neruda|allée/i);
     } finally {
       for (const l of logs) l.mockRestore();
-      carteScolaire.configure(lire);
+      fichiers(lire);
     }
   });
 

@@ -13,7 +13,8 @@
 import { count } from "../budget.js";
 import { why } from "../types.js";
 import type { Vigilance } from "./vigilance.js";
-import type { Store } from "./vigilance-carte.js";
+import { selonLeStockage } from "../contexte.js";
+import { magasin } from "./vigilance-carte.js";
 
 const INDEX = "vigilance:episodes";
 export const episodeKey = (emise: string) => `vigilance:episode:${emise}`;
@@ -24,14 +25,8 @@ export interface Index {
   bulletins: { emise: string; taille: number; garde: number }[];
 }
 
-let store: Store | undefined;
-/** The last bulletin this isolate kept or found kept: the index is not read again for it. */
-let last: string | undefined;
-
-export function configure(kv?: Store): void {
-  store = kv;
-  last = undefined;
-}
+/** The last bulletin this isolate kept or found kept in its store: the index is not read again for it. */
+const DERNIER = selonLeStockage((): { emise?: string } => ({}));
 
 /** Whether a bulletin is part of an episode: any colour above green, or a cyclone alert at any step. */
 export function episode(v: Vigilance): boolean {
@@ -41,7 +36,9 @@ export function episode(v: Vigilance): boolean {
 
 /** Keeps the zip of a bulletin of an episode, once. Never throws. */
 export async function garder(zip: ArrayBuffer, v: Vigilance, now = Date.now()): Promise<void> {
-  if (!store || !episode(v) || last === v.emise) return;
+  const store = magasin();
+  const dernier = DERNIER();
+  if (!store || !episode(v) || dernier.emise === v.emise) return;
   try {
     count(1, "read");
     const index = ((await store.json(INDEX)) as Index | null) ?? { bulletins: [] };
@@ -56,7 +53,7 @@ export async function garder(zip: ArrayBuffer, v: Vigilance, now = Date.now()): 
       await store.put(INDEX, JSON.stringify(index), TTL_SECONDS);
       console.log(`vigilance : bulletin émis le ${v.emise} gardé pour le rejeu (${zip.byteLength} octets, ${index.bulletins.length} gardés)`);
     }
-    last = v.emise;
+    dernier.emise = v.emise;
   } catch (err) {
     console.error("vigilance : bulletin non gardé pour le rejeu", why(err));
   }

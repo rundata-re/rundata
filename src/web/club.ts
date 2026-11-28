@@ -18,7 +18,7 @@ import type { Cache } from "../cache.js";
 import type { Alerte } from "./data.js";
 import { avecContact } from "./adresse.js";
 import { crumbBar, crumbs, webPage } from "./domains.js";
-import { esc } from "./map.js";
+import { brut, href, html, type Html } from "./html.js";
 import { layout } from "./pages.js";
 import { hp, human, PROPOSER_PATH, received, SECRET_HEADERS, TURNSTILE_SCRIPT, widget } from "./propositions.js";
 
@@ -39,50 +39,53 @@ const META = "Clubs et associations de La Réunion : ouvrez votre espace avec l
 
 const HTML_HEADERS = { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "x-content-type-options": "nosniff" };
 
-function bandeau(titre: string, lead?: string): string {
-  return `${crumbBar(titre, PARENT)}
+function bandeau(titre: string, lead?: string): Html {
+  return html`${brut(crumbBar(titre, PARENT))}
 <div class="wrap intro solo"><div class="pitch">
   <p class="pill">Clubs et associations</p>
-  <h1>${esc(titre)}</h1>
-  ${lead ? `<p class="lead">${esc(lead)}</p>` : ""}
+  <h1>${titre}</h1>
+  ${lead ? html`<p class="lead">${lead}</p>` : ""}
 </div></div>`;
 }
 
 /** A page of the space; `secret`: its address holds a secret, never sent to another site nor indexed. */
-function page(origin: string, titre: string, body: string, alerte?: Alerte, secret = false, lead?: string): string {
+function page(origin: string, titre: string, body: Html, alerte?: Alerte, secret = false, lead?: string): string {
   return layout(
     origin,
     { title: TITLE, description: META, path: CLUB_PATH, jsonld: secret ? [] : [crumbs(origin, "Votre espace", CLUB_PATH, PARENT), webPage(origin, CLUB_PATH, TITLE, META, null)], alerte, sansAvis: true, sansPartage: secret, noindex: true, ...(secret && { referrer: "no-referrer" }) },
-    bandeau(titre, lead),
-    body,
+    bandeau(titre, lead).texte,
+    body.texte,
   );
 }
 
-const section = (...p: string[]) => `<section class="card fo">
-  ${p.join("\n  ")}
+/** The pieces `xs`, `sep` between each two (HTML the code writes). */
+const joint = (xs: readonly Html[], sep: string) => xs.map((x, i) => html`${i ? brut(sep) : ""}${x}`);
+
+const section = (...p: Html[]) => html`<section class="card fo">
+  ${joint(p, "\n  ")}
 </section>`;
 
-const proposer = `<a class="btn sun" href="${PROPOSER_PATH}?ref=club">Proposer un événement</a>`;
-const PAS_TROUVE = `<p>rundata.re ne trouve pas ce club dans les annuaires officiels. Vous pouvez proposer vos dates avec le formulaire habituel : elles sont relues avant de s'afficher.</p>
+const proposer = html`<a class="btn sun" href="${PROPOSER_PATH}?ref=club">Proposer un événement</a>`;
+const PAS_TROUVE = html`<p>rundata.re ne trouve pas ce club dans les annuaires officiels. Vous pouvez proposer vos dates avec le formulaire habituel : elles sont relues avant de s'afficher.</p>
   <p>${proposer}</p>`;
 
 // ---------------------------------------------------------------- screen 1
 
-function recherche(clubs: readonly espace.ClubVu[], q: string): string {
+function recherche(clubs: readonly espace.ClubVu[], q: string): Html {
   const found = q ? espace.chercher(clubs, q) : [];
   const typed = q.replace(/\s/g, "").length >= espace.RECHERCHE_MIN;
   const results = !typed
     ? ""
     : found.length
-      ? `<ul class="clubs-trouves">
-    ${found.map((c) => `<li><a href="${DEMANDE_PATH}?club=${c.id}" rel="nofollow">${esc(c.nom)}<span>${esc([c.commune, c.activite].filter(Boolean).join(" · "))}</span></a></li>`).join("\n    ")}
+      ? html`<ul class="clubs-trouves">
+    ${joint(found.map((c) => html`<li><a href="${DEMANDE_PATH}?club=${c.id}" rel="nofollow">${c.nom}<span>${[c.commune, c.activite].filter(Boolean).join(" · ")}</span></a></li>`), "\n    ")}
   </ul>`
       : PAS_TROUVE;
-  return `<form class="card fo" method="get" action="${CLUB_PATH}" role="search">
+  return html`<form class="card fo" method="get" action="${CLUB_PATH}" role="search">
   <div class="f"><label for="c-q">Le nom de votre club ou association</label>
-    <input id="c-q" name="q" value="${esc(q)}" list="c-clubs" maxlength="${Q_MAX}" minlength="${espace.RECHERCHE_MIN}" autocomplete="off" required aria-describedby="c-aide">
+    <input id="c-q" name="q" value="${q}" list="c-clubs" maxlength="${Q_MAX}" minlength="${espace.RECHERCHE_MIN}" autocomplete="off" required aria-describedby="c-aide">
     <p class="aide" id="c-aide">Tapez les premières lettres : la recherche se fait dans les annuaires officiels des clubs et associations.</p></div>
-  <datalist id="c-clubs">${clubs.map((c) => `<option value="${esc(c.nom)}">${esc([c.commune, c.activite].filter(Boolean).join(" · "))}</option>`).join("")}</datalist>
+  <datalist id="c-clubs">${clubs.map((c) => html`<option value="${c.nom}">${[c.commune, c.activite].filter(Boolean).join(" · ")}</option>`)}</datalist>
   <button type="submit">Chercher</button>
   ${results}
 </form>`;
@@ -93,7 +96,7 @@ export async function trouver(request: Request, alerte?: Alerte): Promise<Respon
   const url = new URL(request.url);
   const q = (url.searchParams.get("q") ?? "").replace(/\s+/g, " ").trim().slice(0, Q_MAX);
   const clubs = await espace.proposes().catch(() => undefined);
-  const body = clubs ? recherche(clubs, q) : section(`<p>${avecContact(LISTE_INDISPONIBLE)}</p>`);
+  const body = clubs ? recherche(clubs, q) : section(html`<p>${brut(avecContact(LISTE_INDISPONIBLE))}</p>`);
   return new Response(page(url.origin, "Votre espace", body, alerte), { status: clubs ? 200 : 503, headers: HTML_HEADERS });
 }
 
@@ -118,49 +121,49 @@ function quelleAdresse(c: espace.Club): string {
 }
 
 /** « Ce n'est plus la bonne adresse ? », by level. */
-function plusLaBonne(c: espace.Club): string {
+function plusLaBonne(c: espace.Club): Html {
   const federation = espace.FEDERATIONS[c.source];
   const texte = federation
-    ? `<p>Pour votre sécurité, rundata.re n'utilise que l'adresse donnée par ${esc(federation)}. Faites-la corriger par ${esc(federation)}, puis revenez.</p>`
-    : `<p>Écrivez à rundata.re depuis <a href="/associations">la page Associations</a> : la nouvelle adresse est vérifiée avec vous. En attendant, vous pouvez proposer vos dates avec le formulaire habituel.</p>
+    ? html`<p>Pour votre sécurité, rundata.re n'utilise que l'adresse donnée par ${federation}. Faites-la corriger par ${federation}, puis revenez.</p>`
+    : html`<p>Écrivez à rundata.re depuis <a href="/associations">la page Associations</a> : la nouvelle adresse est vérifiée avec vous. En attendant, vous pouvez proposer vos dates avec le formulaire habituel.</p>
     <p>${proposer}</p>`;
-  return `<details class="note"><summary>Ce n'est plus la bonne adresse ?</summary>
+  return html`<details class="note"><summary>Ce n'est plus la bonne adresse ?</summary>
     ${texte}
   </details>`;
 }
 
 /** The source gives no address now: said, with the way round. */
-function sansAdresse(c: espace.Club): string {
+function sansAdresse(c: espace.Club): Html {
   const federation = espace.FEDERATIONS[c.source];
   return section(
     federation
-      ? `<p>La page de votre club chez ${esc(federation)} ne donne plus l'adresse que la fédération a créée pour lui. Rien n'a été envoyé. Faites-la corriger par ${esc(federation)}, puis revenez.</p>`
-      : `<p>rundata.re n'a plus d'adresse vérifiée pour ce club. Rien n'a été envoyé. Écrivez depuis <a href="/associations">la page Associations</a> : l'adresse est vérifiée avec vous.</p>`,
-    `<p>En attendant, vous pouvez proposer vos dates avec le formulaire habituel : elles sont relues avant de s'afficher.</p>`,
-    `<p>${proposer}</p>`,
+      ? html`<p>La page de votre club chez ${federation} ne donne plus l'adresse que la fédération a créée pour lui. Rien n'a été envoyé. Faites-la corriger par ${federation}, puis revenez.</p>`
+      : html`<p>rundata.re n'a plus d'adresse vérifiée pour ce club. Rien n'a été envoyé. Écrivez depuis <a href="/associations">la page Associations</a> : l'adresse est vérifiée avec vous.</p>`,
+    html`<p>En attendant, vous pouvez proposer vos dates avec le formulaire habituel : elles sont relues avant de s'afficher.</p>`,
+    html`<p>${proposer}</p>`,
   );
 }
 
-function ecran2(c: espace.Club, masque: string): string {
-  return `<section class="card fo" aria-labelledby="h-club">
-  <h2 id="h-club">${esc([c.nom, c.commune].filter(Boolean).join(" · "))}</h2>
-  <p>${esc(quelleAdresse(c))}</p>
-  <p class="adresse"><b>${esc(masque)}</b></p>
+function ecran2(c: espace.Club, masque: string): Html {
+  return html`<section class="card fo" aria-labelledby="h-club">
+  <h2 id="h-club">${[c.nom, c.commune].filter(Boolean).join(" · ")}</h2>
+  <p>${quelleAdresse(c)}</p>
+  <p class="adresse"><b>${masque}</b></p>
   <form class="fo" method="post" action="${DEMANDE_PATH}">
     <input type="hidden" name="club" value="${c.id}">
-    ${hp}
-    ${widget("club")}
+    ${brut(hp)}
+    ${brut(widget("club"))}
     <button type="submit">Envoyer le lien</button>
   </form>
   ${plusLaBonne(c)}
-</section>${TURNSTILE_SCRIPT}`;
+</section>${brut(TURNSTILE_SCRIPT)}`;
 }
 
 const apresEnvoi = (c: espace.Club, masque: string) =>
   section(
-    `<h2>C'est parti.</h2>`,
-    `<p>Ouvrez l'e-mail envoyé à ${esc(masque)} et touchez le lien. Il vaut 48 heures.</p>`,
-    `<p class="note">Rien reçu après quelques minutes ? Regardez dans les indésirables, ou <a href="${DEMANDE_PATH}?club=${c.id}" rel="nofollow">renvoyez le lien</a>.</p>`,
+    html`<h2>C'est parti.</h2>`,
+    html`<p>Ouvrez l'e-mail envoyé à ${masque} et touchez le lien. Il vaut 48 heures.</p>`,
+    html`<p class="note">Rien reçu après quelques minutes ? Regardez dans les indésirables, ou <a href="${DEMANDE_PATH}?club=${c.id}" rel="nofollow">renvoyez le lien</a>.</p>`,
   );
 
 /**
@@ -169,7 +172,7 @@ const apresEnvoi = (c: espace.Club, masque: string) =>
  */
 export async function demande(request: Request, cache: Cache, now = new Date(), alerte?: Alerte): Promise<Response> {
   const url = new URL(request.url);
-  const html = (titre: string, body: string, status = 200) => new Response(page(url.origin, titre, body, alerte), { status, headers: HTML_HEADERS });
+  const repondre = (titre: string, body: Html, status = 200) => new Response(page(url.origin, titre, body, alerte), { status, headers: HTML_HEADERS });
   let f: URLSearchParams = url.searchParams;
   const post = request.method === "POST";
   if (post) {
@@ -181,25 +184,25 @@ export async function demande(request: Request, cache: Cache, now = new Date(), 
   }
   const id = Number(f.get("club"));
   const c = await espace.club(id).catch(() => undefined);
-  if (!c) return html("Votre espace", section(PAS_TROUVE), 404);
+  if (!c) return repondre("Votre espace", section(PAS_TROUVE), 404);
   if (post) {
     // Filled in by robots only, or not a person: nothing read, nothing sent.
-    if (f.get("site_web") || !(await human(f, avis.adresseOf(request.headers), { hostname: url.hostname, action: "club" }))) return html("Votre espace", section(`<p>${avecContact(INDISPONIBLE)}</p>`), 503);
+    if (f.get("site_web") || !(await human(f, avis.adresseOf(request.headers), { hostname: url.hostname, action: "club" }))) return repondre("Votre espace", section(html`<p>${brut(avecContact(INDISPONIBLE))}</p>`), 503);
     const d = await espace.demander(c, `${url.origin}${ACCES_PATH}`, avis.adresseOf(request.headers), now);
-    if (d.issue === "ok") return html("Votre espace", apresEnvoi(c, d.masque));
-    if (d.issue === "absente") return html("Votre espace", sansAdresse(c), 422);
-    if (d.issue in LIMITES) return html("Votre espace", section(`<p>${esc(LIMITES[d.issue as espace.Limite])}</p>`), 429);
-    return html("Votre espace", section(`<p>${avecContact(INDISPONIBLE)}</p>`), 503);
+    if (d.issue === "ok") return repondre("Votre espace", apresEnvoi(c, d.masque));
+    if (d.issue === "absente") return repondre("Votre espace", sansAdresse(c), 422);
+    if (d.issue in LIMITES) return repondre("Votre espace", section(html`<p>${LIMITES[d.issue as espace.Limite]}</p>`), 429);
+    return repondre("Votre espace", section(html`<p>${brut(avecContact(INDISPONIBLE))}</p>`), 503);
   }
   const a = await espace.apercu(c, cache);
-  if ("masque" in a) return html("Votre espace", ecran2(c, a.masque));
-  if (a.issue === "absente") return html("Votre espace", sansAdresse(c), 422);
-  return html("Votre espace", section(`<p>${avecContact(INDISPONIBLE)}</p>`), 503);
+  if ("masque" in a) return repondre("Votre espace", ecran2(c, a.masque));
+  if (a.issue === "absente") return repondre("Votre espace", sansAdresse(c), 422);
+  return repondre("Votre espace", section(html`<p>${brut(avecContact(INDISPONIBLE))}</p>`), 503);
 }
 
 // ---------------------------------------------------------------- screen 3 and « Mon agenda »
 
-const PLUS_VALABLE = section(`<p>Ce lien n'est plus valable.</p>`, `<p><a class="btn sun" href="${CLUB_PATH}">Recevoir un nouveau lien</a></p>`);
+const PLUS_VALABLE = section(html`<p>Ce lien n'est plus valable.</p>`, html`<p><a class="btn sun" href="${CLUB_PATH}">Recevoir un nouveau lien</a></p>`);
 
 /**
  * GET /associations/club/acces/<secret>: the club, the agreement the first time, and « Ouvrir mon espace »; never a
@@ -208,23 +211,23 @@ const PLUS_VALABLE = section(`<p>Ce lien n'est plus valable.</p>`, `<p><a class=
 export async function acces(request: Request, now = new Date(), alerte?: Alerte): Promise<Response> {
   const url = new URL(request.url);
   const secret = url.pathname.slice(ACCES_PATH.length).replace(/\/$/, "");
-  const html = (titre: string, body: string, status = 200) => new Response(page(url.origin, titre, body, alerte, true), { status, headers: SECRET_HEADERS });
+  const repondre = (titre: string, body: Html, status = 200) => new Response(page(url.origin, titre, body, alerte, true), { status, headers: SECRET_HEADERS });
   if (request.method === "POST") {
     const f = await received(request, "Cette page");
     if (f instanceof Response) return f;
     const personnel = await espace.ouvrir(secret, now).catch(() => undefined);
-    if (!personnel) return html("Votre espace", PLUS_VALABLE, 410);
+    if (!personnel) return repondre("Votre espace", PLUS_VALABLE, 410);
     return new Response(null, { status: 303, headers: { location: `${ESPACE_PATH}${personnel}`, "cache-control": "no-store", "referrer-policy": "no-referrer" } });
   }
   if (request.method !== "GET" && request.method !== "HEAD") return new Response(null, { status: 405, headers: { allow: "GET, HEAD, POST" } });
   const l = await espace.lien(secret, now).catch(() => undefined);
-  if (!l) return html("Votre espace", PLUS_VALABLE, 404);
+  if (!l) return repondre("Votre espace", PLUS_VALABLE, 404);
   const accord = l.premiere
-    ? `<p>En ouvrant votre espace, vous confirmez agir pour ce club ou cette association. Les dates que vous publiez sont ouvertes au public, et publiées sous Licence Ouverte 2.0 : tout le monde peut les réutiliser, en citant votre club.</p>`
+    ? html`<p>En ouvrant votre espace, vous confirmez agir pour ce club ou cette association. Les dates que vous publiez sont ouvertes au public, et publiées sous Licence Ouverte 2.0 : tout le monde peut les réutiliser, en citant votre club.</p>`
     : "";
-  return html(l.club.nom, `<section class="card fo">
+  return repondre(l.club.nom, html`<section class="card fo">
   ${accord}
-  <form class="fo" method="post" action="${esc(`${ACCES_PATH}${secret}`)}"><button type="submit">Ouvrir mon espace</button></form>
+  <form class="fo" method="post" action="${href(`${ACCES_PATH}${secret}`)}"><button type="submit">Ouvrir mon espace</button></form>
 </section>`);
 }
 
@@ -232,16 +235,16 @@ export async function acces(request: Request, now = new Date(), alerte?: Alerte)
 export async function monAgenda(request: Request, now = new Date(), alerte?: Alerte): Promise<Response> {
   const url = new URL(request.url);
   const secret = url.pathname.slice(ESPACE_PATH.length).replace(/\/$/, "");
-  const html = (titre: string, body: string, status = 200, lead?: string) => new Response(page(url.origin, titre, body, alerte, true, lead), { status, headers: SECRET_HEADERS });
+  const repondre = (titre: string, body: Html, status = 200, lead?: string) => new Response(page(url.origin, titre, body, alerte, true, lead), { status, headers: SECRET_HEADERS });
   if (request.method !== "GET" && request.method !== "HEAD") return new Response(null, { status: 405, headers: { allow: "GET, HEAD" } });
   const e = await espace.espace(secret, now).catch(() => undefined);
-  if (!e) return html("Votre espace", PLUS_VALABLE, 404);
+  if (!e) return repondre("Votre espace", PLUS_VALABLE, 404);
   const garder = e.nouveau
-    ? `<p class="msg ok vu" role="status">Gardez cette page : ajoutez-la à vos favoris ou à l'écran d'accueil de votre téléphone. Pour revenir sans elle, demandez un nouveau lien depuis la page Associations.</p>`
+    ? html`<p class="msg ok vu" role="status">Gardez cette page : ajoutez-la à vos favoris ou à l'écran d'accueil de votre téléphone. Pour revenir sans elle, demandez un nouveau lien depuis la page Associations.</p>`
     : "";
-  return html(
+  return repondre(
     e.club.nom,
-    `<section class="card fo" aria-labelledby="h-dates">
+    html`<section class="card fo" aria-labelledby="h-dates">
   ${garder}
   <h2 id="h-dates">Vos prochaines dates</h2>
   <p class="note">Aucune date pour l'instant.</p>

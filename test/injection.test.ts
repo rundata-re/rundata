@@ -18,7 +18,9 @@ import { pageOf, PAGES } from "../src/web/places.js";
 import type { Evenement } from "../src/providers/agenda.js";
 import type { Communique } from "../src/providers/tco-communiques.js";
 import { resume, type Resume } from "../src/tools/resume.js";
-import { associationsPage } from "../src/web/associations.js";
+import { annuaireSection, associationsPage } from "../src/web/associations.js";
+import { gererPage } from "../src/web/propositions.js";
+import type { Ligne } from "../src/propositions.js";
 import { aujourdhuiPage } from "../src/web/aujourdhui.js";
 import { collectePage } from "../src/web/collecte.js";
 import { decheteriesPage } from "../src/web/decheteries.js";
@@ -250,6 +252,26 @@ describe("a text read elsewhere, trapped, never comes out as a tag", () => {
   });
 });
 
+describe("a text typed or read for the clubs' space, trapped, never comes out as a tag", () => {
+  const ligne = (over: Partial<Ligne> = {}) => ({
+    id: 3, t: Date.parse("2026-10-25T08:00:00Z") / 1000, etat: "publie", titre: PIEGE, date: "2026-11-27", debut: "20:00", fin: null, repete: "semaine",
+    jusqu_au: "2026-12-20", commune: "Saint-Paul", lieu: PIEGE, organisateur: PIEGE, description: PIEGE, prix: PIEGE, lien: null, email: "x@example.org",
+    contact_public: PIEGE, derniere_date: "2026-12-20", motif: PIEGE, reporte_au: null, correction: null, ...over,
+  }) as Ligne;
+
+  it("on a proposed event's own page: its title, place, organiser, public contact and the reason given", () => {
+    const now = new Date("2026-11-07T10:00:00Z");
+    sansInjection(gererPage(O, ligne(), "/associations/proposition/x", { kind: "page" }, now));
+    sansInjection(gererPage(O, ligne({ etat: "refuse" }), "/associations/proposition/x", { kind: "page" }, now));
+    sansInjection(gererPage(O, ligne(), "/associations/proposition/x", { kind: "page", faux: { f: new URLSearchParams({ titre: PIEGE, lieu: PIEGE }), erreurs: ["date"] } }, now));
+  });
+
+  it("in the directory of the declared associations: their title and object, and the words searched", () => {
+    const liste = [{ id: "W1", titre: PIEGE, objet: PIEGE, insee: "97415", creee: "1999-01-01", site: null }];
+    sansInjection(annuaireSection({ maj: "2026-11-01", mot: PIEGE, page: 1, trouve: { liste, total: 1 } }));
+  });
+});
+
 describe("a link read elsewhere never runs a script", () => {
   // Escaped, « javascript:… » would still run on a tap: a link of another site goes through href() (web/html.ts), which
   // writes « # » for a scheme that is not the web's, a mail or a phone. Elsewhere (a filter's key in data-k) the link
@@ -314,5 +336,10 @@ describe("a link read elsewhere never runs a script", () => {
     expect(page).toContain("site de la mairie →");
     sansScript(page);
     sansScript(lienNom(J, "Fiche service-public.fr", ' rel="noopener"'));
+  });
+
+  it("in a declared association's site (the directory under /associations)", () => {
+    const liste = [{ id: "W1", titre: "Club", objet: "Sport.", insee: "97415", creee: "1999-01-01", site: J }];
+    sansScript(annuaireSection({ maj: "2026-11-01", mot: "club", page: 1, trouve: { liste, total: 1 } }));
   });
 });

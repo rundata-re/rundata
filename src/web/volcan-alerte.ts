@@ -9,7 +9,8 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import type { Cache } from "../cache.js";
 import { localTime } from "../geo.js";
 import { type ActualitesAnswer, type VolcanAnswer, VOLCAN_ETAT } from "./data.js";
-import { esc, fenetre } from "./map.js";
+import { fenetre } from "./map.js";
+import { brut, echappe, href, html } from "./html.js";
 import { DESCRIPTION_MAX, ligne } from "./pages.js";
 import { givenAt as postAt, NON_ANNONCEE } from "../tools/volcan.js";
 import { libelle } from "../tools/volcan-acces.js";
@@ -133,7 +134,7 @@ export function bannerHtml(a: VolcanAlerte | undefined, path: string): string {
   if (!a) return "";
   const more = path === "/volcan" ? "" : ` <a href="/volcan">${FOLLOW}</a>`;
   const short = path === "/volcan" ? "" : ligne("/volcan", "🌋", volcanLigne(a));
-  return `<div class="alerte volcan"${short ? " data-court" : ""} role="status">${short}<div class="wrap"><span>${esc(bannerText(a))}</span>${more}</div></div>`;
+  return html`<div class="alerte volcan"${short ? " data-court" : ""} role="status">${brut(short)}<div class="wrap"><span>${bannerText(a)}</span>${brut(more)}</div></div>`.texte;
 }
 
 /**
@@ -178,7 +179,7 @@ export function homeCard(a: VolcanAlerte): string {
   const [h, lead] = a.eruption
     ? ["Éruption en cours au Piton de la Fournaise", `${a.niveau ? `${nb(a.niveau)}${by(a)}. ` : ""}${ENCLOS}`]
     : [`Piton de la Fournaise : ${nb(level(a))}`, `${nb(a.niveau!)}${by(a)}${a.arret ? `. ${arretSaid(a)}` : planSaid(a)}. ${ENCLOS}`];
-  return `<div class="wrap volcan-une" data-court>${ligne("/volcan", "🌋", volcanLigne(a))}<a class="card" href="/volcan"><h2>🌋 ${esc(h)}</h2><p class="lead">${esc(lead)} <b>${FOLLOW}</b></p></a></div>`;
+  return html`<div class="wrap volcan-une" data-court>${brut(ligne("/volcan", "🌋", volcanLigne(a)))}<a class="card" href="/volcan"><h2>🌋 ${h}</h2><p class="lead">${lead} <b>${FOLLOW}</b></p></a></div>`.texte;
 }
 
 /** The home tile's figure and line during an alert. */
@@ -186,9 +187,9 @@ export function tileLive(a: VolcanAlerte): { valeur: string; detail: string; sou
   // Whose the level is, on the tile's line of its own.
   const source = a.ovpf ? `OVPF, publication du ${a.ovpf.date.slice(0, 5)}` : a.communique ? `Préfecture, communiqué du ${dm(a.communique.jour)}` : undefined;
   return a.eruption
-    ? { valeur: "Éruption en cours", detail: [a.niveau ? esc(level(a)) : "", "Enclos interdit"].filter(Boolean).join(" · "), source }
+    ? { valeur: "Éruption en cours", detail: [a.niveau ? echappe(level(a)) : "", "Enclos interdit"].filter(Boolean).join(" · "), source }
     // No quotes, for room.
-    : { valeur: esc(a.niveau!), detail: [esc(plan(a)), "Enclos interdit"].filter(Boolean).join(" · "), source };
+    : { valeur: echappe(a.niveau!), detail: [echappe(plan(a)), "Enclos interdit"].filter(Boolean).join(" · "), source };
 }
 
 // --- /volcan during an alert -----------------------------------------------------------------------------------------
@@ -201,7 +202,7 @@ export const OVPF_LINKS = [
   { nom: "X", url: "https://x.com/obsfournaise" },
 ];
 /** « Suivre l'OVPF : Facebook ↗ · Bluesky ↗ · X ↗ », at the top of /volcan during an alert. */
-export const followOvpf = () => `Suivre l'OVPF\u00a0: ${OVPF_LINKS.map((l) => `<a href="${esc(l.url)}">${esc(l.nom)} ↗</a>`).join(" · ")}`;
+export const followOvpf = () => html`Suivre l'OVPF\u00a0: ${OVPF_LINKS.map((l, i) => html`${i ? " · " : ""}<a href="${href(l.url)}">${l.nom} ↗</a>`)}`.texte;
 
 /** Whose the level is, in the banner's words: « Alerte 1 du préfet, communiqué du 24 octobre. ». */
 export const levelSaid = (a: VolcanAlerte) =>
@@ -221,17 +222,13 @@ export function mediaHeadlines(news: ActualitesAnswer | undefined, max = 8) {
 /** The prefecture's release, the only link to it on /volcan. */
 export const releaseCard = (a: VolcanAlerte) =>
   a.communique
-    ? `<div class="card"><h3>Le communiqué de la préfecture</h3><p class="note">publié le ${esc(day(a.communique.jour))}</p>` +
-      `<p><a href="${esc(a.communique.lien)}">${esc(a.communique.titre)}</a></p></div>`
+    ? html`<div class="card"><h3>Le communiqué de la préfecture</h3><p class="note">publié le ${day(a.communique.jour)}</p><p><a href="${href(a.communique.lien)}">${a.communique.titre}</a></p></div>`.texte
     : "";
 
 /** What the media say, their time and name above each headline (a line of its own at 390 px). */
 export function mediaSection(news: ActualitesAnswer | undefined): string {
   const heads = mediaHeadlines(news);
-  return `<section aria-labelledby="h-medias"><div class="sec-h"><h2 id="h-medias">Ce que disent les médias de l'île</h2>` +
-    `<p>Titres repris tels quels, avec leur heure : selon les médias, pas une source officielle.</p></div>` +
-    (heads.length
-      ? `<ul class="rows medias">${heads.map((i) => `<li><span class="note">${esc(i.quand)} · ${esc(i.media)}</span><a href="${esc(i.lien)}"${fenetre(i.lien)}>${esc(i.titre)}</a></li>`).join("")}</ul>`
-      : `<p class="card">Pas encore d'article des médias de l'île sur cette alerte. Les annonces officielles sont ci-dessus.</p>`) +
-    `</section>`;
+  return html`<section aria-labelledby="h-medias"><div class="sec-h"><h2 id="h-medias">Ce que disent les médias de l'île</h2><p>Titres repris tels quels, avec leur heure : selon les médias, pas une source officielle.</p></div>${heads.length
+      ? html`<ul class="rows medias">${heads.map((i) => html`<li><span class="note">${i.quand} · ${i.media}</span><a href="${href(i.lien)}"${brut(fenetre(i.lien))}>${i.titre}</a></li>`)}</ul>`
+      : html`<p class="card">Pas encore d'article des médias de l'île sur cette alerte. Les annonces officielles sont ci-dessus.</p>`}</section>`.texte;
 }

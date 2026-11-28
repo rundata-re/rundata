@@ -17,6 +17,8 @@ import { pageOf } from "../src/web/places.js";
 import { site } from "../src/web/site.js";
 import { deadAnchors, doubleIds, mapLinks, sautsDeTitre } from "./cartes.js";
 import { casse } from "../src/tools/casse.js";
+import { bases } from "./contexte.js";
+const donnerTransit = (d?: transit.TransitDb) => bases({ transit: d });
 
 const NOW = new Date("2026-10-23T14:40:00Z");
 const ORIGIN = "https://rundata.re";
@@ -90,8 +92,8 @@ describe("domain pages", () => {
 });
 
 describe("bus page", () => {
-  beforeEach(() => transit.configure(fake));
-  afterEach(() => transit.configure(undefined));
+  beforeEach(() => donnerTransit(fake));
+  afterEach(() => donnerTransit(undefined));
 
   it("lists the networks and the next departures at the bus stations", async () => {
     const data = await buildBus(NOW);
@@ -116,15 +118,15 @@ describe("bus page", () => {
   });
 
   it("without the timetables, sends people to the connector", async () => {
-    transit.configure(undefined);
+    donnerTransit(undefined);
     const page = busPage(ORIGIN, cached(await buildBus(NOW)), NOW);
     expect(page).toContain("le prochain bus à la gare de Saint-Pierre");
   });
 });
 
 describe("home page tiles", () => {
-  beforeEach(() => transit.configure(fake));
-  afterEach(() => transit.configure(undefined));
+  beforeEach(() => donnerTransit(fake));
+  afterEach(() => donnerTransit(undefined));
 
   it("say each category in a few words, from its page's last copy", async () => {
     const live = {

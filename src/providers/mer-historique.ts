@@ -17,6 +17,7 @@
  */
 import { count } from "../budget.js";
 import type { Cache, Cached } from "../cache.js";
+import { contexte, type Lecture } from "../contexte.js";
 import type { SourceInfo } from "../types.js";
 
 export const SOURCE_CANDHIS: SourceInfo = {
@@ -74,22 +75,16 @@ export interface Archive {
 }
 
 /** The part of a D1 database used here. */
-export interface MerDb {
-  all<T>(sql: string, ...params: unknown[]): Promise<T[]>;
-}
+export type MerDb = Lecture;
 
-let db: MerDb | undefined;
-
-/** In the Worker: the database rundata-climat (the binding CLIMAT); none elsewhere. */
-export function configure(d: MerDb | undefined) {
-  db = d;
-}
-export const enabled = () => db !== undefined;
+/** In the Worker: the database rundata-climat (contexte.ts `bases.climat`); none elsewhere unless given one. */
+export const enabled = () => contexte().bases?.climat !== undefined;
 
 /** Not imported yet: the tables are missing. Read as an empty archive. */
 const absente = (err: unknown) => /no such table/i.test(err instanceof Error ? err.message : String(err));
 
 async function all<T>(sql: string, ...params: unknown[]): Promise<T[]> {
+  const db = contexte().bases?.climat;
   if (!db) return [];
   count();
   try {

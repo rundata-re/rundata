@@ -5,6 +5,8 @@ import { Cache, MemoryStore } from "../src/cache.js";
 import { type Departure, departures, findStops, pageRow, tripPath, tripRun } from "../src/tools/transports.js";
 import { tripGonePage, tripPage } from "../src/web/trajet.js";
 import { handle } from "../src/app.js";
+import { bases } from "./contexte.js";
+const donnerTransit = (d?: transit.TransitDb) => bases({ transit: d });
 
 // The rows of the database for Saint-Pierre's bus station, as in test/transports.test.ts (GTFS of 23/10/2026).
 const rows = JSON.parse(readFileSync(new URL("./fixtures/transit/rows.json", import.meta.url), "utf8")) as Record<
@@ -23,8 +25,8 @@ const NOW = new Date("2026-10-23T03:30:00Z");
 const ORIGIN = "https://rundata.re";
 const CJ = transit.NETWORKS.carjaune;
 
-beforeEach(() => transit.configure(fake));
-afterEach(() => transit.configure(undefined));
+beforeEach(() => donnerTransit(fake));
+afterEach(() => donnerTransit(undefined));
 
 /** A Car Jaune departure from Saint-Pierre's bus station whose pattern has its stops in the fixture. */
 async function departure() {
@@ -117,7 +119,7 @@ describe("the link of a departure", () => {
     const id = CJ.first_pattern + local;
     const service = Array.from({ length: 500 }, (_, i) => i).find((x) => transit.serviceRuns("carjaune", x, 20261023, 4) && transit.serviceRuns("carjaune", x, 20261024, 5))!;
     expect(service).toBeDefined();
-    transit.configure({
+    donnerTransit({
       all: async <T>(sql: string) =>
         (/FROM pattern_stops/.test(sql)
           ? [{ feed: CJ.stops_feed, id: local, sens: 0, stops: JSON.stringify([[0, 0], [1, 7200], [2, 4 * 3600 - 60]]) }]
@@ -167,7 +169,7 @@ describe("a trip", () => {
           ? [{ feed: CJ.stops_feed, id: local, sens: 0, stops: JSON.stringify([[0, 0], [1, 1200], [2, 2400]]) }]
           : [{ feed: CJ.feed, id: local, route: transit.ENDS[id][0] - CJ.first_route, headsign: "Saint-Denis", trips: JSON.stringify([[service, 23 * 3600 + 50 * 60, "nuit"]]) }]) as T[],
     };
-    transit.configure(night);
+    donnerTransit(night);
     const friday = (await tripRun("carjaune", local, "nuit", 20261023, NOW))!;
     expect(friday).toBeDefined();
     // Saturday 00:10: Friday's run is on the road, its last stop after midnight.
@@ -197,7 +199,7 @@ describe("a trip", () => {
           ? [{ feed: CJ.stops_feed, id: local, sens: 0, stops: JSON.stringify([[0, 0], [1, 1200], [2, 2400]]) }]
           : [{ feed: CJ.feed, id: local, route: transit.ENDS[id][0] - CJ.first_route, headsign: "Saint-Denis", trips: JSON.stringify([[service, 7 * 3600, "matin"]]) }]) as T[],
     };
-    transit.configure(db);
+    donnerTransit(db);
     // Friday 07:25: today's run passed the second stop at 07:20 and rolls to the third, at 07:40.
     const t = new Date("2026-10-23T03:25:00Z");
     const [first, second, third] = [0, 1, 2].map((n) => CJ.first_stop + n);

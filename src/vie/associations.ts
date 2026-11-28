@@ -8,6 +8,7 @@
  * entry with the greffe des associations (CORRIGER).
  */
 import { count } from "../budget.js";
+import { contexte } from "../contexte.js";
 import { INSEE } from "../places/insee.js";
 import { normalize } from "../places/resolve.js";
 import type { SourceInfo } from "../types.js";
@@ -25,15 +26,14 @@ export interface Association {
 }
 
 export type All = <T>(sql: string, ...params: unknown[]) => Promise<T[]>;
-let all: All | undefined;
-
-/** The database, from the worker (worker.ts); none in a test that does not set it. */
-export function configure(read?: All): void {
-  all = read;
+/** The database, from the Worker's context (contexte.ts `bases.avis`); none in a test that does not give it. */
+function lecteur(): All | undefined {
+  const base = contexte().bases?.avis;
+  return base && (<T>(sql: string, ...params: unknown[]) => base.all<T>(sql, ...params));
 }
 
 /** Whether the table can be read here. */
-export const lisible = () => all !== undefined;
+export const lisible = () => lecteur() !== undefined;
 
 export const SOURCE: SourceInfo = {
   id: "rna",
@@ -76,6 +76,7 @@ export function requete(mots: string): string | undefined {
  * compares; `maj`, its newest row's day (« 2026-09-30 »), the day the page says. Undefined when nothing was imported yet.
  */
 export async function importe(): Promise<{ fichier: string; maj: string } | undefined> {
+  const all = lecteur();
   if (!all) return undefined;
   count(1, "read");
   const r = await all<{ cle: string; valeur: string }>("SELECT cle, valeur FROM associations_import WHERE cle IN ('fichier', 'maj')");
@@ -88,6 +89,7 @@ export async function importe(): Promise<{ fichier: string; maj: string } | unde
  * object when there are words, best match first, else in the order of their titles. `total`: how many there are.
  */
 export async function chercher(opts: { insee?: string; mots?: string; limit: number; offset?: number }): Promise<{ liste: Association[]; total: number }> {
+  const all = lecteur();
   if (!all) return { liste: [], total: 0 };
   const q = opts.mots ? requete(opts.mots) : undefined;
   const cols = "a.id, a.titre, a.objet, a.insee, a.creee, a.site";

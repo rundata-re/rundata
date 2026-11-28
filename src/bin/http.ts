@@ -8,11 +8,9 @@ import { createServer as createHttpServer, type IncomingMessage, type ServerResp
 import "./net.js";
 import { handle } from "../app.js";
 import { Cache } from "../cache.js";
-import * as climat from "../providers/climat.js";
-import * as merHistorique from "../providers/mer-historique.js";
+import { installer } from "../contexte.js";
 import * as meteofrance from "../providers/meteofrance.js";
 import { localClimat } from "./climat-local.js";
-import * as transit from "../providers/transit.js";
 import { localTransit } from "./transit-local.js";
 import { VERSION } from "../server.js";
 import * as carteScolaire from "../vie/carte-scolaire.js";
@@ -24,15 +22,17 @@ meteofrance.configure({
   token: process.env.METEOFRANCE_TOKEN,
 });
 
-// The past weather (historique_meteo) from a local copy of the archives: scripts/climat-local.ts.
-if (process.env.CLIMAT_SQLITE) {
-  climat.configure(localClimat(process.env.CLIMAT_SQLITE), process.env.CLIMAT_H_SQLITE ? localClimat(process.env.CLIMAT_H_SQLITE) : undefined);
-  // The sea's history, in the same file when its tables were loaded there (scripts/mer.sql and a mer_jour.sql).
-  merHistorique.configure(localClimat(process.env.CLIMAT_SQLITE));
-}
-
-// The bus timetables from the rows of a build (scripts/build-transit.py writes dist/transit-rows.json).
-if (process.env.TRANSIT_ROWS) transit.configure(localTransit(process.env.TRANSIT_ROWS));
+// The databases, from local copies (contexte.ts `bases`), outside the Worker: the past weather (historique_meteo) and
+// the sea's history in the same file when its tables were loaded there (scripts/climat-local.ts, scripts/mer.sql and a
+// mer_jour.sql); the bus timetables from the rows of a build (scripts/build-transit.py writes dist/transit-rows.json).
+installer({
+  worker: false,
+  bases: {
+    ...(process.env.CLIMAT_SQLITE && { climat: localClimat(process.env.CLIMAT_SQLITE) }),
+    ...(process.env.CLIMAT_SQLITE && process.env.CLIMAT_H_SQLITE && { climatHoraire: localClimat(process.env.CLIMAT_H_SQLITE) }),
+    ...(process.env.TRANSIT_ROWS && { transit: localTransit(process.env.TRANSIT_ROWS) }),
+  },
+});
 
 // The collège of an address (annuaire_services_publics): its commune's file, in public/.
 carteScolaire.configure(async (path) => JSON.parse(await readFile(new URL(path.slice(1), PUBLIC), "utf8")) as carteScolaire.CarteCommune);

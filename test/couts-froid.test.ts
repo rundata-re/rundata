@@ -5,6 +5,8 @@ import { costOf, count, counted, measured, scheduled } from "../src/budget.js";
 import { Cache, MemoryStore, TieredStore, type CacheEntry } from "../src/cache.js";
 import { SHARED, SHARED_AFTER, type Shared } from "../src/web/partagees.js";
 import * as transit from "../src/providers/transit.js";
+import { bases } from "./contexte.js";
+const donnerTransit = (d?: transit.TransitDb) => bases({ transit: d });
 
 // What each shared copy's build takes from a cold cache, against the cold cost it declares (web/partagees.ts `cold`),
 // which the scheduled event expects of it after a deploy and the budget's registry counts (src/registre.ts). Each copy
@@ -181,14 +183,14 @@ const ALL = [...SHARED, ...SHARED_AFTER];
 
 describe("each shared copy's build from a cold cache (web/partagees.ts `cold`)", () => {
   beforeEach(() => {
-    transit.configure(timetables);
+    donnerTransit(timetables);
     unrouted = [];
     vi.spyOn(console, "error").mockImplementation(() => {});
     vi.spyOn(console, "warn").mockImplementation(() => {});
     vi.spyOn(console, "log").mockImplementation(() => {});
   });
   afterEach(() => {
-    transit.configure(undefined);
+    donnerTransit(undefined);
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });

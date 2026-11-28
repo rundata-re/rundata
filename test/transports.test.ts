@@ -6,6 +6,8 @@ import { Cache, MemoryStore } from "../src/cache.js";
 import { delai } from "../src/tools/format.js";
 import { waitText } from "../src/web/domains.js";
 import { type Departure, departures, findStops, linesNamed, onceEach, parseQuery, stationDepartures, transports, tripAsked } from "../src/tools/transports.js";
+import { bases } from "./contexte.js";
+const donnerTransit = (d?: transit.TransitDb) => bases({ transit: d });
 
 // Rows of the D1 database for the stations of Saint-Pierre, the cable car at Bancoul and Hell-Bourg, from the
 // networks' GTFS of 23/10/2026, Car Jaune's of 18/11/2026 (scripts/build-transit.py).
@@ -25,8 +27,8 @@ const fake: transit.TransitDb = {
 const NOW = new Date("2026-10-23T03:30:00Z");
 const body = (r: { content: { text: string }[] }) => JSON.parse(r.content[0].text);
 
-beforeEach(() => transit.configure(fake));
-afterEach(() => transit.configure(undefined));
+beforeEach(() => donnerTransit(fake));
+afterEach(() => donnerTransit(undefined));
 
 describe("finding the stop", () => {
   it("reads a network, a commune and the words left", () => {
@@ -169,7 +171,7 @@ describe("transports", () => {
 
   it("reads only the patterns that may stop at the station in the next hours", async () => {
     const asked: number[] = [];
-    transit.configure({
+    donnerTransit({
       all: async <T>(sql: string, keys: unknown) => {
         if (/FROM patterns/.test(sql)) asked.push((JSON.parse(String(keys)) as unknown[]).length);
         return fake.all<T>(sql, keys);
@@ -196,7 +198,7 @@ describe("transports", () => {
   });
 
   it("says when it cannot answer outside the Worker", async () => {
-    transit.configure(undefined);
+    donnerTransit(undefined);
     const r = await transports("gare routière Saint-Pierre", undefined, NOW);
     expect(r.isError).toBe(true);
   });
@@ -218,13 +220,13 @@ describe("several bus stations at once", () => {
       }
       if (further) expect(looked).toBe(true);
       let reads = 0;
-      transit.configure({ all: <T>(sql: string, ...params: unknown[]) => (reads++, fake.all<T>(sql, ...params)) });
+      donnerTransit({ all: <T>(sql: string, ...params: unknown[]) => (reads++, fake.all<T>(sql, ...params)) });
       const both = await stationDepartures(stations, at);
       expect(both.map((l) => l.departs)).toEqual(alone);
       // How far each looked: 20 hours where 3 gave fewer than 3 departures.
       expect(both.map((l) => l.horizon)).toEqual(horizons);
       expect(reads).toBeLessThanOrEqual(looked ? 3 : 2);
-      transit.configure(fake);
+      donnerTransit(fake);
       // Not a comparison of empty lists: the fixture has the timetables of three of them.
       expect(alone.filter((l) => l.length).length).toBeGreaterThanOrEqual(3);
     }
@@ -321,7 +323,7 @@ describe("a line", () => {
     const [e1] = linesNamed("E1", "carjaune");
     const pats = transit.patternsOf(e1);
     const g = transit.GROUPS.find((x) => x.reseau === "carjaune" && x.ids.includes(transit.ENDS[pats[0]][1]))!;
-    transit.configure({
+    donnerTransit({
       all: async <T>(sql: string, keys: unknown) => /FROM passes/.test(sql)
         ? g.ids.map((id) => ({ feed: cj.feed, id: id - cj.first_stop, passes: JSON.stringify(pats.map((p) => [p - cj.first_pattern, 0])) })) as T[]
         : fake.all<T>(sql, keys),
@@ -354,7 +356,7 @@ describe("a line", () => {
   });
 
   it("without its stops in the database, gives its termini and its hours, and says the list is missing", async () => {
-    transit.configure({
+    donnerTransit({
       all: async <T>(sql: string, keys: unknown) => {
         if (/pattern_stops/.test(sql)) throw new Error("D1_ERROR: no such table: pattern_stops: SQLITE_ERROR");
         return fake.all<T>(sql, keys);
@@ -439,7 +441,7 @@ describe("a stop no trip stops at", () => {
   };
 
   it("is said to have none, and the served stops nearest it are given, with how far", async () => {
-    transit.configure(withLourdes);
+    donnerTransit(withLourdes);
     const r = body(await transports("Mairie de Saint Pierre", undefined, NOW));
     expect(r.resume).toMatch(/^L'arrêt Mairie de Saint Pierre \(Saint-Pierre, Alternéo\) n'a aucun passage dans les horaires publiés : voici les arrêts desservis les plus proches, Lourdes à 100 m\./);
     expect(r.arrets.map((s: { nom: string }) => s.nom)).toEqual(["Lourdes"]);

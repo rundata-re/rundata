@@ -8,6 +8,8 @@ import { historiqueMeteo, reperesMois, type ReperesMois } from "../src/tools/his
 import { placePage, reperesBlock } from "../src/web/lieu-page.js";
 import { meteoPage } from "../src/web/meteo-page.js";
 import { pageOf } from "../src/web/places.js";
+import { bases } from "./contexte.js";
+const donnerClimat = (d?: climat.ClimatDb, horaire?: climat.ClimatDb) => bases({ climat: d, climatHoraire: horaire });
 
 // « Repères du mois » of a place's weather page (wording validated on 14/11/2026; the records' sentence, 19/11/2026), from real
 // rows of the archive (scripts/build-climat.py): records stored up to 2025, days of 2026 up to 23 October.
@@ -18,11 +20,11 @@ beforeAll(() => {
   db = new DatabaseSync(":memory:");
   db.exec(readFileSync(new URL("./fixtures/historique/climat.sql", import.meta.url), "utf8"));
 });
-afterEach(() => climat.configure(undefined));
+afterEach(() => donnerClimat(undefined));
 
 function plug() {
   let queries = 0;
-  climat.configure({ all: async <T>(sql: string, ...params: unknown[]) => (queries++, db.prepare(sql).all(...(params as (string | number)[])) as T[]) });
+  donnerClimat({ all: async <T>(sql: string, ...params: unknown[]) => (queries++, db.prepare(sql).all(...(params as (string | number)[])) as T[]) });
   return () => queries;
 }
 
@@ -59,7 +61,7 @@ describe("the month's landmarks of a place", () => {
     const cache = new Cache(new MemoryStore());
     plug();
     await climat.postes(cache);
-    climat.configure({ all: async () => { throw new Error("D1 indisponible"); } });
+    donnerClimat({ all: async () => { throw new Error("D1 indisponible"); } });
     const r = await reperesMois(cache, pageOf("cilaos")!.place, NOW);
     expect(r?.normale).toBeDefined();
     expect(r?.chaleur).toBeUndefined();

@@ -5,6 +5,8 @@ import * as rt from "../src/providers/gtfsrt.js";
 import * as transit from "../src/providers/transit.js";
 import type { Fil, Info } from "../src/providers/actualites.js";
 import { applyRealtime, busNews, departureRow, departures, findStops, realtimeFeeds, transports, withPositions } from "../src/tools/transports.js";
+import { bases } from "./contexte.js";
+const donnerTransit = (d?: transit.TransitDb) => bases({ transit: d });
 
 // 40 trips, 2 vehicles and the 3 alerts of the Car Jaune feed of 23/10/2026 at 20:55 (La Réunion).
 const FEED = new Uint8Array(readFileSync(new URL("./fixtures/gtfs_rt_carjaune.pb", import.meta.url)));
@@ -26,12 +28,12 @@ const cj = transit.NETWORKS.carjaune;
 const gtfsStop = (stop: number) => cj.temps_reel!.arrets[stop - cj.first_stop];
 
 beforeEach(() => {
-  transit.configure(fake);
+  donnerTransit(fake);
   // The other networks' feeds are down: no test reaches the network.
   vi.stubGlobal("fetch", async () => new Response("down", { status: 503 }));
 });
 afterEach(() => {
-  transit.configure(undefined);
+  donnerTransit(undefined);
   vi.unstubAllGlobals();
 });
 

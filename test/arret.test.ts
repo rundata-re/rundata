@@ -12,6 +12,8 @@ import { ARRETS_PROCHES, LIGNES_DITES, searchPage, SEARCH_MAX, stopPage, stopTex
 import { busPage } from "../src/web/domains.js";
 import { site } from "../src/web/site.js";
 import { tripGonePage, tripPage } from "../src/web/trajet.js";
+import { bases } from "./contexte.js";
+const donnerTransit = (d?: transit.TransitDb) => bases({ transit: d });
 
 // The rows of the database for Saint-Pierre's bus station, as in test/transports.test.ts (GTFS of 23/10/2026).
 const rows = JSON.parse(readFileSync(new URL("./fixtures/transit/rows.json", import.meta.url), "utf8")) as Record<
@@ -30,8 +32,8 @@ const NOW = new Date("2026-10-23T03:30:00Z");
 const O = "https://rundata.re";
 const station = () => transit.pageOfStop(findStops("gare routière Saint-Pierre").groups.find((g) => g.reseau === "carjaune")!.ids[0])!;
 
-beforeEach(() => transit.configure(fake));
-afterEach(() => transit.configure(undefined));
+beforeEach(() => donnerTransit(fake));
+afterEach(() => donnerTransit(undefined));
 
 describe("a stop's lasting text", () => {
   const pageOf = (q: string) => transit.pageOfStop(findStops(q).groups[0].ids[0])!;

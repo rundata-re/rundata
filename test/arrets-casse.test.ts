@@ -4,6 +4,8 @@ import { normalize } from "../src/places/resolve.js";
 import * as transit from "../src/providers/transit.js";
 import { casseArret } from "../src/tools/casse.js";
 import { departureRow, findStops, type Departure } from "../src/tools/transports.js";
+import { bases } from "./contexte.js";
+const donnerTransit = (d?: transit.TransitDb) => bases({ transit: d });
 
 // Estival writes most of its stop names in capitals (« GARE SAINT ANDRE »), Alternéo and CarSud many with a capital on
 // every word (« Rue Des Amphiboles »): they are shown as people read them, no word added or removed, accents and
@@ -108,12 +110,12 @@ describe("a stop name in capitals, as people read it", () => {
     // A pattern of Estival with its headsign in capitals, as its feed gives it.
     const net = transit.NETWORKS.estival;
     const all = async <T>() => [{ feed: net.feed, id: 0, route: 0, headsign: "PICHETTE PAR SAINTE-THERESE", trips: "[]" }] as T[];
-    transit.configure({ all });
+    donnerTransit({ all });
     try {
       const [pattern] = (await transit.patterns([net.first_pattern])).values();
       expect(pattern.headsign).toBe("Pichette par Sainte-Thérèse");
     } finally {
-      transit.configure(undefined);
+      donnerTransit(undefined);
     }
     const route = transit.ROUTES.findIndex(([n, , long]) => n === "estival" && long === "CAMBOURG - GARE SAINT BENOIT");
     expect(route).toBeGreaterThanOrEqual(0);

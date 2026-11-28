@@ -2,8 +2,8 @@
  * What the Worker gives the modules, built once per isolate (worker.ts `setup`) instead of a `configure` per module: a
  * module that reads the store asks it here at the time of the read, so no order of calls counts and none is forgotten.
  *
- * Outside the Worker (a local server, the tests) nothing is installed: `worker` is false and there is no store, and each
- * module does what it did when it was not configured. A test gives its data by `installer` and takes it back by
+ * Outside the Worker (a local server, the tests) `worker` is false and there is no store, and each module does what it
+ * did when it was not configured; a local server gives only the databases it has a copy of (src/bin/http.ts). A test gives its data by `installer` and takes it back by
  * `retirer` (test/contexte.ts).
  */
 import { count } from "./budget.js";
@@ -26,6 +26,25 @@ export interface Contexte {
   brut?: KvBinding;
   /** The keys of the sources that ask for one, given only with the store (the state they read is kept there). */
   secrets?: Secrets;
+  /** The D1 databases the Worker has (on Node, the local copies src/bin/http.ts is given). */
+  bases?: Bases;
+}
+
+/** A D1 database's reads as the modules make them: the rows of a query. Not counted here: each module counts its own. */
+export interface Lecture {
+  all<T>(sql: string, ...params: unknown[]): Promise<T[]>;
+}
+
+/** The databases, each by what it holds. */
+export interface Bases {
+  /** The bus timetables (binding TRANSIT). */
+  transit?: Lecture;
+  /** The daily weather measurements since 1900, and the sea's history (binding CLIMAT). */
+  climat?: Lecture;
+  /** The hourly weather measurements since 2000 (binding CLIMAT_H). */
+  climatHoraire?: Lecture;
+  /** The feedback, the clubs' proposals and the declared associations (binding AVIS). */
+  avis?: Lecture;
 }
 
 /** A source's key as the Worker's secret holds it; never written in a log or an answer. */

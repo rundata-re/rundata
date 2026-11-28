@@ -11,6 +11,8 @@ import { historiqueMeteo, nothing, parseDate, period, TODAY } from "../src/tools
 import { hourlyLead, pageNote } from "../src/web/historique.js";
 import { resolvePlace } from "../src/places/resolve.js";
 import { pluieDabord } from "../src/tools/representativeness.js";
+import { bases } from "./contexte.js";
+const donnerClimat = (d?: climat.ClimatDb, horaire?: climat.ClimatDb) => bases({ climat: d, climatHoraire: horaire });
 
 // Real rows of the archive (scripts/build-climat.py): eight stations, the years 2006, 2025 and 2026 up to 23 October.
 const NOW = new Date("2026-10-24T08:00:00Z");
@@ -20,11 +22,11 @@ beforeAll(() => {
   db = new DatabaseSync(":memory:");
   db.exec(readFileSync(new URL("./fixtures/historique/climat.sql", import.meta.url), "utf8"));
 });
-afterEach(() => climat.configure(undefined));
+afterEach(() => donnerClimat(undefined));
 
 function plug() {
   let queries = 0;
-  climat.configure({
+  donnerClimat({
     all: async <T>(sql: string, ...params: unknown[]) => {
       queries++;
       return db.prepare(sql).all(...(params as (string | number)[])) as T[];
@@ -136,7 +138,7 @@ describe("historique_meteo, hour by hour", () => {
         return d.prepare(sql).all(...(params as (string | number)[])) as T[];
       },
     });
-    climat.configure(of(db), of(hdb));
+    donnerClimat(of(db), of(hdb));
     return () => queries;
   };
 

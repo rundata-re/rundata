@@ -19,7 +19,11 @@ import * as uvMesure from "../src/providers/uv-mesure.js";
 import * as meteorOi from "../src/providers/meteor-oi.js";
 import * as ovpfOcr from "../src/providers/ovpf-ocr.js";
 import worker from "../src/worker.js";
-import { dansLeWorker, horsWorker } from "./contexte.js";
+import * as transit from "../src/providers/transit.js";
+import * as climat from "../src/providers/climat.js";
+import * as merHistorique from "../src/providers/mer-historique.js";
+import * as rna from "../src/vie/associations.js";
+import { bases, dansLeWorker, horsWorker } from "./contexte.js";
 
 // The Worker builds its modules' context in its own modules, dropped after (test/modules-neufs.ts).
 await vi.hoisted(async () => (await import("./modules-neufs.js")).modulesNeufs());
@@ -69,8 +73,52 @@ describe("the modules' context (src/contexte.ts)", () => {
 
   it("is the Worker's without a store too: the modules that never read their source there say it is absent", async () => {
     await worker.fetch(new Request("https://rundata.re/robots.txt"), {} as never, { waitUntil: () => {} });
-    expect(contexte()).toEqual({ worker: true });
+    expect(contexte()).toEqual({ worker: true, bases: {} });
+    expect([transit.enabled(), climat.enabled(), climat.hourlyEnabled(), merHistorique.enabled(), rna.lisible()]).toEqual([false, false, false, false, false]);
     horsWorker();
+  });
+
+  it("gives each D1 database as its binding's reads, the same query and values, not counted here, and is built again when one changes", async () => {
+    const env = (e: Record<string, unknown>) => worker.fetch(new Request("https://rundata.re/robots.txt"), e as never, { waitUntil: () => {} });
+    const d1 = (nom: string, appels: string[]) => ({
+      prepare: (sql: string) => ({ bind: (...v: unknown[]) => ({ all: async () => (appels.push(`${nom} ${sql} ${JSON.stringify(v)}`), { results: [{ nom }] }), run: async () => { throw new Error("écrit"); } }) }),
+      batch: async () => { throw new Error("écrit"); },
+    });
+    const appels: string[] = [];
+    const [TRANSIT, CLIMAT, CLIMAT_H, AVIS] = ["transit", "climat", "horaire", "avis"].map((n) => d1(n, appels));
+    await env({ TRANSIT, CLIMAT, CLIMAT_H, AVIS });
+    expect([transit.enabled(), climat.enabled(), climat.hourlyEnabled(), merHistorique.enabled(), rna.lisible()]).toEqual([true, true, true, true, true]);
+    const b = contexte().bases!;
+    const { value, used } = await counted(50, async () => [await b.transit!.all("SELECT ?", 1), await b.climat!.all("SELECT ?", 2), await b.climatHoraire!.all("SELECT ?", 3), await b.avis!.all("SELECT ?", 4)]);
+    expect(value).toEqual([[{ nom: "transit" }], [{ nom: "climat" }], [{ nom: "horaire" }], [{ nom: "avis" }]]);
+    // Each module counts its own calls (transit.ts, climat.ts, mer-historique.ts, associations.ts).
+    expect(used).toBe(0);
+    expect(appels).toEqual(["transit SELECT ? [1]", "climat SELECT ? [2]", "horaire SELECT ? [3]", "avis SELECT ? [4]"]);
+    const premier = contexte();
+    await env({ TRANSIT, CLIMAT, CLIMAT_H, AVIS });
+    expect(contexte()).toBe(premier);
+    await env({ TRANSIT, CLIMAT, AVIS });
+    expect(contexte()).not.toBe(premier);
+    expect([transit.enabled(), climat.enabled(), climat.hourlyEnabled(), merHistorique.enabled(), rna.lisible()]).toEqual([true, true, false, true, true]);
+    horsWorker();
+    expect(transit.enabled()).toBe(false);
+  });
+
+  it("gives a test's databases in place, without putting the other modules in the Worker (test/contexte.ts)", async () => {
+    horsWorker();
+    const lecture = { all: async <T>() => [] as T[] };
+    bases({ transit: lecture, climat: lecture });
+    expect(contexte()).toEqual({ worker: false, bases: { transit: lecture, climat: lecture } });
+    bases({ climat: undefined });
+    expect(contexte().bases).toEqual({ transit: lecture });
+    // The store given after keeps them.
+    dansLeWorker({ a: 1 });
+    expect(contexte().bases).toEqual({ transit: lecture });
+    bases({ avis: lecture });
+    expect(await contexte().kv!.json("a")).toBe(1);
+    expect(Object.keys(contexte().bases!)).toEqual(["transit", "avis"]);
+    horsWorker();
+    expect(contexte()).toEqual({ worker: false });
   });
 
   it("gives the sources' keys with the store only, and is built again when a key changes", async () => {

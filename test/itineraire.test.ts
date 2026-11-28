@@ -4,6 +4,8 @@ import * as transit from "../src/providers/transit.js";
 import { CHANGE_S, chosen, type End, endOf, journeys, type Journey, ROWS_MAX, ZONE_MAX } from "../src/tools/itineraire.js";
 import { answer, askedOf, itinerairePage, journeyForm } from "../src/web/itineraire.js";
 import { transports } from "../src/tools/transports.js";
+import { bases } from "./contexte.js";
+const donnerTransit = (d?: transit.TransitDb) => bases({ transit: d });
 
 // Rows of the D1 database read by the searches below, from the networks' GTFS of 31/10/2026 (scripts/build-transit.py).
 const rows = JSON.parse(readFileSync(new URL("./fixtures/transit/itineraire.json", import.meta.url), "utf8")) as Record<string, Record<string, { id: number }[]>>;
@@ -17,9 +19,9 @@ const fake: transit.TransitDb = {
 };
 beforeEach(() => {
   reads = 0;
-  transit.configure(fake);
+  donnerTransit(fake);
 });
-afterEach(() => transit.configure(undefined));
+afterEach(() => donnerTransit(undefined));
 
 const hm = (s: number) => `${String(Math.floor(s / 3600)).padStart(2, "0")}:${String(Math.floor((s % 3600) / 60)).padStart(2, "0")}`;
 const said = (j: Journey) => `${hm(j.depart)} ${j.legs.map((l) => `${l.ligne} ${transit.stop(l.de).nom} ${hm(l.depart)}-${transit.stop(l.a).nom} ${hm(l.arrivee)}`).join(" / ")} ${hm(j.arrivee)}`;

@@ -7,6 +7,8 @@ import * as climat from "../src/providers/climat.js";
 import { recordsReference } from "../src/tools/historique.js";
 import type { HistoriqueAnswer, HomeData, StationNow } from "../src/web/data.js";
 import { recordsSection } from "../src/web/meteo-page.js";
+import { bases } from "./contexte.js";
+const donnerClimat = (d?: climat.ClimatDb, horaire?: climat.ClimatDb) => bases({ climat: d, climatHoraire: horaire });
 
 // Real rows of the archive (scripts/build-climat.py), records stored up to 2025, days of 2026 up to 23 October.
 const NOW = new Date("2026-10-24T08:00:00Z");
@@ -15,11 +17,11 @@ beforeAll(() => {
   db = new DatabaseSync(":memory:");
   db.exec(readFileSync(new URL("./fixtures/historique/climat.sql", import.meta.url), "utf8"));
 });
-afterEach(() => climat.configure(undefined));
+afterEach(() => donnerClimat(undefined));
 
 function plug() {
   let queries = 0;
-  climat.configure({ all: async <T>(sql: string, ...params: unknown[]) => (queries++, db.prepare(sql).all(...(params as (string | number)[])) as T[]) });
+  donnerClimat({ all: async <T>(sql: string, ...params: unknown[]) => (queries++, db.prepare(sql).all(...(params as (string | number)[])) as T[]) });
   return () => queries;
 }
 

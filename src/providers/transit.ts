@@ -6,6 +6,7 @@
  * its rows from one build to the next.
  */
 import { count } from "../budget.js";
+import { contexte, type Lecture } from "../contexte.js";
 import { distanceKm } from "../geo.js";
 import { normalize } from "../places/resolve.js";
 import { casseArret } from "../tools/casse.js";
@@ -24,17 +25,11 @@ export const SOURCE: SourceInfo = {
 };
 
 /** The part of a D1 database used here. */
-export interface TransitDb {
-  all<T>(sql: string, ...params: unknown[]): Promise<T[]>;
-}
+export type TransitDb = Lecture;
 
-let db: TransitDb | undefined;
-
-/** The timetables need the D1 database, so they exist in the Worker only. */
-export function configure(d: TransitDb | undefined) {
-  db = d;
-}
-export const enabled = () => db !== undefined;
+/** The timetables need the D1 database (contexte.ts `bases`), so they exist in the Worker only, or on Node when given one. */
+const base = () => contexte().bases?.transit;
+export const enabled = () => base() !== undefined;
 
 export interface Network {
   nom: string;
@@ -250,6 +245,7 @@ const JOIN = "JOIN json_each(?) k ON t.feed = json_extract(k.value, '$[0]') AND 
 
 /** For each stop, the patterns passing there with their time offset from the trip's start. */
 export async function passes(ids: number[]): Promise<{ stop: number; pattern: number; offset: number }[]> {
+  const db = base();
   if (!db) throw new Error("horaires indisponibles ici");
   count();
   const rows = await db.all<{ feed: string; id: number; passes: string }>(
@@ -263,6 +259,7 @@ export async function passes(ids: number[]): Promise<{ stop: number; pattern: nu
 }
 
 export async function patterns(ids: number[]): Promise<Map<number, Pattern>> {
+  const db = base();
   if (!db) throw new Error("horaires indisponibles ici");
   count();
   const rows = await db.all<{ feed: string; id: number; route: number; headsign: string; trips: string }>(
@@ -291,6 +288,7 @@ export interface PatternStops {
  * the table, a network whose rows are not written): the caller then says it has no list, and does not fail.
  */
 export async function patternStops(ids: number[]): Promise<Map<number, PatternStops> | undefined> {
+  const db = base();
   if (!db) throw new Error("horaires indisponibles ici");
   const wanted = ids.filter((id) => owner(id, (n) => n.first_pattern).stops_feed);
   if (!wanted.length) return undefined;

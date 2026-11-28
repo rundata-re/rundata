@@ -8,6 +8,8 @@ import { annuaireTool, branche } from "../src/tools/annuaire.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 import * as rna from "../src/vie/associations.js";
 import { annuaire, associationsPage } from "../src/web/associations.js";
+import { bases } from "./contexte.js";
+const donnerRna = (read?: rna.All) => bases({ avis: read && { all: read } });
 
 // An invented file (test/fixtures/rna): no real association, number or person. Six rows: four active in the 974, one
 // dissolved, one whose seat is in Toulouse; addresses, a civility and an observation that must never be kept.
@@ -22,9 +24,9 @@ beforeAll(() => {
   db = new DatabaseSync(":memory:");
   db.exec(readFileSync("scripts/associations.sql", "utf8"));
   db.exec(built);
-  rna.configure(async <T>(sql: string, ...params: unknown[]) => db.prepare(sql).all(...(params as (string | number)[])) as T[]);
+  donnerRna(async <T>(sql: string, ...params: unknown[]) => db.prepare(sql).all(...(params as (string | number)[])) as T[]);
 });
-afterAll(() => rna.configure(undefined));
+afterAll(() => donnerRna(undefined));
 
 const PREUVE = { clubs: 0, evenements: 0, prochains: [] };
 const read = (r: { content: { text: string }[] }) => JSON.parse(r.content[0].text);
@@ -187,13 +189,13 @@ describe("annuaire_services_publics before an import is complete", () => {
     const vide = new DatabaseSync(":memory:");
     vide.exec(readFileSync("scripts/associations.sql", "utf8"));
     vide.exec("INSERT INTO associations (id, titre, objet, insee) VALUES ('W9R0000001', 'CLUB DE SURF ESSAI', 'surf', '97413')");
-    rna.configure(async <T>(sql: string, ...params: unknown[]) => vide.prepare(sql).all(...(params as (string | number)[])) as T[]);
+    donnerRna(async <T>(sql: string, ...params: unknown[]) => vide.prepare(sql).all(...(params as (string | number)[])) as T[]);
     try {
       const r = await annuaireTool(new Cache(new MemoryStore(), () => Date.now()), "association de surf", "Saint-Leu");
       expect(r.isError).toBe(true);
       expect(read(r)).toEqual({ erreur: "Le répertoire des associations ne se lit pas pour le moment.", consulter: rna.SOURCE.url });
     } finally {
-      rna.configure(async <T>(sql: string, ...params: unknown[]) => db.prepare(sql).all(...(params as (string | number)[])) as T[]);
+      donnerRna(async <T>(sql: string, ...params: unknown[]) => db.prepare(sql).all(...(params as (string | number)[])) as T[]);
     }
   });
 });
@@ -219,11 +221,11 @@ describe("/associations: the search below the clubs' space", () => {
   });
 
   it("is the space alone when the table cannot be read", async () => {
-    rna.configure(undefined);
+    donnerRna(undefined);
     try {
       expect(await page("?mot=surf")).not.toContain('id="annuaire"');
     } finally {
-      rna.configure(async <T>(sql: string, ...params: unknown[]) => db.prepare(sql).all(...(params as (string | number)[])) as T[]);
+      donnerRna(async <T>(sql: string, ...params: unknown[]) => db.prepare(sql).all(...(params as (string | number)[])) as T[]);
     }
   });
 });

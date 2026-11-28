@@ -10,7 +10,8 @@ import { amateurs, assembler, CUMULS_PATH, fill, FINS, freshSeconds, heures, HEU
 import { HEURES_KEY, JOUR_PREFIX, PREMIER_JOUR } from "../src/web/radar-semaine.js";
 import { project } from "../src/web/map.js";
 import { site } from "../src/web/site.js";
-import { horsWorker, stockageBrut } from "./contexte.js";
+import { bases, horsWorker, stockageBrut } from "./contexte.js";
+const donnerClimat = (d?: climat.ClimatDb, horaire?: climat.ClimatDb) => bases({ climat: d, climatHoraire: horaire });
 
 const csv = readFileSync(new URL("./fixtures/meteofrance_horaire.csv", import.meta.url), "utf8");
 const hourly = meteofrance.parseHourly(csv, Date.parse("2026-10-25T08:57:00Z"));
@@ -42,7 +43,7 @@ function configure(s?: Sources) {
 
 afterEach(() => {
   configure(undefined);
-  climat.configure(undefined, undefined);
+  donnerClimat(undefined, undefined);
   meteofrance.configure({});
 });
 
@@ -187,7 +188,7 @@ describe("the replay bar's files", () => {
     const { s, kept } = sources(merge(null, hourly, now));
     configure(s);
     let reads = 0;
-    climat.configure(undefined, { all: async () => (reads++, []) as never });
+    donnerClimat(undefined, { all: async () => (reads++, []) as never });
     const later: Promise<unknown>[] = [];
     const get = async (p: string) => (await (await site(new Request(`https://rundata.re${p}`), cache(), (w) => void later.push(w), now))!.json());
     await get(PATHS["7j"]);

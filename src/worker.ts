@@ -7,7 +7,7 @@
  * live in KV instead: the event runs in some data center, the questions in all the others.
  */
 import { configurerEquipe, failed, handle } from "./app.js";
-import { contexte, installer, stockageKv } from "./contexte.js";
+import { contexte, installer, stockageKv, type Lecture } from "./contexte.js";
 import { lenteSaid, withAttentes } from "./attentes.js";
 import { minuit, minuitDu, minuitSaid, MINUIT_BUDGET } from "./web/minuit.js";
 import { BUILD_BUDGET, PAGE_BUDGET, SCHEDULED_BUDGET, copiesSaid, copyRead, count, counted, later, readsSaid, reponseSaid, scheduled, spent } from "./budget.js";
@@ -33,9 +33,6 @@ import * as vigilanceEpisodes from "./providers/vigilance-episodes.js";
 import * as cmrsCarte from "./providers/cmrs-carte.js";
 import * as cmrsTrace from "./providers/cmrs-trace.js";
 import * as feux from "./providers/feux.js";
-import * as transit from "./providers/transit.js";
-import * as climat from "./providers/climat.js";
-import * as merHistorique from "./providers/mer-historique.js";
 import * as avis from "./avis.js";
 import * as limite from "./limite.js";
 import { refusRobot } from "./robots.js";
@@ -57,7 +54,6 @@ import { configurerVideo } from "./web/partage-video.js";
 import * as pluieRetro from "./web/pluie-retro.js";
 import * as radarSemaine from "./web/radar-semaine.js";
 import * as carteScolaire from "./vie/carte-scolaire.js";
-import * as rna from "./vie/associations.js";
 import { why } from "./types.js";
 import { COLLECTEURS, dit, passage } from "./collecteurs.js";
 import { configure as metaWebhookSecrets } from "./meta-webhook.js";
@@ -163,6 +159,11 @@ interface Env {
   LIMITE_TRAJETS?: limite.Limiteur;
 }
 
+/** A D1 binding's reads, as the modules make them (contexte.ts `Lecture`); each module counts its own. */
+function lectureD1(d1: D1Database): Lecture {
+  return { all: async <T>(sql: string, ...params: unknown[]) => (await d1.prepare(sql).bind(...params).all<T>()).results };
+}
+
 /** The part of a D1 binding used here. */
 interface D1Statement {
   all<T>(): Promise<{ results: T[] }>;
@@ -225,24 +226,34 @@ function logLine(hit: Hit, visitor: string, country: string) {
 }
 
 let cache: Cache | undefined;
-// The store binding and the secrets the modules' context was built with (setup).
+// The bindings and the secrets the modules' context was built with (setup).
 let contexteDe: unknown[] = [];
 
 function setup(env: Env): Cache {
   // What the modules read at the time they need it (contexte.ts), built once per isolate (the bindings do not change,
   // as for `cache` below): a module's copy kept in memory stays valid from one request to the next.
   // The keys are given only with the store: the state their source's reads keep is there.
-  const de = [env.STORE, env.CANDHIS_API_KEY, env.SOLARDB_JETON];
+  const de = [env.STORE, env.CANDHIS_API_KEY, env.SOLARDB_JETON, env.TRANSIT, env.CLIMAT, env.CLIMAT_H, env.AVIS];
   if (!contexte().worker || de.some((v, i) => v !== contexteDe[i])) {
     installer({
       worker: true,
       ...(env.STORE && { kv: stockageKv(env.STORE), brut: env.STORE, secrets: { candhis: env.CANDHIS_API_KEY, solardb: env.SOLARDB_JETON } }),
+      // The bus timetables; the daily measurements since 1900 and the hourly ones since 2000, imported by
+      // scripts/build-climat.py and scripts/build-climat-h.py, the current year and month by .github/workflows/climat.yml;
+      // in the first, the sea's history: the Candhis buoys since 1996 and the satellite since 2003 (scripts/mer.sql, the
+      // current year by .github/workflows/mer.yml), an empty archive until its tables are imported; the declared
+      // associations (RNA) in the feedback's database (scripts/associations.sql, .github/workflows/associations.yml).
+      bases: {
+        ...(env.TRANSIT && { transit: lectureD1(env.TRANSIT) }),
+        ...(env.CLIMAT && { climat: lectureD1(env.CLIMAT) }),
+        ...(env.CLIMAT_H && { climatHoraire: lectureD1(env.CLIMAT_H) }),
+        ...(env.AVIS && { avis: lectureD1(env.AVIS) }),
+      },
     });
     contexteDe = de;
   }
   meteofrance.configure({ applicationId: env.METEOFRANCE_APPLICATION_ID, apiKey: env.METEOFRANCE_API_KEY });
   feux.configure(env.FIRMS_MAP_KEY);
-  const d1 = env.TRANSIT;
   const kv = env.STORE;
   // Météo-France's official map of the vigilance: its bulletin and its picture kept by the scheduled event.
   const cartes: vigilanceCarte.Store | undefined = kv && {
@@ -265,18 +276,6 @@ function setup(env: Env): Cache {
   cmrsCarte.configure(cartes);
   // The path travelled by a system, from the RSMC's bulletins, once Météo-France agrees (providers/cmrs-trace.ts).
   cmrsTrace.configure(cartes);
-  transit.configure(d1 && { all: async <T>(sql: string, ...params: unknown[]) => (await d1.prepare(sql).bind(...params).all<T>()).results });
-  const climatDb = env.CLIMAT;
-  const hourlyDb = env.CLIMAT_H;
-  // The daily measurements since 1900 and the hourly ones since 2000, imported by scripts/build-climat.py and
-  // scripts/build-climat-h.py, the current year and month by .github/workflows/climat.yml.
-  climat.configure(
-    climatDb && { all: async <T>(sql: string, ...params: unknown[]) => (await climatDb.prepare(sql).bind(...params).all<T>()).results },
-    hourlyDb && { all: async <T>(sql: string, ...params: unknown[]) => (await hourlyDb.prepare(sql).bind(...params).all<T>()).results },
-  );
-  // The sea's history, in the same database: the Candhis buoys since 1996 and the satellite since 2003 (scripts/mer.sql,
-  // the current year by .github/workflows/mer.yml). An empty archive until its tables are imported.
-  merHistorique.configure(climatDb && { all: async <T>(sql: string, ...params: unknown[]) => (await climatDb.prepare(sql).bind(...params).all<T>()).results });
   // The feedback of the tool donner_avis and of the site's form: one row each (scripts/avis.sql).
   const avisDb = env.AVIS;
   // Counted as every D1 call: an invocation's calls to the bound services are limited together (budget.ts).
@@ -289,9 +288,6 @@ function setup(env: Env): Cache {
     env.EMAIL && propositions.envoiCloudflare(env.EMAIL),
     avisDb && (async <T>(sql: string, ...params: unknown[]) => (count(), (await avisDb.prepare(sql).bind(...params).all<T>()).results)),
   );
-  // The declared associations (RNA), in the same database (scripts/associations.sql), imported by
-  // .github/workflows/associations.yml: read only, by /associations and annuaire_services_publics (vie/associations.ts).
-  rna.configure(avisDb && (async <T>(sql: string, ...params: unknown[]) => (await avisDb.prepare(sql).bind(...params).all<T>()).results));
   formulaires.configure(env.TURNSTILE_SECRET);
   configurerEquipe(env.EQUIPE_JETON);
   // The alerts on the phone (web/alertes.ts): open on the trial Worker only until the flag; the subscriptions in the

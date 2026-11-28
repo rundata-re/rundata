@@ -11,6 +11,7 @@
  */
 import { count } from "../budget.js";
 import type { Cache, Cached } from "../cache.js";
+import { contexte, type Lecture } from "../contexte.js";
 import normales from "../historique/normales.json" with { type: "json" };
 import type { SourceInfo } from "../types.js";
 import { STATIONS_974 } from "./meteofrance-stations.js";
@@ -25,9 +26,7 @@ export const SOURCE: SourceInfo = {
 };
 
 /** The part of a D1 database used here. */
-export interface ClimatDb {
-  all<T>(sql: string, ...params: unknown[]): Promise<T[]>;
-}
+export type ClimatDb = Lecture;
 
 export const SOURCE_HORAIRE: SourceInfo = {
   id: "mf_climatologie_horaire",
@@ -38,24 +37,19 @@ export const SOURCE_HORAIRE: SourceInfo = {
   url: "https://meteo.data.gouv.fr/datasets/6569b4473bedf2e7abad3b72",
 };
 
-let db: ClimatDb | undefined;
-let hourlyDb: ClimatDb | undefined;
-
-/** The archive needs the database: in the Worker, or on Node when given one (src/bin/http.ts). */
-export function configure(d: ClimatDb | undefined, hourly?: ClimatDb) {
-  db = d;
-  hourlyDb = hourly;
-}
-export const enabled = () => db !== undefined;
-export const hourlyEnabled = () => hourlyDb !== undefined;
+/** The archive needs the database (contexte.ts `bases`): in the Worker, or on Node when given one (src/bin/http.ts). */
+export const enabled = () => contexte().bases?.climat !== undefined;
+export const hourlyEnabled = () => contexte().bases?.climatHoraire !== undefined;
 
 async function all<T>(sql: string, ...params: unknown[]): Promise<T[]> {
+  const db = contexte().bases?.climat;
   if (!db) throw new Error("archive climatologique non configurée");
   count();
   return db.all<T>(sql, ...params);
 }
 
 async function allHourly<T>(sql: string, ...params: unknown[]): Promise<T[]> {
+  const hourlyDb = contexte().bases?.climatHoraire;
   if (!hourlyDb) throw new Error("archive horaire non configurée");
   count();
   return hourlyDb.all<T>(sql, ...params);

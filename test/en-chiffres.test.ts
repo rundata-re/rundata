@@ -14,6 +14,8 @@ import { placePage } from "../src/web/lieu-page.js";
 import { CSS } from "../src/web/style.js";
 import { pageOf } from "../src/web/places.js";
 import { site } from "../src/web/site.js";
+import { bases } from "./contexte.js";
+const donnerClimat = (d?: climat.ClimatDb, horaire?: climat.ClimatDb) => bases({ climat: d, climatHoraire: horaire });
 
 // The hourly package of 25/10/2026, read at 12:57 Réunion time (its newest hour ends at 12:00), and the archive's days
 // up to 23/10 (scripts/build-climat.py), as in test/station.test.ts.
@@ -25,8 +27,8 @@ beforeAll(() => {
   db = new DatabaseSync(":memory:");
   db.exec(readFileSync(new URL("./fixtures/historique/climat.sql", import.meta.url), "utf8"));
 });
-afterEach(() => climat.configure(undefined));
-const plug = () => climat.configure({ all: async <T>(sql: string, ...p: unknown[]) => db.prepare(sql).all(...(p as (string | number)[])) as T[] });
+afterEach(() => donnerClimat(undefined));
+const plug = () => donnerClimat({ all: async <T>(sql: string, ...p: unknown[]) => db.prepare(sql).all(...(p as (string | number)[])) as T[] });
 
 // Entre-Deux (382 m): no station of its own, Pierrefonds the nearest with a temperature each hour (the review's case).
 const entreDeux = pageOf("entre-deux")!;

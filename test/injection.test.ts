@@ -15,6 +15,8 @@ import { vigilancePage } from "../src/web/vigilance-page.js";
 import * as mf from "../src/providers/vigilance.js";
 import { coupuresCommunePage } from "../src/web/coupures.js";
 import { PAGES } from "../src/web/places.js";
+import { bases } from "./contexte.js";
+const donnerTransit = (d?: transit.TransitDb) => bases({ transit: d });
 
 /**
  * The pages that show a text read elsewhere (an event's title, a headline, a stop's name), rendered with that text set
@@ -219,8 +221,8 @@ describe("a text read elsewhere, trapped, never comes out as a tag", () => {
             ?.filter((r) => r.id === id).map((r) => ({ feed, ...r })) ?? [],
         ) as T[],
     };
-    beforeEach(() => transit.configure(fake));
-    afterEach(() => transit.configure(undefined));
+    beforeEach(() => donnerTransit(fake));
+    afterEach(() => donnerTransit(undefined));
     // Friday 23/10/2026, 7h30, at Saint-Pierre's bus station, as test/arret.test.ts.
     const now = new Date("2026-10-23T03:30:00Z");
 

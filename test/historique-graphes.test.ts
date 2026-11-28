@@ -11,6 +11,8 @@ import type { HistoriqueAnswer } from "../src/web/data.js";
 import { heroHistorique, historiquePage } from "../src/web/historique.js";
 import { GRAPHES_SCRIPT, graphes, warmer } from "../src/web/historique-graphes.js";
 import { CSS } from "../src/web/style.js";
+import { bases } from "./contexte.js";
+const donnerClimat = (d?: climat.ClimatDb, horaire?: climat.ClimatDb) => bases({ climat: d, climatHoraire: horaire });
 
 // Real rows of the archive (scripts/build-climat.py): the six stations of the tour, 2025 and 2026 up to 23 October.
 const NOW = new Date("2026-10-24T08:00:00Z");
@@ -19,8 +21,8 @@ beforeAll(() => {
   db = new DatabaseSync(":memory:");
   db.exec(readFileSync(new URL("./fixtures/historique/climat.sql", import.meta.url), "utf8"));
 });
-afterEach(() => climat.configure(undefined));
-const plug = () => climat.configure({ all: async <T>(sql: string, ...params: unknown[]) => db.prepare(sql).all(...(params as (string | number)[])) as T[] });
+afterEach(() => donnerClimat(undefined));
+const plug = () => donnerClimat({ all: async <T>(sql: string, ...params: unknown[]) => db.prepare(sql).all(...(params as (string | number)[])) as T[] });
 const json = (r: { content: { text: string }[] }) => JSON.parse(r.content[0].text);
 const island = async (series?: boolean) => json(await historiqueMeteo(new Cache(), undefined, series ? { series } : {}, NOW)) as HistoriqueAnswer;
 const at = (value: HistoriqueAnswer) => ({ value, fetchedAt: NOW, stale: false });

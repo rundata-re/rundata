@@ -11,6 +11,8 @@ import { esc } from "../src/web/map.js";
 import { meteoPage } from "../src/web/meteo-page.js";
 import { type StationData, STATIONS, stationOf, stationPage, stationPath, stationTitle } from "../src/web/station.js";
 import { sautsDeTitre } from "./cartes.js";
+import { bases } from "./contexte.js";
+const donnerClimat = (d?: climat.ClimatDb, horaire?: climat.ClimatDb) => bases({ climat: d, climatHoraire: horaire });
 
 // Real rows: the 6-minute and hourly packages of the tests, and the archive's days (scripts/build-climat.py) up to 23 October 2026.
 const NOW = new Date("2026-10-24T08:00:00Z");
@@ -21,9 +23,9 @@ beforeAll(() => {
   db = new DatabaseSync(":memory:");
   db.exec(readFileSync(new URL("./fixtures/historique/climat.sql", import.meta.url), "utf8"));
 });
-afterEach(() => climat.configure(undefined));
+afterEach(() => donnerClimat(undefined));
 
-const plug = () => climat.configure({ all: async <T>(sql: string, ...p: unknown[]) => db.prepare(sql).all(...(p as (string | number)[])) as T[] });
+const plug = () => donnerClimat({ all: async <T>(sql: string, ...p: unknown[]) => db.prepare(sql).all(...(p as (string | number)[])) as T[] });
 const row = meteofrance.parseCsv(readFileSync(new URL("./fixtures/meteofrance_6min.csv", import.meta.url), "utf8")).find((r) => r.id === GILLOT)!;
 const hourly = meteofrance.parseHourly(readFileSync(new URL("./fixtures/meteofrance_horaire.csv", import.meta.url), "utf8"), Date.parse("2026-10-25T08:57:00Z"));
 

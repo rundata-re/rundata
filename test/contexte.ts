@@ -1,4 +1,4 @@
-import { contexte, installer, retirer, type Contexte, type Secrets } from "../src/contexte.js";
+import { contexte, installer, retirer, type Bases, type Contexte, type Secrets } from "../src/contexte.js";
 import type { KvBinding } from "../src/kv.js";
 
 let installe: Contexte | undefined;
@@ -18,8 +18,10 @@ export function dansLeWorker(donnees: Record<string, unknown> = {}, secrets: Sec
   secretsInstalles = suite ? { ...secretsInstalles, ...secrets } : { ...secrets };
   if (!suite) brutInstalle = undefined;
   const lues = donneesInstallees;
+  const bases = contexte().bases;
   installe = {
     worker: true,
+    ...(bases && { bases }),
     ...(brutInstalle && { brut: brutInstalle }),
     secrets: secretsInstalles,
     kv: {
@@ -41,6 +43,19 @@ export function stockageBrut(brut: KvBinding) {
   brutInstalle = brut;
   installe = { ...installe!, brut };
   installer(installe);
+}
+
+/**
+ * The D1 databases as a test gives them (contexte.ts `bases`), added to the context in place, in the Worker or not: a
+ * database given as undefined is taken back. Giving them does not put the other modules in the Worker.
+ */
+export function bases(donnees: Bases) {
+  const avant = contexte();
+  const fusion: Bases = { ...avant.bases, ...donnees };
+  for (const k of Object.keys(fusion) as (keyof Bases)[]) if (fusion[k] === undefined) delete fusion[k];
+  const apres: Contexte = { ...avant, bases: fusion };
+  if (avant === installe) installe = apres;
+  installer(apres);
 }
 
 export function horsWorker() {

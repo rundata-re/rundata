@@ -6,6 +6,8 @@ import * as mh from "../src/providers/mer-historique.js";
 import { EN_COURS, historiqueBlock, resume, resumer } from "../src/tools/mer-historique.js";
 import { merHistoriquePage } from "../src/web/mer-historique.js";
 import { histoireMer } from "../src/tools/mer.js";
+import { bases } from "./contexte.js";
+const donnerMer = (d?: mh.MerDb) => bases({ climat: d });
 
 const NOW = new Date("2026-11-24T06:20:00Z"); // 10:20 in La Réunion
 const SCHEMA = readFileSync(new URL("../scripts/mer.sql", import.meta.url), "utf8");
@@ -40,11 +42,11 @@ function base(withTables = true) {
   return { all: async <T>(sql: string, ...params: unknown[]) => db.prepare(sql).all(...(params as (string | number)[])) as T[] };
 }
 
-afterEach(() => mh.configure(undefined));
+afterEach(() => donnerMer(undefined));
 
 describe("the sea's history (providers/mer-historique.ts, tools/mer-historique.ts)", () => {
   it("answers an empty archive, never an error, while the tables are not imported", async () => {
-    mh.configure(base(false));
+    donnerMer(base(false));
     const r = (await resume(new Cache(undefined, () => NOW.getTime()), NOW)).value;
     expect(r.importe).toBe(false);
     expect(historiqueBlock(r, undefined, 25)).toEqual({ etat: EN_COURS, page: "https://rundata.re/mer/historique" });
@@ -54,7 +56,7 @@ describe("the sea's history (providers/mer-historique.ts, tools/mer-historique.t
   });
 
   it("sums a point up: years, records with their day, the mean named by its full years, the same day each year", async () => {
-    mh.configure(base());
+    donnerMer(base());
     const r = resumer(await mh.lire(), "2026-11-24");
     const sg = r.points.find((p) => p.point === "saint-gilles")!;
     expect([sg.du, sg.au, sg.annees]).toEqual([2003, 2026, 24]);
@@ -73,7 +75,7 @@ describe("the sea's history (providers/mer-historique.ts, tools/mer-historique.t
   });
 
   it("gives temperature_mer a past day: that day, the same day the other years, the records, from 2003 for the satellite", async () => {
-    mh.configure(base());
+    donnerMer(base());
     const cache = new Cache(undefined, () => NOW.getTime());
     const r = (await resume(cache, NOW)).value;
     const valeurs = (await mh.memeJour(cache, "03-15")).value;
@@ -90,7 +92,7 @@ describe("the sea's history (providers/mer-historique.ts, tools/mer-historique.t
   });
 
   it("asks for a past day in the tool, and refuses today or a date it does not understand", async () => {
-    mh.configure(base());
+    donnerMer(base());
     const ask = async (date: string) => (await histoireMer(new Cache(undefined, () => NOW.getTime()), NOW, undefined, { date })) as Record<string, any>;
     expect((await ask("demain")).erreur).toMatch(/Date non comprise/);
     expect((await ask("2006")).erreur).toMatch(/Date non comprise/);
@@ -100,7 +102,7 @@ describe("the sea's history (providers/mer-historique.ts, tools/mer-historique.t
   });
 
   it("draws the page: the satellite's section from 2003, its records and the buoys' with their own years", async () => {
-    mh.configure(base());
+    donnerMer(base());
     const r = resumer(await mh.lire(), "2026-11-24");
     const html = merHistoriquePage("https://rundata.re", { value: r, fetchedAt: NOW, stale: false }, NOW);
     expect(html).toContain("La température de la mer depuis 2003");

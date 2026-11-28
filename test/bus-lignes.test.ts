@@ -7,6 +7,8 @@ import { linesNamed, transports } from "../src/tools/transports.js";
 import { busPage } from "../src/web/domains.js";
 import { LINE_NETWORKS, LINE_PATH, linePages } from "../src/web/ligne.js";
 import { site } from "../src/web/site.js";
+import { bases } from "./contexte.js";
+const donnerTransit = (d?: transit.TransitDb) => bases({ transit: d });
 
 // 24/11/2026: no page for a bus line; one for each line of Car Jaune, Alternéo and Estival, from their GTFS (Licence
 // Ouverte), linked from /bus and from the transports tool. And the tool's two failures of the week: asked with `lieu`, as
@@ -18,8 +20,8 @@ const fake: transit.TransitDb = {
       (/FROM passes/.test(sql) ? rows[feed]?.passes : /FROM pattern_stops/.test(sql) ? rows[feed]?.pattern_stops : rows[feed]?.patterns)?.filter((r) => r.id === id).map((r) => ({ feed, ...r })) ?? [],
     ) as T[],
 };
-beforeEach(() => transit.configure(fake));
-afterEach(() => transit.configure(undefined));
+beforeEach(() => donnerTransit(fake));
+afterEach(() => donnerTransit(undefined));
 // Friday 23/10/2026, 7h30 in La Réunion.
 const NOW = new Date("2026-10-23T03:30:00Z");
 const O = "https://rundata.re";

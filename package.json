@@ -1,6 +1,6 @@
 {
   "name": "reunion-temps-reel",
-  "version": "1.0.1058",
+  "version": "1.0.1059",
   "description": "Serveur MCP : toute La Réunion (974) en direct pour les assistants IA : actualités locales, météo mesurée et historique, randonnée et traces GPS, bus, eau, événements, volcan, cyclones, air, terrain",
   "mcpName": "re.rundata/temps-reel",
   "type": "module",
@@ -23,16 +23,16 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@modelcontextprotocol/server": "^2.3.0",
+    "@modelcontextprotocol/server": "^2.4.0",
     "zod": "^4.6.7"
   },
   "devDependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",
-    "@types/node": "^26.6.6",
+    "@types/node": "^26.6.10",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vitest": "^5.1.1",
-    "wrangler": "^4.166.0"
+    "wrangler": "^4.168.0"
   },
   "keywords": [
     "mcp",

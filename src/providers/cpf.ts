@@ -16,6 +16,7 @@ import type { Cache, Cached } from "../cache.js";
 import { getJson, getText } from "../http.js";
 import type { SourceInfo } from "../types.js";
 import siren from "../vie/cpf-organismes.json" with { type: "json" };
+import { contexte } from "../contexte.js";
 
 export const SOURCE: SourceInfo = {
   id: "cdc_moncompteformation",
@@ -194,28 +195,22 @@ export async function collect(before: Copie | null, write: (copie: Copie) => Pro
   return `catalogue du ${extrait ?? "?"} : ${rows.length} lignes, ${formations.length} formations gardées, ${formations.filter((f) => f.organisme).length} avec le nom de l'organisme, écrites`;
 }
 
-let reader: (() => Promise<Copie | null>) | undefined;
-
-/** In the Worker: read the formations from the KV store, where the scheduled event writes them, and the API never. */
-export function configure(read: (() => Promise<Copie | null>) | undefined) {
-  reader = read;
-}
-
 /** Whether the formations can be read here (the Worker); elsewhere (a local server, the tests) they are not given. */
-export const configured = () => !!reader;
+export const configured = () => contexte().worker;
 
 const FRESH_SECONDS = 60 * 60;
 
 /**
- * The stored copy, its time the scheduled event's last read; null where nothing is configured or stored, or the store
+ * The stored copy, its time the scheduled event's last read; null outside the Worker or stored, or the store
  * does not answer.
  */
 export async function formations(cache: Cache): Promise<Cached<Copie> | null> {
-  if (!reader) return null;
-  const read = reader;
+  // In the Worker only, from its store (contexte.ts), the API never.
+  const { worker, kv } = contexte();
+  if (!worker) return null;
   try {
     const c = await cache.getCopy("cpf:formations", FRESH_SECONDS, async () => {
-      const v = await read();
+      const v = kv ? await kv.json<Copie>(KV_KEY) : null;
       if (!v) throw new Error("formations CPF absentes du stockage");
       return v;
     }, (v) => v.lu, SOURCE.id);

@@ -8,6 +8,7 @@ import { emploi, lignes, NON_REPRIS, pourOutil, type OffreRow } from "../src/too
 import { buildEmploi, emploiPage, intituleCoupable } from "../src/web/emploi.js";
 import { esc } from "../src/web/map.js";
 import { CSS } from "../src/web/style.js";
+import { dansLeWorker, horsWorker } from "./contexte.js";
 
 // The feed of La Réunion read on 29/10/2026 at 12:20, two offers' pages and the first search page read at 12:26-12:28,
 // cut to what is read of them (and without the recruiters' names).
@@ -27,7 +28,7 @@ const body = (r: { content: { text: string }[] }) => JSON.parse(r.content[0].tex
 const cache = () => new Cache(new MemoryStore(), () => NOW.getTime());
 
 afterEach(() => {
-  emploiSource.configure(undefined);
+  horsWorker();
   vi.unstubAllGlobals();
 });
 
@@ -269,7 +270,7 @@ describe("the tool emploi and the page /emploi", () => {
     vi.unstubAllGlobals();
 
     // The count of the hour before, said with its time, on the page too.
-    emploiSource.configure(async () => after!);
+    dansLeWorker({ [emploiSource.KV_KEY]: () => after! });
     const r = body(await emploi(cache(), undefined, undefined, later));
     expect(r.resume).toContain(", qui en affiche 628 pour La Réunion (compte lu le 29/10 à 12:45), la plus récente");
     const page = emploiPage("https://rundata.re", await buildEmploi(cache(), later).then((value) => ({ value, fetchedAt: later, stale: false })), later);
@@ -279,19 +280,19 @@ describe("the tool emploi and the page /emploi", () => {
     expect(body(await emploi(cache(), undefined, "infirmier", later)).resume).not.toContain("en affiche");
     // A day after its read: no more said.
     const lendemain = new Date(NOW.getTime() + 24 * 3600_000 + 60_000);
-    emploiSource.configure(async () => ({ ...after!, lu: lendemain.toISOString() }));
+    dansLeWorker({ [emploiSource.KV_KEY]: () => ({ ...after!, lu: lendemain.toISOString() }) });
     const old = body(await emploi(cache(), undefined, undefined, lendemain));
     expect(old).not.toHaveProperty("total_site");
     expect(old.couverture).toContain("le site peut en compter davantage, sa recherche fait foi pour le total.");
     // No more than the offers followed here: not « davantage ».
-    emploiSource.configure(async () => ({ ...after!, total: { nombre: 20, lu: later.toISOString() } }));
+    dansLeWorker({ [emploiSource.KV_KEY]: () => ({ ...after!, total: { nombre: 20, lu: later.toISOString() } }) });
     expect(body(await emploi(cache(), undefined, undefined, later)).couverture).toContain("le site en affiche 20, compte lu le 29/10 à 13:45\u00a0; sa recherche fait foi pour le total.");
     log.mockRestore();
   });
 
   it("gives the island's offers newest first, each with its link, one line for a post published under several references, and says what is not taken", async () => {
     const c = await copie();
-    emploiSource.configure(async () => c);
+    dansLeWorker({ [emploiSource.KV_KEY]: () => c });
     const r = body(await emploi(cache(), undefined, undefined, NOW));
     expect(r.resume).toBe("20 offres ouvertes à la candidature à La Réunion, suivies par rundata.re sur Choisir le service public, qui en affiche 628 pour La Réunion (compte lu le 29/10 à 12:45), la plus récente publiée le 29/10 : Assistant(e) de direction.");
     expect(r.total_site).toEqual({ nombre: 628, lu_a: "29/10 12:45", lien: emploiSource.SOURCE.url });
@@ -322,7 +323,7 @@ describe("the tool emploi and the page /emploi", () => {
 
   it("filters by commune and by words, and counts the offers that name no commune", async () => {
     const c = await copie();
-    emploiSource.configure(async () => c);
+    dansLeWorker({ [emploiSource.KV_KEY]: () => c });
     const marie = body(await emploi(cache(), "Sainte-Marie", undefined, NOW));
     expect(marie.nombre).toBe(12);
     expect(marie.resume).toContain("12 offres ouvertes à la candidature à Sainte-Marie");
@@ -342,13 +343,13 @@ describe("the tool emploi and the page /emploi", () => {
 
   it("says the site's silence with the time of the offers shown", async () => {
     const c = await copie();
-    emploiSource.configure(async () => ({ ...c, echec: "2026-10-29T08:25:00Z" }));
+    dansLeWorker({ [emploiSource.KV_KEY]: () => ({ ...c, echec: "2026-10-29T08:25:00Z" }) });
     expect(body(await emploi(cache(), undefined, undefined, NOW)).injoignable).toBe("Lu le 29/10 à 12:45 : le site de Choisir le service public n'a pas répondu depuis. Ce qui suit peut avoir changé : voir son site.");
   });
 
   it("cuts a reference joined by « _ » after it only, the link named by its whole text", async () => {
     const c = await copie();
-    emploiSource.configure(async () => c);
+    dansLeWorker({ [emploiSource.KV_KEY]: () => c });
     const d = await buildEmploi(cache(), NOW);
     const o = d.offres.find((x) => "references" in x) as Extract<OffreRow, { references: unknown }>;
     o.references[0] = { ...o.references[0], reference: "MINT_BA974ATB-128439" };
@@ -360,7 +361,7 @@ describe("the tool emploi and the page /emploi", () => {
 
   it("shows on /emploi the first offer under the title, its employer first and its closing date, without a link to the sites not taken", async () => {
     const c = await copie();
-    emploiSource.configure(async () => c);
+    dansLeWorker({ [emploiSource.KV_KEY]: () => c });
     const d = await buildEmploi(cache(), NOW);
     // The page's copy built 4 minutes after the feed's read: the feed's time is said.
     const page = emploiPage("https://rundata.re", { value: d, fetchedAt: new Date(Date.parse(c.lu) + 4 * 60_000), stale: false }, NOW);
@@ -400,7 +401,7 @@ describe("the tool emploi and the page /emploi", () => {
     expect((refs.offres[0] as { references: unknown }).references).toEqual([{ publiee_le: "28/10", lien: "https://choisirleservicepublic.gouv.fr/offre-emploi/R-1/" }, { reference: "R-2", publiee_le: "29/10", lien: "https://choisirleservicepublic.gouv.fr/autre/" }]);
     // The page lists every line whole: nature and references as the site writes them.
     const c = await copie();
-    emploiSource.configure(async () => c);
+    dansLeWorker({ [emploiSource.KV_KEY]: () => c });
     const page = body(await emploi(cache(), undefined, undefined, NOW, Infinity));
     expect(page).not.toHaveProperty("nature");
     expect(page.offres.every((o: { nature?: string }) => o.nature === ouvert)).toBe(true);
@@ -462,7 +463,7 @@ describe("the tool emploi and the page /emploi", () => {
 
   it("shows a post published under several references as one line, a link to each, the days of each when the line has no closing date", async () => {
     const c = await copie();
-    emploiSource.configure(async () => c);
+    dansLeWorker({ [emploiSource.KV_KEY]: () => c });
     const d = await buildEmploi(cache(), NOW);
     const page = emploiPage("https://rundata.re", { value: d, fetchedAt: new Date(c.lu), stale: false }, NOW);
     // In the validated words: the title alone, « 4 offres : », a link per line with the whole reference.
@@ -492,7 +493,7 @@ describe("the tool emploi and the page /emploi", () => {
 
   it("lists the tool's lines up to its maximum, and counts the offers left", async () => {
     const c = await copie();
-    emploiSource.configure(async () => c);
+    dansLeWorker({ [emploiSource.KV_KEY]: () => c });
     const r = body(await emploi(cache(), undefined, "gestionnaire finances", NOW, 1));
     expect(r.autres).toBeUndefined();
     const all = body(await emploi(cache(), undefined, undefined, NOW, 1));
@@ -507,7 +508,7 @@ describe("the tool emploi and the page /emploi", () => {
     expect(emploiSource.fraicheur(new Date("2026-10-29T08:47:00Z"))).toBe(1);
     const c = await copie();
     let stored = c;
-    emploiSource.configure(async () => stored);
+    dansLeWorker({ [emploiSource.KV_KEY]: () => stored });
     let t = new Date("2026-10-29T08:45:30Z");
     const store = new Cache(new MemoryStore(), () => t.getTime());
     expect((await emploiSource.offres(store, t))!.value.offres).toHaveLength(c.offres.length);
@@ -518,7 +519,7 @@ describe("the tool emploi and the page /emploi", () => {
   });
 
   it("says when the offers are read next while the store has none, without a reading time", async () => {
-    emploiSource.configure(async () => null);
+    dansLeWorker({ [emploiSource.KV_KEY]: () => null });
     const d = await buildEmploi(cache(), NOW);
     expect(d).toMatchObject({ nombre: 0, offres: [], prochaine: "2026-10-29T09:25:00.000Z" });
     const page = emploiPage("https://rundata.re", { value: d, fetchedAt: NOW, stale: false }, NOW);

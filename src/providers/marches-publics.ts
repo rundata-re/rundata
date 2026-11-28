@@ -17,6 +17,7 @@ import type { Cache, Cached } from "../cache.js";
 import { getJson, httpUrl } from "../http.js";
 import { communeAdresse, communeDe } from "../places/codes-postaux.js";
 import type { SourceInfo } from "../types.js";
+import { contexte } from "../contexte.js";
 
 export const SOURCE: SourceInfo = {
   id: "boamp_api",
@@ -321,13 +322,6 @@ export async function collect(before: Copie | null, write: (copie: Copie) => Pro
   return `${said(copie, `${nouveaux} nouveaux`)}${same ? ", inchangés" : ""} : écrits`;
 }
 
-let reader: (() => Promise<Copie | null>) | undefined;
-
-/** In the Worker: read the notices from the KV store, where the scheduled event writes them, and the API never. */
-export function configure(read: (() => Promise<Copie | null>) | undefined) {
-  reader = read;
-}
-
 /**
  * How long a copy read from the store may be served: since the last time the scheduled event may have written it, two
  * minutes after 35 and 40 past (a pass ends within a minute and a half). A copy read before is asked again, once: on
@@ -344,14 +338,15 @@ export function fraicheur(now: Date): number {
 }
 
 /**
- * The stored notices still open, their time the list's last read; null where nothing is configured (a local server,
+ * The stored notices still open, their time the list's last read; null outside the Worker (a local server,
  * the tests), as the Worker alone has them.
  */
 export async function avis(cache: Cache, now = new Date()): Promise<Cached<Copie> | null> {
-  if (!reader) return null;
-  const read = reader;
+  // In the Worker only, from its store (contexte.ts), the API never.
+  const { worker, kv } = contexte();
+  if (!worker) return null;
   const c = await cache.getCopy(KV_KEY, fraicheur(now), async () => {
-    const v = await read();
+    const v = kv ? await kv.json<Copie>(KV_KEY) : null;
     if (!v) throw new Error("avis de marchés absents du stockage");
     return v;
   }, (v) => v.lu, SOURCE.id);

@@ -10,6 +10,7 @@ import { emploi } from "../src/tools/emploi.js";
 import { fraicheur } from "../src/tools/fraicheur.js";
 import { withLectures } from "../src/lectures.js";
 import { buildEmploi, emploiPage } from "../src/web/emploi.js";
+import { dansLeWorker, horsWorker } from "./contexte.js";
 
 // 16:15 in La Réunion.
 const NOW = new Date("2026-11-03T12:15:00Z");
@@ -57,8 +58,8 @@ function catalogue(lignes: unknown[], n = lignes.length, ok = true) {
 }
 
 afterEach(() => {
-  cpf.configure(undefined);
-  emploiSource.configure(undefined);
+  horsWorker();
+  horsWorker();
   vi.unstubAllGlobals();
 });
 
@@ -140,8 +141,8 @@ describe("the formations in the tool emploi and on /emploi", () => {
     await cpf.collect(null, async (x) => void (c = x), NOW);
     vi.unstubAllGlobals();
     let reads = 0;
-    emploiSource.configure(async () => offres);
-    cpf.configure(async () => (reads++, c!));
+    dansLeWorker({ [emploiSource.KV_KEY]: () => offres });
+    dansLeWorker({ [cpf.KV_KEY]: () => (reads++, c!) });
     return () => reads;
   }
 
@@ -194,8 +195,8 @@ describe("the formations in the tool emploi and on /emploi", () => {
     const before = new Date(NOW.getTime() - 20 * 3600_000);
     await cpf.collect(null, async (x) => void (c = x), before);
     vi.unstubAllGlobals();
-    emploiSource.configure(async () => offres);
-    cpf.configure(async () => c!);
+    dansLeWorker({ [emploiSource.KV_KEY]: () => offres });
+    dansLeWorker({ [cpf.KV_KEY]: () => c! });
     const { value, lectures } = await withLectures(() => emploi(cache(), undefined, "anglais", NOW));
     const r = body(value);
     expect(r.formations_cpf.donnees).toBe("Catalogue de Mon Compte Formation (lecture du 02/11 à 20:15, heure de La Réunion).");
@@ -205,10 +206,12 @@ describe("the formations in the tool emploi and on /emploi", () => {
     expect(f.age).toBe("il y a 15 min");
   });
 
-  it("is not given where nothing is configured, and says when the store does not answer", async () => {
-    emploiSource.configure(async () => offres);
+  it("is not given outside the Worker, and says when the store does not answer", async () => {
+    // Outside the Worker (a local server, the tests: src/contexte.ts), the formations are not given at all.
+    horsWorker();
     expect(body(await emploi(cache(), undefined, "anglais", NOW))).not.toHaveProperty("formations_cpf");
-    cpf.configure(async () => null);
+    dansLeWorker({ [emploiSource.KV_KEY]: () => offres });
+    dansLeWorker({ [cpf.KV_KEY]: () => null });
     const r = body(await emploi(cache(), undefined, "anglais", NOW)).formations_cpf;
     expect(r.erreur).toBe("Les formations éligibles au CPF ne sont pas disponibles pour le moment.");
     expect(r.a_savoir).toBe(A_SAVOIR);

@@ -6,6 +6,7 @@ import { REGISTRY } from "../src/registre.js";
 import { absents, antennesPage, coupe, horsService, ligneSite, ligneTuile } from "../src/web/antennes.js";
 import { communePage } from "../src/web/commune.js";
 import { pageOf } from "../src/web/places.js";
+import { dansLeWorker, horsWorker } from "./contexte.js";
 
 // Six lines of the Arcep's file of 29/10/2026 (raw2026-10-29.geojson, read at 14:53): two of the Ain, a maintenance, a
 // line without a reason, one of Free cut in 5G only, and La Réunion's only one, Free at Saint-Philippe.
@@ -16,7 +17,7 @@ const NOW = new Date("2026-10-29T11:00:00Z");
 const at = (copie: sitesHs.Copie) => ({ value: copie, fetchedAt: new Date(copie.lu), stale: false });
 
 afterEach(() => {
-  sitesHs.configure(undefined);
+  horsWorker();
   vi.unstubAllGlobals();
 });
 
@@ -140,7 +141,7 @@ describe("the mobile sites out of service (Arcep, sites indisponibles)", () => {
     expect(await sitesHs.sites(new Cache(new MemoryStore(), () => NOW.getTime()))).toBeNull();
     const copie = { fichier_du: "2026-10-29", lu: NOW.toISOString(), sites: [] };
     const read = vi.fn(async () => copie);
-    sitesHs.configure(read);
+    dansLeWorker({ [sitesHs.KV_KEY]: read });
     const cache = new Cache(new MemoryStore(), () => NOW.getTime());
     expect((await sitesHs.sites(cache))!.value).toEqual(copie);
     await sitesHs.sites(cache);

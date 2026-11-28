@@ -11,6 +11,7 @@ import { homePage } from "../src/web/home.js";
 import { buildMarches, marchesLive, type MarchesAnswer } from "../src/web/marches-publics.js";
 import { pecheLive } from "../src/web/peche.js";
 import { DOMAINS, HOME_TILES } from "../src/web/site.js";
+import { dansLeWorker, horsWorker } from "./contexte.js";
 
 // 06/11/2026 at 20:30 in La Réunion.
 const NOW = new Date("2026-11-06T16:30:00Z");
@@ -19,9 +20,9 @@ const cached = <T>(value: T, fetchedAt = NOW) => ({ value, fetchedAt, stale: fal
 const tiles = (page: string) => Object.fromEntries([...page.matchAll(/<li class="tile k-([a-z]+)[^"]*">(.*?)<\/li>/gs)].map((m) => [m[1], m[2]]));
 
 afterEach(() => {
-  emploiSource.configure(undefined);
-  boamp.configure(undefined);
-  cpf.configure(undefined);
+  horsWorker();
+  horsWorker();
+  horsWorker();
   vi.unstubAllGlobals();
 });
 
@@ -92,9 +93,9 @@ describe("the home page's tiles of the public jobs and markets", () => {
     const fetch = vi.fn(async () => new Response("", { status: 500 }));
     vi.stubGlobal("fetch", fetch);
     const read = { emploi: 0, boamp: 0, cpf: 0 };
-    emploiSource.configure(async () => (read.emploi++, { lu: "2026-11-06T16:25:00Z", offres: [] }));
-    boamp.configure(async () => (read.boamp++, { lu: "2026-11-06T15:35:00Z", avis: [], ecartes: [] }));
-    cpf.configure(async () => (read.cpf++, { lu: "2026-11-06T02:00:00Z", formations: [] }));
+    dansLeWorker({ [emploiSource.KV_KEY]: () => (read.emploi++, { lu: "2026-11-06T16:25:00Z", offres: [] }) });
+    dansLeWorker({ [boamp.KV_KEY]: () => (read.boamp++, { lu: "2026-11-06T15:35:00Z", avis: [], ecartes: [] }) });
+    dansLeWorker({ [cpf.KV_KEY]: () => (read.cpf++, { lu: "2026-11-06T02:00:00Z", formations: [] }) });
     const cache = new Cache(new MemoryStore(), () => NOW.getTime());
     await buildEmploi(cache, NOW);
     await buildMarches(cache, NOW);

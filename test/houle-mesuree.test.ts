@@ -7,6 +7,7 @@ import { coastwatch, parseAscii } from "./sst.js";
 import { BOUEE_MAX_KM, COVERAGE, coverage, SATELLITES, TOUR, temperatureMer } from "../src/tools/mer.js";
 import { buildSea } from "../src/web/data.js";
 import { seaPage } from "../src/web/mer-page.js";
+import { dansLeWorker, horsWorker } from "./contexte.js";
 
 // The sea of test/mer-taille.test.ts (waves of Open-Meteo, ACSPO's grid, corals), and what the scheduled event keeps of
 // the Candhis buoys: 97410 Saint-Pierre (large) as getCampListeTR gave it on 23/11/2026 at 05:20 UTC, moved to 40
@@ -37,7 +38,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   vi.unstubAllGlobals();
-  candhis.configure(undefined);
+  horsWorker();
 });
 
 async function withSea() {
@@ -48,8 +49,8 @@ async function withSea() {
 
 describe("the waves measured by the Candhis buoys", () => {
   it("are not said anywhere without the key: the answers, the coverage and /mer as before, and the API never asked", async () => {
-    // KV holds a state, but the Worker has no key: configure(undefined) leaves the reader unused.
-    candhis.configure(undefined, async () => KEPT);
+    // KV holds a state, but the Worker has no key: the state is never read.
+    dansLeWorker({ [candhis.KEY]: async () => KEPT }, { candhis: undefined });
     const cache = await withSea();
     for (const lieu of [undefined, "Plage de Saint-Pierre"]) {
       const b = body(await temperatureMer(cache, lieu, NOW));
@@ -69,7 +70,7 @@ describe("the waves measured by the Candhis buoys", () => {
   });
 
   it("are said with their buoy, their hour in La Réunion and, near a place, their distance; as a measurement, beside the forecast", async () => {
-    candhis.configure(KEY, async () => KEPT);
+    dansLeWorker({ [candhis.KEY]: async () => KEPT }, { candhis: KEY });
     const cache = await withSea();
     const ile = body(await temperatureMer(cache, undefined, NOW));
     expect(ile.houle_mesuree).toEqual([{
@@ -99,7 +100,7 @@ describe("the waves measured by the Candhis buoys", () => {
   });
 
   it("keep the answers under the ceiling of the daily check of the sources", async () => {
-    candhis.configure(KEY, async () => KEPT);
+    dansLeWorker({ [candhis.KEY]: async () => KEPT }, { candhis: KEY });
     const cache = await withSea();
     const max = MAX_BYTES["temperature_mer (Saint-Gilles)"] - 1_500;
     for (const lieu of ["Saint-Gilles", ...TOUR]) {
@@ -119,17 +120,17 @@ describe("the waves measured by the Candhis buoys", () => {
     expect(candhis.releves(old, NOW)).toEqual([]);
     const placed = { ...old, positions: { "97409": { lat: -20.85, lon: 55.56 } } };
     expect(candhis.releves(placed, NOW).map((r) => [r.code, r.nom, r.lat, r.lon])).toEqual([["97409", "Sainte-Marie", -20.85, 55.56]]);
-    candhis.configure(KEY, async () => placed);
+    dansLeWorker({ [candhis.KEY]: async () => placed }, { candhis: KEY });
     const ile = body(await temperatureMer(await withSea(), undefined, NOW));
     expect(ile.houle_mesuree.map((b: { bouee: string }) => b.bouee)).toEqual(["Sainte-Marie"]);
   });
 
   it("end the curves on the measurement said at the top, though the series was completed before it", async () => {
-    candhis.configure(KEY, async () => KEPT);
+    dansLeWorker({ [candhis.KEY]: async () => KEPT }, { candhis: KEY });
     // The series as the scheduled event last kept it: up to the measurement before, 30 minutes earlier.
     const before: candhis.Point = [AT - 30 * 60_000, 1.3, 2.2, 7, 180, 26.7];
-    candhis.configureSerie(async () => ({ essai: AT, bouees: { "97410": { hauteur_selon: "H1/3", periode_selon: "TH1/3", points: [before] } } }));
-    onTestFinished(() => candhis.configureSerie(undefined));
+    dansLeWorker({ [candhis.SERIE_KEY]: async () => ({ essai: AT, bouees: { "97410": { hauteur_selon: "H1/3", periode_selon: "TH1/3", points: [before] } } }) });
+    onTestFinished(horsWorker);
     const sea = await buildSea(await withSea(), NOW);
     const b = sea.courbes!.bouees[0];
     expect(b.chiffres.hauteur).toMatchObject({ derniere: 1.1, le: AT });
@@ -138,7 +139,7 @@ describe("the waves measured by the Candhis buoys", () => {
   });
 
   it("show at the top of /mer while recent at the view, the time first, the buoy named, with their source, before the satellite", async () => {
-    candhis.configure(KEY, async () => KEPT);
+    dansLeWorker({ [candhis.KEY]: async () => KEPT }, { candhis: KEY });
     const sea = await buildSea(await withSea(), NOW);
     expect(sea.bouees).toMatchObject([{ bouee: "Saint-Pierre (large)", t: AT, mesuree_a: "22/10 09:20" }]);
     expect(sea.sources.map((s) => s.source)).toContain(candhis.SOURCE.nom);

@@ -16,6 +16,7 @@
  *   SolarDB. Without the secret, nothing is asked, kept or shown, and nothing says it is missing.
  */
 import type { Cache } from "../cache.js";
+import { contexte, secret } from "../contexte.js";
 import { getCookie, getJson, getText } from "../http.js";
 import { type SourceInfo, UpstreamError } from "../types.js";
 
@@ -203,16 +204,10 @@ interface Reponse {
   data?: Record<string, Record<string, { dates?: string[]; values?: (number | null)[] }>>;
 }
 
-let jeton: string | undefined;
-let reader: (() => Promise<Etat | null>) | undefined;
+/** In the Worker, the token SolarDB sent (contexte.ts): given only with the store, where the state is kept. */
+const leJeton = () => secret("solardb");
 
-/** In the Worker: the token (SOLARDB_JETON, the token SolarDB sent, as is) and the reader of the state kept in KV. */
-export function configure(token: string | undefined, read?: () => Promise<Etat | null>) {
-  jeton = token?.trim() || undefined;
-  reader = read;
-}
-
-export const configured = () => !!jeton;
+export const configured = () => !!leJeton();
 
 const localDate = (t: number) => new Date(t + 4 * 3_600_000).toISOString().slice(0, 10);
 
@@ -245,6 +240,7 @@ const UV_MAX_PLAUSIBLE = 25;
  */
 export async function refresh(before: Etat | null, write: (etat: Etat) => Promise<void>, now = new Date()): Promise<string> {
   const t = now.getTime();
+  const jeton = leJeton();
   if (!jeton) return "sans jeton";
   const etat: Etat = { essai: t, ...(before?.lu ? { lu: before.lu } : {}), ...(before?.mesure ? { mesure: before.mesure } : {}), ...(before?.max ? { max: before.max } : {}), ...(before?.ozone ? { ozone: before.ozone } : {}) };
   if (etat.max && etat.max.jour !== localDate(t)) delete etat.max;
@@ -289,7 +285,8 @@ export function ozoneDu(e: Etat, now: Date): { du: number; jour?: string } {
 /** The state the scheduled event keeps: read from KV in the Worker; nothing elsewhere, nor without the token. */
 export async function etat(cache: Cache) {
   return cache.get(KEY, READ_SECONDS, async () => {
-    const v = reader ? await reader() : null;
+    // In the Worker, the state the scheduled event keeps in its store (contexte.ts).
+    const v = (await contexte().kv?.json<Etat>(KEY)) ?? null;
     if (!v?.essai) throw new UpstreamError(SOURCE.id, "état de l'indice UV mesuré absent du stockage");
     return v;
   });

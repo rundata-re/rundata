@@ -14,6 +14,7 @@
  * Documentation: « API PHP REST de Candhis (v1), documentation utilisateur », Cerema, octobre 2024.
  */
 import type { Cache } from "../cache.js";
+import { contexte, secret } from "../contexte.js";
 import { getText } from "../http.js";
 import { type SourceInfo, UpstreamError } from "../types.js";
 
@@ -126,16 +127,12 @@ interface Reponse {
   results?: unknown[] | null;
 }
 
-let apiKey: string | undefined;
-let reader: (() => Promise<Etat | null>) | undefined;
+/** In the Worker, the key (contexte.ts): given only with the store, where the scheduled event keeps the state. */
+const cle = () => secret("candhis");
+/** The state the scheduled event keeps in the store; null without a store or a state. */
+const etatGarde = async () => (await contexte().kv?.json<Etat>(KEY)) ?? null;
 
-/** In the Worker: the key, and the reader of the state the scheduled event keeps in KV. */
-export function configure(key: string | undefined, read?: () => Promise<Etat | null>) {
-  apiKey = key?.trim() || undefined;
-  reader = read;
-}
-
-export const configured = () => !!apiKey;
+export const configured = () => !!cle();
 
 /** Whether the scheduled event at `now` (every 5 minutes) is one of those that ask the buoys. */
 export const refreshDue = (now: Date) => (((now.getUTCMinutes() - REFRESH_OFFSET) % REFRESH_EVERY) + REFRESH_EVERY) % REFRESH_EVERY < 5;
@@ -158,6 +155,7 @@ export function timeOf(s: unknown): number {
 }
 
 async function ask(path: string): Promise<Reponse> {
+  const apiKey = cle();
   if (!apiKey) throw new UpstreamError(SOURCE.id, "pas de clé");
   const text = await getText(SOURCE.id, `${API}${path}`, TIMEOUT_MS, { Authorization: apiKey });
   try {
@@ -254,7 +252,7 @@ const pauseOf = (status: number | undefined) => (status === 401 || status === 42
  */
 export async function refresh(before: Etat | null, write: (etat: Etat) => Promise<void>, now = new Date()): Promise<string> {
   const t = now.getTime();
-  if (!apiKey) return "sans clé";
+  if (!cle()) return "sans clé";
   if (before?.pause_jusqu_a && before.pause_jusqu_a > t) return `en pause jusqu'à ${new Date(before.pause_jusqu_a).toISOString()}`;
   const etat: Etat = { essai: t, mesures: { ...before?.mesures }, ...(before?.lu ? { lu: before.lu } : {}), ...(before?.types ? { types: before.types } : {}), ...(before?.positions ? { positions: before.positions } : {}) };
   let asked = 0;
@@ -301,7 +299,7 @@ export async function refresh(before: Etat | null, write: (etat: Etat) => Promis
 /** The state the scheduled event keeps: read from KV in the Worker; nothing elsewhere (no key outside the Worker). */
 export async function etat(cache: Cache) {
   return cache.get(KEY, READ_SECONDS, async () => {
-    const v = reader ? await reader() : null;
+    const v = await etatGarde();
     if (!v?.mesures) throw new UpstreamError(SOURCE.id, "état des bouées absent du stockage");
     return v;
   });
@@ -393,12 +391,6 @@ const lendemain = (t: number) => {
   return local - (local % DAY) + DAY - 4 * 3600_000;
 };
 
-let serieReader: (() => Promise<Serie | null>) | undefined;
-
-/** In the Worker: the reader of the series the scheduled event keeps in KV. */
-export function configureSerie(read?: () => Promise<Serie | null>) {
-  serieReader = read;
-}
 
 /**
  * In the Worker's scheduled event: the state's last measurement of each active buoy added to its series, the days
@@ -407,8 +399,8 @@ export function configureSerie(read?: () => Promise<Serie | null>) {
  */
 export async function completer(before: Serie | null, write: (s: Serie) => Promise<void>, now = new Date(), state?: Etat | null): Promise<string> {
   const t = now.getTime();
-  if (!apiKey) return "sans clé";
-  const etat = state === undefined ? (reader ? await reader() : null) : state;
+  if (!cle()) return "sans clé";
+  const etat = state === undefined ? await etatGarde() : state;
   const from = t - SERIE_JOURS * DAY;
   const serie: Serie = {
     bouees: {},
@@ -486,7 +478,8 @@ export function avecDernieres(s: Serie, e: Etat | null | undefined): Serie {
 /** The series the scheduled event keeps: read from KV in the Worker; nothing elsewhere. */
 export async function serie(cache: Cache) {
   return cache.get(SERIE_KEY, READ_SECONDS, async () => {
-    const v = serieReader ? await serieReader() : null;
+    // In the Worker, the series the scheduled event keeps in its store (contexte.ts).
+    const v = (await contexte().kv?.json<Serie>(SERIE_KEY)) ?? null;
     if (!v?.bouees) throw new UpstreamError(SOURCE.id, "série des bouées absente du stockage");
     return v;
   });

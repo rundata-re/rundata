@@ -14,6 +14,8 @@ import * as irve from "../src/providers/irve.js";
 import * as eauIle from "../src/eau/ile.js";
 import * as prefectureCopie from "../src/providers/prefecture-copie.js";
 import * as raa from "../src/providers/raa.js";
+import * as candhis from "../src/providers/candhis.js";
+import * as uvMesure from "../src/providers/uv-mesure.js";
 import worker from "../src/worker.js";
 import { dansLeWorker, horsWorker } from "./contexte.js";
 
@@ -67,6 +69,24 @@ describe("the modules' context (src/contexte.ts)", () => {
     horsWorker();
   });
 
+  it("gives the sources' keys with the store only, and is built again when a key changes", async () => {
+    const env = (e: Record<string, unknown>) => worker.fetch(new Request("https://rundata.re/robots.txt"), e as never, { waitUntil: () => {} });
+    await env({ CANDHIS_API_KEY: "cle", SOLARDB_JETON: "jeton" });
+    expect(contexte().secrets).toBeUndefined();
+    expect([candhis.configured(), uvMesure.configured()]).toEqual([false, false]);
+    const kv = new FakeKv();
+    await env({ STORE: kv, CANDHIS_API_KEY: " cle ", SOLARDB_JETON: "jeton" });
+    expect([candhis.configured(), uvMesure.configured()]).toEqual([true, true]);
+    const premier = contexte();
+    await env({ STORE: kv, CANDHIS_API_KEY: " cle " });
+    expect(contexte()).not.toBe(premier);
+    expect([candhis.configured(), uvMesure.configured()]).toEqual([true, false]);
+    await env({ STORE: kv, CANDHIS_API_KEY: "  " });
+    expect(candhis.configured()).toBe(false);
+    horsWorker();
+    expect([candhis.configured(), uvMesure.configured()]).toEqual([false, false]);
+  });
+
   it("gives a test's data by key, a value or a function, any other key absent (test/contexte.ts)", async () => {
     let n = 0;
     dansLeWorker({ a: { x: 1 }, b: () => ++n });
@@ -79,6 +99,10 @@ describe("the modules' context (src/contexte.ts)", () => {
     horsWorker();
     dansLeWorker({ c: 4 });
     expect(await contexte().kv!.json("a")).toBeNull();
+    // The keys likewise; one given as undefined is taken back.
+    dansLeWorker({}, { candhis: "k", solardb: "j" });
+    dansLeWorker({}, { solardb: undefined });
+    expect([candhis.configured(), uvMesure.configured()]).toEqual([true, false]);
     horsWorker();
   });
 

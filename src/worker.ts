@@ -25,8 +25,6 @@ import * as meteorOi from "./providers/meteor-oi.js";
 import { autorisee } from "./providers/autorisations.js";
 import * as ovpfOcr from "./providers/ovpf-ocr.js";
 import * as meteofrance from "./providers/meteofrance.js";
-import * as candhis from "./providers/candhis.js";
-import * as uvMesure from "./providers/uv-mesure.js";
 import * as radar from "./providers/radar.js";
 import * as vigilanceCarte from "./providers/vigilance-carte.js";
 import * as mf from "./providers/vigilance.js";
@@ -230,15 +228,20 @@ function logLine(hit: Hit, visitor: string, country: string) {
 }
 
 let cache: Cache | undefined;
-// The store binding the modules' context was built with (setup).
-let contexteDe: unknown;
+// The store binding and the secrets the modules' context was built with (setup).
+let contexteDe: unknown[] = [];
 
 function setup(env: Env): Cache {
   // What the modules read at the time they need it (contexte.ts), built once per isolate (the bindings do not change,
   // as for `cache` below): a module's copy kept in memory stays valid from one request to the next.
-  if (!contexte().worker || contexteDe !== env.STORE) {
-    installer({ worker: true, ...(env.STORE && { kv: stockageKv(env.STORE) }) });
-    contexteDe = env.STORE;
+  // The keys are given only with the store: the state their source's reads keep is there.
+  const de = [env.STORE, env.CANDHIS_API_KEY, env.SOLARDB_JETON];
+  if (!contexte().worker || de.some((v, i) => v !== contexteDe[i])) {
+    installer({
+      worker: true,
+      ...(env.STORE && { kv: stockageKv(env.STORE), secrets: { candhis: env.CANDHIS_API_KEY, solardb: env.SOLARDB_JETON } }),
+    });
+    contexteDe = de;
   }
   meteofrance.configure({ applicationId: env.METEOFRANCE_APPLICATION_ID, apiKey: env.METEOFRANCE_API_KEY });
   feux.configure(env.FIRMS_MAP_KEY);
@@ -249,22 +252,6 @@ function setup(env: Env): Cache {
     get: async () => (await kv.get(meteofrance.TOKEN_KV_KEY, "json")) as meteofrance.Token | null,
     put: (t, ttl) => kv.put(meteofrance.TOKEN_KV_KEY, JSON.stringify(t), { expirationTtl: ttl }),
   });
-  // Asked by the scheduled event below and kept in KV (src/providers/candhis.ts): without KV, the key is not used.
-  candhis.configure(kv && env.CANDHIS_API_KEY, kv && (async () => {
-    count();
-    return (await kv.get(candhis.KEY, "json")) as candhis.Etat | null;
-  }));
-  // The buoys' series of 30 days, kept by the scheduled event below (src/providers/candhis.ts `completer`).
-  candhis.configureSerie(kv && (async () => {
-    count();
-    return (await kv.get(candhis.SERIE_KEY, "json")) as candhis.Serie | null;
-  }));
-  // The UV index measured at Moufia, read by the scheduled event below and kept in KV (src/providers/uv-mesure.ts):
-  // without KV, the token is not used; without the token, nothing is read nor shown.
-  uvMesure.configure(kv && env.SOLARDB_JETON, kv && (async () => {
-    count();
-    return (await kv.get(uvMesure.KEY, "json")) as uvMesure.Etat | null;
-  }));
   // The replay bar's files (web/rejeu.ts): the radar's last 6 hours, its 24 hours a quarter of an hour apart, its week
   // an hour apart and its days every 5 minutes, kept by the scheduled event below (web/pluie-retro.ts,
   // web/radar-semaine.ts), and the stations' week, written only by the files that read it; the amateur stations' hours

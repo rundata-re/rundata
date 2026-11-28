@@ -17,8 +17,7 @@ import { adresseTexte } from "./adresse.js";
 import * as connecteurs from "./connecteurs.js";
 import { crumbBar, crumbs, lienNom, webPage } from "./domains.js";
 import { ICS_PATH, JSON_PATH } from "./flux-associations.js";
-import { esc } from "./map.js";
-import { href as lienSur } from "./html.js";
+import { brut, href, html, type Html } from "./html.js";
 import { adressesCoupables, layout } from "./pages.js";
 import { lienForm, PROPOSER_PATH, TURNSTILE_SCRIPT } from "./propositions.js";
 import brand from "./brand.json" with { type: "json" };
@@ -77,7 +76,7 @@ export async function preuve(cache: Pick<Cache, "bundle">, now: Date): Promise<P
 }
 
 /** « Déjà lu » or « Pas lu », as on /publier. */
-const etat = (lu: boolean) => (lu ? `<span class="etat lu">Déjà lu</span>` : `<span class="etat non">Pas lu</span>`);
+const etat = (lu: boolean) => brut(lu ? `<span class="etat lu">Déjà lu</span>` : `<span class="etat non">Pas lu</span>`);
 
 /** The tools a club may already use (§3); « Déjà lu » only for what an agenda here reads. */
 const OUTILS: { nom: string; faire: string; temps: string; lu: boolean }[] = [
@@ -144,16 +143,16 @@ function howTo(origin: string) {
   };
 }
 
-function preuveSection(p: Preuve): string {
+function preuveSection(p: Preuve): Html {
   const count = p.clubs >= CLUBS_MIN
-    ? `<p>${p.clubs} clubs et associations lus par rundata.re\u00a0; ${p.evenements} de leurs événements dans les deux prochaines semaines.</p>`
+    ? html`<p>${p.clubs} clubs et associations lus par rundata.re\u00a0; ${p.evenements} de leurs événements dans les deux prochaines semaines.</p>`
     : "";
   // Dates over several days (« du mercredi 04/11 à 18:00 au samedi 07/11 à 23:00 ») go under the title on a phone
   // (.fin, as on /evenements): beside it, they left the title a column of 110 px, its words over the date.
   const list = p.prochains.length
-    ? `<ul class="rows eau">${p.prochains.map(({ e, quand }) => `<li><span>${e.lien ? `<a href="${lienSur(versBilletterie(e.lien))}" rel="noopener">${esc(e.titre)}</a>` : esc(e.titre)} <small>${[e.commune, e.publie_par].filter(Boolean).map((x) => esc(x!)).join(" · ")}</small></span><span${quand.startsWith("du ") ? ' class="fin"' : ""}>${esc(quand)}</span></li>`).join("")}</ul>`
-    : `<p>Les premiers événements de clubs et d'associations arrivent\u00a0: <a href="${PROPOSER_PATH}">proposez le vôtre</a>.</p>`;
-  return `<section aria-labelledby="h-preuve">
+    ? html`<ul class="rows eau">${p.prochains.map(({ e, quand }) => html`<li><span>${e.lien ? html`<a href="${href(versBilletterie(e.lien))}" rel="noopener">${e.titre}</a>` : e.titre} <small>${[e.commune, e.publie_par].filter(Boolean).join(" · ")}</small></span><span${quand.startsWith("du ") ? brut(' class="fin"') : ""}>${quand}</span></li>`)}</ul>`
+    : html`<p>Les premiers événements de clubs et d'associations arrivent\u00a0: <a href="${PROPOSER_PATH}">proposez le vôtre</a>.</p>`;
+  return html`<section aria-labelledby="h-preuve">
   <div class="sec-h"><p class="eyebrow">En direct</p><h2 id="h-preuve">Les prochains événements de clubs et d'associations</h2></div>
   ${count}
   <div class="card">${list}<p><a href="/evenements">Voir tous les événements</a></p></div>
@@ -198,16 +197,16 @@ export async function annuaire(url: URL): Promise<Annuaire | undefined> {
 const SOURCE_RNA = (maj: string) => `Répertoire national des associations, ministère de l'Intérieur, fichier du ${rna.dateDite(maj)} (Licence Ouverte 2.0).`;
 
 /** An association: its title (its site's link when it has one), its commune and year, its object cut, the rest on a click. */
-function fiche(a: rna.Association): string {
+function fiche(a: rna.Association): Html {
   const { debut, suite } = rna.court(a.objet);
-  const titre = a.site ? `<a href="${esc(a.site)}" rel="noopener nofollow">${esc(a.titre)}</a>` : esc(a.titre);
+  const titre = a.site ? html`<a href="${href(a.site)}" rel="noopener nofollow">${a.titre}</a>` : a.titre;
   const meta = [rna.communeOf(a.insee), a.creee ? `créée en ${a.creee.slice(0, 4)}` : undefined].filter(Boolean).join(" · ");
   const objet = !a.objet
     ? ""
     : suite
-      ? `<details class="pli"><summary>${esc(debut)} <span class="aide">la suite</span></summary><p>${esc(a.objet)}</p></details>`
-      : `<p>${esc(a.objet)}</p>`;
-  return `<li><h3>${titre}</h3><p class="aide">${esc(meta)}</p>${objet}</li>`;
+      ? html`<details class="pli"><summary>${debut} <span class="aide">la suite</span></summary><p>${a.objet}</p></details>`
+      : html`<p>${a.objet}</p>`;
+  return html`<li><h3>${titre}</h3><p class="aide">${meta}</p>${objet}</li>`;
 }
 
 /** The address of another page of the same search. */
@@ -221,52 +220,52 @@ const pageDe = (v: Annuaire, n: number) => {
 
 /** The directory's section: the form, then what it found, the source and where an association corrects its entry. */
 export function annuaireSection(v: Annuaire): string {
-  const options = COMMUNES.map((c) => `<option value="${esc(slugify(c))}"${c === v.commune ? " selected" : ""}>${esc(c)}</option>`).join("");
-  const form = `<form class="card fo" method="get" action="${PATH}#annuaire" role="search">
+  const options = COMMUNES.map((c) => html`<option value="${slugify(c)}"${c === v.commune ? " selected" : ""}>${c}</option>`);
+  const form = html`<form class="card fo" method="get" action="${PATH}#annuaire" role="search">
     <label>Commune <select name="commune"><option value="">toute l'île</option>${options}</select></label>
-    <label>Mot <input type="search" name="mot" value="${esc(v.mot)}" maxlength="80" placeholder="surf, quartier, parents d'élèves…"></label>
+    <label>Mot <input type="search" name="mot" value="${v.mot}" maxlength="80" placeholder="surf, quartier, parents d'élèves…"></label>
     <p><button type="submit" class="btn">Chercher</button></p>
   </form>`;
-  let found = "";
+  let found: Html | "" = "";
   if (v.trouve) {
     const { liste, total } = v.trouve;
     const where = v.commune ? ` à ${v.commune}` : " à La Réunion";
     const said = rna.requete(v.mot) ? ` pour «\u00a0${v.mot}\u00a0»` : "";
     const pages = Math.ceil(total / PAR_PAGE);
     const nav = pages > 1
-      ? `<p class="note">${v.page > 1 ? `<a href="${esc(pageDe(v, v.page - 1))}">Page précédente</a> · ` : ""}page ${v.page} sur ${pages}${v.page < pages ? ` · <a href="${esc(pageDe(v, v.page + 1))}">Page suivante</a>` : ""}</p>`
+      ? html`<p class="note">${v.page > 1 ? html`<a href="${href(pageDe(v, v.page - 1))}">Page précédente</a> · ` : ""}page ${v.page} sur ${pages}${v.page < pages ? html` · <a href="${href(pageDe(v, v.page + 1))}">Page suivante</a>` : ""}</p>`
       : "";
     found = total
-      ? `<p><strong>${total.toLocaleString("fr-FR")} association${total > 1 ? "s" : ""} déclarée${total > 1 ? "s" : ""}${esc(where)}${esc(said)}</strong></p>
-  <ul class="card asso-liste">${liste.map(fiche).join("")}</ul>${nav}`
-      : `<p>Aucune association déclarée${esc(where)}${esc(said)}. Essayez un mot plus court ou plus général, ou toute l'île.</p>`;
+      ? html`<p><strong>${total.toLocaleString("fr-FR")} association${total > 1 ? "s" : ""} déclarée${total > 1 ? "s" : ""}${where}${said}</strong></p>
+  <ul class="card asso-liste">${liste.map(fiche)}</ul>${nav}`
+      : html`<p>Aucune association déclarée${where}${said}. Essayez un mot plus court ou plus général, ou toute l'île.</p>`;
   }
-  return `<section id="annuaire" aria-labelledby="h-annuaire">
+  return html`<section id="annuaire" aria-labelledby="h-annuaire">
   <div class="sec-h"><p class="eyebrow">Annuaire</p><h2 id="h-annuaire">Les associations déclarées à La Réunion</h2>
   <p>Cherchez une association par commune et par mot\u00a0: son nom, son objet, son année de création et son site, tels que le répertoire national les publie. Aucune adresse n'est donnée.</p></div>
   ${form}
   ${found}
-  <p class="note">Source\u00a0: ${esc(SOURCE_RNA(v.maj))} Une association dissoute sans l'avoir déclaré peut y figurer encore. rundata.re ne corrige rien\u00a0: une association corrige sa fiche auprès du greffe des associations, ${lienNom(rna.CORRIGER, "démarche sur service-public.fr", ' rel="noopener"')}.</p>
-</section>`;
+  <p class="note">Source\u00a0: ${SOURCE_RNA(v.maj)} Une association dissoute sans l'avoir déclaré peut y figurer encore. rundata.re ne corrige rien\u00a0: une association corrige sa fiche auprès du greffe des associations, ${brut(lienNom(rna.CORRIGER, "démarche sur service-public.fr", ' rel="noopener"'))}.</p>
+</section>`.texte;
 }
 
 export function associationsPage(origin: string, p: Preuve, alerte?: Alerte, rep?: Annuaire): string {
-  const band = `${crumbBar("Clubs et associations")}
+  const band = html`${brut(crumbBar("Clubs et associations"))}
 <div class="wrap intro solo"><div class="pitch">
   <p class="pill">Gratuit, sans compte</p>
-  <h1>${esc(H1)}</h1>
-  <p class="lead">${esc(ESPRIT)}</p>
-  <p class="slogan" lang="${brand.slogan_lang}">${esc(KREOL)}</p>
+  <h1>${H1}</h1>
+  <p class="lead">${ESPRIT}</p>
+  <p class="slogan" lang="${brand.slogan_lang}">${KREOL}</p>
 </div></div>`;
-  const cards = OUTILS.map((o) => `<li class="card outil"><h3>${esc(o.nom)}</h3>
-    <p class="aide">Ce qu'il faut faire</p>${o.faire}
-    <p class="aide">Temps\u00a0: ${esc(o.temps)} · rundata.re\u00a0: ${etat(o.lu)}</p></li>`).join("\n  ");
-  const body = `<section class="card proposer" aria-labelledby="h-proposer">
+  const cards = OUTILS.map((o, i) => html`${i ? brut("\n  ") : ""}<li class="card outil"><h3>${o.nom}</h3>
+    <p class="aide">Ce qu'il faut faire</p>${brut(o.faire)}
+    <p class="aide">Temps\u00a0: ${o.temps} · rundata.re\u00a0: ${etat(o.lu)}</p></li>`);
+  const body = html`<section class="card proposer" aria-labelledby="h-proposer">
   <h2 id="h-proposer">Proposer un événement, en 2\u00a0minutes</h2>
   <p>Un match, une kermesse, une sortie, un concert\u00a0? Remplissez le formulaire, avec ou sans page Facebook, sans compte. Il est relu, puis il s'affiche sur rundata.re et dans les assistants IA, avec le nom de votre association.</p>
   <p><a class="btn sun" href="${PROPOSER_PATH}">Proposer un événement</a></p>
 </section>
-${connecteurs.enLigne() ? connecteurs.carte() : ""}
+${connecteurs.enLigne() ? brut(connecteurs.carte()) : ""}
 ${preuveSection(p)}
 <section aria-labelledby="h-outils">
   <div class="sec-h"><h2 id="h-outils">Votre club utilise déjà un agenda\u00a0?</h2><p>Pour ne plus rien saisir deux fois\u00a0: ce qu'il faut faire, selon l'outil.</p></div>
@@ -274,25 +273,25 @@ ${preuveSection(p)}
   ${cards}
   </ul>
 </section>
-${lienForm(PATH)}
+${brut(lienForm(PATH))}
 <section aria-labelledby="h-propre">
   <div class="sec-h"><h2 id="h-propre">Vous voulez faire propre\u00a0?</h2>
   <p>Le guide complet montre comment publier vos événements en flux ouvert, lisible par rundata.re et par tous\u00a0: Google Agenda, OpenAgenda, WordPress, tableur, data.gouv.fr. <a href="/publier">Lire le guide</a></p></div>
 </section>
 <section aria-labelledby="h-regles">
   <div class="sec-h"><h2 id="h-regles">Les règles</h2></div>
-  <ul class="card">${REGLES.map((r) => `<li>${adresseTexte(r)}</li>`).join("")}</ul>
+  <ul class="card">${REGLES.map((r) => html`<li>${brut(adresseTexte(r))}</li>`)}</ul>
   <p class="note">Les événements proposés, en données ouvertes\u00a0: <a href="${ICS_PATH}">agenda ICS</a> · <a href="${JSON_PATH}">JSON</a> (Licence Ouverte 2.0).</p>
 </section>
 <section aria-labelledby="h-relais">
   <div class="sec-h"><h2 id="h-relais">Faites passer</h2><p>Le texte à transmettre aux autres clubs et associations\u00a0:</p></div>
-  <div class="card fo"><p id="relais">${adressesCoupables(RELAIS, true)}</p>
-  <p><button type="button" data-copy="relais">Copier le texte</button> <a class="sh wa" href="https://wa.me/?text=${encodeURIComponent(RELAIS)}" target="_blank" rel="noopener">Partager sur WhatsApp</a></p></div>
+  <div class="card fo"><p id="relais">${brut(adressesCoupables(RELAIS, true))}</p>
+  <p><button type="button" data-copy="relais">Copier le texte</button> <a class="sh wa" href="${href(`https://wa.me/?text=${encodeURIComponent(RELAIS)}`)}" target="_blank" rel="noopener">Partager sur WhatsApp</a></p></div>
 </section>
-${rep ? annuaireSection(rep) : ""}
-<p>Une question\u00a0? ${lienNom("mailto:contact@rundata.re", "contact@rundata.re")}</p>
-${TURNSTILE_SCRIPT}`;
+${rep ? brut(annuaireSection(rep)) : ""}
+<p>Une question\u00a0? ${brut(lienNom("mailto:contact@rundata.re", "contact@rundata.re"))}</p>
+${brut(TURNSTILE_SCRIPT)}`;
   // A search's own address is not a page to index: the space's is.
   const asked = !!rep && (!!rep.commune || !!rep.mot || rep.page > 1);
-  return layout(origin, { title: TITLE, description: META, path: PATH, jsonld: [crumbs(origin, "Clubs et associations", PATH), webPage(origin, PATH, TITLE, META, null), howTo(origin)], alerte, sansPartage: true, ...(asked ? { noindex: true } : {}) }, band, body);
+  return layout(origin, { title: TITLE, description: META, path: PATH, jsonld: [crumbs(origin, "Clubs et associations", PATH), webPage(origin, PATH, TITLE, META, null), howTo(origin)], alerte, sansPartage: true, ...(asked ? { noindex: true } : {}) }, band.texte, body.texte);
 }

@@ -3,8 +3,9 @@
  * the Worker's KV: the prefecture's site cuts the connection of Cloudflare's Workers (HTTP 520 to nearly every read from
  * 13:14 to 16:06 on 28/10/2026), while it answers that machine. In the Worker, the news (providers/actualites.ts), the
  * subjects of the releases (providers/prefecture.ts) and the pages of the volcano's releases (providers/volcan.ts) read
- * these copies, never the site. Elsewhere (a local server, the tests), nothing is configured and they read the site.
+ * these copies, never the site, from its store (contexte.ts). Elsewhere (a local server, the tests), they read the site.
  */
+import { contexte } from "../contexte.js";
 import type { Info } from "./actualites.js";
 import type { Page } from "./volcan.js";
 
@@ -50,26 +51,21 @@ export const pageKey = (lien: string) => `prefecture:communique:collecte:${lien}
  */
 export const PAGE_AGAIN_MS = 24 * 3600_000;
 
-let reader: (() => Promise<Copie | null>) | undefined;
-let pageReader: ((lien: string) => Promise<PageCopie | null>) | undefined;
-
-/** In the Worker: read the copies from the KV store, where scripts/prefecture.ts writes them, and the site never. */
-export function configure(read: (() => Promise<Copie | null>) | undefined, readPage?: (lien: string) => Promise<PageCopie | null>) {
-  reader = read;
-  pageReader = read && readPage;
-}
-
 /** Whether the copy is what is read (the Worker), rather than the site. */
-export const configured = () => reader !== undefined;
+export const configured = () => contexte().worker;
 
-/** The stored copy; null when the store has none or nothing is configured. */
+/** The stored copy, in the Worker, where scripts/prefecture.ts writes it; null when the store has none, or outside the Worker. */
 export async function copie(): Promise<Copie | null> {
-  return reader ? reader() : null;
+  const { worker, kv } = contexte();
+  if (!worker || !kv) return null;
+  return kv.json<Copie>(KV_KEY);
 }
 
-/** The stored copy of a release's page; null when the store has none or nothing is configured. */
+/** The stored copy of a release's page, in the Worker; null when the store has none, or outside the Worker. */
 export async function page(lien: string): Promise<PageCopie | null> {
-  return pageReader ? pageReader(lien) : null;
+  const { worker, kv } = contexte();
+  if (!worker || !kv) return null;
+  return kv.json<PageCopie>(pageKey(lien));
 }
 
 /**

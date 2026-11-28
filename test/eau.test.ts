@@ -8,7 +8,7 @@ import { CONSIGNE } from "../src/eau/cyclone.js";
 import { sourceRevision } from "../src/web/revisions.js";
 import { bathSentences, COMMON, saisonSansPrelevement, noteBaignade, qualiteEau, sansPrelevement, siteNamed, sujetOf, tapNote, tapSentence } from "../src/tools/eau.js";
 import { distributeur } from "../src/eau/distributeurs.js";
-import { configure, gather } from "../src/eau/ile.js";
+import { KV_KEY, gather } from "../src/eau/ile.js";
 import { withLectures } from "../src/lectures.js";
 import { TOOL_WAIT_MS } from "../src/server.js";
 import { fraicheur } from "../src/tools/fraicheur.js";
@@ -21,6 +21,7 @@ import { citerOf } from "../src/tools/citer.js";
 import { buildEau } from "../src/web/data.js";
 import { SOURCE as NOTICES } from "../src/providers/avis-eau.js";
 import { mapPoints, tabStops } from "./cartes.js";
+import { dansLeWorker, horsWorker } from "./contexte.js";
 
 // Hub'Eau for Saint-Pierre and the ministry's page of the plage de l'Hermitage centre, read on 24/10/2026: the latest
 // analyses date from late August (tap) and mid-September (bathing).
@@ -405,7 +406,7 @@ describe("qualité de l'eau", () => {
     const site = SITES.find((s) => s.nom === row.site)!;
     const { prelevements_en_retard: _gap, ...kept } = row;
     // Written at 08:20, the tap water read then, the bathing sites kept from the copy of 07:12 (the ARS silent at 08:20).
-    configure(async () => ({ lu: "2026-10-24T04:20:00.000Z", baignades_lu: "2026-10-24T03:12:00.000Z", baignades: [{ ...kept, lon: site.lon, lat: site.lat }], communes: [] }));
+    dansLeWorker({ [KV_KEY]: async () => ({ lu: "2026-10-24T04:20:00.000Z", baignades_lu: "2026-10-24T03:12:00.000Z", baignades: [{ ...kept, lon: site.lon, lat: site.lat }], communes: [] }) });
     try {
       vi.stubGlobal("fetch", async () => { throw new TypeError("fetch failed"); });
       const { value, lectures } = await withLectures(() => qualiteEau(cache(), "plage de l'Hermitage", "baignade", NOW));
@@ -413,7 +414,7 @@ describe("qualité de l'eau", () => {
       expect(b.baignade.copie).toBe("Le site de l'ARS ne répond pas\u00a0: résultats de la dernière lecture de rundata.re, le 24/10/2026 à 07:12 (heure de La Réunion).");
       expect(fraicheur(b, lectures, NOW).lue_a).toBe("24/10 07:12");
     } finally {
-      configure(undefined);
+      horsWorker();
     }
   });
 
@@ -422,7 +423,7 @@ describe("qualité de l'eau", () => {
     const [row] = live.baignade.sites;
     const site = SITES.find((s) => s.nom === row.site)!;
     // Both halves last read on 16/10 at 07:12, heure de La Réunion: 8 days before NOW.
-    configure(async () => ({ lu: "2026-10-24T03:12:00.000Z", baignades_lu: "2026-10-16T03:12:00.000Z", communes_lu: "2026-10-16T03:12:00.000Z", baignades: [{ ...row, lon: site.lon, lat: site.lat }], communes: [] }));
+    dansLeWorker({ [KV_KEY]: async () => ({ lu: "2026-10-24T03:12:00.000Z", baignades_lu: "2026-10-16T03:12:00.000Z", communes_lu: "2026-10-16T03:12:00.000Z", baignades: [{ ...row, lon: site.lon, lat: site.lat }], communes: [] }) });
     try {
       vi.stubGlobal("fetch", async () => { throw new TypeError("fetch failed"); });
       const bath = body(await qualiteEau(cache(), "plage de l'Hermitage", "baignade", NOW));
@@ -433,7 +434,7 @@ describe("qualité de l'eau", () => {
       expect(tap.eau_du_robinet).toEqual({ resume: "Hub'Eau ne répond plus depuis le 16/10\u00a0: voir le site de l'ARS.", ne_repond_plus: true });
       expect(tap.erreur).toBeUndefined();
     } finally {
-      configure(undefined);
+      horsWorker();
     }
   });
 
@@ -442,7 +443,7 @@ describe("qualité de l'eau", () => {
     const [row] = live.baignade.sites;
     const site = SITES.find((s) => s.nom === row.site)!;
     const { prelevements_en_retard: _gap, ...kept } = row;
-    configure(async () => ({ lu: "2026-10-24T03:12:00.000Z", baignades: [{ ...kept, lon: site.lon, lat: site.lat }], communes: [] }));
+    dansLeWorker({ [KV_KEY]: async () => ({ lu: "2026-10-24T03:12:00.000Z", baignades: [{ ...kept, lon: site.lon, lat: site.lat }], communes: [] }) });
     try {
       vi.stubGlobal("fetch", async () => { throw new TypeError("fetch failed"); });
       const { value, lectures } = await withLectures(() => qualiteEau(cache(), "plage de l'Hermitage", "baignade", NOW));
@@ -457,10 +458,10 @@ describe("qualité de l'eau", () => {
       // A commune asked: its sites in the copy, the others' failure is the answer's.
       expect(body(await qualiteEau(cache(), "Saint-Pierre", "baignade", NOW)).erreur).toBe("Les données de qualité de l'eau ne répondent pas pour le moment.");
       // Without a copy stored, the error stays the answer.
-      configure(undefined);
+      horsWorker();
       expect(body(await qualiteEau(cache(), "plage de l'Hermitage", "baignade", NOW)).erreur).toBe("Les données de qualité de l'eau ne répondent pas pour le moment.");
     } finally {
-      configure(undefined);
+      horsWorker();
     }
   });
 
@@ -485,12 +486,12 @@ describe("qualité de l'eau", () => {
       return body((await call).value);
     };
     try {
-      configure(async () => ({ lu: "2026-10-24T03:12:00.000Z", baignades: [{ ...kept, lon: site.lon, lat: site.lat }], communes: [] }));
+      dansLeWorker({ [KV_KEY]: async () => ({ lu: "2026-10-24T03:12:00.000Z", baignades: [{ ...kept, lon: site.lon, lat: site.lat }], communes: [] }) });
       const b = await timed("plage de l'Hermitage", "baignade");
       expect(b.baignade.sites).toEqual([row]);
       expect(b.baignade.copie).toBe("Le site de l'ARS ne répond pas\u00a0: résultats de la dernière lecture de rundata.re, le 24/10/2026 à 07:12 (heure de La Réunion).");
       // No copy: the tap water said, the bathing said missing, not waited for.
-      configure(undefined);
+      horsWorker();
       const both = await timed("Saint-Pierre");
       expect(both.eau_du_robinet.reseaux.length).toBeGreaterThan(0);
       expect(both.indisponible).toEqual(["eau de baignade"]);
@@ -501,7 +502,7 @@ describe("qualité de l'eau", () => {
       expect(tap.erreur).toBe("Les données de qualité de l'eau ne répondent pas pour le moment.");
     } finally {
       vi.useRealTimers();
-      configure(undefined);
+      horsWorker();
     }
   });
 
@@ -515,7 +516,7 @@ describe("qualité de l'eau", () => {
     expect(others.length).toBeGreaterThan(0);
     const site = SITES.find((s) => s.nom === first.site && s.commune === "Saint-Pierre")!;
     const { prelevements_en_retard: _gap, ...kept } = first;
-    configure(async () => ({ lu: "2026-10-24T03:12:00.000Z", baignades: [{ ...kept, lon: site.lon, lat: site.lat }], communes: [] }));
+    dansLeWorker({ [KV_KEY]: async () => ({ lu: "2026-10-24T03:12:00.000Z", baignades: [{ ...kept, lon: site.lon, lat: site.lat }], communes: [] }) });
     try {
       // The ARS's site answers for every site but this one.
       vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
@@ -530,7 +531,7 @@ describe("qualité de l'eau", () => {
       // The oldest of what is served dates the answer: the copy's time.
       expect(fraicheur(b, lectures, NOW).lue_a).toBe("24/10 07:12");
     } finally {
-      configure(undefined);
+      horsWorker();
     }
   });
 
@@ -589,7 +590,7 @@ describe("qualité de l'eau", () => {
     // The tap water last read on 22/10 at 04:20 (heure de La Réunion), 2 days before NOW.
     const copy = { lu: "2026-10-24T00:20:00.000Z", communes_lu: "2026-10-22T00:20:00.000Z", baignades: [], communes: [commune] };
     const note = "Hub'Eau, le service national qui publie les analyses de l'ARS, n'a pas répondu à la dernière lecture\u00a0: analyses de l'eau du robinet lues le 22/10 à 04:20. Un avis publié depuis peut ne pas y figurer\u00a0: voir le site de l'ARS ou de la mairie.";
-    configure(async () => copy as never);
+    dansLeWorker({ [KV_KEY]: async () => copy as never });
     try {
       vi.stubGlobal("fetch", async () => { throw new TypeError("fetch failed"); });
       const town = body(await qualiteEau(cache(), "Saint-Pierre", "robinet", NOW));
@@ -604,11 +605,11 @@ describe("qualité de l'eau", () => {
       const quiet = body(await qualiteEau(cache(), "Bois d'Olives", "robinet", NOW));
       expect(quiet.resume).toBe(`Eau du robinet, réseau BOIS D'OLIVES à Bois d'Olives : dernière analyse le 21/10/2026, conclusion de l'ARS : « Eau d'alimentation conforme aux exigences de qualité »\u00a0; aucune analyse non conforme en 6 mois. ${note}`);
       // Read more than 7 days ago: no longer given, Hub'Eau said silent since then.
-      configure(async () => ({ ...copy, communes_lu: "2026-10-16T00:20:00.000Z" }) as never);
+      dansLeWorker({ [KV_KEY]: async () => ({ ...copy, communes_lu: "2026-10-16T00:20:00.000Z" }) as never });
       const old = body(await qualiteEau(cache(), "Saint-Pierre", "robinet", NOW));
       expect(old.eau_du_robinet).toEqual({ resume: "Hub'Eau ne répond plus depuis le 16/10\u00a0: voir le site de l'ARS.", ne_repond_plus: true });
     } finally {
-      configure(undefined);
+      horsWorker();
     }
   });
 
@@ -620,7 +621,7 @@ describe("qualité de l'eau", () => {
     };
     await c.island("avis-eau:flux", 3600, async () => [{ de: "de Dionéo", site: "https://www.dioneo.re", avis: [avis] }]);
     const town = (commune: string) => ({ commune, reseaux: 1, analyses_6_mois: 3, non_conformes_6_mois: 0, derniere_analyse: "2026-10-20", a_surveiller: [] });
-    configure(async () => ({ lu: "2026-10-24T00:20:00.000Z", baignades: [], communes: [town("Saint-Denis"), town("Saint-Paul")] }) as never);
+    dansLeWorker({ [KV_KEY]: async () => ({ lu: "2026-10-24T00:20:00.000Z", baignades: [], communes: [town("Saint-Denis"), town("Saint-Paul")] }) as never });
     try {
       const data = await buildEau(c, NOW);
       const said = "Eau à ne pas boire à Saint-Denis d'après Dionéo (avis du 23/10 à 10:53)\u00a0: « Qualité de l'eau », secteurs\u00a0: TRAITEMENT ST FRANCOIS.";
@@ -639,7 +640,7 @@ describe("qualité de l'eau", () => {
       const none = await buildEau(mute, NOW);
       expect(none.ne_pas_boire).toBeUndefined();
     } finally {
-      configure(undefined);
+      horsWorker();
     }
   });
 

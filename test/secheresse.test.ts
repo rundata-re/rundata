@@ -10,6 +10,7 @@ import * as raa from "../src/providers/raa.js";
 import { buildSecheresse } from "../src/web/data.js";
 import { secheresseLive, secheressePage, wholeName } from "../src/web/domains.js";
 import { deadAnchors, doubleIds, mapLinks, tabStops } from "./cartes.js";
+import { dansLeWorker, horsWorker } from "./contexte.js";
 
 // VigiEau on 24/10/2026: the drought order of 10/10/2026, Saint-Joseph in crisis.
 const raw = readFileSync(new URL("./fixtures/vigieau/zones_974.json", import.meta.url), "utf8");
@@ -364,7 +365,7 @@ describe("a newer drought order out in the recueil des actes administratifs (too
   const copie = (secheresse?: raa.ArreteSecheresse): raa.Copie => ({ actes: [], recueils: [], ...(secheresse && { secheresse }), lu_le: "2026-11-21T06:00:00.000Z" });
   beforeEach(() => vi.stubGlobal("fetch", async () => new Response(raw, { headers: { "content-type": "application/json" } })));
   afterEach(() => {
-    raa.configure(undefined);
+    horsWorker();
     vi.unstubAllGlobals();
   });
 
@@ -397,7 +398,7 @@ describe("a newer drought order out in the recueil des actes administratifs (too
   });
 
   it("puts it first in restrictions_eau's answer, for the island and for a place, its source credited", async () => {
-    raa.configure(async () => copie(newer));
+    dansLeWorker({ [raa.KV_KEY]: async () => copie(newer) });
     const island = body(await restrictionsEau(cache(), undefined));
     expect(Object.keys(island)[0]).toBe("arrete_plus_recent");
     expect(island.arrete_plus_recent.texte).toContain("Il n'est pas encore pris en compte par rundata.re");
@@ -407,14 +408,14 @@ describe("a newer drought order out in the recueil des actes administratifs (too
   });
 
   it("says nothing without a newer order, or without the recueil's copy", async () => {
-    raa.configure(async () => copie(the2094));
+    dansLeWorker({ [raa.KV_KEY]: async () => copie(the2094) });
     expect(body(await restrictionsEau(cache(), undefined)).arrete_plus_recent).toBeUndefined();
-    raa.configure(async () => null);
+    dansLeWorker({ [raa.KV_KEY]: async () => null });
     expect(body(await restrictionsEau(cache(), undefined)).arrete_plus_recent).toBeUndefined();
   });
 
   it("shows it on /secheresse before the levels, with the order's PDF", async () => {
-    raa.configure(async () => copie(newer));
+    dansLeWorker({ [raa.KV_KEY]: async () => copie(newer) });
     const now = new Date("2026-11-21T06:00:00Z");
     const html = secheressePage("https://rundata.re", { value: await buildSecheresse(cache(), now), fetchedAt: now, stale: false }, now);
     const at = html.indexOf("Un arrêté sécheresse plus récent est paru");

@@ -8,6 +8,7 @@ import { Cache, MemoryStore } from "../src/cache.js";
 import { ecoles, withPrefecture } from "../src/tools/ecoles.js";
 import { ecolesPage } from "../src/web/ecoles.js";
 import { cycloneDecisionNow } from "../src/web/data.js";
+import { dansLeWorker, horsWorker } from "./contexte.js";
 
 // Saturday 24 October 2026, 14:00 at La Réunion.
 const NOW = new Date("2026-10-24T10:00:00Z");
@@ -123,7 +124,7 @@ describe("reading the prefecture, which can fail", () => {
     vi.stubGlobal("fetch", async (url: string) => (asked.push(String(url)), new Response("")));
     const list = [release("Alerte orange cyclonique : « Je me prépare »", "2026-10-24")];
     let stored: copie.Copie | null = { liste: list, lu_le: new Date(Date.now() - 10 * 60_000).toISOString() };
-    copie.configure(async () => stored);
+    dansLeWorker({ [copie.KV_KEY]: async () => stored });
     try {
       const fresh = await pref.releases(new Cache(new MemoryStore(), () => NOW.getTime()));
       expect([fresh.value, fresh.fetchedAt.toISOString(), fresh.stale]).toEqual([list, stored.lu_le, false]);
@@ -140,7 +141,7 @@ describe("reading the prefecture, which can fail", () => {
       expect(await pref.rubriqueNonLue(c, NOW)).toMatch(/la dernière lecture de rundata.re \(le 24\/10 à 13:00\)/);
       expect(asked).toEqual([]);
     } finally {
-      copie.configure(undefined);
+      horsWorker();
     }
   });
 
@@ -149,11 +150,11 @@ describe("reading the prefecture, which can fail", () => {
     const releve: copie.ReleveEntree[] = [
       { jour: "2026-10-24", titre: "Piton de la Fournaise : passage en alerte 1, fermeture de l’enclos", lien: "https://www.reunion.gouv.fr/Actualites/Communiques-de-presse/Piton-de-la-Fournaise-passage-en-alerte-1-fermeture-de-l-enclos5", niveau: "Alerte 1", releve_le: "2026-11-05T03:00:00.000Z" },
     ];
-    // Not configured (the tests, a local server): no record, the list written by hand alone.
+    // Outside the Worker (the tests, a local server): no record, the list written by hand alone.
     expect(await pref.releveDuVolcan(new Cache(new MemoryStore(), () => NOW.getTime()))).toEqual([]);
     let reads = 0;
     let stored: copie.Copie | null = { liste: list, releve, lu_le: new Date(Date.now() - 10 * 60_000).toISOString() };
-    copie.configure(async () => (reads++, stored));
+    dansLeWorker({ [copie.KV_KEY]: async () => (reads++, stored) });
     const logged = vi.spyOn(console, "error").mockImplementation(() => {});
     try {
       const c = new Cache(new MemoryStore(), () => NOW.getTime());
@@ -167,7 +168,7 @@ describe("reading the prefecture, which can fail", () => {
       stored = null;
       expect(await pref.releveDuVolcan(new Cache(new MemoryStore(), () => NOW.getTime()))).toEqual([]);
     } finally {
-      copie.configure(undefined);
+      horsWorker();
       logged.mockRestore();
     }
   });

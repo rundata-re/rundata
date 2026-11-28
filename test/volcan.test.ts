@@ -11,6 +11,7 @@ import { buildVolcan } from "../src/web/data.js";
 import { volcanPage } from "../src/web/volcan.js";
 import { esc } from "../src/web/map.js";
 import { demos, type HomeLive } from "../src/web/home.js";
+import { dansLeWorker, horsWorker } from "./contexte.js";
 
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url), "utf8");
 // Samples of 23/10/2026 around 03:00 heure de La Réunion: no eruption, Enclos partly open, inflation since September.
@@ -242,11 +243,11 @@ describe("volcano", () => {
     // The collector's copy of the releases not renewed for 2 hours (our machine or the site, we do not know which): not
     // said to be read, only when it read the site.
     const copy = { "prefecture:communiques:copie": { liste: [], lu_le: new Date(NOW.getTime() - 2 * 3600_000).toISOString() } };
-    copie.configure(async () => null);
+    dansLeWorker({ [copie.KV_KEY]: async () => null });
     try {
       expect(body(await volcanSeismes(cacheWith(undefined, { ...ipgp("injoignable"), ...copy }), NOW)).injoignable).toBe("Le site de l'OVPF-IPGP n'a pas répondu depuis le 21/10 (dernier essai le 22/10 à 06:02). Un communiqué ou un bulletin de l'observatoire publié depuis peut manquer ici\u00a0; ses publications sur Bluesky, elles, sont lues\u00a0; dernière lecture du site de la préfecture\u00a0: le 23/10 à 01:20.");
     } finally {
-      copie.configure(undefined);
+      horsWorker();
     }
 
     // What did not answer this time is not said to be read: the Bluesky feed silent, its last copy shown.

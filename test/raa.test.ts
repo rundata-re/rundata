@@ -4,6 +4,7 @@ import { Cache, MemoryStore } from "../src/cache.js";
 import * as raa from "../src/providers/raa.js";
 import { actualites, RAA_A_SAVOIR } from "../src/tools/actualites.js";
 import { aLaNouvelleAdresse, adresse, couverture, ecarte, ecrire, FILTRES, garder, ligneAlerte, listeDe, parseListe, parseRecueil, plusRecente, prenoms, secheresseDe, suite, vusAssez, vusPage1, vusSuivante } from "../scripts/raa-lire.js";
+import { dansLeWorker, horsWorker } from "./contexte.js";
 
 // Every title and name here is made up: no act of a real recueil, no real person.
 const NOW = new Date("2026-11-03T08:00:00Z");
@@ -182,10 +183,10 @@ describe("the acts in the news of a place", () => {
       const f = host === "www.clicanoo.re" ? "clicanoo.xml" : host === "freedom.fr" ? "freedom.xml" : undefined;
       return f ? new Response(fixture(f)) : new Response("", { status: 503 });
     });
-    raa.configure(async () => (reads++, stored));
+    dansLeWorker({ [raa.KV_KEY]: async () => (reads++, stored) });
   });
   afterEach(() => {
-    raa.configure(undefined);
+    horsWorker();
     vi.unstubAllGlobals();
   });
 
@@ -208,10 +209,10 @@ describe("the acts in the news of a place", () => {
     const c = new Cache(new MemoryStore(), () => NOW.getTime());
     const b = body(await actualites(c, "La Montagne", undefined, undefined, NOW));
     expect(b.resume).toContain("1 acte des 15 derniers jours nomme Saint-Denis, la commune de La Montagne\u00a0: « Arrêté réglementant la circulation pendant le carnaval de Saint-Denis »");
-    raa.configure(async () => ({ ...stored, actes: [...stored.actes, { ...stored.actes[0], titre: "Arrêté portant fermeture de la route de La Montagne", lieux: ["La Montagne"] }] }));
+    dansLeWorker({ [raa.KV_KEY]: async () => ({ ...stored, actes: [...stored.actes, { ...stored.actes[0], titre: "Arrêté portant fermeture de la route de La Montagne", lieux: ["La Montagne"] }] }) });
     const both = body(await actualites(new Cache(new MemoryStore(), () => NOW.getTime()), "La Montagne", undefined, undefined, NOW));
     expect(both.resume).toContain("2 actes des 15 derniers jours nomment Saint-Denis, la commune de La Montagne, dont 1 qui nomme La Montagne\u00a0:");
-    raa.configure(async () => ({ ...stored, actes: [{ ...stored.actes[0], titre: "Arrêté portant fermeture de la route de La Montagne", communes: [], lieux: ["La Montagne"] }] }));
+    dansLeWorker({ [raa.KV_KEY]: async () => ({ ...stored, actes: [{ ...stored.actes[0], titre: "Arrêté portant fermeture de la route de La Montagne", communes: [], lieux: ["La Montagne"] }] }) });
     const own = body(await actualites(new Cache(new MemoryStore(), () => NOW.getTime()), "La Montagne", undefined, undefined, NOW));
     expect(own.resume).toContain("1 acte des 15 derniers jours nomme La Montagne (Saint-Denis)\u00a0:");
   });
@@ -227,7 +228,7 @@ describe("the acts in the news of a place", () => {
   });
 
   it("says the acts and their absence of the recueils read since a day, when they do not cover the 15 days", async () => {
-    raa.configure(async () => ({ ...stored, lus_depuis: "2026-10-24" }));
+    dansLeWorker({ [raa.KV_KEY]: async () => ({ ...stored, lus_depuis: "2026-10-24" }) });
     const c = new Cache(new MemoryStore(), () => NOW.getTime());
     const b = body(await actualites(c, "Saint-Denis", undefined, undefined, NOW));
     expect(b.resume).toContain("1 acte des recueils lus depuis le 24/10 nomme Saint-Denis\u00a0:");
@@ -236,8 +237,8 @@ describe("the acts in the news of a place", () => {
     expect(t.arretes_prefecture.aucun).toBe("Aucun titre des recueils lus depuis le 24/10 ne nomme Le Tampon.");
   });
 
-  it("is not given where nothing is configured (a local server)", async () => {
-    raa.configure(undefined);
+  it("is not given outside the Worker (a local server)", async () => {
+    horsWorker();
     const b = body(await actualites(new Cache(new MemoryStore(), () => NOW.getTime()), "Saint-Denis", undefined, undefined, NOW));
     expect(b.arretes_prefecture).toBeUndefined();
     expect(JSON.stringify(b.sources)).not.toContain(raa.SOURCE.nom);

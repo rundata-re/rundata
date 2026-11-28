@@ -4,9 +4,10 @@
  * prefecture's site cuts the connection of Cloudflare's Workers (prefecture-copie.ts). Their titles only, as the
  * prefecture publishes them, with their service, their recueil and their PDF, which is what is in force; a title that
  * may name a person was left out by the collector (scripts/raa-lire.ts) and is not in the store. In the Worker, the news
- * of a place (tools/actualites.ts) reads them; elsewhere nothing is configured and they are not given.
+ * of a place (tools/actualites.ts) reads them from its store (contexte.ts); elsewhere they are not given.
  */
 import type { Cache, Cached } from "../cache.js";
+import { contexte } from "../contexte.js";
 import { normalize } from "../places/resolve.js";
 import type { SourceInfo } from "../types.js";
 
@@ -84,13 +85,6 @@ export interface Copie {
   lu_le: string;
 }
 
-let reader: (() => Promise<Copie | null>) | undefined;
-
-/** In the Worker: read the copy from the KV store, where scripts/raa.ts writes it. */
-export function configure(read: (() => Promise<Copie | null>) | undefined) {
-  reader = read;
-}
-
 /**
  * How long a copy read from the store is served before it is read again: the collector writes at most once an hour, and
  * a recueil is read the hour after it is published at best.
@@ -99,11 +93,12 @@ const FRESH_SECONDS = 15 * 60;
 
 /** The stored copy, read only when the news of a place is asked; null where nothing is configured or stored. */
 export async function copie(cache: Cache): Promise<Cached<Copie> | null> {
-  if (!reader) return null;
-  const read = reader;
+  // In the Worker only, from its store (contexte.ts), where scripts/raa.ts writes it.
+  const { worker, kv } = contexte();
+  if (!worker) return null;
   try {
     return await cache.getCopy("raa:copie", FRESH_SECONDS, async () => {
-      const v = await read();
+      const v = kv ? await kv.json<Copie>(KV_KEY) : null;
       if (!v) throw new Error("recueil des actes administratifs absent du stockage");
       return v;
     }, (v) => v.lu_le, SOURCE.id);

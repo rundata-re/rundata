@@ -2,9 +2,10 @@
  * The water of the whole island at once, for the /eau page: every bathing site the ARS checks and the tap water of each
  * commune. That is some 75 requests (two pages per site, four per commune), more than a Worker may make for one
  * page: in the Worker it is read from the KV store under `eau:ile`, where .github/workflows/eau.yml writes it
- * (scripts/eau-ile.ts). The Node server, given no reader, gathers it itself.
+ * (scripts/eau-ile.ts), read through the modules' context (contexte.ts). The Node server, with no store, gathers it itself.
  */
 import type { Cache, Cached } from "../cache.js";
+import { contexte } from "../contexte.js";
 import { localTime } from "../geo.js";
 import { INSEE } from "../places/insee.js";
 import * as baignades from "../providers/baignades.js";
@@ -262,19 +263,12 @@ export async function gatherForCopy(cache: Cache, opts: { waitMs?: number; log?:
   return gather(cache, now(), say);
 }
 
-let reader: (() => Promise<Ile | null>) | undefined;
-
-/** In the Worker: read the island's copy from the KV store, where the workflow writes it. */
-export function configure(read: (() => Promise<Ile | null>) | undefined) {
-  reader = read;
-}
-
 /**
  * The island's copy where it is stored (the Worker's KV store), for a tool whose own reading of a source failed: never
  * gathered for it (75 requests), and null when there is none.
  */
 export async function storedCopy(cache: Cache, now = new Date()): Promise<Ile | null> {
-  if (!reader) return null;
+  if (!contexte().kv) return null;
   try {
     return (await ile(cache, now)).value;
   } catch {
@@ -284,8 +278,10 @@ export async function storedCopy(cache: Cache, now = new Date()): Promise<Ile | 
 
 export async function ile(cache: Cache, now = new Date()): Promise<Cached<Ile>> {
   return cache.getCopy(KV_KEY, FRESH_SECONDS, async () => {
-    if (reader) {
-      const v = await reader();
+    // In the Worker with its store (contexte.ts), the workflow's copy; without a store, gathered here.
+    const kv = contexte().kv;
+    if (kv) {
+      const v = await kv.json<Ile>(KV_KEY);
       if (!v?.baignades) throw new Error("qualité de l'eau absente du stockage");
       return v;
     }

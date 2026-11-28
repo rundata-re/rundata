@@ -17,13 +17,10 @@ import { toutesLesSources, VERSION } from "./server.js";
 import { appliDe } from "./appli.js";
 import { audience, device, language, origin, point, sansLieu, TEAM, teamVisit, visitor, type Hit } from "./metrics.js";
 import * as irve from "./providers/irve.js";
-import * as eauIle from "./eau/ile.js";
-import * as prefectureCopie from "./providers/prefecture-copie.js";
 import { HOTES_MEDIAS } from "./providers/actualites.js";
 import { HOTES_AGENDAS } from "./providers/agenda.js";
 import { HOTES_EAU } from "./providers/avis-eau.js";
 import { HOTES_COURANT } from "./providers/coupures-courant.js";
-import * as raa from "./providers/raa.js";
 import * as meteorOi from "./providers/meteor-oi.js";
 import { autorisee } from "./providers/autorisations.js";
 import * as ovpfOcr from "./providers/ovpf-ocr.js";
@@ -285,32 +282,6 @@ function setup(env: Env): Cache {
   });
   // The live rain layer, when this data center holds only an old copy of the radar: the history's latest image.
   pluieRadar.configure(kv && (async () => pluieRetro.derniere((await kv.get(pluieRetro.KV_KEY, "json")) as pluieRetro.Historique | null)));
-  // Gathered site by site and commune by commune by .github/workflows/eau.yml (src/eau/ile.ts).
-  eauIle.configure(kv && (async () => {
-    count();
-    return (await kv.get(eauIle.KV_KEY, "json")) as eauIle.Ile | null;
-  }));
-  // Read every 15 minutes from the prefecture by scripts/prefecture.ts, on a machine of the project: its site cuts the
-  // connection of the Workers (src/providers/prefecture-copie.ts).
-  prefectureCopie.configure(
-    async () => {
-      if (!kv) return null;
-      count();
-      return (await kv.get(prefectureCopie.KV_KEY, "json")) as prefectureCopie.Copie | null;
-    },
-    async (lien) => {
-      if (!kv) return null;
-      count();
-      return (await kv.get(prefectureCopie.pageKey(lien), "json")) as prefectureCopie.PageCopie | null;
-    },
-  );
-  // Read every hour from the prefecture's recueil des actes administratifs by scripts/raa.ts, on a machine of the project
-  // (src/providers/raa.ts): only for the news of a place.
-  raa.configure(async () => {
-    if (!kv) return null;
-    count();
-    return (await kv.get(raa.KV_KEY, "json")) as raa.Copie | null;
-  });
   // Read every 10 minutes from the association's portal by the scheduled event of its own cron below, and kept in KV
   // (src/providers/meteor-oi.ts): nothing while its agreement is not given.
   meteorOi.configure(kv && autorisee(meteorOi.AUTORISATION) ? async () => {

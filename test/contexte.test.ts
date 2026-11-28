@@ -11,6 +11,9 @@ import * as marches from "../src/providers/marches-publics.js";
 import * as sitesHs from "../src/providers/sites-hs.js";
 import { contexte } from "../src/contexte.js";
 import * as irve from "../src/providers/irve.js";
+import * as eauIle from "../src/eau/ile.js";
+import * as prefectureCopie from "../src/providers/prefecture-copie.js";
+import * as raa from "../src/providers/raa.js";
 import worker from "../src/worker.js";
 import { dansLeWorker, horsWorker } from "./contexte.js";
 
@@ -131,6 +134,50 @@ describe("the modules' context (src/contexte.ts)", () => {
       expect(lus).toEqual([]);
       horsWorker();
       vi.unstubAllGlobals();
+    });
+
+    it("eau de l'île: gathered from the sources without a store, in the Worker as outside it; the store's copy with one", async () => {
+      const copie = { lu: "2026-11-28T06:00:00.000Z", baignades: [], communes: [] };
+      for (const dedans of [false, true]) {
+        reseau();
+        lus.length = 0;
+        if (dedans) installer({ worker: true });
+        else horsWorker();
+        await eauIle.ile(cache()).catch(() => undefined);
+        expect(lus.length).toBeGreaterThan(0);
+        expect(await eauIle.storedCopy(cache())).toBeNull();
+        vi.unstubAllGlobals();
+      }
+      reseau();
+      lus.length = 0;
+      dansLeWorker({ [eauIle.KV_KEY]: copie });
+      expect((await eauIle.ile(cache())).value).toEqual(copie);
+      expect(await eauIle.storedCopy(cache())).toEqual(copie);
+      expect(lus).toEqual([]);
+      horsWorker();
+      vi.unstubAllGlobals();
+    });
+
+    it("copie de la préfecture, recueil des actes: nothing outside the Worker; in the Worker, the store only", async () => {
+      horsWorker();
+      expect(prefectureCopie.configured()).toBe(false);
+      expect(await prefectureCopie.copie()).toBeNull();
+      expect(await prefectureCopie.page("https://www.reunion.gouv.fr/c")).toBeNull();
+      expect(await raa.copie(cache())).toBeNull();
+      installer({ worker: true });
+      expect(prefectureCopie.configured()).toBe(true);
+      expect(await prefectureCopie.copie()).toBeNull();
+      expect(await prefectureCopie.page("https://www.reunion.gouv.fr/c")).toBeNull();
+      expect(await raa.copie(cache())).toBeNull();
+      const liste = { liste: [], lu_le: "2026-11-28T06:00:00.000Z" };
+      const page = { page: { phrases: ["Le texte."] }, lu: 0 };
+      const recueil = { actes: [], recueils: [], lu_le: "2026-11-28T06:00:00.000Z" };
+      dansLeWorker({ [prefectureCopie.KV_KEY]: liste, [prefectureCopie.pageKey("https://www.reunion.gouv.fr/c")]: page, [raa.KV_KEY]: recueil });
+      expect(await prefectureCopie.copie()).toEqual(liste);
+      expect(await prefectureCopie.page("https://www.reunion.gouv.fr/c")).toEqual(page);
+      expect(await prefectureCopie.page("https://www.reunion.gouv.fr/autre")).toBeNull();
+      expect((await raa.copie(cache()))?.value).toEqual(recueil);
+      horsWorker();
     });
 
     it("air: nothing outside the Worker, no error", async () => {

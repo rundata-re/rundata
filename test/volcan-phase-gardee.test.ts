@@ -4,6 +4,7 @@ import { KV_KEEP_SECONDS } from "../src/kv.js";
 import type { Info } from "../src/providers/actualites.js";
 import * as copie from "../src/providers/prefecture-copie.js";
 import { PHASE_KEEP_SECONDS, phase } from "../src/providers/volcan.js";
+import { dansLeWorker, horsWorker } from "./contexte.js";
 
 // 20/11/2026: the prefecture's latest 20 releases without a phase since the 17th, the phase kept for 3 days lost, the
 // level said « à vérifier sur reunion.gouv.fr » on /volcan and in volcan_seismes.
@@ -38,7 +39,7 @@ function isolate(durable: CacheStore, t: number, liste: Info[]) {
 }
 
 afterEach(() => {
-  copie.configure(undefined);
+  horsWorker();
   vi.unstubAllGlobals();
 });
 
@@ -65,10 +66,10 @@ describe("the ORSEC phase once no release of the prefecture's list declares one 
       { jour: "2026-10-26", titre: "Retour en phase de vigilance", lien: LIEN, niveau: "Vigilance", releve_le: "2026-11-05T03:25:08.000Z" },
     ];
     const liste = OTHERS.map((r) => ({ ...r, publie: new Date(t - 3600_000).toISOString() }));
-    copie.configure(
-      async () => ({ liste, releve, lu_le: new Date(t - 5 * 60_000).toISOString() }),
-      async (lien) => (lien === LIEN ? { page: { titre: "Piton de la Fournaise : réouverture partielle de l’enclos", phrases: ["Le préfet a décidé le retour en phase de vigilance."] }, lu: t - DAY } : null),
-    );
+    dansLeWorker({
+      [copie.KV_KEY]: { liste, releve, lu_le: new Date(t - 5 * 60_000).toISOString() },
+      [copie.pageKey(LIEN)]: { page: { titre: "Piton de la Fournaise : réouverture partielle de l’enclos", phrases: ["Le préfet a décidé le retour en phase de vigilance."] }, lu: t - DAY },
+    });
     const durable = new ExpiringStore(() => t);
     const p = await phase(new Cache(new MemoryStore(), () => t, true, durable), t);
     expect(p.value).toMatchObject({ niveau: "Vigilance", enclos: "partiel", jour: "2026-10-26", lien: LIEN });

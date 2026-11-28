@@ -14,7 +14,7 @@ import { nombre } from "../tools/format.js";
 import { COUVERTURE, emploi, ENTREPRISES, NON_REPRIS, type OffreRow } from "../tools/emploi.js";
 import { connectorCta, crumbBar, crumbs, lienNom, soulignesCoupables, sourcesNote, warnings, webPage } from "./domains.js";
 import type { Alerte } from "./data.js";
-import { esc } from "./map.js";
+import { brut, echappe, href, html, type Html } from "./html.js";
 import { folded, hm, layout, type Live, readAt, leAt } from "./pages.js";
 import { script } from "./scripts-declares.js";
 
@@ -79,34 +79,32 @@ const OUVERT = "Emploi ouvert aux titulaires et aux contractuels";
  * offer's.
  */
 export const intituleCoupable = (s: string) =>
-  esc(s)
+  echappe(s)
     .replaceAll(/(?<=\p{L})(\(-?\p{Ll}{1,6}\))/gu, '<wbr class="adr"><span class="nw fem">$1</span>')
     .replaceAll(/(?<=\p{L}{2}\/)(?=\p{L}{2})/gu, '<wbr class="adr">');
 
 /** The title as a link, named by its whole text when it holds a <wbr> (Chrome names a link with a space for each). */
-function lienIntitule(href: string, s: string): string {
+function lienIntitule(lien: string, s: string): Html {
   const t = intituleCoupable(s);
-  return `<a href="${esc(href)}" rel="noopener"${t === esc(s) ? "" : ` aria-label="${esc(s)}"`}>${t}</a>`;
+  return html`<a href="${href(lien)}" rel="noopener"${t === echappe(s) ? "" : html` aria-label="${s}"`}>${brut(t)}</a>`;
 }
 
 /** An offer's line, without its commune, which its group says; without its nature when it is `OUVERT` and `once`. */
-function row(o: OffreRow, once: boolean): string {
+function row(o: OffreRow, once: boolean): Html {
   const nature = once && o.nature === OUVERT ? undefined : o.nature;
-  const small = [o.employeur, "metier" in o ? o.metier : "domaine" in o ? o.domaine : undefined, nature].filter(Boolean).map((x) => esc(x!)).join(" · ");
+  const small = [o.employeur, "metier" in o ? o.metier : "domaine" in o ? o.domaine : undefined, nature].filter(Boolean).map((x, i) => html`${i ? " · " : ""}${x!}`);
   // Several offers: the title alone, then, across the whole line, a link to each, its reference never cut, its day said
   // when the line has none.
   const refs = "references" in o
-    ? ` <span class="refs"><small>${o.nombre_offres} offres\u00a0:</small>` +
-      o.references.map((r) => {
+    ? html` <span class="refs"><small>${o.nombre_offres} offres\u00a0:</small>${o.references.map((r) => {
         // A reference joined by « _ » may go to the next line after it (soulignesCoupables), the link named by its text.
-        const jour = o.date_limite || o.publiee_le ? "" : `, publiée\u00a0le\u00a0${esc(String(r.publiee_le))}`;
-        const ref = soulignesCoupables(esc(r.reference));
-        return `<a href="${esc(r.lien)}" rel="noopener"${ref === esc(r.reference) ? "" : ` aria-label="${esc(`Réf. ${r.reference}${jour}`)}"`}>Réf. <span class="nw">${ref}</span>${jour}</a>`;
-      }).join("") + "</span>"
+        const jour = o.date_limite || o.publiee_le ? "" : `, publiée\u00a0le\u00a0${String(r.publiee_le)}`;
+        const ref = soulignesCoupables(echappe(r.reference));
+        return html`<a href="${href(r.lien)}" rel="noopener"${ref === echappe(r.reference) ? "" : html` aria-label="${`Réf. ${r.reference}${jour}`}"`}>Réf. <span class="nw">${brut(ref)}</span>${jour}</a>`;
+      })}</span>`
     : "";
-  const title = "references" in o ? `<b>${intituleCoupable(o.intitule)}</b>` : lienIntitule(o.lien, o.intitule);
-  return `<li data-c="${esc("commune" in o && o.commune ? o.commune : "")}"${"references" in o ? ` data-n="${o.nombre_offres}"` : ""}><span>${title} <small>${small}</small></span> ` +
-    `<span class="q-none${"references" in o && !o.date_limite && !o.publiee_le ? " du" : ""}">${esc(quand(o))}</span>${refs}</li>`;
+  const title = "references" in o ? html`<b>${brut(intituleCoupable(o.intitule))}</b>` : lienIntitule(o.lien, o.intitule);
+  return html`<li data-c="${"commune" in o && o.commune ? o.commune : ""}"${"references" in o ? html` data-n="${o.nombre_offres}"` : ""}><span>${title} <small>${small}</small></span> <span class="q-none${"references" in o && !o.date_limite && !o.publiee_le ? " du" : ""}">${quand(o)}</span>${refs}</li>`;
 }
 
 /**
@@ -114,7 +112,7 @@ function row(o: OffreRow, once: boolean): string {
  * its number of offers: 476 offers in one list made a page of 105 000 px on a phone. The filter opens the groups it finds
  * (SCRIPT); a search in the page or a link opens one by itself.
  */
-function groups(rows: OffreRow[], once: boolean): string {
+function groups(rows: OffreRow[], once: boolean): Html[] {
   const by = new Map<string, OffreRow[]>();
   for (const o of rows) {
     const c = "commune" in o && o.commune ? o.commune : "";
@@ -125,19 +123,19 @@ function groups(rows: OffreRow[], once: boolean): string {
     .sort(([a, x], [b, y]) => +!a - +!b || count(y) - count(x) || a.localeCompare(b, "fr"))
     .map(([c, l]) => {
       const n = count(l);
-      return `<div class="card groupe">${folded(true, `<h3>${esc(c || "Commune non précisée")}\u00a0<span class="note">· ${n}\u00a0offre${n > 1 ? "s" : ""}</span></h3>`,
-        `<ul class="rows eau">${l.map((o) => row(o, once)).join("")}</ul>`)}</div>`;
-    }).join("");
+      return html`<div class="card groupe">${brut(folded(true, html`<h3>${c || "Commune non précisée"}\u00a0<span class="note">· ${n}\u00a0offre${n > 1 ? "s" : ""}</span></h3>`.texte,
+        html`<ul class="rows eau">${l.map((o) => row(o, once))}</ul>`.texte))}</div>`;
+    });
 }
 
 /** « Se former avec le CPF »: the themes by name, each with its count; nothing without a copy. */
-function cpfSection(c: EmploiAnswer["cpf"], now: Date): string {
+function cpfSection(c: EmploiAnswer["cpf"], now: Date): Html | "" {
   if (!c) return "";
-  return `<section id="cpf" aria-labelledby="h-cpf">
-  <div class="sec-h"><p class="eyebrow">Mon Compte Formation</p><h2 id="h-cpf">Se former avec le CPF</h2><p>${esc(`${nombre(c.nombre)} formations éligibles au CPF ont une session ouverte à La Réunion dans le catalogue de Mon Compte Formation, lu ${readAt(new Date(c.lu), now).a}. Par thème, dans l'ordre alphabétique :`)}</p></div>
-  <details class="card"><summary>${esc(`Les ${c.themes.length} thèmes`)}</summary><div class="table-wrap"><table class="drought histo passe"><caption class="sr">${esc(`Les ${c.themes.length} thèmes`)}</caption><thead><tr><th scope="col">Thème</th><th scope="col">Formations</th></tr></thead><tbody>${c.themes.map((t) => `<tr><th scope="row">${esc(t.theme)}</th><td>${nombre(t.formations)}</td></tr>`).join("")}</tbody></table></div></details>
-  <p>${esc(CPF_A_SAVOIR.replace(` (${CPF_SITE})`, ""))} ${lienNom(CPF_SITE, "Chercher une formation sur moncompteformation.gouv.fr", ' rel="noopener"')}.</p>
-  <p class="note">${esc("Caisse des Dépôts et DGEFP, Mon Compte Formation, l'offre de formation, Licence Ouverte.")}</p>
+  return html`<section id="cpf" aria-labelledby="h-cpf">
+  <div class="sec-h"><p class="eyebrow">Mon Compte Formation</p><h2 id="h-cpf">Se former avec le CPF</h2><p>${`${nombre(c.nombre)} formations éligibles au CPF ont une session ouverte à La Réunion dans le catalogue de Mon Compte Formation, lu ${readAt(new Date(c.lu), now).a}. Par thème, dans l'ordre alphabétique :`}</p></div>
+  <details class="card"><summary>${`Les ${c.themes.length} thèmes`}</summary><div class="table-wrap"><table class="drought histo passe"><caption class="sr">${`Les ${c.themes.length} thèmes`}</caption><thead><tr><th scope="col">Thème</th><th scope="col">Formations</th></tr></thead><tbody>${c.themes.map((t) => html`<tr><th scope="row">${t.theme}</th><td>${brut(nombre(t.formations))}</td></tr>`)}</tbody></table></div></details>
+  <p>${CPF_A_SAVOIR.replace(` (${CPF_SITE})`, "")} ${brut(lienNom(CPF_SITE, "Chercher une formation sur moncompteformation.gouv.fr", ' rel="noopener"'))}.</p>
+  <p class="note">${"Caisse des Dépôts et DGEFP, Mon Compte Formation, l'offre de formation, Licence Ouverte."}</p>
 </section>`;
 }
 
@@ -179,40 +177,40 @@ export function emploiPage(origin: string, data: Cached<EmploiAnswer> | null, no
   const lu = d?.lu ? new Date(d.lu) : data?.fetchedAt ?? now;
   const lecture = readAt(lu, now).a;
   const status = d && data && !d.prochaine
-    ? `<p>${plural(d.nombre, "offre ouverte", "offres ouvertes")} à la candidature suivie${d.nombre > 1 ? "s" : ""} par rundata.re sur Choisir le service public, dernière lecture ${lecture}${d.total_site ? `. Le site en affiche ${d.total_site.nombre} pour La Réunion${d.total_site.lu_a === localTime(lu) ? "" : ` (compte lu le ${d.total_site.lu_a.replace(" ", " à ")})`}.` : "\u00a0; le site peut en compter davantage."}</p>`
+    ? html`<p>${brut(plural(d.nombre, "offre ouverte", "offres ouvertes"))} à la candidature suivie${d.nombre > 1 ? "s" : ""} par rundata.re sur Choisir le service public, dernière lecture ${brut(lecture)}${d.total_site ? html`. Le site en affiche ${brut(String(d.total_site.nombre))} pour La Réunion${d.total_site.lu_a === localTime(lu) ? "" : html` (compte lu le ${d.total_site.lu_a.replace(" ", " à ")})`}.` : "\u00a0; le site peut en compter davantage."}</p>`
     : "";
   const list = !d || !data
-    ? `<p class="card">Les offres se chargent : rechargez la page dans quelques secondes.</p>`
+    ? html`<p class="card">Les offres se chargent : rechargez la page dans quelques secondes.</p>`
     : d.prochaine
-      ? `<p class="card">Les offres ne sont pas encore lues : prochaine lecture prévue à ${hm(d.prochaine)}.</p>`
+      ? html`<p class="card">Les offres ne sont pas encore lues : prochaine lecture prévue à ${hm(d.prochaine)}.</p>`
       : d.offres.length
-      ? `${FILTER.replace("COMMUNES", communes.map((c) => `<option>${esc(c)}</option>`).join(""))}${once ? `<p>Sauf mention, les offres sont ouvertes aux titulaires et aux contractuels.</p>` : ""}<div id="offres" class="plis">${groups(d.offres, once)}</div>`
-      : `<p class="card">Aucune offre publiée sur Choisir le service public pour La Réunion ${leAt(d.lu ?? data.fetchedAt)}.</p>`;
+      ? html`${brut(FILTER.replace("COMMUNES", html`${communes.map((c) => html`<option>${c}</option>`)}`.texte))}${once ? html`<p>Sauf mention, les offres sont ouvertes aux titulaires et aux contractuels.</p>` : ""}<div id="offres" class="plis">${groups(d.offres, once)}</div>`
+      : html`<p class="card">Aucune offre publiée sur Choisir le service public pour La Réunion ${leAt(d.lu ?? data.fetchedAt)}.</p>`;
 
   const title = "Emploi public à La Réunion (974) : État, communes, hôpitaux";
   const description = "Les offres d'emploi de la fonction publique à La Réunion (974) : État, collectivités, hôpitaux, avec la commune et le lien pour postuler.";
 
-  const band = `${crumbBar(NOM)}
+  const band = html`${brut(crumbBar(NOM))}
 <div class="wrap intro solo"><div class="pitch">
   <h1>Offres d'emploi public à La Réunion <span class="n974">974</span></h1>
   <p class="lead">Les offres de l'État, des collectivités et des hôpitaux publiées sur Choisir le service public, avec le lien pour postuler.</p>
   ${status}
 </div></div>`;
 
-  const body = `<section aria-labelledby="h-offres">
+  const body = html`<section aria-labelledby="h-offres">
   <h2 id="h-offres" class="sr">Les offres</h2>
-  ${d?.injoignable ? warnings([d.injoignable]) : ""}
+  ${d?.injoignable ? brut(warnings([d.injoignable])) : ""}
   ${list}
-  <p>Les offres des entreprises ne sont pas reprises ici : vous les trouvez sur ${ENTREPRISES.map((e) => `<a href="${esc(e.lien)}" rel="noopener">${esc(e.nom)}</a>`).join(" et sur ")}, le portail emploi et formation de La Réunion.</p>
-  <p>${esc(NON_REPRIS)}</p>
+  <p>Les offres des entreprises ne sont pas reprises ici : vous les trouvez sur ${ENTREPRISES.map((e, i) => html`${i ? " et sur " : ""}<a href="${href(e.lien)}" rel="noopener">${e.nom}</a>`)}, le portail emploi et formation de La Réunion.</p>
+  <p>${NON_REPRIS}</p>
 </section>
 <section aria-labelledby="h-couv">
-  <div class="sec-h"><h2 id="h-couv">Ce qui est couvert</h2><p>${d ? esc(d.couverture) : ""}</p></div>
-  ${d && data && !d.prochaine ? sourcesNote(d.sources, data) : ""}
+  <div class="sec-h"><h2 id="h-couv">Ce qui est couvert</h2><p>${d ? d.couverture : ""}</p></div>
+  ${d && data && !d.prochaine ? brut(sourcesNote(d.sources, data)) : ""}
 </section>
 ${cpfSection(d?.cpf, now)}
-${connectorCta("emploi", "les offres d'emploi public")}
-${script(SCRIPT)}`;
+${brut(connectorCta("emploi", "les offres d'emploi public"))}
+${brut(script(SCRIPT))}`;
 
-  return layout(origin, { title, description, path: PATH, jsonld: [crumbs(origin, NOM, PATH), webPage(origin, PATH, title, description, data)], alerte }, band, body);
+  return layout(origin, { title, description, path: PATH, jsonld: [crumbs(origin, NOM, PATH), webPage(origin, PATH, title, description, data)], alerte }, band.texte, body.texte);
 }

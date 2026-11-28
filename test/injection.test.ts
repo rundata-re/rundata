@@ -28,6 +28,7 @@ import { collectePage } from "../src/web/collecte.js";
 import { decheteriesPage } from "../src/web/decheteries.js";
 import { lienNom } from "../src/web/domains.js";
 import { sportPage } from "../src/web/sport.js";
+import { type EmploiAnswer, emploiPage } from "../src/web/emploi.js";
 import type { SportAnswer } from "../src/web/data.js";
 import { bases } from "./contexte.js";
 const donnerTransit = (d?: transit.TransitDb) => bases({ transit: d });
@@ -293,6 +294,41 @@ describe("a text typed or read for the clubs' space, trapped, never comes out as
   });
 });
 
+/** The sports' page with every text read elsewhere `t` and every link `lien`: matches, results, standings, the Grand Raid, the towns' programmes. */
+function sportPiege(t: string, lien: string): SportAnswer {
+  const match = { epreuve: t, quand: "samedi 05/12 à 09:00", sport: "volley-ball", competition: t, lieu: t, detail: t, autre_date: t, etat: "à venir", lien };
+  return {
+    resume: "", non_couvert: t, sources: [], sports_a_venir: ["volley-ball", t],
+    a_venir: [match, { ...match, competition: undefined }], resultats: [{ ...match, score: t }, { ...match, competition: undefined, score: t }],
+    // More lines than a page shows unfolded: each championship is folded, its name said apart.
+    classements: [{ competition: t, lien, lignes: Array.from({ length: 9 }, (_, i) => ({ place: i + 1, equipe: t, joues: 2, points: 3 })) }, { competition: t, lien, lignes: [] }],
+    grand_raid: { dates: t, edition: t, lien, courses: [{ course: t, statut: t, depart: t, partants: 2, podium: [t], podium_femmes: [t, t] }] },
+    programmes_a_savoir: t, programmes_communes: [{ titre: t, lien, commune: t, source: t, dates: t }],
+  } as unknown as SportAnswer;
+}
+
+/** Public jobs with every text read elsewhere `t` and every link `lien`: a single offer, a line of several, the CPF's themes. */
+function emploiPiege(t: string, lien: string, now: Date): EmploiAnswer {
+  const une = { intitule: t, employeur: t, metier: t, nature: t, commune: t, lien, publiee_le: "2026-11-20", date_limite: t };
+  // A title that may break inside (« Directeur(-trice) »): the link is then named by its whole text.
+  const coupable = { ...une, intitule: `Directeur(-trice) ${t}`, date_limite: "2026-12-20" };
+  const plusieurs = { intitule: t, employeur: t, domaine: t, nature: t, commune: "Saint-Paul", nombre_offres: 2, references: [{ reference: t, publiee_le: "2026-11-20", lien }, { reference: `${t}_2`, publiee_le: "2026-11-21", lien }] };
+  return {
+    resume: "", nombre: 3, offres: [une, coupable, plusieurs] as never, couverture: t, sources: [], lu: now.toISOString(),
+    cpf: { nombre: 10, lu: now.toISOString(), themes: [{ theme: t, formations: 3 }] } as never,
+  };
+}
+
+describe("on /sport and /emploi, a text read elsewhere, trapped, never comes out as a tag", () => {
+  const now = new Date("2026-11-28T08:00:00Z");
+  it("in the sports' matches, results, standings, Grand Raid and towns' programmes", () => {
+    sansInjection(sportPage(O, { value: sportPiege(PIEGE, "https://example.org/a"), fetchedAt: now, stale: false }, now));
+  });
+  it("in the public jobs' offers, their references and the CPF's themes", () => {
+    sansInjection(emploiPage(O, { value: emploiPiege(PIEGE, "https://example.org/a", now), fetchedAt: now, stale: false }, now));
+  });
+});
+
 /**
  * A commune's day whose every text read elsewhere is `t` and every link read elsewhere `lien`: the measure and its station,
  * the vigilance, the sea, the air, the power, the calendar, the town hall's hours, the roads, the news, the water's
@@ -374,6 +410,12 @@ describe("a link read elsewhere never runs a script", () => {
     expect(page).toContain(">Programme sportif<");
     expect(page).toContain(">Tournoi<");
     sansScript(page);
+  });
+
+  it("on /sport and /emploi: matches, standings, the Grand Raid, the towns' programmes and the public jobs' offers", () => {
+    const now = new Date("2026-11-28T08:00:00Z");
+    sansScript(sportPage(O, { value: sportPiege("x", J), fetchedAt: now, stale: false }, now));
+    sansScript(emploiPage(O, { value: emploiPiege("x", J, now), fetchedAt: now, stale: false }, now));
   });
 
   it("in the TCO's releases on the collection (/collecte) and the waste centres (/decheteries)", () => {

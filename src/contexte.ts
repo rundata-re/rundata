@@ -18,6 +18,21 @@ export interface Contexte {
   worker: boolean;
   /** The store, when the Worker has its binding. */
   kv?: Stockage;
+  /** The keys of the sources that ask for one, given only with the store (the state they read is kept there). */
+  secrets?: Secrets;
+}
+
+/** A source's key as the Worker's secret holds it; never written in a log or an answer. */
+export interface Secrets {
+  /** The Candhis API's key (CANDHIS_API_KEY), for the buoys. */
+  candhis?: string;
+  /** The token SolarDB sent (SOLARDB_JETON), for the UV index measured at Moufia. */
+  solardb?: string;
+}
+
+/** A secret of the context, without its spaces; undefined when it is not given or empty. */
+export function secret(nom: keyof Secrets): string | undefined {
+  return courant.secrets?.[nom]?.trim() || undefined;
 }
 
 const HORS_WORKER: Contexte = Object.freeze({ worker: false });

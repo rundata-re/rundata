@@ -9,6 +9,7 @@ import { createServer } from "../src/server.js";
 import { placePage } from "../src/web/lieu-page.js";
 import { pageOf } from "../src/web/places.js";
 import type { PlaceData } from "../src/web/data.js";
+import { dansLeWorker, horsWorker } from "./contexte.js";
 
 // The UV index measured at Moufia, from ENERGY-Lab's radiometer (SolarDB), under its agreement of 23/11/2026.
 const fixture = (f: string) => JSON.parse(readFileSync(new URL(`./fixtures/${f}`, import.meta.url), "utf8"));
@@ -44,7 +45,7 @@ function sources(opts: { login?: number; data?: object; omi?: string | number } 
 }
 
 afterEach(() => {
-  uvm.configure(undefined);
+  horsWorker();
   vi.unstubAllGlobals();
 });
 
@@ -86,7 +87,7 @@ describe("the scheduled read", () => {
   });
 
   it("logs in, reads the last 20 minutes with the session, the ozone's 4 last kB once a day, and keeps the index and the day's highest", async () => {
-    uvm.configure(SECRET);
+    dansLeWorker({}, { solardb: SECRET });
     const calls = sources();
     let kept: uvm.Etat | undefined;
     const said = await uvm.refresh(null, async (e) => void (kept = e), NOW);
@@ -105,13 +106,13 @@ describe("the scheduled read", () => {
   });
 
   it("uses the month's mean when OMI does not answer", async () => {
-    uvm.configure(SECRET);
+    dansLeWorker({}, { solardb: SECRET });
     sources({ omi: 503 });
     expect(await uvm.refresh(null, async () => {}, NOW)).toContain("ozone 283.2 DU (moyenne du mois)");
   });
 
   it("keeps a failure with its time, and never the token in what it keeps or throws", async () => {
-    uvm.configure(SECRET);
+    dansLeWorker({}, { solardb: SECRET });
     sources({ login: 401 });
     let kept: uvm.Etat | undefined;
     const err = await uvm.refresh(null, async (e) => void (kept = e), NOW).catch((e: Error) => e);
@@ -172,7 +173,7 @@ describe("prevision_meteo and the place's page", () => {
   );
 
   it("say the same measurement near Moufia, with its source, and nothing of it farther away", async () => {
-    uvm.configure(SECRET, async () => state);
+    dansLeWorker({ [uvm.KEY]: async () => state }, { solardb: SECRET });
     const sd = body(await previsionMeteo(await cache(), "Saint-Denis", undefined, NOW));
     expect(sd.indice_uv_mesure.resume).toMatch(/^Indice UV MESURÉ au Moufia \(Saint-Denis\), à \d+ km : 13 \(extrême\) à 12:17/);
     expect(sd.resume).toContain(sd.indice_uv_mesure.resume);
@@ -194,13 +195,13 @@ describe("prevision_meteo and the place's page", () => {
   it("name the measurement in prevision_meteo's description only once the token is set", () => {
     const description = () => (createServer(new Cache(new MemoryStore())) as unknown as { _registeredTools: Record<string, { description?: string }> })._registeredTools.prevision_meteo.description ?? "";
     expect(description()).not.toContain("MESURÉ au Moufia");
-    uvm.configure(SECRET, async () => state);
+    dansLeWorker({ [uvm.KEY]: async () => state }, { solardb: SECRET });
     expect(description()).toContain("donne aussi l'indice UV MESURÉ au Moufia (bloc indice_uv_mesure), avec son heure et son erreur possible");
     expect(description()).toMatch(/le dire comme une mesure, distincte de la prévision\./);
   });
 
   it("stay silent without the token: no block, no source, no error said", async () => {
-    uvm.configure(undefined, async () => state);
+    dansLeWorker({ [uvm.KEY]: async () => state }, { solardb: undefined });
     const sd = body(await previsionMeteo(await cache(), "Saint-Denis", undefined, NOW));
     expect(sd.indice_uv_mesure).toBeUndefined();
     expect(JSON.stringify(sd)).not.toMatch(/Moufia|SolarDB|ENERGY-Lab/);

@@ -10,6 +10,7 @@ const courbesSection = (c: ReturnType<typeof courbes>, now: Date) => buoysSectio
 import { distanceKm } from "../src/geo.js";
 import { seaPage } from "../src/web/mer-page.js";
 import type { SeaData } from "../src/web/data.js";
+import { dansLeWorker, horsWorker } from "./contexte.js";
 
 // getCampTR as it answered for 97410 on 24/11/2026 (dates in UTC, oldest first), here newest first to check the sort,
 // with a temperature the buoy did not measure (999.9999).
@@ -46,11 +47,11 @@ beforeEach(() => {
     asked.push(String(url));
     return answer(String(url));
   });
-  candhis.configure(KEY);
+  dansLeWorker({}, { candhis: KEY });
 });
 afterEach(() => {
   vi.unstubAllGlobals();
-  candhis.configure(undefined);
+  horsWorker();
 });
 
 function store(before: candhis.Serie | null = null) {
@@ -166,7 +167,7 @@ describe("the buoys' series of 30 days", () => {
   });
 
   it("asks nothing without the key", async () => {
-    candhis.configure(undefined);
+    horsWorker();
     expect(await candhis.completer(null, store().write, NOW, etat(NOW.getTime()))).toBe("sans clé");
     expect(asked).toEqual([]);
   });

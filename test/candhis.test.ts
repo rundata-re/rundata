@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import * as candhis from "../src/providers/candhis.js";
+import { dansLeWorker, horsWorker } from "./contexte.js";
 
 // The answers below take the shape of the examples of the API's documentation (Cerema, octobre 2024, § 4.1 and 4.7),
 // headers broken over lines as printed there, with the island's campaigns in place of the documentation's.
@@ -71,7 +72,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   vi.unstubAllGlobals();
-  candhis.configure(undefined);
+  horsWorker();
 });
 
 /** What the scheduled event does with KV: the state before, and every state written. */
@@ -107,7 +108,7 @@ describe("the Candhis buoys", () => {
   });
 
   it("the first time, list the island's active buoys by type, then ask each type once; the key only in the header", async () => {
-    candhis.configure(KEY);
+    dansLeWorker({}, { candhis: KEY });
     const s = store();
     expect(await candhis.refresh(s.before, s.write, NOW)).toBe("3 bouées actives, 3 mesures nouvelles, 5 requêtes");
     expect(asked.map((a) => a.url)).toEqual([
@@ -127,7 +128,7 @@ describe("the Candhis buoys", () => {
   });
 
   it("then, one request per type each time; a buoy silent this half hour keeps its last measurement and its time", async () => {
-    candhis.configure(KEY);
+    dansLeWorker({}, { candhis: KEY });
     const old: candhis.Mesure = { ...candhis.parseTR(H13)[1], t: Date.parse("2026-10-27T08:00:00Z") };
     const s = store({ essai: NOW.getTime() - 1800_000, lu: NOW.getTime() - 1800_000, types: { lu: NOW.getTime() - days(1) + 60_000, actives: { "97405": 2, "97408": 2 } }, mesures: { "97408": old } });
     answer = () => json({ ...H13, message: "Données TR directionnel H13 (+97405+,-97408-)\\ 2026-10-27 10:00 ", results: [H13.results[0]] });
@@ -138,7 +139,7 @@ describe("the Candhis buoys", () => {
   });
 
   it("list the active buoys again after a day", async () => {
-    candhis.configure(KEY);
+    dansLeWorker({}, { candhis: KEY });
     const s = store({ essai: 0, types: { lu: NOW.getTime() - days(1), actives: { "97405": 2 } }, mesures: {} });
     await candhis.refresh(s.before, s.write, NOW);
     expect(asked.filter((a) => a.url.includes("getCampListe.php"))).toHaveLength(3);
@@ -151,7 +152,7 @@ describe("the Candhis buoys", () => {
     delete sm.lat;
     delete sm.lon;
     onTestFinished(() => Object.assign(sm, { lat, lon }));
-    candhis.configure(KEY);
+    dansLeWorker({}, { candhis: KEY });
     const s = store({ essai: 0, types: { lu: NOW.getTime() - days(1), actives: {} }, mesures: {} });
     answer = (url) => {
       const u = new URL(url);
@@ -178,7 +179,7 @@ describe("the Candhis buoys", () => {
   });
 
   it("stop for a while after a refusal (quota reached), writing why, and ask nothing until then", async () => {
-    candhis.configure(KEY);
+    dansLeWorker({}, { candhis: KEY });
     answer = () => json({ apiVer: "1.00", success: false, message: "Quota requêtes quotidiennes atteint", nbLig: 0, entete: null, results: null }, 429);
     const s = store({ essai: 0, types: { lu: NOW.getTime(), actives: { "97405": 2 } }, mesures: {} });
     await expect(candhis.refresh(s.before, s.write, NOW)).rejects.toThrow("HTTP 429");
@@ -191,7 +192,7 @@ describe("the Candhis buoys", () => {
   });
 
   it("keep their last measurements when the site is down for maintenance, and try again at the next half hour", async () => {
-    candhis.configure(KEY);
+    dansLeWorker({}, { candhis: KEY });
     answer = () => new Response("<html><title>DTecITM- Maintenance</title></html>", { status: 404 });
     const m = candhis.parseTR(H13)[0];
     const s = store({ essai: 0, lu: 1, types: { lu: NOW.getTime(), actives: { "97405": 2 } }, mesures: { "97405": m } });
@@ -204,7 +205,7 @@ describe("the Candhis buoys", () => {
     const c = new Cache(new MemoryStore(), () => NOW.getTime());
     await expect(candhis.etat(c)).rejects.toThrow("état des bouées absent");
     const kept: candhis.Etat = { essai: 1, lu: 1, mesures: { "97405": candhis.parseTR(H13)[0] } };
-    candhis.configure(KEY, async () => kept);
+    dansLeWorker({ [candhis.KEY]: async () => kept }, { candhis: KEY });
     expect((await candhis.etat(new Cache(new MemoryStore(), () => NOW.getTime()))).value).toEqual(kept);
     expect(asked).toEqual([]);
   });

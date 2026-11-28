@@ -15,6 +15,7 @@
  * (tools/volcan.ts).
  */
 import type { Cache } from "../cache.js";
+import { contexte } from "../contexte.js";
 import type { Post } from "./volcan.js";
 
 /** A word Tesseract read: where it is (block, paragraph), its confidence (0 to 100), its text. */
@@ -133,12 +134,6 @@ export interface FeedJson {
   feed: { post: { uri: string; embed?: { images?: { fullsize?: string }[]; media?: { images?: { fullsize?: string }[] } } } }[];
 }
 
-let reader: ((key: string) => Promise<Stocke | null>) | undefined;
-
-/** In the Worker: read what the collector stored, from the KV store. */
-export function configure(read: ((key: string) => Promise<Stocke | null>) | undefined) {
-  reader = read;
-}
 
 // Not read yet: asked again every five minutes, the collector's pace. A result does not change once stored.
 const WAIT_SECONDS = 5 * 60;
@@ -146,13 +141,15 @@ const KEPT_SECONDS = 30 * 86_400;
 
 /** What the collector read in a post's first image, if it has read it. Never throws. */
 export async function resultat(cache: Cache, post: Post): Promise<Stocke | undefined> {
-  if (!reader || !post.image) return undefined;
+  // In the Worker, what the collector stored, from its store (contexte.ts).
+  const kv = contexte().kv;
+  if (!kv || !post.image) return undefined;
   const id = postId(post.lien);
   const key = `volcan:ocr:${id}`;
   try {
     const have = await cache.peek<Stocke | { statut: "attente" }>(key);
     const done = have && have.value.statut !== "attente";
-    const got = await cache.getFrom(key, have, done ? KEPT_SECONDS : WAIT_SECONDS, async () => (await reader!(KEY(id))) ?? { statut: "attente" as const });
+    const got = await cache.getFrom(key, have, done ? KEPT_SECONDS : WAIT_SECONDS, async () => (await kv.json<Stocke>(KEY(id))) ?? { statut: "attente" as const });
     return got.value.statut === "attente" ? undefined : got.value;
   } catch (e) {
     console.error(`volcan : texte lu dans l'image de l'OVPF illisible en KV (${id}) : ${e instanceof Error ? e.message : String(e)}`);

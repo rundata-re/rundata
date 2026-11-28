@@ -4,7 +4,14 @@ import { BUILD_BUDGET, counted, SCHEDULED_BUDGET, scheduled } from "../src/budge
 import { Cache, MemoryStore } from "../src/cache.js";
 import { KvStore, type KvBinding } from "../src/kv.js";
 import * as meteofrance from "../src/providers/meteofrance.js";
-import { configure, share, type Token } from "../src/providers/mf-auth.js";
+import { configure, type Token, type TokenStore } from "../src/providers/mf-auth.js";
+import { horsWorker, stockageBrut } from "./contexte.js";
+
+/** The token shared through the Worker's store (contexte.ts `brut`), as `s` holds it; without `s`, outside the Worker. */
+function share(s?: TokenStore) {
+  if (!s) return horsWorker();
+  stockageBrut({ get: async () => s.get(), put: async (_cle: string, v: string, o?: { expirationTtl?: number }) => s.put(JSON.parse(v), o!.expirationTtl!) } as never);
+}
 
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url), "utf8");
 const HEAD = fixture("meteofrance_horaire.csv").split("\n")[0];

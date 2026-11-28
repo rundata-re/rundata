@@ -9,6 +9,8 @@
  * written every 5 minutes by the scheduled event (pluie-retro.ts), then often holds a newer one: that one is served.
  */
 import { count } from "../budget.js";
+import { contexte } from "../contexte.js";
+import * as pluieRetro from "./pluie-retro.js";
 import type { Cache } from "../cache.js";
 import * as radar from "../providers/radar.js";
 import { H, W } from "./map.js";
@@ -108,11 +110,10 @@ export function grid(img: radar.RadarImage, lame = false): RainGrid {
   return { debut: img.debut, fin: img.fin, pannes: img.pannes, w: GW, h: GH, pluie, mal_vu: mal, ...(lame ? { mm } : {}) };
 }
 
-let latest: (() => Promise<RainGrid | null>) | undefined;
-
-/** Set by worker.ts: the latest image of the radar's history in KV (pluie-retro.ts `derniere`). Without it, none. */
-export function configure(read?: () => Promise<RainGrid | null>) {
-  latest = read;
+/** The latest image of the radar's history in the Worker's store (contexte.ts, pluie-retro.ts `derniere`), counted here. Without a store, none. */
+function derniereGardee(): (() => Promise<RainGrid | null>) | undefined {
+  const kv = contexte().brut;
+  return kv && (async () => pluieRetro.derniere((await kv.get(pluieRetro.KV_KEY, "json")) as pluieRetro.Historique | null));
 }
 
 /**
@@ -124,6 +125,7 @@ export async function rainGrid(cache: Cache): Promise<Response> {
   const headers = { "content-type": "application/json; charset=utf-8", "x-content-type-options": "nosniff" };
   const img = radar.enabled() ? await radar.image(cache).catch(() => undefined) : undefined;
   let g = img && grid(img.value);
+  const latest = derniereGardee();
   if ((!img || img.stale) && latest) {
     count();
     const kept = await latest().catch(() => null);

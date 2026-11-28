@@ -23,7 +23,6 @@ import { HOTES_EAU } from "./providers/avis-eau.js";
 import { HOTES_COURANT } from "./providers/coupures-courant.js";
 import * as meteorOi from "./providers/meteor-oi.js";
 import { autorisee } from "./providers/autorisations.js";
-import * as ovpfOcr from "./providers/ovpf-ocr.js";
 import * as meteofrance from "./providers/meteofrance.js";
 import * as radar from "./providers/radar.js";
 import * as vigilanceCarte from "./providers/vigilance-carte.js";
@@ -56,9 +55,7 @@ import { configurerDefiOpenai } from "./web/site.js";
 import { configurerUv } from "./web/uv-moufia.js";
 import { configurerVideo } from "./web/partage-video.js";
 import * as pluieRetro from "./web/pluie-retro.js";
-import * as pluieRadar from "./web/pluie-radar.js";
 import * as radarSemaine from "./web/radar-semaine.js";
-import * as rejeu from "./web/rejeu.js";
 import * as carteScolaire from "./vie/carte-scolaire.js";
 import * as rna from "./vie/associations.js";
 import { why } from "./types.js";
@@ -239,7 +236,7 @@ function setup(env: Env): Cache {
   if (!contexte().worker || de.some((v, i) => v !== contexteDe[i])) {
     installer({
       worker: true,
-      ...(env.STORE && { kv: stockageKv(env.STORE), secrets: { candhis: env.CANDHIS_API_KEY, solardb: env.SOLARDB_JETON } }),
+      ...(env.STORE && { kv: stockageKv(env.STORE), brut: env.STORE, secrets: { candhis: env.CANDHIS_API_KEY, solardb: env.SOLARDB_JETON } }),
     });
     contexteDe = de;
   }
@@ -247,34 +244,6 @@ function setup(env: Env): Cache {
   feux.configure(env.FIRMS_MAP_KEY);
   const d1 = env.TRANSIT;
   const kv = env.STORE;
-  // One Météo-France token for every isolate, so that one taking its own does not void the others' (providers/mf-auth.ts).
-  meteofrance.share(kv && {
-    get: async () => (await kv.get(meteofrance.TOKEN_KV_KEY, "json")) as meteofrance.Token | null,
-    put: (t, ttl) => kv.put(meteofrance.TOKEN_KV_KEY, JSON.stringify(t), { expirationTtl: ttl }),
-  });
-  // The replay bar's files (web/rejeu.ts): the radar's last 6 hours, its 24 hours a quarter of an hour apart, its week
-  // an hour apart and its days every 5 minutes, kept by the scheduled event below (web/pluie-retro.ts,
-  // web/radar-semaine.ts), and the stations' week, written only by the files that read it; the amateur stations' hours
-  // (src/providers/meteor-oi.ts) only while the association's agreement is given.
-  rejeu.configure(kv && {
-    six: async () => (await kv.get(pluieRetro.KV_KEY, "json")) as pluieRetro.Historique | null,
-    day: async () => (await kv.get(pluieRetro.LONG_KV_KEY, "json")) as pluieRetro.Historique | null,
-    week: async () => (await kv.get(radarSemaine.HEURES_KEY, "json")) as pluieRetro.Historique | null,
-    jour: async (d) => (await kv.get(radarSemaine.JOUR_PREFIX + d, "json")) as pluieRetro.Historique | null,
-    semaine: {
-      get: async () => (await kv.get(rejeu.SEMAINE_KV_KEY, "json")) as rejeu.Semaine | null,
-      put: (w) => kv.put(rejeu.SEMAINE_KV_KEY, JSON.stringify(w), { expirationTtl: rejeu.SEMAINE_KV_TTL_SECONDS }),
-    },
-    ...(autorisee(meteorOi.AUTORISATION) ? { amateur: async () => (await kv.get(meteorOi.HEURES_KV_KEY, "json")) as meteorOi.Heures | null } : {}),
-  });
-  // The live rain layer, when this data center holds only an old copy of the radar: the history's latest image.
-  pluieRadar.configure(kv && (async () => pluieRetro.derniere((await kv.get(pluieRetro.KV_KEY, "json")) as pluieRetro.Historique | null)));
-  // Read every 10 minutes from the association's portal by the scheduled event of its own cron below, and kept in KV
-  // (src/providers/meteor-oi.ts): nothing while its agreement is not given.
-  meteorOi.configure(kv && autorisee(meteorOi.AUTORISATION) ? async () => {
-    count();
-    return (await kv.get(meteorOi.KV_KEY, "json")) as meteorOi.Copie | null;
-  } : undefined);
   // Météo-France's official map of the vigilance: its bulletin and its picture kept by the scheduled event.
   const cartes: vigilanceCarte.Store | undefined = kv && {
     json: (key) => kv.get(key, "json"),
@@ -296,11 +265,6 @@ function setup(env: Env): Cache {
   cmrsCarte.configure(cartes);
   // The path travelled by a system, from the RSMC's bulletins, once Météo-France agrees (providers/cmrs-trace.ts).
   cmrsTrace.configure(cartes);
-  // The text of the OVPF's releases given in images, read by a collector outside the Worker (scripts/ovpf-ocr.ts).
-  ovpfOcr.configure(kv && (async (key: string) => {
-    count();
-    return (await kv.get(key, "json")) as ovpfOcr.Stocke | null;
-  }));
   transit.configure(d1 && { all: async <T>(sql: string, ...params: unknown[]) => (await d1.prepare(sql).bind(...params).all<T>()).results });
   const climatDb = env.CLIMAT;
   const hourlyDb = env.CLIMAT_H;

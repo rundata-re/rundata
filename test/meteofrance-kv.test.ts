@@ -6,9 +6,16 @@ import { buildChiffres } from "../src/chiffres.js";
 import { KvStore, type KvBinding } from "../src/kv.js";
 import { withLectures } from "../src/lectures.js";
 import * as meteofrance from "../src/providers/meteofrance.js";
-import { configure, share, type Token } from "../src/providers/mf-auth.js";
+import { configure, type Token, type TokenStore } from "../src/providers/mf-auth.js";
 import { checks, REGISTRY } from "../src/registre.js";
 import { SHARED } from "../src/web/partagees.js";
+import { horsWorker, stockageBrut } from "./contexte.js";
+
+/** The token shared through the Worker's store (contexte.ts `brut`), as `s` holds it; without `s`, outside the Worker. */
+function share(s?: TokenStore) {
+  if (!s) return horsWorker();
+  stockageBrut({ get: async () => s.get(), put: async (_cle: string, v: string, o?: { expirationTtl?: number }) => s.put(JSON.parse(v), o!.expirationTtl!) } as never);
+}
 
 // The Météo-France stations' copy in KV (providers/meteofrance.ts `refreshShared`, KV_BUNDLE): what the scheduled event's
 // step reads and writes, what /chiffres no longer reads in the event, and what a question takes from it. Each fetch

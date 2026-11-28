@@ -9,6 +9,8 @@ import { A_LIRE, A_LIRE_LU, enImages, enImagesLuesAilleurs, enImagesLuesApres, I
 import { buildVolcan } from "../src/web/data.js";
 import { volcanPage } from "../src/web/volcan.js";
 import { demos, type HomeLive } from "../src/web/home.js";
+import { installer } from "../src/contexte.js";
+import { horsWorker } from "./contexte.js";
 
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url), "utf8");
 const body = (r: { content: { text: string }[] }) => JSON.parse(r.content[0].text);
@@ -86,7 +88,10 @@ describe("the text of a release read in its first image", () => {
 });
 
 describe("the text read, in the answers", () => {
-  afterEach(() => ocr.configure(undefined));
+  /** The Worker's store answering each key by `read` (contexte.ts); without it, outside the Worker. */
+  const lireStocke = (read?: (cle: string) => Promise<ocr.Stocke | null>) =>
+    read ? installer({ worker: true, kv: { json: async <T>(cle: string) => (cle.startsWith("ovpf:ocr:") ? await read(cle) : null) as T | null } }) : horsWorker();
+  afterEach(() => lireStocke(undefined));
   const lien = "https://bsky.app/profile/ovpf.bsky.social/post/3myod6frais2s";
   const now = new Date("2026-10-25T06:20:00Z");
   const stored = { ...ocr.readPage(RETOUR, POSTED_25), lu_a: "2026-10-25T04:05:00.000Z", outil: "tesseract 5.3.4, fra" } as ocr.Stocke;
@@ -105,7 +110,7 @@ describe("the text read, in the answers", () => {
 
   it("is quoted as read by a machine, with the post's time and link, on /volcan and on the home page", async () => {
     const asked: string[] = [];
-    ocr.configure(async (key) => (asked.push(key), key === ocr.KEY("3myod6frais2s") ? stored : null));
+    lireStocke(async (key) => (asked.push(key), key === ocr.KEY("3myod6frais2s") ? stored : null));
     const c = cache();
     const r = body(await volcanSeismes(c, now));
     expect(asked).toEqual(["ovpf:ocr:3myod6frais2s"]);
@@ -136,10 +141,10 @@ describe("the text read, in the answers", () => {
   it("is quoted after what the post is, out of an alert, cut at a word", async () => {
     // The same release, had it been given in vigilance.
     const vigilance = { ...stored, niveau_lu: "Niveau d'alerte : Vigilance", paragraphes: ["Court texte.", "Niveau d'alerte : Vigilance"] } as ocr.Stocke;
-    ocr.configure(async () => vigilance);
+    lireStocke(async () => vigilance);
     const r = body(await volcanSeismes(cache(false), now));
     expect(r.resume).toContain(`Dernière publication de l'OVPF, le 25/10 à 08:02 : 3 images, sans légende. ${LU_DANS_L_IMAGE} : « Court texte. Niveau d'alerte : Vigilance » (${lien}). ${IMAGE_LUE_APRES}`);
-    ocr.configure(async () => stored);
+    lireStocke(async () => stored);
     const long = body(await volcanSeismes(cache(), now)).resume as string;
     const quoted = long.slice(long.indexOf(`${LU_DANS_L_IMAGE} : « `) + LU_DANS_L_IMAGE.length + 5, long.indexOf(" »", long.indexOf(LU_DANS_L_IMAGE)));
     expect(quoted.length).toBeLessThanOrEqual(401);
@@ -147,18 +152,18 @@ describe("the text read, in the answers", () => {
   });
 
   it("is not said when the level it gives is not the one known, nor when nothing was read", async () => {
-    ocr.configure(async () => stored);
+    lireStocke(async () => stored);
     const r = body(await volcanSeismes(cache(false), now));
     expect(r.etat.niveau_orsec).toBe("Vigilance");
     expect(r.publications_ovpf[0]).toEqual({ date: "25/10 08:02 heure de La Réunion", texte: "Publication en 3 images, sans texte", lien, image: true, images: 3, a_lire: A_LIRE });
     expect(r.resume).toContain(`rundata.re ne lit pas les images : à voir sur ${lien}.`);
     expect(r.resume).not.toContain(LU_DANS_L_IMAGE);
 
-    ocr.configure(async () => ({ statut: "non_lu", raison: "confiance moyenne de 82,2, sous 88", lu_a: "2026-10-25T04:05:00.000Z", outil: "tesseract 5.3.4, fra" }));
+    lireStocke(async () => ({ statut: "non_lu", raison: "confiance moyenne de 82,2, sous 88", lu_a: "2026-10-25T04:05:00.000Z", outil: "tesseract 5.3.4, fra" }));
     expect(body(await volcanSeismes(cache(), now)).publications_ovpf[0].a_lire).toBe(A_LIRE);
-    ocr.configure(async () => null);
+    lireStocke(async () => null);
     expect(body(await volcanSeismes(cache(), now)).publications_ovpf[0].a_lire).toBe(A_LIRE);
-    ocr.configure(async () => { throw new Error("KV"); });
+    lireStocke(async () => { throw new Error("KV"); });
     expect(body(await volcanSeismes(cache(), now)).publications_ovpf[0].a_lire).toBe(A_LIRE);
   });
 });

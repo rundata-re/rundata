@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { AGENDAS, echecDepuis, echecPlanifie, gardeMs, nonServie } from "../src/providers/agenda.js";
-import { echecLu, silentOf } from "../src/tools/agenda.js";
+import { echecLu, mairiesMuettes, silentOf } from "../src/tools/agenda.js";
 import { derniereLecture } from "../src/tools/sport.js";
 
 // 24/11/2026: saintjoseph.re answered the scheduled event once on 23/11 at 18:26, then no more (522). Its copy, older than
@@ -52,5 +52,18 @@ describe("an agenda of the scheduled event whose reads fail after its last good 
     // Too old to be served: nonServie says it.
     const old = bundleOf({ [`agenda:${SJ.id}`]: { value: [], fetchedAt: COPY }, [echecPlanifie(SJ)]: { value: true, fetchedAt: TRY } });
     expect(echecDepuis(old, SJ)).toBeUndefined();
+  });
+
+  it("keeps its commune from being said to announce nothing, its site not read again", () => {
+    const young = bundleOf({ [`agenda:${SJ.id}`]: { value: [], fetchedAt: NOW - 3600_000 }, [echecPlanifie(SJ)]: { value: true, fetchedAt: NOW - 600_000 } });
+    const value = { value: [], fetchedAt: new Date(NOW - 3600_000), stale: false };
+    // Read an hour ago with nothing to come, and read since: « la mairie de Saint-Joseph n'annonce aucun événement ».
+    expect(mairiesMuettes([{ agenda: SJ, value }], new Date(NOW)).map((x) => x.commune)).toEqual(["Saint-Joseph"]);
+    // Its readings failing since: not said, the site said failing in non_lus instead.
+    expect(mairiesMuettes([{ agenda: SJ, value, echec: echecDepuis(young, SJ) }], new Date(NOW))).toEqual([]);
+    // Read again with success and still nothing to come: the sentence comes back.
+    const reread = bundleOf({ [`agenda:${SJ.id}`]: { value: [], fetchedAt: NOW - 300_000 }, [echecPlanifie(SJ)]: { value: true, fetchedAt: NOW - 600_000 } });
+    const again = { value: [], fetchedAt: new Date(NOW - 300_000), stale: false };
+    expect(mairiesMuettes([{ agenda: SJ, value: again, echec: echecDepuis(reread, SJ) }], new Date(NOW))[0]?.phrase).toContain("la mairie de Saint-Joseph n'annonce aucun événement en ce moment");
   });
 });

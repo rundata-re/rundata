@@ -21,6 +21,8 @@ import { resume, type Resume } from "../src/tools/resume.js";
 import { annuaireSection, associationsPage } from "../src/web/associations.js";
 import { gererPage } from "../src/web/propositions.js";
 import type { Ligne } from "../src/propositions.js";
+import type { VolcanAnswer } from "../src/web/data.js";
+import { volcanPage } from "../src/web/volcan.js";
 import { aujourdhuiPage } from "../src/web/aujourdhui.js";
 import { collectePage } from "../src/web/collecte.js";
 import { decheteriesPage } from "../src/web/decheteries.js";
@@ -252,6 +254,25 @@ describe("a text read elsewhere, trapped, never comes out as a tag", () => {
   });
 });
 
+/** The /volcan copy the volcano's tests read. */
+const volcanCopie = () => JSON.parse(readFileSync(new URL("./fixtures/pages/volcan_seismes.json", import.meta.url), "utf8")) as VolcanAnswer;
+
+describe("on /volcan, a text read elsewhere, trapped, never comes out as a tag", () => {
+  it("in the OVPF's posts, the words of the release on the Enclos and the state read, quiet or in an alert", () => {
+    const now = new Date("2026-10-24T11:10:00Z");
+    const copy = volcanCopie();
+    // A post whose first image was read: its text goes through the same trap.
+    copy.publications_ovpf![0] = { ...copy.publications_ovpf![0], texte_lu_dans_l_image: "Communiqué lu\n\nSecond paragraphe" };
+    const value = piege(copy, new Set(["texte", "mots", "resume", "titre", "texte_lu_dans_l_image"]));
+    sansInjection(volcanPage(O, { value, fetchedAt: now, stale: false }, now));
+    const alerte = { ...value, etat: { ...value.etat!, niveau_orsec: "Alerte 1" } } as VolcanAnswer;
+    // During an alert, the media's headlines about the volcano too.
+    const info = { titre: "Piton de la Fournaise", resume: "volcan", media: "Un média", quand: "24/10 14:00", publie: "2026-10-24T10:00:00Z", lien: "https://www.clicanoo.re/a" };
+    const news = piege({ en_direct: [info], infos: [] }, new Set(["titre", "media", "quand"]));
+    sansInjection(volcanPage(O, { value: alerte, fetchedAt: now, stale: false }, now, undefined, news as unknown as ActualitesAnswer));
+  });
+});
+
 describe("a text typed or read for the clubs' space, trapped, never comes out as a tag", () => {
   const ligne = (over: Partial<Ligne> = {}) => ({
     id: 3, t: Date.parse("2026-10-25T08:00:00Z") / 1000, etat: "publie", titre: PIEGE, date: "2026-11-27", debut: "20:00", fin: null, repete: "semaine",
@@ -336,6 +357,15 @@ describe("a link read elsewhere never runs a script", () => {
     expect(page).toContain("site de la mairie →");
     sansScript(page);
     sansScript(lienNom(J, "Fiche service-public.fr", ' rel="noopener"'));
+  });
+
+  it("on /volcan: the OVPF's posts, the last eruption and the prefecture's release, quiet or in an alert", () => {
+    const now = new Date("2026-10-24T11:10:00Z");
+    const value = piege(volcanCopie(), new Set(["lien"]), J);
+    sansScript(volcanPage(O, { value, fetchedAt: now, stale: false }, now));
+    const alerte = { ...value, etat: { ...value.etat!, niveau_orsec: "Alerte 1" } } as VolcanAnswer;
+    const news = { en_direct: [{ titre: "Piton de la Fournaise", resume: "volcan", media: "Un média", quand: "24/10 14:00", publie: "2026-10-24T10:00:00Z", lien: J }], infos: [] };
+    sansScript(volcanPage(O, { value: alerte, fetchedAt: now, stale: false }, now, undefined, news as unknown as ActualitesAnswer));
   });
 
   it("in a declared association's site (the directory under /associations)", () => {

@@ -2,10 +2,10 @@ import { readFileSync } from "node:fs";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import gazetteer from "../src/places/gazetteer.json" with { type: "json" };
-import { configure } from "../src/providers/mf-auth.js";
 import * as mf from "../src/providers/vigilance.js";
 import { vigilanceMeteo, vigilanceWarnings } from "../src/tools/vigilance.js";
 import { unzip } from "../src/zip.js";
+import { meteoFrance } from "./contexte.js";
 
 // The real flow of 22/10/2026 16:02, cut down to the Réunion files (and one other, to be skipped).
 const zip = readFileSync(new URL("./fixtures/vigilance_om.zip", import.meta.url));
@@ -40,8 +40,8 @@ async function storm(): Promise<mf.Vigilance> {
   return v;
 }
 
-beforeAll(() => configure({ token: "test" }));
-afterAll(() => configure({}));
+beforeAll(() => meteoFrance({ token: "test" }));
+afterAll(() => meteoFrance({}));
 
 describe("vigilance Météo-France", () => {
   it("reads the Réunion files out of the zip and skips the others", async () => {

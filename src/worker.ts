@@ -6,8 +6,8 @@
  * (on *.workers.dev its calls do nothing). The AROME grids, filled every few minutes by the scheduled event,
  * live in KV instead: the event runs in some data center, the questions in all the others.
  */
-import { configurerEquipe, failed, handle } from "./app.js";
-import { contexte, fichiersStatiques, installer, stockageKv, type Ecriture, type Lecture } from "./contexte.js";
+import { failed, handle } from "./app.js";
+import { contexte, fichiersStatiques, installer, stockageKv, type Ecriture, type Lecture, type Secrets } from "./contexte.js";
 import { lenteSaid, withAttentes } from "./attentes.js";
 import { minuit, minuitDu, minuitSaid, MINUIT_BUDGET } from "./web/minuit.js";
 import { BUILD_BUDGET, PAGE_BUDGET, SCHEDULED_BUDGET, copiesSaid, copyRead, count, counted, later, readsSaid, reponseSaid, scheduled, spent } from "./budget.js";
@@ -31,8 +31,6 @@ import { detecter, type Changement } from "./alertes-etat.js";
 import type { VolcanAnswer } from "./web/data.js";
 import * as cmrsCarte from "./providers/cmrs-carte.js";
 import * as cmrsTrace from "./providers/cmrs-trace.js";
-import * as feux from "./providers/feux.js";
-import * as avis from "./avis.js";
 import * as limite from "./limite.js";
 import { refusRobot } from "./robots.js";
 import * as chiffre from "./connecteurs/chiffre.js";
@@ -43,12 +41,9 @@ import * as propositions from "./propositions.js";
 import * as sansReponse from "./sans-reponse.js";
 import { themesDesSources } from "./chiffres.js";
 import { whenFailed, whenRead } from "./http.js";
-import * as formulaires from "./web/propositions.js";
 import { rafraichirConnecteurs, refreshPlanned } from "./tools/agenda.js";
 import { prefetchForecasts } from "./tools/prevision.js";
 import { listShared, SHARED, SHARED_AFTER, SharedFallback, warmShared } from "./web/partagees.js";
-import { configurerDefiOpenai } from "./web/site.js";
-import { configurerUv } from "./web/uv-moufia.js";
 import { configurerVideo } from "./web/partage-video.js";
 import * as pluieRetro from "./web/pluie-retro.js";
 import * as radarSemaine from "./web/radar-semaine.js";
@@ -235,15 +230,34 @@ let cache: Cache | undefined;
 // The bindings and the secrets the modules' context was built with (setup).
 let contexteDe: unknown[] = [];
 
+/**
+ * The Worker's secrets as the modules read them (contexte.ts `secret`), each by what it is for. The buoys' and the
+ * UV's keys only with the store: the state their source's reads keep is there.
+ */
+function secretsDe(env: Env): Secrets {
+  return {
+    ...(env.STORE && { candhis: env.CANDHIS_API_KEY, solardb: env.SOLARDB_JETON }),
+    meteofranceApplication: env.METEOFRANCE_APPLICATION_ID,
+    meteofranceCle: env.METEOFRANCE_API_KEY,
+    firms: env.FIRMS_MAP_KEY,
+    selAvis: env.AVIS_SEL,
+    turnstile: env.TURNSTILE_SECRET,
+    equipe: env.EQUIPE_JETON,
+    uvMoufia: env.UV_MOUFIA_JETON,
+    defiOpenai: env.OPENAI_APPS_CHALLENGE,
+  };
+}
+
 function setup(env: Env): Cache {
   // What the modules read at the time they need it (contexte.ts), built once per isolate (the bindings do not change,
   // as for `cache` below): a module's copy kept in memory stays valid from one request to the next.
-  // The keys are given only with the store: the state their source's reads keep is there.
-  const de = [env.STORE, env.CANDHIS_API_KEY, env.SOLARDB_JETON, env.TRANSIT, env.CLIMAT, env.CLIMAT_H, env.AVIS, env.BROWSER, env.ASSETS];
-  if (!contexte().worker || de.some((v, i) => v !== contexteDe[i])) {
+  const secrets = secretsDe(env);
+  const de = [env.STORE, env.TRANSIT, env.CLIMAT, env.CLIMAT_H, env.AVIS, env.BROWSER, env.ASSETS, ...Object.values(secrets)];
+  if (!contexte().worker || de.length !== contexteDe.length || de.some((v, i) => v !== contexteDe[i])) {
     installer({
       worker: true,
-      ...(env.STORE && { kv: stockageKv(env.STORE), brut: env.STORE, secrets: { candhis: env.CANDHIS_API_KEY, solardb: env.SOLARDB_JETON } }),
+      ...(env.STORE && { kv: stockageKv(env.STORE), brut: env.STORE }),
+      secrets,
       // The bus timetables; the daily measurements since 1900 and the hourly ones since 2000, imported by
       // scripts/build-climat.py and scripts/build-climat-h.py, the current year and month by .github/workflows/climat.yml;
       // in the first, the sea's history: the Candhis buoys since 1996 and the satellite since 2003 (scripts/mer.sql, the
@@ -267,26 +281,17 @@ function setup(env: Env): Cache {
     });
     contexteDe = de;
   }
-  meteofrance.configure({ applicationId: env.METEOFRANCE_APPLICATION_ID, apiKey: env.METEOFRANCE_API_KEY });
-  feux.configure(env.FIRMS_MAP_KEY);
-  // The feedback of the tool donner_avis and of the site's form: one row each, in the feedback's database (contexte.ts).
-  avis.configure(env.AVIS_SEL);
   // The links and events the clubs send, in the same database: a proposal's link is e-mailed through Cloudflare, and
   // without the binding a proposal is refused rather than kept unconfirmable.
   propositions.configure(env.EMAIL && propositions.envoiCloudflare(env.EMAIL));
-  formulaires.configure(env.TURNSTILE_SECRET);
-  configurerEquipe(env.EQUIPE_JETON);
   // The alerts on the phone (web/alertes.ts): open on the trial Worker only until the flag; the subscriptions in the
   // same database, the VAPID key read once an isolate.
   configurerAlertes(env.ALERTES_ESSAI);
   const vapid = alertesPush.cleDuSecret(env.VAPID_PRIVE, alertesEnLigne());
   abonnements.configure(vapid);
   alertesPush.configure(vapid);
-  // Its data in KV, written once by the team: the page's secret link reads it (web/uv-moufia.ts).
-  configurerUv(env.UV_MOUFIA_JETON, env.STORE);
   // The videos handed to Threads, written into KV by the team for a day (web/partage-video.ts).
   configurerVideo(env.STORE);
-  configurerDefiOpenai(env.OPENAI_APPS_CHALLENGE);
   metaWebhookSecrets(env.META_VERIFY_TOKEN, env.META_APP_SECRET);
   // The associations' links to their platform, in the same database: the platform's secret encrypted with
   // CONNECTEURS_CLE, the link e-mailed like a proposal's. Without the key, nothing is linked.

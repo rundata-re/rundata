@@ -9,17 +9,11 @@ import "./net.js";
 import { handle } from "../app.js";
 import { Cache } from "../cache.js";
 import { installer } from "../contexte.js";
-import * as meteofrance from "../providers/meteofrance.js";
 import { localClimat } from "./climat-local.js";
 import { localTransit } from "./transit-local.js";
 import { VERSION } from "../server.js";
 
 const cache = new Cache(); // shared by all requests: that is the point
-meteofrance.configure({
-  applicationId: process.env.METEOFRANCE_APPLICATION_ID,
-  apiKey: process.env.METEOFRANCE_API_KEY,
-  token: process.env.METEOFRANCE_TOKEN,
-});
 
 // The databases, from local copies (contexte.ts `bases`), outside the Worker: the past weather (historique_meteo) and
 // the sea's history in the same file when its tables were loaded there (scripts/climat-local.ts, scripts/mer.sql and a
@@ -31,6 +25,12 @@ installer({
     ...(process.env.CLIMAT_SQLITE && { climat: localClimat(process.env.CLIMAT_SQLITE) }),
     ...(process.env.CLIMAT_SQLITE && process.env.CLIMAT_H_SQLITE && { climatHoraire: localClimat(process.env.CLIMAT_H_SQLITE) }),
     ...(process.env.TRANSIT_ROWS && { transit: localTransit(process.env.TRANSIT_ROWS) }),
+  },
+  // Météo-France's portal, from the environment (contexte.ts `secret`).
+  secrets: {
+    meteofranceApplication: process.env.METEOFRANCE_APPLICATION_ID,
+    meteofranceCle: process.env.METEOFRANCE_API_KEY,
+    meteofranceJeton: process.env.METEOFRANCE_TOKEN,
   },
   fichiers: { json: async <T>(chemin: string) => JSON.parse(await readFile(new URL(chemin.slice(1), PUBLIC), "utf8")) as T },
 });

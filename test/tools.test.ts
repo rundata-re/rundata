@@ -14,6 +14,7 @@ import { esc } from "../src/web/map.js";
 import { placePage } from "../src/web/lieu-page.js";
 import { PAGES } from "../src/web/places.js";
 import { a, ailleurs, communeDite } from "../src/tools/format.js";
+import { meteoFrance } from "./contexte.js";
 
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url), "utf8");
 const NOW = new Date("2026-10-18T19:20:00Z");
@@ -257,13 +258,13 @@ describe("meteo_actuelle with the Météo-France stations", () => {
   }
 
   beforeEach(() => {
-    meteofrance.configure({ token: "test" });
+    meteoFrance({ token: "test" });
     vi.stubGlobal("fetch", async () => {
       throw new Error("no network in tests");
     });
   });
   afterEach(() => {
-    meteofrance.configure({});
+    meteoFrance({});
     vi.unstubAllGlobals();
   });
 
@@ -355,7 +356,7 @@ describe("meteo_actuelle with the Météo-France stations", () => {
   });
 
   it("renews the OAuth token once when another copy of the server voided it", async () => {
-    meteofrance.configure({ applicationId: "app" });
+    meteoFrance({ applicationId: "app" });
     const tokens = ["old", "new"];
     let tokenCalls = 0;
     vi.stubGlobal("fetch", async (url: string, init: RequestInit) => {

@@ -5,11 +5,11 @@ import { Cache, MemoryStore } from "../src/cache.js";
 import { resolvePlace } from "../src/places/resolve.js";
 import * as arome from "../src/providers/arome.js";
 import * as ensemble from "../src/providers/ensemble.js";
-import { configure } from "../src/providers/mf-auth.js";
 import * as openmeteo from "../src/providers/openmeteo.js";
 import * as uv from "../src/providers/uv.js";
 import { readTiff } from "../src/tiff.js";
 import { AROME_WAIT_MS, MAXIMALES_AROME, previsionMeteo } from "../src/tools/prevision.js";
+import { meteoFrance } from "./contexte.js";
 
 // Grids recorded from the AROME outre-mer run of 21/10/2026 18:00 UTC: the step starting 22/10 08:00 UTC
 // (12:00 in Réunion), and the run's first hour for the terrain height.
@@ -50,7 +50,7 @@ async function offlineCache(listAgeMs = 0) {
 
 afterEach(() => {
   vi.unstubAllGlobals();
-  configure({});
+  meteoFrance({});
 });
 
 const noNetwork = () => vi.stubGlobal("fetch", async () => { throw new Error("no network in tests"); });
@@ -115,7 +115,7 @@ describe("weatherCode", () => {
 
 describe("prevision_meteo with AROME", () => {
   it("answers this afternoon in Cilaos from AROME, ECMWF taking over the step not loaded", async () => {
-    configure({ token: "test" });
+    meteoFrance({ token: "test" });
     noNetwork();
     const r = body(await previsionMeteo(await offlineCache(), "Cilaos", "cet après-midi", NOW));
     expect(r.nature).toBe("prevision");
@@ -158,7 +158,7 @@ describe("prevision_meteo with AROME", () => {
   });
 
   it("downloads at most the budget of grids for one question, nearest steps first", async () => {
-    configure({ token: "test" });
+    meteoFrance({ token: "test" });
     const grid = tif("t2m");
     const urls: string[] = [];
     vi.stubGlobal("fetch", async (url: string) => {
@@ -180,7 +180,7 @@ describe("prevision_meteo with AROME", () => {
   });
 
   it("answers from ECMWF, said as such, when AROME is not ready in time, and loads its grids after the response", async () => {
-    configure({ token: "test" });
+    meteoFrance({ token: "test" });
     const grid = tif("t2m");
     let slow = true;
     vi.stubGlobal("fetch", async (url: string) => {
@@ -210,7 +210,7 @@ describe("prevision_meteo with AROME", () => {
   });
 
   it("falls back to ECMWF alone, saying so, when AROME does not answer", async () => {
-    configure({ token: "test" });
+    meteoFrance({ token: "test" });
     noNetwork();
     const store = new MemoryStore();
     await store.put(openmeteo.cacheKey(resolvePlace("Cilaos")!.lieu), { value: json("openmeteo_cilaos.json"), fetchedAt: NOW.getTime() });
@@ -220,7 +220,7 @@ describe("prevision_meteo with AROME", () => {
   });
 
   it("does not ask AROME for days beyond its 48 hours", async () => {
-    configure({ token: "test" });
+    meteoFrance({ token: "test" });
     const urls: string[] = [];
     vi.stubGlobal("fetch", async (url: string) => {
       urls.push(String(url));
@@ -242,7 +242,7 @@ describe("a run listed before all its hours are out", () => {
 
   function partialRun() {
     asked = [];
-    configure({ token: "test" });
+    meteoFrance({ token: "test" });
     vi.stubGlobal("fetch", async (url: string) => {
       const u = decodeURIComponent(String(url));
       if (u.includes("GetCapabilities")) {
@@ -323,7 +323,7 @@ describe("a run listed before all its hours are out", () => {
 
 describe("the run list", () => {
   it("is used as it is when old and the service does not answer in time", async () => {
-    configure({ token: "test" });
+    meteoFrance({ token: "test" });
     vi.stubGlobal("fetch", async () => {
       throw new DOMException("The operation was aborted due to timeout", "TimeoutError");
     });
@@ -333,7 +333,7 @@ describe("the run list", () => {
   });
 
   it("says which request failed when there is none to fall back on", async () => {
-    configure({ token: "test" });
+    meteoFrance({ token: "test" });
     vi.stubGlobal("fetch", async () => {
       throw new DOMException("The operation was aborted due to timeout", "TimeoutError");
     });

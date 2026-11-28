@@ -13,6 +13,7 @@
  */
 import * as avis from "../avis.js";
 import { INSEE } from "../places/insee.js";
+import { secret } from "../contexte.js";
 import * as propositions from "../propositions.js";
 import { bodyText, postForm } from "../http.js";
 import type { Alerte } from "./data.js";
@@ -50,11 +51,17 @@ export interface Attendu {
 
 /** Whether Cloudflare says the token comes from a person on this site, on this form; one subrequest. */
 export type Verif = (token: string, adresse: string, attendu: Attendu) => Promise<boolean>;
-let verif: Verif | undefined;
+let essai: Verif | undefined;
 
-/** `secret`: the widget's secret key (Worker secret TURNSTILE_SECRET); `check` replaces Cloudflare's, for the tests. */
-export function configure(secret: string | undefined, check?: Verif) {
-  verif = check ?? (secret ? siteverify(secret) : undefined);
+/** For the tests: `check` replaces Cloudflare's check, whatever the secret; none given, Cloudflare's again. */
+export function verifierAvec(check?: Verif) {
+  essai = check;
+}
+
+/** The check: the test's, or Cloudflare's with the widget's secret key (contexte.ts `secret`); none without it. */
+function verif(): Verif | undefined {
+  const cle = secret("turnstile");
+  return essai ?? (cle ? siteverify(cle) : undefined);
 }
 
 const siteverify = (secret: string): Verif => async (token, adresse, attendu) => {
@@ -159,7 +166,10 @@ export async function received(request: Request, what: string): Promise<URLSearc
 }
 
 /** Whether Turnstile lets the form through: never without its key. */
-export const human = async (f: URLSearchParams, adresse: string, attendu: Attendu) => !!verif && (await verif(f.get("cf-turnstile-response") ?? "", adresse, attendu));
+export const human = async (f: URLSearchParams, adresse: string, attendu: Attendu) => {
+  const v = verif();
+  return !!v && (await v(f.get("cf-turnstile-response") ?? "", adresse, attendu));
+};
 
 const LIEN_TITLE = "Erreur\u00a0: lien non enregistré · Clubs et associations · 974";
 const LIEN_META = "Le lien de votre agenda ou de votre flux n'a pas été enregistré\u00a0: votre saisie est gardée.";

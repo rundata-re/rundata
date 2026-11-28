@@ -54,7 +54,7 @@ beforeEach(() => {
   );
   formulaires.ouvrir(true);
   connecteurs.ouvrir(true);
-  formulaires.configure(undefined, async (t) => t === "humain");
+  formulaires.verifierAvec(async (t) => t === "humain");
   vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
     const u = new URL(url);
     if (u.hostname !== "api.helloasso.com") return new Response("", { status: 503 });
@@ -69,7 +69,7 @@ afterEach(() => {
   vi.restoreAllMocks();
   chiffre.configure(undefined);
   donnerConnexions(undefined);
-  formulaires.configure(undefined);
+  formulaires.verifierAvec();
   formulaires.ouvrir(formulaires.ASSOCIATIONS_EN_LIGNE);
   connecteurs.ouvrir(connecteurs.CONNECTEURS_EN_LIGNE);
   // Never a key, a token nor a link's secret in what is logged.

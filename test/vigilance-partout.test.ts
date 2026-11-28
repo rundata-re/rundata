@@ -1,11 +1,11 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
-import { configure } from "../src/providers/mf-auth.js";
 import * as mf from "../src/providers/vigilance.js";
 import { CYCLONE_LIFTED, cyclone, cycloneLevel, vigilanceMeteo, vigilanceWarnings } from "../src/tools/vigilance.js";
 import { PATH as APPLI } from "../src/web/appli.js";
 import { alerteOf } from "../src/web/data.js";
 import { site } from "../src/web/site.js";
+import { meteoFrance } from "./contexte.js";
 
 // Tuesday 24 November 2026, 10:00 at La Réunion.
 const NOW = new Date("2026-11-24T06:00:00Z");
@@ -64,11 +64,11 @@ describe("the banner on every page of the site", () => {
     return new Cache(store, () => NOW.getTime());
   };
   beforeAll(() => {
-    configure({ token: "test" });
+    meteoFrance({ token: "test" });
     vi.stubGlobal("fetch", async () => new Response("non", { status: 503 }));
   });
   afterAll(() => {
-    configure({});
+    meteoFrance({});
     vi.unstubAllGlobals();
   });
 

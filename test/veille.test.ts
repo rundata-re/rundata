@@ -4,8 +4,8 @@ import { BUILD_BUDGET, counted, SCHEDULED_BUDGET, scheduled } from "../src/budge
 import { Cache, MemoryStore } from "../src/cache.js";
 import { KvStore, type KvBinding } from "../src/kv.js";
 import * as meteofrance from "../src/providers/meteofrance.js";
-import { configure, type Token, type TokenStore } from "../src/providers/mf-auth.js";
-import { horsWorker, stockageBrut } from "./contexte.js";
+import { type Token, type TokenStore } from "../src/providers/mf-auth.js";
+import { horsWorker, meteoFrance, stockageBrut } from "./contexte.js";
 
 /** The token shared through the Worker's store (contexte.ts `brut`), as `s` holds it; without `s`, outside the Worker. */
 function share(s?: TokenStore) {
@@ -96,7 +96,7 @@ describe("the scheduled pass that keeps the day before", () => {
     packages = [];
     body = DAY;
     token = null;
-    configure({ applicationId: "test" });
+    meteoFrance({ applicationId: "test" });
     share({ get: async () => token, put: async (t) => void (token = t) });
     vi.stubGlobal("fetch", async (url: string) => {
       if (String(url).includes("/token")) return Response.json({ access_token: "t", expires_in: 3600 });
@@ -113,7 +113,7 @@ describe("the scheduled pass that keeps the day before", () => {
   afterEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
-    configure({});
+    meteoFrance({});
     share(undefined);
   });
   // Each event in a fresh isolate, as the scheduled event is: only KV carries over. As worker.ts runs it: the token and

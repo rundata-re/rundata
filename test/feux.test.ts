@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { counted } from "../src/budget.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 import * as feux from "../src/providers/feux.js";
-import { configure as configureMf } from "../src/providers/mf-auth.js";
 import { block, muets, QUIET, URGENCE } from "../src/tools/feux.js";
 import { sentiersRandonnee } from "../src/tools/sentiers.js";
 import { vigilanceMeteo } from "../src/tools/vigilance.js";
@@ -14,6 +13,7 @@ import { site } from "../src/web/site.js";
 import { communeHikes } from "../src/web/liens.js";
 import { pageOf } from "../src/web/places.js";
 import { deadAnchors, doubleIds, mapLinks, tabStops } from "./cartes.js";
+import { cles, meteoFrance } from "./contexte.js";
 
 // Three VIIRS lists in FIRMS's column format: NOAA-20 saw two hot pixels above Saint-Paul (06:30 and 01:50, Réunion
 // time), NOAA-21 one two days old, Suomi NPP nothing.
@@ -51,8 +51,8 @@ beforeEach(() => {
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
-  feux.configure(undefined);
-  configureMf({});
+  cles({ firms: undefined });
+  meteoFrance({});
 });
 
 describe("fires seen by satellite", () => {
@@ -67,7 +67,7 @@ describe("fires seen by satellite", () => {
   });
 
   it("reads the three VIIRS satellites in one go, keeps the last 24 hours, and caches them for the island", async () => {
-    feux.configure("key");
+    cles({ firms: "key" });
     const c = cache();
     const f = (await feux.feuxNow(c, NOW))!;
     expect(asked).toHaveLength(feux.COST);
@@ -86,7 +86,7 @@ describe("fires seen by satellite", () => {
   });
 
   it("is built only with twice its cost left, and keeps the satellites that answered", async () => {
-    feux.configure("key");
+    cles({ firms: "key" });
     const { value } = await counted(2 * feux.COST - 1, () => feux.feuxNow(cache(), NOW));
     expect(value).toBeNull();
     expect(asked).toEqual([]);
@@ -98,7 +98,7 @@ describe("fires seen by satellite", () => {
   });
 
   it("leaves out a satellite FIRMS has nothing of for more than a day, said apart, and asks all when it cannot tell", async () => {
-    feux.configure("key");
+    cles({ firms: "key" });
     dispo = ALL_LIVE.replace("VIIRS_SNPP_NRT,2026-08-01,2026-10-24", "VIIRS_SNPP_NRT,2026-08-01,2026-10-21");
     const f = (await feux.feuxNow(cache(), NOW))!;
     expect(asked.some((u) => u.includes("/VIIRS_SNPP_NRT/"))).toBe(false);
@@ -126,7 +126,7 @@ describe("fires seen by satellite", () => {
   });
 
   it("go first in the hikers' answer near them, with the label and the emergency numbers", async () => {
-    feux.configure("key");
+    cles({ firms: "key" });
     const r = body(await sentiersRandonnee(cache(), "Maïdo", NOW));
     expect(r.resume).toMatch(/^Point chaud détecté par satellite près (?:du|de la|de l'|des|de) [^,]+ \(Saint-Paul\), le 24\/10 à 06:30, confiance forte \(2 détections dans le secteur\) : détection satellite, faux positifs possibles, pas forcément un feu\. Vous voyez un feu \? Appelez le 18 ou le 112\. La carte : https:\/\/rundata\.re\/feux\./);
     expect(r.feux_detectes.urgence).toBe(URGENCE);
@@ -136,7 +136,7 @@ describe("fires seen by satellite", () => {
   });
 
   it("say a quiet day as such, without claiming there is no fire", async () => {
-    feux.configure("key");
+    cles({ firms: "key" });
     vi.stubGlobal("fetch", async (url: string) => upstream(String(url), true));
     const r = body(await sentiersRandonnee(cache(), undefined, NOW));
     expect(r.feux_detectes.resume).toBe(QUIET);
@@ -145,13 +145,13 @@ describe("fires seen by satellite", () => {
   });
 
   it("add one line to the vigilance, only when something was seen", async () => {
-    configureMf({ applicationId: "test" });
+    meteoFrance({ applicationId: "test" });
     const withVigilance = () => {
       const store = new MemoryStore();
       void store.put("vigilance", { value: { emise: "2026-10-24T02:00:00Z", zones: {}, suivi: [] }, fetchedAt: NOW.getTime() });
       return new Cache(store, () => NOW.getTime());
     };
-    feux.configure("key");
+    cles({ firms: "key" });
     const r = body(await vigilanceMeteo(withVigilance(), undefined, NOW));
     expect(r.feux_detectes).toMatch(/^2 points chauds détectés par satellite ces dernières 24 h, le dernier près (?:du|de la|de l'|des|de) .+ \(Saint-Paul\) le 24\/10 à 06:30, confiance forte : détection satellite, faux positifs possibles, pas forcément un feu\. Vous voyez un feu \? Appelez le 18 ou le 112\. La carte : https:\/\/rundata\.re\/feux\./);
     vi.stubGlobal("fetch", async (url: string) => upstream(String(url), true));
@@ -205,7 +205,7 @@ describe("fires on the site", () => {
     expect(deadAnchors(html)).toEqual([]);
     expect(doubleIds(html)).toEqual([]);
 
-    feux.configure("key");
+    cles({ firms: "key" });
     const page = feuxPage("https://rundata.re", { fires: { ...seen, fetchedAt: NOW }, sentiers: s }, NOW);
     expect(mapLinks(page).map((l) => l.href)).toEqual(["/sentiers#t-sentier-de-la-glaciere", "#f-1", "#f-2"]);
     // Out of the Tab order: the fires are listed below, and the closed trails reached by the link above the map.
@@ -267,7 +267,7 @@ describe("the fires' page", () => {
   });
 
   it("with it: the map, the list, the closed trails and the vigilance, worded for the site, and in the sitemap", async () => {
-    feux.configure("key");
+    cles({ firms: "key" });
     const r = (await page("/feux"))!;
     const html = await r.text();
     expect(r.headers.get("cache-control")).toBe("public, max-age=60");
@@ -304,7 +304,7 @@ describe("the fires' page", () => {
     expect(heroFeux({ ...read, detections: [at("2026-10-24T02:30:00Z")] })).toEqual({ big: "1", then: "point chaud détecté par satellite dans les 24 h avant le 24/10 à 08:00." });
     expect(heroFeux({ ...read, detections: [at("2026-10-24T02:30:00Z"), at("2026-10-23T19:00:00Z")] })).toEqual({ big: "2", then: "points chauds détectés par satellite dans les 24 h avant le 24/10 à 08:00." });
     // A quiet day: « Aucun point chaud » in big, before the map; the legend says it again beside the crosses.
-    feux.configure("key");
+    cles({ firms: "key" });
     const quiet = feuxPage("https://rundata.re", { fires: { ...read, detections: [] }, sentiers: null }, NOW);
     expect(quiet).toMatch(/<div class="status"><p class="big">Aucun point chaud<\/p><p class="lead">détecté par satellite dans les 24\sh avant le 24\/10 à\s08:00\.<\/p><\/div>/);
     expect(quiet.indexOf('<p class="big">')).toBeLessThan(quiet.indexOf('<svg class="map'));
@@ -321,7 +321,7 @@ describe("the fires' page", () => {
   });
 
   it("never logs the key", async () => {
-    feux.configure("secret-key");
+    cles({ firms: "secret-key" });
     const errors = vi.spyOn(console, "error").mockImplementation(() => {});
     vi.stubGlobal("fetch", async (url: string) => {
       throw new Error(`failed ${url}`);

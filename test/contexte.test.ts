@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { counted, OutOfBudget } from "../src/budget.js";
 import { Cache, MemoryStore } from "../src/cache.js";
-import { installer, portesAvis } from "../src/contexte.js";
+import { installer, portesAvis, secret, type Secrets } from "../src/contexte.js";
 import * as airMesures from "../src/providers/air-mesures.js";
 import * as carburants from "../src/providers/carburants.js";
 import * as cpf from "../src/providers/cpf.js";
@@ -34,6 +34,10 @@ import * as vigilanceCarte from "../src/providers/vigilance-carte.js";
 import * as vigilanceEpisodes from "../src/providers/vigilance-episodes.js";
 import * as cmrsCarte from "../src/providers/cmrs-carte.js";
 import * as carteScolaire from "../src/vie/carte-scolaire.js";
+import * as meteofrance from "../src/providers/meteofrance.js";
+import * as feux from "../src/providers/feux.js";
+import * as formulaires from "../src/web/propositions.js";
+import { equipe, JETON_EQUIPE } from "../src/app.js";
 import { PROPOSITION_PATH } from "../src/web/propositions.js";
 import { baseAvis, bases, cartes, dansLeWorker, fichiers, horsWorker } from "./contexte.js";
 
@@ -85,7 +89,8 @@ describe("the modules' context (src/contexte.ts)", () => {
 
   it("is the Worker's without a store too: the modules that never read their source there say it is absent", async () => {
     await worker.fetch(new Request("https://rundata.re/robots.txt"), {} as never, { waitUntil: () => {} });
-    expect(contexte()).toEqual({ worker: true, bases: {} });
+    // Its secrets, none set here: each absent (toEqual leaves out the keys whose value is undefined).
+    expect(contexte()).toEqual({ worker: true, bases: {}, secrets: {} });
     expect([transit.enabled(), climat.enabled(), climat.hourlyEnabled(), merHistorique.enabled(), rna.lisible()]).toEqual([false, false, false, false, false]);
     horsWorker();
   });
@@ -211,7 +216,8 @@ describe("the modules' context (src/contexte.ts)", () => {
   it("gives the sources' keys with the store only, and is built again when a key changes", async () => {
     const env = (e: Record<string, unknown>) => worker.fetch(new Request("https://rundata.re/robots.txt"), e as never, { waitUntil: () => {} });
     await env({ CANDHIS_API_KEY: "cle", SOLARDB_JETON: "jeton" });
-    expect(contexte().secrets).toBeUndefined();
+    expect(Object.keys(contexte().secrets!)).not.toContain("candhis");
+    expect(Object.keys(contexte().secrets!)).not.toContain("solardb");
     expect([candhis.configured(), uvMesure.configured()]).toEqual([false, false]);
     const kv = new FakeKv();
     await env({ STORE: kv, CANDHIS_API_KEY: " cle ", SOLARDB_JETON: "jeton" });
@@ -493,5 +499,120 @@ describe("what a module keeps from one request to the next (src/contexte.ts)", (
     fichiers();
     expect([contexte().brut, contexte().fichiers, contexte().worker]).toEqual([undefined, undefined, true]);
     horsWorker();
+  });
+});
+
+describe("the Worker's secrets (src/contexte.ts `secret`)", () => {
+  const requete = (e: Record<string, unknown>, chemin = "/robots.txt", init?: RequestInit) => worker.fetch(new Request(`https://rundata.re${chemin}`, init), e as never, { waitUntil: () => {} });
+  // Each of the Worker's secrets, and the name the modules read it by.
+  const NOMS: [string, keyof Secrets][] = [
+    ["METEOFRANCE_APPLICATION_ID", "meteofranceApplication"],
+    ["METEOFRANCE_API_KEY", "meteofranceCle"],
+    ["FIRMS_MAP_KEY", "firms"],
+    ["AVIS_SEL", "selAvis"],
+    ["TURNSTILE_SECRET", "turnstile"],
+    ["EQUIPE_JETON", "equipe"],
+    ["UV_MOUFIA_JETON", "uvMoufia"],
+    ["OPENAI_APPS_CHALLENGE", "defiOpenai"],
+  ];
+  const valeur = (env: string) => `valeur-${env.toLowerCase().replace(/_/g, "-")}-0123456789`;
+  const tous = Object.fromEntries(NOMS.map(([env]) => [env, valeur(env)]));
+
+  it("gives each secret by its name, without its spaces, with the store or without it, and is built again when one changes", async () => {
+    for (const [env, nom] of NOMS) {
+      await requete({ [env]: ` ${valeur(env)}\n` });
+      expect(secret(nom)).toBe(valeur(env));
+      for (const [, autre] of NOMS) if (autre !== nom) expect(secret(autre)).toBeUndefined();
+      await requete({ [env]: "  " });
+      expect(secret(nom)).toBeUndefined();
+    }
+    await requete({ STORE: new FakeKv(), ...tous });
+    for (const [env, nom] of NOMS) expect(secret(nom)).toBe(valeur(env));
+    const premier = contexte();
+    await requete({ STORE: premier.brut, ...tous });
+    expect(contexte()).toBe(premier);
+    await requete({ STORE: premier.brut, ...tous, FIRMS_MAP_KEY: "autre" });
+    expect(contexte()).not.toBe(premier);
+    expect(secret("firms")).toBe("autre");
+    horsWorker();
+    for (const [, nom] of NOMS) expect(secret(nom)).toBeUndefined();
+  });
+
+  it("without a secret, its module does as before it: off, and no error", async () => {
+    const fetches: string[] = [];
+    vi.stubGlobal("fetch", async (u: string | URL | Request) => (fetches.push(String(u instanceof Request ? u.url : u)), new Response("", { status: 500 })));
+    const erreurs = vi.spyOn(console, "error");
+    try {
+      await requete({});
+      // Météo-France's portal and FIRMS: nothing asked of them.
+      expect([meteofrance.enabled(), feux.enabled()]).toEqual([false, false]);
+      // The feedback's fingerprints: a salt drawn by this isolate, the same within the day.
+      const jour = new Date("2026-11-28T10:00:00Z");
+      const a = await avis.empreinte("203.0.113.7", jour);
+      expect(await avis.empreinte("203.0.113.7", jour)).toBe(a);
+      await requete({ AVIS_SEL: "sel" });
+      const b = await avis.empreinte("203.0.113.7", jour);
+      expect(b).not.toBe(a);
+      await requete({ AVIS_SEL: "sel" });
+      expect(await avis.empreinte("203.0.113.7", jour)).toBe(b);
+      await requete({});
+      // The forms: no person told apart, Cloudflare not asked.
+      expect(await formulaires.human(new URLSearchParams({ "cf-turnstile-response": "jeton" }), "203.0.113.7", { hostname: "rundata.re", action: "lien" })).toBe(false);
+      // The team: no one, whatever the header.
+      expect(equipe(new Headers({ [JETON_EQUIPE]: "" }))).toBe(false);
+      expect(equipe(new Headers({ [JETON_EQUIPE]: "x" }))).toBe(false);
+      // The internal trial's page and OpenAI's challenge: not found, as any other address.
+      expect((await requete({}, "/essais/uv-moufia/x")).status).toBe(404);
+      expect((await requete({}, "/.well-known/openai-apps-challenge")).status).toBe(404);
+      expect(fetches).toEqual([]);
+      expect(erreurs).not.toHaveBeenCalled();
+      // With them, each is on.
+      await requete(tous);
+      expect([meteofrance.enabled(), feux.enabled()]).toEqual([true, true]);
+      expect(equipe(new Headers({ [JETON_EQUIPE]: valeur("EQUIPE_JETON") }))).toBe(true);
+      const defi = await requete(tous, "/.well-known/openai-apps-challenge");
+      expect([defi.status, await defi.text()]).toEqual([200, valeur("OPENAI_APPS_CHALLENGE")]);
+    } finally {
+      vi.unstubAllGlobals();
+      vi.restoreAllMocks();
+      horsWorker();
+    }
+  });
+
+  it("never writes a secret in a log line or an answer, even when what it is sent to fails", async () => {
+    // Every service a secret is sent to fails, saying the address it was asked at (as the Worker's fetch does: never
+    // the headers nor the body): what a module logs of it must not carry the secret, in the address either (FIRMS).
+    const envoyes: string[] = [];
+    vi.stubGlobal("fetch", async (u: string | URL | Request, init?: RequestInit) => {
+      envoyes.push(`${String(u instanceof Request ? u.url : u)} ${String(init?.body ?? "")} ${JSON.stringify(init?.headers ?? {})}`);
+      throw new TypeError(`refusé : ${String(u instanceof Request ? u.url : u)}`);
+    });
+    const niveaux = ["log", "info", "warn", "error", "debug"] as const;
+    const espions = niveaux.map((k) => vi.spyOn(console, k).mockImplementation(() => {}));
+    const reponses: string[] = [];
+    const lire = async (r: Response) => reponses.push(`${r.status} ${JSON.stringify([...r.headers])} ${await r.text()}`);
+    try {
+      const env = { STORE: new FakeKv(), ...tous };
+      await lire(await requete(env));
+      await lire(await requete(env, "/robots.txt", { headers: { [JETON_EQUIPE]: "mauvais" } }));
+      await lire(await requete(env, "/essais/uv-moufia/mauvais"));
+      await lire(await requete(env, "/associations/lien", { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: "cf-turnstile-response=jeton" }));
+      await meteofrance.keepFresh("cron").catch((err) => console.error("jeton Météo-France : renouvellement impossible", String(err)));
+      await feux.feuxNow(new Cache(new MemoryStore()), new Date()).catch((err) => console.error("feux", String(err)));
+      await formulaires.human(new URLSearchParams({ "cf-turnstile-response": "jeton" }), "203.0.113.7", { hostname: "rundata.re", action: "lien" });
+      await avis.empreinte("203.0.113.7", new Date());
+      const ecrit = JSON.stringify(espions.flatMap((e) => e.mock.calls.map((c) => c.map(String))));
+      // Something was logged: the failures are said; and the secrets were sent, so their absence above is no accident.
+      expect(ecrit).toContain("refusé");
+      for (const env of ["METEOFRANCE_APPLICATION_ID", "FIRMS_MAP_KEY", "TURNSTILE_SECRET"]) expect(envoyes.join(" ")).toContain(valeur(env));
+      for (const [env] of NOMS) {
+        expect(ecrit).not.toContain(valeur(env));
+        for (const r of reponses) expect(r).not.toContain(valeur(env));
+      }
+    } finally {
+      vi.unstubAllGlobals();
+      vi.restoreAllMocks();
+      horsWorker();
+    }
   });
 });

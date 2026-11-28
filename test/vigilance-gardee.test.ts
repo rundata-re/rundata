@@ -2,13 +2,13 @@ import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { counted } from "../src/budget.js";
 import { Cache, MemoryStore } from "../src/cache.js";
-import { configure } from "../src/providers/mf-auth.js";
 import * as mf from "../src/providers/vigilance.js";
 import { alerte, vigilanceNow, BANNER_WAIT_MS } from "../src/web/data.js";
 import { communePage } from "../src/web/commune.js";
 import { homePage } from "../src/web/home.js";
 import { pageOf } from "../src/web/places.js";
 import { unzip } from "../src/zip.js";
+import { meteoFrance } from "./contexte.js";
 
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url));
 const NOW = new Date("2026-10-26T00:10:00Z");
@@ -33,7 +33,7 @@ beforeEach(() => {
   // The waits are the code's own (BANNER_WAIT_MS, Météo-France 300 ms later still): on a fake clock, moved on by `late`,
   // rather than 1.8 s of the machine's for each page.
   vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
-  configure({ applicationId: "test" });
+  meteoFrance({ applicationId: "test" });
   // Météo-France answers, but later than a page waits for it.
   vi.stubGlobal("fetch", async (url: string) => {
     if (String(url).includes("/token")) return Response.json({ access_token: "t", expires_in: 3600 });
@@ -46,7 +46,7 @@ afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
-  configure({});
+  meteoFrance({});
 });
 
 /** The vigilance as a page gets it while Météo-France is late, with the last reading kept `ageMin` minutes ago. */

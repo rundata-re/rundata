@@ -3,7 +3,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { resolvePlace } from "../src/places/resolve.js";
 import * as arome from "../src/providers/arome.js";
-import { configure } from "../src/providers/mf-auth.js";
 import * as openmeteo from "../src/providers/openmeteo.js";
 import { BEYOND, CAVEAT, LABEL, cielDeNuit, etat, merDeNuages, morning, morningStarts, night, nightStarts, softened } from "../src/tools/nuages.js";
 import { nuitOf } from "../src/tools/calendrier.js";
@@ -13,6 +12,7 @@ import { randonneesPage } from "../src/web/domains.js";
 import { placePage } from "../src/web/lieu-page.js";
 import { pageOf } from "../src/web/places.js";
 import { withVolcan } from "../src/web/volcan-alerte.js";
+import { meteoFrance } from "./contexte.js";
 
 const tif = (f: string) => readFileSync(new URL(`./fixtures/arome/${f}.tif`, import.meta.url));
 const body = (r: { content: { text: string }[] }) => JSON.parse(r.content[0].text);
@@ -201,7 +201,7 @@ describe("prevision_meteo in the Hauts", () => {
   const RUN = new Date("2026-10-24T06:00:00Z");
   afterEach(() => {
     vi.unstubAllGlobals();
-    configure({});
+    meteoFrance({});
   });
 
   async function offline() {
@@ -231,7 +231,7 @@ describe("prevision_meteo in the Hauts", () => {
   }
 
   it("answers « dégagé au Maïdo demain matin ? » with the cloud sea of the model's cell, labelled", async () => {
-    configure({ token: "test" });
+    meteoFrance({ token: "test" });
     vi.stubGlobal("fetch", async () => {
       throw new Error("no network in tests");
     });
@@ -243,7 +243,7 @@ describe("prevision_meteo in the Hauts", () => {
   });
 
   it("answers « dégagé ce soir au Maïdo ? » with the sky of the night, labelled, without asking for anything", async () => {
-    configure({ token: "test" });
+    meteoFrance({ token: "test" });
     vi.stubGlobal("fetch", async () => {
       throw new Error("no network in tests");
     });
@@ -257,7 +257,7 @@ describe("prevision_meteo in the Hauts", () => {
   });
 
   it("says the cloud sea is not forecast beyond AROME's two days", async () => {
-    configure({ token: "test" });
+    meteoFrance({ token: "test" });
     vi.stubGlobal("fetch", async () => {
       throw new Error("no network in tests");
     });

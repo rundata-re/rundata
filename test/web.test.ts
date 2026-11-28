@@ -7,7 +7,6 @@ import { failed, handle } from "../src/app.js";
 import { stopPages } from "../src/providers/transit.js";
 import { PAGE_BUDGET, count, counted, later, left } from "../src/budget.js";
 import { Cache, MemoryStore, stampOf, TieredStore, type CacheEntry } from "../src/cache.js";
-import { configure } from "../src/providers/mf-auth.js";
 import * as mf from "../src/providers/vigilance.js";
 import * as feux from "../src/providers/feux.js";
 import { alerteOf, buildHome, buildPlace, buildSea, type SeaData, snapshot, withoutForecast } from "../src/web/data.js";
@@ -33,6 +32,7 @@ import { SECTEURS as SECTEURS_RANDO } from "../src/traces/secteurs.js";
 import { PASSES } from "../src/historique/cyclones-passes.js";
 import { STATIONS } from "../src/web/station.js";
 import { esc, islandMap, RELIEF_LEGER, RELIEF_LEGER_W, RELIEF_PATH, RELIEF_SCRIPT } from "../src/web/map.js";
+import { cles, meteoFrance } from "./contexte.js";
 
 // What a process's pages remember (data.ts, the refreshes under way; budget.ts, what the builds took): this file's own
 // modules, as in the new isolates its tests start.
@@ -102,7 +102,7 @@ function upstream(url: string, init?: RequestInit): Response {
 }
 
 beforeEach(() => {
-  configure({ applicationId: "test" });
+  meteoFrance({ applicationId: "test" });
   vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
     overLimit();
     return upstream(String(url), init);
@@ -111,7 +111,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
-  configure({});
+  meteoFrance({});
 });
 
 /** A page as a Worker serves it: counted, background work awaited within the same invocation. */
@@ -148,7 +148,7 @@ describe("the budget of subrequests", () => {
   }, 30_000); // 48 pages built: about 2 s alone, past 5 s on a loaded machine.
 
   it("stays within it with the fires seen by satellite, cold, on the pages that build them", async () => {
-    feux.configure("key");
+    cles({ firms: "key" });
     try {
       for (const budget of [0, 6, 18, PAGE_BUDGET]) {
         const cache = isolate();
@@ -161,7 +161,7 @@ describe("the budget of subrequests", () => {
       const r = await within(isolate(), "/sentiers", PAGE_BUDGET);
       expect(r.text).toContain('<h2 id="h-feux">Feux de végétation vus par satellite</h2>');
     } finally {
-      feux.configure(undefined);
+      cles({ firms: undefined });
     }
   });
 

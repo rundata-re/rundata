@@ -3,10 +3,10 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { handle } from "../src/app.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { KEY as FIL } from "../src/providers/actualites.js";
-import { configure } from "../src/providers/mf-auth.js";
 import * as mf from "../src/providers/vigilance.js";
 import { vigilanceLive } from "../src/web/pages.js";
 import { unzip } from "../src/zip.js";
+import { meteoFrance } from "./contexte.js";
 
 // Météo-France's vigilance joins the answers of the tools on the weather's consequences, as on their pages: the sea, the
 // tides, the rivers, the air, the past weather, the volcano. crues_rivieres also gives the headlines on the fords of /crues.
@@ -51,8 +51,8 @@ async function call(cache: Cache, name: string, args: Record<string, unknown> = 
   return { ...r, body: JSON.parse(r.content[0].text.replace(/[\u00a0\u202f]/g, " ")) };
 }
 
-beforeAll(() => configure({ token: "test" }));
-afterAll(() => configure({}));
+beforeAll(() => meteoFrance({ token: "test" }));
+afterAll(() => meteoFrance({}));
 
 describe("Météo-France's vigilance in the tools on the weather's consequences", () => {
   beforeEach(() => {

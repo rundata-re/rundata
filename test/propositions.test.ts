@@ -8,6 +8,7 @@ import { FORMS_CSS } from "../src/web/formulaires-style.js";
 import { CSS } from "../src/web/style.js";
 import * as formulaires from "../src/web/propositions.js";
 import { donnerPropositions } from "./portes-avis.js";
+import { cles } from "./contexte.js";
 
 // Thursday 29 October 2026, 10:00 at La Réunion.
 const NOW = new Date("2026-10-29T06:00:00Z");
@@ -43,7 +44,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.useRealTimers();
   donnerPropositions(undefined);
-  formulaires.configure(undefined);
+  formulaires.verifierAvec();
   formulaires.ouvrir(formulaires.ASSOCIATIONS_EN_LIGNE);
 });
 
@@ -225,7 +226,7 @@ describe("the e-mail, through Cloudflare's binding", () => {
 describe("the forms on the site (web/propositions.ts)", () => {
   const post = (path: string, fields: Record<string, string>, headers: Record<string, string> = {}) =>
     handle(new Request(`https://rundata.re${path}`, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded", ...headers }, body: new URLSearchParams(fields).toString() }), new Cache());
-  const human = () => formulaires.configure(undefined, async (token) => token === "jeton-turnstile");
+  const human = () => formulaires.verifierAvec(async (token) => token === "jeton-turnstile");
 
   it("count a Turnstile token only if Cloudflare made it for this site and this form", async () => {
     const answers: Record<string, unknown>[] = [];
@@ -234,7 +235,7 @@ describe("the forms on the site (web/propositions.ts)", () => {
     const warn = console.warn;
     console.warn = () => {};
     try {
-      formulaires.configure("secret");
+      cles({ turnstile: "secret" });
       const f = new URLSearchParams({ "cf-turnstile-response": "jeton" });
       const attendu = { hostname: "rundata.re", action: "proposer" } as const;
       answers.push({ success: true, hostname: "rundata.re", action: "proposer" });
@@ -248,7 +249,7 @@ describe("the forms on the site (web/propositions.ts)", () => {
     } finally {
       globalThis.fetch = real;
       console.warn = warn;
-      formulaires.configure(undefined);
+      cles({ turnstile: undefined });
     }
     // Each form tells Cloudflare which it is.
     expect(formulaires.widget("lien")).toContain('data-action="lien"');

@@ -8,6 +8,7 @@
 import { alerteVolcan, volcanNow, withVolcan } from "./volcan-alerte.js";
 import { varySaveData, withSaveData } from "./fonds.js";
 import { left, measured } from "../budget.js";
+import { secret } from "../contexte.js";
 import type { Cache, Cached } from "../cache.js";
 import { sinceMidnight } from "../geo.js";
 import { why } from "../types.js";
@@ -243,10 +244,6 @@ const MCP_REGISTRY_AUTH = "v=MCPv1; k=ed25519; p=FTzDdb5aS1w9JIe6rHUyRBhGknTv/Rh
 // Proves to OpenAI's plugin portal that the MCP server is ours: the token the portal shows when the server is connected,
 // served as it is (the Worker's secret OPENAI_APPS_CHALLENGE). Without it, the path is not found like any other.
 const OPENAI_CHALLENGE = "/.well-known/openai-apps-challenge";
-let defiOpenai: string | undefined;
-export function configurerDefiOpenai(jeton: string | undefined) {
-  defiOpenai = jeton?.trim() || undefined;
-}
 
 /**
  * The fetchers of AI assistants and search engines. A person gets a page without its live block rather than wait
@@ -1345,7 +1342,8 @@ async function pages(request: Request, cache: Cache, background: Background, now
   if (path === `/${INDEXNOW_KEY}.txt`) {
     return new Response(INDEXNOW_KEY, { headers: { "content-type": "text/plain; charset=utf-8", "cache-control": STATIC } });
   }
-  if (path === OPENAI_CHALLENGE && defiOpenai) {
+  const defiOpenai = path === OPENAI_CHALLENGE ? secret("defiOpenai") : undefined;
+  if (defiOpenai) {
     return new Response(defiOpenai, { headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" } });
   }
   if (path === "/.well-known/mcp-registry-auth") {

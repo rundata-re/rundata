@@ -3,13 +3,16 @@
 import { StdioServerTransport } from "@modelcontextprotocol/server/stdio";
 import "./net.js";
 import { Cache } from "../cache.js";
-import * as meteofrance from "../providers/meteofrance.js";
+import { installer } from "../contexte.js";
 import { createServer } from "../server.js";
 
 // Optional: with a key from portail-api.meteofrance.fr, the ~56 Météo-France stations are added.
-meteofrance.configure({
-  applicationId: process.env.METEOFRANCE_APPLICATION_ID,
-  apiKey: process.env.METEOFRANCE_API_KEY,
-  token: process.env.METEOFRANCE_TOKEN,
+installer({
+  worker: false,
+  secrets: {
+    meteofranceApplication: process.env.METEOFRANCE_APPLICATION_ID,
+    meteofranceCle: process.env.METEOFRANCE_API_KEY,
+    meteofranceJeton: process.env.METEOFRANCE_TOKEN,
+  },
 });
 await createServer(new Cache()).connect(new StdioServerTransport());

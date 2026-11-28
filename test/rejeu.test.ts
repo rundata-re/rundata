@@ -4,12 +4,13 @@ import { Cache, MemoryStore } from "../src/cache.js";
 import * as climat from "../src/providers/climat.js";
 import * as meteofrance from "../src/providers/meteofrance.js";
 import { REGISTRY } from "../src/registre.js";
-import { type Historique, rle } from "../src/web/pluie-retro.js";
+import { type Historique, KV_KEY as RADAR_6H, LONG_KV_KEY as RADAR_24H, rle } from "../src/web/pluie-retro.js";
 import * as meteorOi from "../src/providers/meteor-oi.js";
-import { amateurs, assembler, configure, CUMULS_PATH, fill, FINS, freshSeconds, heures, HEURES, holes, jourPath, JOURS, joursEntre, joursOf, merge, PATHS, type Semaine, type Sources } from "../src/web/rejeu.js";
-import { PREMIER_JOUR } from "../src/web/radar-semaine.js";
+import { amateurs, assembler, CUMULS_PATH, fill, FINS, freshSeconds, heures, HEURES, holes, jourPath, JOURS, joursEntre, joursOf, merge, PATHS, SEMAINE_KV_KEY, type Semaine, type Sources } from "../src/web/rejeu.js";
+import { HEURES_KEY, JOUR_PREFIX, PREMIER_JOUR } from "../src/web/radar-semaine.js";
 import { project } from "../src/web/map.js";
 import { site } from "../src/web/site.js";
+import { horsWorker, stockageBrut } from "./contexte.js";
 
 const csv = readFileSync(new URL("./fixtures/meteofrance_horaire.csv", import.meta.url), "utf8");
 const hourly = meteofrance.parseHourly(csv, Date.parse("2026-10-25T08:57:00Z"));
@@ -28,6 +29,15 @@ function sources(semaine: Semaine | null, six: Historique | null = null, day: Hi
     semaine: { get: async () => kept.semaine, put: async (w) => void ((kept.semaine = w), kept.writes++) },
   };
   return { s, kept };
+}
+
+/** The Worker's store answering each file's key from `s` (contexte.ts `brut`); without `s`, outside the Worker. */
+function configure(s?: Sources) {
+  if (!s) return horsWorker();
+  const get = async (cle: string) =>
+    cle === RADAR_6H ? s.six() : cle === RADAR_24H ? s.day() : cle === HEURES_KEY ? s.week() : cle === SEMAINE_KV_KEY ? s.semaine.get()
+    : cle === meteorOi.HEURES_KV_KEY ? (s.amateur ? s.amateur() : null) : cle.startsWith(JOUR_PREFIX) ? s.jour(cle.slice(JOUR_PREFIX.length)) : null;
+  stockageBrut({ get, put: async (cle: string, v: string) => { if (cle === SEMAINE_KV_KEY) await s.semaine.put(JSON.parse(v)); } } as never);
 }
 
 afterEach(() => {

@@ -6,6 +6,7 @@
  * expires, or after a 401.
  */
 import { count, perInvocation } from "../budget.js";
+import { contexte } from "../contexte.js";
 import { delai, USER_AGENT } from "../http.js";
 import { UpstreamError, why } from "../types.js";
 
@@ -52,18 +53,22 @@ export interface TokenStore {
 export const KV_KEY = "meteofrance:jeton";
 
 let oauth: Token | undefined;
-let store: TokenStore | undefined;
 let issued = 0;
 /** Tokens this isolate asked the portal for so far: each one voids the others' (said by the scheduled event's log). */
 export const tokensIssued = () => issued;
 
-/** Shares the token through `s` (worker.ts); without it, each isolate keeps its own. */
-export function share(s?: TokenStore) {
-  store = s;
+/** The token shared through the Worker's store (contexte.ts), read and written here, counted here; without it, each isolate keeps its own. */
+function partage(): TokenStore | undefined {
+  const kv = contexte().brut;
+  return kv && {
+    get: async () => (await kv.get(KV_KEY, "json")) as Token | null,
+    put: (t, ttl) => kv.put(KV_KEY, JSON.stringify(t), { expirationTtl: ttl }),
+  };
 }
 
 /** The shared token, or null: KV not set, not answering, or holding none. One subrequest. */
 async function stored(): Promise<Token | null> {
+  const store = partage();
   if (!store) return null;
   count(1, "read");
   try {
@@ -99,6 +104,7 @@ async function newToken(source: string, reason: string): Promise<string> {
   const j = (await res.json()) as { access_token: string; expires_in?: number };
   const keep = (j.expires_in ?? 3600) - 300;
   oauth = { value: j.access_token, until: Date.now() + keep * 1000 };
+  const store = partage();
   if (store) {
     try {
       count(1, true);
@@ -118,7 +124,7 @@ async function first(source: string): Promise<string> {
     oauth = kept;
     return kept.value;
   }
-  return newToken(source, !store ? "sans KV" : kept ? "jeton de KV échu" : "aucun jeton dans KV");
+  return newToken(source, !contexte().brut ? "sans KV" : kept ? "jeton de KV échu" : "aucun jeton dans KV");
 }
 
 /**
@@ -134,7 +140,7 @@ export const RENEW_BEFORE_MS = 15 * 60_000;
  * isolate holds no token good for 15 minutes more; a token and a KV write about every 40 minutes.
  */
 export async function keepFresh(source: string): Promise<"gardé" | "renouvelé" | null> {
-  if (!credentials.applicationId || !store) return null;
+  if (!credentials.applicationId || !contexte().brut) return null;
   if (oauth && oauth.until - Date.now() > RENEW_BEFORE_MS) return "gardé";
   const kept = await stored();
   if (kept && kept.until - Date.now() > RENEW_BEFORE_MS) {

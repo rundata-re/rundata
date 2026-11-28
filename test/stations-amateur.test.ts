@@ -11,6 +11,7 @@ import { placePage } from "../src/web/lieu-page.js";
 import { meteoPage } from "../src/web/meteo-page.js";
 import { CSS } from "../src/web/style.js";
 import { PAGES } from "../src/web/places.js";
+import { dansLeWorker, horsWorker } from "./contexte.js";
 
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url), "utf8");
 const NOW = new Date("2026-10-18T19:20:00Z");
@@ -23,13 +24,13 @@ async function cache(): Promise<Cache> {
   const releves = (JSON.parse(fixture("ffvl_releves.json")) as { date: string }[]).map((r) => ({ ...r, date: "2026-10-18T19:16:00Z" }));
   await store.put("metar", { value: JSON.parse(fixture("metar.json")), fetchedAt: at });
   await store.put("ffvl:releves", { value: releves, fetchedAt: at });
-  meteorOi.configure(async () => ({
+  dansLeWorker({ [meteorOi.KV_KEY]: async () => ({
     lu: NOW.toISOString(),
     mesures: [
       { code: "CAM015", mesure_a: "2026-10-18T19:15:00.000Z", temperature: 24.2, humidite: 70, vent: 18, direction: 135, rafales: 30, pluie_1h: 0 },
       { code: "MDM1570", mesure_a: "2026-10-18T19:15:00.000Z", temperature: 9.1, vent: 0, pluie_1h: 0 },
     ],
-  }));
+  }) });
   return new Cache(store, () => at);
 }
 
@@ -40,7 +41,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   vi.unstubAllGlobals();
-  meteorOi.configure(undefined);
+  horsWorker();
 });
 
 describe("an amateur network's stations (the user, 10/11/2026: « telles quelles, avec une fiabilité non vérifiée »)", () => {

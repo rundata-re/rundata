@@ -7,6 +7,7 @@
  * `retirer` (test/contexte.ts).
  */
 import { count } from "./budget.js";
+import type { KvBinding } from "./kv.js";
 
 /** The KV store as the modules read it: a JSON value, or null when the key is absent. Each read is a counted subrequest. */
 export interface Stockage {
@@ -18,6 +19,11 @@ export interface Contexte {
   worker: boolean;
   /** The store, when the Worker has its binding. */
   kv?: Stockage;
+  /**
+   * The same store, its reads not counted here: only for a module that counts each of its reads and writes itself, with
+   * the kind it needs (budget.ts `count`), or that writes.
+   */
+  brut?: KvBinding;
   /** The keys of the sources that ask for one, given only with the store (the state they read is kept there). */
   secrets?: Secrets;
 }

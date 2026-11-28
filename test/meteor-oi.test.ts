@@ -11,6 +11,7 @@ import { NON_COMPTEES } from "../src/chiffres.js";
 import { METEOR_READS, REGISTRY, worstMain } from "../src/registre.js";
 import { BUILD_BUDGET } from "../src/budget.js";
 import { CLES, refus } from "../scripts/meteor-retrait.js";
+import { dansLeWorker, horsWorker } from "./contexte.js";
 
 // The files of four stations of the association's portal, read on 09/11/2026 at 18:40, what is read of them only:
 // Marla (calm, no direction, `tempsunix`), Petite-Île's college (wind, no `tempsunix`), the rain gauge of the Grandes
@@ -21,7 +22,7 @@ const st = (code: string) => meteorOi.STATIONS.find((s) => s.code === code)!;
 
 afterEach(() => {
   vi.unstubAllGlobals();
-  meteorOi.configure(undefined);
+  horsWorker();
 });
 
 describe("MétéoR-OI's stations", () => {
@@ -132,7 +133,7 @@ describe("MétéoR-OI's stations", () => {
   it("gives each measure with its station and its time, read from KV only, and nothing without the store", async () => {
     expect((await meteorOi.observations(undefined as never, AT)).value).toEqual([]);
     const copie: meteorOi.Copie = { lu: AT.toISOString(), mesures: [meteorOi.parse(st("CJS400"), DAILY.CJS400)!] };
-    meteorOi.configure(async () => copie);
+    dansLeWorker({ [meteorOi.KV_KEY]: async () => copie });
     const got = await meteorOi.observations(undefined as never, AT);
     expect(got.stale).toBe(false);
     expect(got.value).toEqual([{
@@ -148,7 +149,7 @@ describe("MétéoR-OI's stations", () => {
       ],
     }]);
     // A copy not written for three passes is said stale.
-    meteorOi.configure(async () => ({ ...copie, lu: "2026-11-09T14:10:00.000Z" }));
+    dansLeWorker({ [meteorOi.KV_KEY]: async () => ({ ...copie, lu: "2026-11-09T14:10:00.000Z" }) });
     expect((await meteorOi.observations(undefined as never, AT)).stale).toBe(true);
   });
 
@@ -166,7 +167,7 @@ describe("MétéoR-OI's stations", () => {
   it("gives the connector each of its stations with the association's credit and its link", async () => {
     // Every other network silent: the answer stands on MétéoR-OI's copy alone.
     vi.stubGlobal("fetch", async () => new Response("", { status: 503 }));
-    meteorOi.configure(async () => ({ lu: AT.toISOString(), mesures: [{ ...meteorOi.parse(st("MDM1570"), DAILY.MDM1570)! }] }));
+    dansLeWorker({ [meteorOi.KV_KEY]: async () => ({ lu: AT.toISOString(), mesures: [{ ...meteorOi.parse(st("MDM1570"), DAILY.MDM1570)! }] }) });
     const answer = JSON.parse((await meteoActuelle(new Cache(new MemoryStore(), () => AT.getTime(), false), "Marla", AT)).content[0].text);
     expect(answer.stations).toEqual([expect.objectContaining({
       station: "Marla", commune: "Saint-Paul", source: "meteor_oi", credit: "Données : MétéoR-OI, licence CC BY-NC 4.0", lien: "https://www.meteor-oi.re", heure_mesure: "09/11 18:40",

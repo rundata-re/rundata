@@ -5,6 +5,7 @@ import * as meteofrance from "../src/providers/meteofrance.js";
 import * as meteorOi from "../src/providers/meteor-oi.js";
 import { meteoActuelle, stationLien } from "../src/tools/meteo.js";
 import { stationOf } from "../src/web/station.js";
+import { dansLeWorker, horsWorker } from "./contexte.js";
 
 // Off Saint-Gilles, meteo_actuelle named four stations and linked one page, which showed one of them (26/11/2026): each
 // station now gives where its measure is read, its page on rundata.re or its producer's public page.
@@ -22,10 +23,10 @@ async function cache(): Promise<Cache> {
   await store.put("meteofrance:6min", { value: { [iso(slot)]: { value: rows, fetchedAt: at } }, fetchedAt: at });
   await store.put("metar", { value: [], fetchedAt: at });
   await store.put("ffvl:releves", { value: [{ idbalise: 1012, date: "2026-10-22T05:16:00Z", vitesseVentMoy: 12, vitesseVentMax: 20, directVentMoy: 200 }], fetchedAt: at });
-  meteorOi.configure(async () => ({
+  dansLeWorker({ [meteorOi.KV_KEY]: async () => ({
     lu: NOW.toISOString(),
     mesures: [{ code: "ROQ070", mesure_a: "2026-10-22T05:15:00.000Z", temperature: 23.4, humidite: 75, vent: 10, direction: 180, rafales: 18, pluie_1h: 0 }],
-  }));
+  }) });
   return new Cache(store, () => at);
 }
 
@@ -37,7 +38,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   meteofrance.configure({});
-  meteorOi.configure(undefined);
+  horsWorker();
   vi.unstubAllGlobals();
 });
 

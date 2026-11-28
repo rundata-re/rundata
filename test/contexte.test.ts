@@ -16,6 +16,8 @@ import * as prefectureCopie from "../src/providers/prefecture-copie.js";
 import * as raa from "../src/providers/raa.js";
 import * as candhis from "../src/providers/candhis.js";
 import * as uvMesure from "../src/providers/uv-mesure.js";
+import * as meteorOi from "../src/providers/meteor-oi.js";
+import * as ovpfOcr from "../src/providers/ovpf-ocr.js";
 import worker from "../src/worker.js";
 import { dansLeWorker, horsWorker } from "./contexte.js";
 
@@ -49,6 +51,8 @@ describe("the modules' context (src/contexte.ts)", () => {
     await robots(kv);
     const premier = contexte();
     expect(premier.worker).toBe(true);
+    // The binding itself too, for the modules that count their own reads (rejeu, pluie-radar, mf-auth).
+    expect(premier.brut).toBe(kv);
     await robots(kv);
     // The same object from one request to the next: a module's copy kept for its context stays (capteurs.ts).
     expect(contexte()).toBe(premier);
@@ -201,6 +205,27 @@ describe("the modules' context (src/contexte.ts)", () => {
       expect(await prefectureCopie.page("https://www.reunion.gouv.fr/c")).toEqual(page);
       expect(await prefectureCopie.page("https://www.reunion.gouv.fr/autre")).toBeNull();
       expect((await raa.copie(cache()))?.value).toEqual(recueil);
+      horsWorker();
+    });
+
+    it("MétéoR-OI, texte de l'OVPF: nothing outside the Worker nor without a store; the store's copy with one", async () => {
+      const post = { titre: "t", lien: "https://bsky.app/profile/ovpf.bsky.social/post/abc", date: "2026-11-28", image: "https://cdn.bsky.app/i.jpg" } as never;
+      for (const c of [() => horsWorker(), () => installer({ worker: true })]) {
+        c();
+        expect((await meteorOi.observations(cache())).value).toEqual([]);
+        expect(await ovpfOcr.resultat(cache(), post)).toBeUndefined();
+      }
+      const copie = { lu: "2026-11-28T06:55:00.000Z", mesures: [] };
+      const lu = { statut: "lu", texte: "Le texte.", lu_a: "2026-11-28T06:00:00.000Z", outil: "t" };
+      dansLeWorker({ [meteorOi.KV_KEY]: copie, [ovpfOcr.KEY("abc")]: lu });
+      expect((await meteorOi.observations(cache(), new Date("2026-11-28T07:00:00Z"))).fetchedAt).toEqual(new Date(copie.lu));
+      expect(await ovpfOcr.resultat(cache(), post)).toEqual(lu);
+      // Another context (another test's): its own store, not the copy kept for the first.
+      dansLeWorker({ [meteorOi.KV_KEY]: { ...copie, lu: "2026-11-28T06:58:00.000Z" } });
+      expect((await meteorOi.observations(cache(), new Date("2026-11-28T07:00:00Z"))).fetchedAt).toEqual(new Date("2026-11-28T06:58:00.000Z"));
+      horsWorker();
+      dansLeWorker({ [meteorOi.KV_KEY]: { ...copie, lu: "2026-11-28T06:59:00.000Z" } });
+      expect((await meteorOi.observations(cache(), new Date("2026-11-28T07:00:00Z"))).fetchedAt).toEqual(new Date("2026-11-28T06:59:00.000Z"));
       horsWorker();
     });
 

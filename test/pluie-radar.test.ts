@@ -5,7 +5,7 @@ import { Cache, MemoryStore } from "../src/cache.js";
 import * as meteofrance from "../src/providers/meteofrance.js";
 import { project, W, H } from "../src/web/map.js";
 import { NODATA, parse, pixel, WINDOW, type RadarImage } from "../src/providers/radar.js";
-import { configure, GH, GW, grid, MM_CHARS, MM_MIN, MM_STEP, mmChar, PATH, rainGrid } from "../src/web/pluie-radar.js";
+import { GH, GW, grid, MM_CHARS, MM_MIN, MM_STEP, mmChar, PATH, rainGrid } from "../src/web/pluie-radar.js";
 
 /**
  * The lame d'eau in mm of each cell, read back as the browser does (pluie-cumuls.ts): 0 where `pluie` is « 0 », NaN
@@ -25,7 +25,8 @@ function decodeMm(pluie: string, mm: string | undefined): Float64Array | null {
   }
   return n === mm.length ? out : null;
 }
-import { derniere, rle, type Historique } from "../src/web/pluie-retro.js";
+import { KV_KEY as RETRO_KEY, rle, type Historique } from "../src/web/pluie-retro.js";
+import { horsWorker, stockageBrut } from "./contexte.js";
 
 // The real lame d'eau of 22/10/2026 05:35–05:40 UTC: almost dry over the island.
 const file = readFileSync(new URL("./fixtures/radar_lame_eau.h5", import.meta.url));
@@ -107,10 +108,13 @@ describe("the radar's rain on the map's grid", () => {
 });
 
 describe("the live layer when this data center holds only an old copy of the radar", () => {
+  /** The radar's history in the Worker's store (contexte.ts `brut`), as `read` gives it; without it, outside the Worker. */
+  const configure = (read?: () => Promise<unknown>) =>
+    read ? stockageBrut({ get: async (cle: string) => (cle === RETRO_KEY ? read() : null), put: async () => {} } as never) : horsWorker();
   afterEach(() => {
     vi.unstubAllGlobals();
     meteofrance.configure({});
-    configure();
+    horsWorker();
   });
 
   /** The history in KV with one image of `g` ending at `fin`, after a gap. */
@@ -135,7 +139,7 @@ describe("the live layer when this data center holds only an old copy of the rad
     // The copy is the image of 22/10 05:40 UTC, read then; the history, written by the scheduled event, has 06/11 08:00.
     const cache = await oldCopy(Date.parse("2026-10-22T05:41:00Z"), Date.parse("2026-11-06T08:03:00Z"));
     let reads = 0;
-    configure(async () => (reads++, derniere(history(g, "2026-11-06T08:00:00Z"))));
+    configure(async () => (reads++, history(g, "2026-11-06T08:00:00Z")));
     const r = await rainGrid(cache);
     expect(r.status).toBe(200);
     const body = await r.json();
@@ -151,7 +155,7 @@ describe("the live layer when this data center holds only an old copy of the rad
     const g = grid(await image());
     const cache = await oldCopy(Date.parse("2026-10-22T05:41:00Z"), Date.parse("2026-10-22T06:30:00Z"));
     let reads = 0;
-    configure(async () => (reads++, derniere(history(g, "2026-10-22T05:30:00Z"))));
+    configure(async () => (reads++, history(g, "2026-10-22T05:30:00Z")));
     expect((await (await rainGrid(cache)).json()).fin).toBe(g.fin);
     expect(reads).toBe(1);
     // A fresh image: no read of KV.
@@ -165,9 +169,9 @@ describe("the live layer when this data center holds only an old copy of the rad
   it("serves the history when the radar was never read here, and still 503 when it holds no image either", async () => {
     const g = grid(await image());
     const cache = new Cache(new MemoryStore(), () => Date.now());
-    configure(async () => derniere(history(g, "2026-11-06T08:00:00Z")));
+    configure(async () => history(g, "2026-11-06T08:00:00Z"));
     expect((await (await rainGrid(cache)).json()).fin).toBe("2026-11-06T08:00:00Z");
-    configure(async () => derniere({ w: g.w, h: g.h, entrees: [{ trou: true, de: "2026-11-06T00:00:00Z", a: "2026-11-06T08:00:00Z" }] }));
+    configure(async () => ({ w: g.w, h: g.h, entrees: [{ trou: true, de: "2026-11-06T00:00:00Z", a: "2026-11-06T08:00:00Z" }] }));
     expect((await rainGrid(cache)).status).toBe(503);
     configure(async () => null);
     expect((await rainGrid(cache)).status).toBe(503);
@@ -177,7 +181,7 @@ describe("the live layer when this data center holds only an old copy of the rad
 
   it("counts its read of KV as a subrequest", async () => {
     const g = grid(await image());
-    configure(async () => derniere(history(g, "2026-11-06T08:00:00Z")));
+    configure(async () => history(g, "2026-11-06T08:00:00Z"));
     const run = await counted(BUILD_BUDGET, () => rainGrid(new Cache(new MemoryStore(), () => Date.now())));
     expect(run.used).toBe(1);
   });

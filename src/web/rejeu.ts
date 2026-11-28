@@ -23,12 +23,14 @@
  */
 import { count } from "../budget.js";
 import type { Cache } from "../cache.js";
+import { contexte } from "../contexte.js";
+import { autorisee } from "../providers/autorisations.js";
 import * as climat from "../providers/climat.js";
 import * as meteofrance from "../providers/meteofrance.js";
 import * as meteorOi from "../providers/meteor-oi.js";
 import { project } from "./map.js";
-import { endOf, type Entree, fenetres, type Historique, isTrou, KEEP_MS, LONG_MS, parHeure, quarters, sansLame } from "./pluie-retro.js";
-import { KEEP_MS as WEEK_KEEP_MS, PREMIER_JOUR } from "./radar-semaine.js";
+import { endOf, type Entree, fenetres, type Historique, isTrou, KEEP_MS, KV_KEY as RADAR_6H, LONG_KV_KEY as RADAR_24H, LONG_MS, parHeure, quarters, sansLame } from "./pluie-retro.js";
+import { HEURES_KEY, JOUR_PREFIX, KEEP_MS as WEEK_KEEP_MS, PREMIER_JOUR } from "./radar-semaine.js";
 
 export const DUREES = ["6h", "24h", "7j"] as const;
 export type Duree = (typeof DUREES)[number];
@@ -229,11 +231,28 @@ export interface Sources {
   amateur?(): Promise<meteorOi.Heures | null>;
 }
 
-let sources: Sources | undefined;
-
-/** Set by worker.ts: KV. Without it, the files say they have no history. */
-export function configure(s?: Sources) {
-  sources = s;
+/**
+ * The files, in the Worker's store (contexte.ts), each read counted here: the radar's last 6 hours, its 24 hours a quarter
+ * of an hour apart, its week an hour apart and its days every 5 minutes, kept by the scheduled event (pluie-retro.ts,
+ * radar-semaine.ts), and the stations' week, written only by the files that read it; the amateur stations' hours
+ * (providers/meteor-oi.ts) only while the association's agreement is given. Without a store, the files say they have no
+ * history.
+ */
+function lesSources(): Sources | undefined {
+  const kv = contexte().brut;
+  if (!kv) return undefined;
+  const lire = async <T>(cle: string) => (await kv.get(cle, "json")) as T | null;
+  return {
+    six: () => lire<Historique>(RADAR_6H),
+    day: () => lire<Historique>(RADAR_24H),
+    week: () => lire<Historique>(HEURES_KEY),
+    jour: (d) => lire<Historique>(JOUR_PREFIX + d),
+    semaine: {
+      get: () => lire<Semaine>(SEMAINE_KV_KEY),
+      put: (w) => kv.put(SEMAINE_KV_KEY, JSON.stringify(w), { expirationTtl: SEMAINE_KV_TTL_SECONDS }),
+    },
+    ...(autorisee(meteorOi.AUTORISATION) ? { amateur: () => lire<meteorOi.Heures>(meteorOi.HEURES_KV_KEY) } : {}),
+  };
 }
 
 /**
@@ -241,6 +260,7 @@ export function configure(s?: Sources) {
  * once in D1_AGAIN_MS); written back when it changed, by `background`.
  */
 async function semaine(cache: Cache, now: Date, background: (p: Promise<unknown>) => void): Promise<Semaine | null> {
+  const sources = lesSources();
   if (!sources) return null;
   count();
   const before = await sources.semaine.get().catch(() => null);
@@ -268,6 +288,7 @@ async function semaine(cache: Cache, now: Date, background: (p: Promise<unknown>
 
 /** The amateur stations' hours, when they are configured; null when they cannot be read. */
 async function kept(): Promise<meteorOi.Heures | null> {
+  const sources = lesSources();
   const read = sources?.amateur;
   if (!read) return null;
   count();
@@ -284,6 +305,7 @@ export function freshSeconds(d: Duree, now: Date): number {
 }
 
 async function build(d: Duree, cache: Cache, now: Date, background: (p: Promise<unknown>) => void): Promise<Rejeu> {
+  const sources = lesSources();
   const radar = async (read: () => Promise<Historique | null>, keep: number) => {
     count();
     const h = await read().catch((err) => (console.error("rejeu : historique radar illisible", err instanceof Error ? err.message : String(err)), null));
@@ -357,7 +379,7 @@ const radarOf = async (read: () => Promise<Historique | null>, lame = false) => 
 
 async function buildFin(f: Fin, cache: Cache, now: Date, background: (p: Promise<unknown>) => void, lame = false): Promise<Rejeu> {
   const from = now.getTime() - (f === "24h" ? LONG_MS : 7 * DAY_MS);
-  const src = sources;
+  const src = lesSources();
   const reads = !src ? [] : [...joursEntre(from, now.getTime()).map((d) => radarOf(() => src.jour(d), lame)), ...(f === "24h" ? [radarOf(src.six, lame)] : [])];
   const [s, hs, am] = await Promise.all([semaine(cache, now, background), Promise.all(reads), f === "24h" && !lame ? kept() : null]);
   if (f === "24h") return { radar: src ? assembler(hs, from) : null, heures: amateurs(heures(s, HEURES["24h"]), am) };
@@ -369,7 +391,7 @@ async function buildFin(f: Fin, cache: Cache, now: Date, background: (p: Promise
 
 /** The day `date`: its images, and the stations' hours from the midnight it starts at (`end` the one it ends at). */
 async function buildJour(date: string, end: number, cache: Cache, now: Date, background: (p: Promise<unknown>) => void): Promise<Rejeu> {
-  const src = sources;
+  const src = lesSources();
   // The amateur stations' hours only for a day they can still be among (they keep 25 hours).
   const recent = end > now.getTime() - meteorOi.HEURES * HOUR_MS;
   const [s, h, am] = await Promise.all([semaine(cache, now, background), src ? radarOf(() => src.jour(date)) : null, recent ? kept() : null]);

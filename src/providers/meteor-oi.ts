@@ -13,6 +13,8 @@
  * measures in KV, which the questions and the pages read: never the network, from a visit.
  */
 import type { Cache, Cached } from "../cache.js";
+import { contexte, type Contexte } from "../contexte.js";
+import { autorisee } from "./autorisations.js";
 import { getText, UA_RUNDATA } from "../http.js";
 import type { Observation, SourceInfo, Station } from "../types.js";
 
@@ -357,14 +359,8 @@ export function toObservations(c: Copie, now: Date): Observation[] {
   return out;
 }
 
-let reader: (() => Promise<Copie | null>) | undefined;
-let memo: { at: number; copie: Copie } | undefined;
-
-/** In the Worker: the copy read from KV, where the scheduled event writes it; never the network, from a visit. */
-export function configure(read: (() => Promise<Copie | null>) | undefined) {
-  reader = read;
-  memo = undefined;
-}
+// Kept for the context it was read from: another context (another test's) reads its own store again.
+let memo: { at: number; copie: Copie; de: Contexte } | undefined;
 
 // Written every REFRESH_EVERY minutes: asked of KV once in 5 minutes by an isolate.
 const FRESH_MS = 5 * 60_000;
@@ -374,11 +370,15 @@ const FRESH_MS = 5 * 60_000;
  * while the association's agreement is not given. A copy not written for longer than 3 passes is `stale`.
  */
 export async function observations(_cache: Cache, now = new Date()): Promise<Cached<Observation[]>> {
-  if (!reader) return { value: [], fetchedAt: now, stale: false };
-  if (!memo || now.getTime() - memo.at >= FRESH_MS) {
-    const v = await reader();
+  // In the Worker, the copy read from its store (contexte.ts), where the scheduled event writes it; never the network,
+  // from a visit.
+  const ctx = contexte();
+  const kv = ctx.kv;
+  if (!kv || !autorisee(AUTORISATION)) return { value: [], fetchedAt: now, stale: false };
+  if (!memo || memo.de !== ctx || now.getTime() - memo.at >= FRESH_MS) {
+    const v = await kv.json<Copie>(KV_KEY);
     if (!v) throw new Error("stations de MétéoR-OI absentes du stockage");
-    memo = { at: now.getTime(), copie: v };
+    memo = { at: now.getTime(), copie: v, de: ctx };
   }
   const c = memo.copie;
   return { value: toObservations(c, now), fetchedAt: new Date(c.lu), stale: now.getTime() - Date.parse(c.lu) > 3 * REFRESH_EVERY * 60_000 };

@@ -1,7 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { counted } from "../src/budget.js";
-import { configure, download, keepFresh, RENEW_BEFORE_MS, session, share, tokensIssued, type Token, type TokenStore } from "../src/providers/mf-auth.js";
+import { configure, download, keepFresh, RENEW_BEFORE_MS, session, tokensIssued, type Token, type TokenStore } from "../src/providers/mf-auth.js";
 import { UpstreamError } from "../src/types.js";
+import { horsWorker, stockageBrut } from "./contexte.js";
+
+/** The token shared through the Worker's store (contexte.ts `brut`), as `s` holds it; without `s`, outside the Worker. */
+function share(s?: TokenStore) {
+  if (!s) return horsWorker();
+  stockageBrut({ get: async () => s.get(), put: async (_cle: string, v: string, o?: { expirationTtl?: number }) => s.put(JSON.parse(v), o!.expirationTtl!) } as never);
+}
 
 // The Worker's KV as seen by one isolate, while other isolates write to it too.
 class Kv implements TokenStore {

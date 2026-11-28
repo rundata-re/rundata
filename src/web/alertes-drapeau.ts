@@ -20,3 +20,12 @@ export function configurer(essai: string | undefined) {
 export function ouvrir(v: boolean) {
   ouvert = v;
 }
+
+/** The page of the alerts (web/alertes-page.ts) and its button's words, here so that any page can link to it. */
+export const ALERTES_PAGE = "/alertes";
+export const BOUTON_ALERTES = "Recevoir les alertes sur ce téléphone";
+/**
+ * The link to the alerts' page from the pages of what sets one off (/vigilance, /alerte-cyclone, /volcan), with the
+ * button's words, agreed with it; nothing while the alerts are closed, so that no page links to a 404.
+ */
+export const lienAlertes = () => (enLigne() ? `<p class="lead"><a href="${ALERTES_PAGE}">${BOUTON_ALERTES} →</a></p>` : "");

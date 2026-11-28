@@ -3,6 +3,7 @@
  * life at each step of the cyclone alert, quoted page by page, under the alert in force (as /ecoles-cyclone reads it).
  * Only the plan's words: where it says nothing (the buses, the shops), nothing is filled in. Worded for the site.
  */
+import { lienAlertes } from "./alertes-drapeau.js";
 import type { Cached } from "../cache.js";
 import { ORSEC_PDF } from "../eau/cyclone.js";
 import type { Cyclone } from "../providers/prefecture.js";
@@ -191,6 +192,7 @@ export function alertePage(origin: string, data: Cached<mf.Vigilance> | null, no
   <p class="lead">${esc(LEAD)}</p>
   ${state}
   <p class="lead">${officielHtml(mf.OFFICIEL_CYCLONE)}</p>
+  ${lienAlertes()}
 </div></div>`;
   const steps = STEPS.map((st) => `<section id="${st.id}" aria-labelledby="h-${st.id}">
   <div class="sec-h"><h2 id="h-${st.id}">${esc(st.titre)}</h2>${st.devise ? `<p>« ${esc(st.devise)} »</p>` : ""}</div>

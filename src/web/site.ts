@@ -599,6 +599,8 @@ function siteUrls(now: Date, fuelDay?: string): Url[] {
     ...PAGES.filter((p) => !PRINCIPAL[p.slug]).map((p) => live(`/meteo/${p.slug}`)), ...STATIONS.map((x) => live(stationPath(x.id))), ...SECTEURS.map((x) => live(`/randonnees/${x.slug}`)), ...traces.RANDONNEES.map((r) => trace(`/randonnees/${r.slug}`)),
     ...Object.values(traces.SENTIERS).map((t) => trace(`/sentiers/${t.slug}`)), ...["/presse", "/a-propos", VALEURS, EN, JEUX_TRANSPORT, APPLICATION, GUIDE, "/mcp", "/confidentialite", "/conditions", BAIGNADE, ...PASSES.map((c) => `/cyclones/${c.slug}`)].map(fixed),
     ...(formulaires.enLigne() ? [live(ASSOCIATIONS_PATH), fixed(formulaires.PROPOSER_PATH)] : []),
+    // The alerts on the phone once open (web/alertes-drapeau.ts): before, the page answers 404.
+    ...(alertesEnLigne() ? [fixed(ALERTES_PAGE)] : []),
     ["/nouveautes", localDay(NOUVEAUTES[0].date), "daily"], [ANTENNES, undefined, "weekly"], [SANS_REPONSE, undefined, "daily"], live(CHIFFRES), ["/carburants", fuelDay ? (fuelDay < today ? fuelDay : today) : undefined, "daily"],
     // The fires' page only once FIRMS's key is there: before, it says the detection is not active.
     ...(feux.enabled() ? [live(FEUX_PATH)] : []),
@@ -610,7 +612,7 @@ function siteUrls(now: Date, fuelDay?: string): Url[] {
 // The sitemap's pages as a set, made at the first address not found, again only when a page comes in or goes out.
 let known: { cle: string; chemins: Set<string> } | undefined;
 const pagesConnues = (now: Date) => {
-  const cle = `${feux.enabled()} ${formulaires.enLigne()}`;
+  const cle = `${feux.enabled()} ${formulaires.enLigne()} ${alertesEnLigne()}`;
   if (known?.cle !== cle) known = { cle, chemins: new Set(siteUrls(now).map(([u]) => u)) };
   return known.chemins;
 };
@@ -813,9 +815,9 @@ async function pages(request: Request, cache: Cache, background: Background, now
     const r = await alertesPush.route(request, path);
     if (r) return r;
   }
-  // Its page, never indexed until the alerts open to all (out of the sitemap, linked from nowhere yet).
+  // Its page, indexed and in the sitemap once the alerts are open: a public page, nothing personal on it.
   if (alertesEnLigne() && path === ALERTES_PAGE) {
-    return new Response(alertesPage(origin, await alerte(cache, background, now)), { headers: { ...HTML, "x-robots-tag": "noindex" } });
+    return new Response(alertesPage(origin, await alerte(cache, background, now)), { headers: HTML });
   }
   // The feedback form at the bottom of every page (web/avis.ts).
   if (path === "/avis") return avisPost(request, now);

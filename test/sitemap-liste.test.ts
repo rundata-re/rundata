@@ -1,3 +1,4 @@
+import { enLigne } from "../src/web/alertes-drapeau.js";
 import { describe, expect, it } from "vitest";
 import { handle } from "../src/app.js";
 import { Cache, MemoryStore } from "../src/cache.js";
@@ -17,13 +18,14 @@ async function sitemap(): Promise<string[]> {
 const RETIREES = ["/aujourdhui/cilaos", "/enfants/les-avirons", "/communes/petite-ile/elections", "/bus/arret/saint-pierre/pierrefonds", "/bus/arret/les-avirons/gare-des-avirons", "/meteo/les-avirons"];
 
 describe("the sitemap from 24/11/2026, the validated list of that day", () => {
-  it("holds the 244 pages kept, but for the one not served here, and nothing else", async () => {
+  it("holds the 245 pages kept, but for those not served here, and nothing else", async () => {
     const urls = await sitemap();
     // 231 kept, less /feux with no FIRMS key here. 893 before. 230 from 24/11/2026: a deviation the ONF took off its
-    // map, its page no longer a trail's state. 231 the same day: Le Tampon's water cuts, its notices read; 232: Saint-Joseph's; 237: the waste collection of the CIREST's five communes with calendars; 240 (26/11/2026): the CINOR's three; 244 the same day: the CASUD's four.
-    expect(NOMBRE).toBe(244);
+    // map, its page no longer a trail's state. 231 the same day: Le Tampon's water cuts, its notices read; 232: Saint-Joseph's; 237: the waste collection of the CIREST's five communes with calendars; 240 (26/11/2026): the CINOR's three; 244 the same day: the CASUD's four; 245 (27/11/2026): the alerts on the phone,
+    // only once they are open.
+    expect(NOMBRE).toBe(245);
     expect(urls).not.toContain("/sentiers/sentier-du-trou-de-fer-deviation-par-rf-fleurs-jaunes");
-    expect(urls).toHaveLength(NOMBRE - 1);
+    expect(urls).toHaveLength(NOMBRE - 1 - (enLigne() ? 0 : 1));
     expect(urls).not.toContain("/feux");
     expect(urls.filter((u) => !gardee(u))).toEqual([]);
     expect(new Set(urls).size).toBe(urls.length);

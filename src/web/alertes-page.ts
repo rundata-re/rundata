@@ -18,8 +18,9 @@ import { layout } from "./pages.js";
 import { script } from "./scripts-declares.js";
 import { TTL_S } from "../push/abonnements.js";
 import { ABONNEMENT_PATH, CLE_PATH } from "./alertes.js";
+import { ALERTES_PAGE, BOUTON_ALERTES } from "./alertes-drapeau.js";
 
-export const PATH = "/alertes";
+export const PATH = ALERTES_PAGE;
 /** How long the button waits for the service worker to be ready: one that cannot install never is, and the page says
  * the alerts are unavailable instead of staying silent. */
 export const PRET_MS = 10_000;
@@ -27,6 +28,8 @@ export const PRET_MS = 10_000;
 const TITLE = "Les alertes sur votre téléphone";
 const LEAD =
   "Une notification quand une vigilance orange ou rouge est émise, quand l'alerte cyclonique change, ou quand le niveau d'alerte du volcan change. Sans compte, sans nom, sans adresse électronique, et désactivable d'un geste.";
+/** For search engines, which show 160 signs at most: the lead's first sentence, as it is. */
+const DESCRIPTION = LEAD.slice(0, LEAD.indexOf(".") + 1);
 
 /** The states the script shows, by name: the agreed words, word for word. */
 export const ETATS = {
@@ -36,8 +39,9 @@ export const ETATS = {
   indisponible: "Les alertes ne peuvent pas être activées pour l'instant. Réessayez plus tard.",
   iphone: "Sur iPhone, les alertes ne marchent que depuis le site ajouté à l'écran d'accueil (iOS 16.4 ou plus récent).",
 } as const;
-export const BOUTON = "Recevoir les alertes sur ce téléphone";
+export const BOUTON = BOUTON_ALERTES;
 export const ARRETER = "Ne plus recevoir";
+
 
 /**
  * The script of the button. Without Push (an old browser, an iPhone's Safari outside the home screen) it says so and
@@ -91,5 +95,5 @@ export function alertesPage(origin: string, alerte?: Alerte): string {
   <p><a href="/confidentialite#alertes">Ce qui est gardé, et comment l'effacer</a></p>
 </section>
 ${script(SCRIPT)}`;
-  return layout(origin, { title: TITLE, description: LEAD, path: PATH, jsonld: [], noindex: true, sansPartage: true, alerte }, band, body);
+  return layout(origin, { title: TITLE, description: DESCRIPTION, path: PATH, jsonld: [], sansPartage: true, alerte }, band, body);
 }
